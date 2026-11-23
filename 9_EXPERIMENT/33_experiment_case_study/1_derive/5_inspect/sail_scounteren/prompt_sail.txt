@@ -1,0 +1,296 @@
+You are an expert RISC-V ISA conformance analyst and Sail semantic path extractor.
+
+Task:
+Given Sail RISC-V source code or model text, extract the architecturally relevant semantic paths for the target.
+
+Target: scounteren
+
+Source restriction:
+Use only the provided Sail RISC-V source/model text and your pretrained knowledge of Sail syntax, RISC-V terminology, and semantic-model reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided Sail source/model text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Sail source/model text is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Sail source/model text, follow the provided Sail source/model text.
+
+Input:
+The input is the provided Sail RISC-V source/model text below.
+
+BEGIN SAIL SOURCE MODEL
+
+// File: model/core/sys_regs.sail
+
+// counters
+
+bitfield Counteren : bits(32) = {
+HPM  : 31 .. 3,
+IR   : 2,
+TM   : 1,
+CY   : 0
+}
+
+// Sscounterenw is enabled only when the hart supports Sscounterenw
+// and supervisor mode is currently enabled.
+
+function clause currentlyEnabled(Ext_Sscounterenw) =
+hartSupports(Ext_Sscounterenw) & currentlyEnabled(Ext_S)
+
+// Which bits of `scounteren` are writable.
+
+let sys_scounteren_writable_bits : bits(32) =
+config base.scounteren_writable_bits
+
+// scounteren
+
+private function legalize_scounteren(_c : Counteren, v : xlenbits) -> Counteren =
+Mk_Counteren(v[31 .. 0] & sys_scounteren_writable_bits)
+
+register scounteren : Counteren
+
+mapping clause csr_name_map = 0x106 <-> "scounteren"
+
+function clause is_CSR_accessible(0x106, _, _) =
+currentlyEnabled(Ext_S)
+
+function clause read_CSR(0x106) =
+zero_extend(scounteren.bits)
+
+function clause write_CSR(0x106, value) = {
+scounteren = legalize_scounteren(scounteren, value);
+Ok(zero_extend(scounteren.bits))
+}
+
+// Generic feature-enable helper used by counter access control.
+
+enum FeatureEnabledResult = {
+FEATURE_ENABLED,
+FEATURE_ILLEGAL,
+FEATURE_VIRTUAL
+}
+
+// Several features are controlled by enable bits in machine,
+// supervisor, and hypervisor CSRs.
+
+function feature_enabled_for_priv(
+p : Privilege,
+machine_enable_bit : bits(1),
+supervisor_enable_bit : bits(1),
+hypervisor_enable_bit : bits(1)
+) -> FeatureEnabledResult =
+match p {
+Machine =>
+FEATURE_ENABLED,
+
+```
+Supervisor =>
+  if machine_enable_bit == 0b1
+  then FEATURE_ENABLED
+  else FEATURE_ILLEGAL,
+
+User =>
+  if machine_enable_bit == 0b1
+     & (not(currentlyEnabled(Ext_S)) | supervisor_enable_bit == 0b1)
+  then FEATURE_ENABLED
+  else FEATURE_ILLEGAL,
+
+VirtualSupervisor =>
+  if machine_enable_bit == 0b0
+  then FEATURE_ILLEGAL
+  else if hypervisor_enable_bit == 0b0
+  then FEATURE_VIRTUAL
+  else FEATURE_ENABLED,
+
+VirtualUser =>
+  if machine_enable_bit == 0b0
+  then FEATURE_ILLEGAL
+  else if hypervisor_enable_bit == 0b0 | supervisor_enable_bit == 0b0
+  then FEATURE_VIRTUAL
+  else FEATURE_ENABLED,
+```
+
+}
+
+// Backward-compatible wrapper around feature_enabled_for_priv for callers
+// that do not yet distinguish illegal-instruction and virtual-instruction
+// exceptions.
+
+function feature_enabled_for_priv_bool(
+p : Privilege,
+m : bits(1),
+s : bits(1),
+h : bits(1)
+) -> bool =
+feature_enabled_for_priv(p, m, s, h) == FEATURE_ENABLED
+
+// Return true if the counter is enabled.
+// TODO: Pass hcounteren.bits[index] once hcounteren is implemented.
+
+function counter_enabled(index : range(0, 31), priv : Privilege) -> bool =
+feature_enabled_for_priv_bool(
+priv,
+mcounteren.bits[index],
+scounteren.bits[index],
+0b0
+)
+
+// File: model/core/extensions.sail
+
+// Support writable enables for any supported counter.
+
+enum clause extension = Ext_Sscounterenw
+
+mapping clause extensionName =
+Ext_Sscounterenw <-> "sscounterenw"
+
+function clause hartSupports(Ext_Sscounterenw) =
+config extensions.Sscounterenw.supported
+
+// Note: even though this matches the default case, it is explicit
+// to annotate the dependency chain.
+
+Ext_Sscounterenw => 2
+
+// Supervisor extensions, ordered alphabetically.
+
+Ext_Ssccptr,
+Ext_Sscofpmf,
+Ext_Sscounterenw,
+Ext_Ssnpm,
+
+// File: model/postlude/validate_config.sail
+
+if (config extensions.Sscounterenw.supported : bool)
+& ((sys_writable_hpm_counters[31 .. 3]
+& sys_scounteren_writable_bits[31 .. 3])
+!= sys_writable_hpm_counters[31 .. 3])
+then {
+valid = false;
+print_endline(
+"The Sscounterenw extension is enabled but `scounteren` is not writable (via `base.scounteren_writable_bits`) for some supported HPM counters (specified in `base.writable_hpm_counters`)."
+);
+};
+
+// File: model/extensions/Zicntr/zicntr_control.sail
+
+function clause currentlyEnabled(Ext_Zicntr) =
+hartSupports(Ext_Zicntr) & currentlyEnabled(Ext_Zicsr)
+
+// unprivileged counters/timers
+
+mapping clause csr_name_map = 0xC00 <-> "cycle"
+mapping clause csr_name_map = 0xC01 <-> "time"
+mapping clause csr_name_map = 0xC02 <-> "instret"
+mapping clause csr_name_map = 0xC80 <-> "cycleh"
+mapping clause csr_name_map = 0xC81 <-> "timeh"
+mapping clause csr_name_map = 0xC82 <-> "instreth"
+
+function clause is_CSR_accessible(0xC00, priv, _) =
+currentlyEnabled(Ext_Zicntr) & counter_enabled(0, priv)
+
+function clause is_CSR_accessible(0xC01, priv, _) =
+currentlyEnabled(Ext_Zicntr) & counter_enabled(1, priv)
+
+function clause is_CSR_accessible(0xC02, priv, _) =
+currentlyEnabled(Ext_Zicntr) & counter_enabled(2, priv)
+
+function clause is_CSR_accessible(0xC80, priv, _) =
+currentlyEnabled(Ext_Zicntr) & xlen == 32 & counter_enabled(0, priv)
+
+function clause is_CSR_accessible(0xC81, priv, _) =
+currentlyEnabled(Ext_Zicntr) & xlen == 32 & counter_enabled(1, priv)
+
+function clause is_CSR_accessible(0xC82, priv, _) =
+currentlyEnabled(Ext_Zicntr) & xlen == 32 & counter_enabled(2, priv)
+
+// File: model/extensions/Zihpm/zihpm.sail
+
+// Hardware Performance Monitoring user mode counters.
+
+function clause is_CSR_accessible(
+(0b1100000 /* 0xC00 */ @ index : bits(5), priv, _)
+if unsigned(index) >= 3
+) =
+currentlyEnabled(Ext_Zihpm)
+& counter_enabled(unsigned(index), priv)
+
+function clause is_CSR_accessible(
+(0b1100100 /* 0xC80 */ @ index : bits(5), priv, _)
+if unsigned(index) >= 3
+) =
+currentlyEnabled(Ext_Zihpm)
+& xlen == 32
+& counter_enabled(unsigned(index), priv)
+
+// File: config/config.json.in
+
+// The bits in this value control whether the corresponding bits
+// of the `scounteren` CSR that control access to HPM counters,
+// and `cycle`, `time` and `instret` registers, are read-only zero.
+// A set bit specifies that the corresponding bit of `scounteren`
+// is writable, otherwise the bit is read-only zero.
+// If Sscounterenw is supported the top 29 bits must be a superset
+// of the top 29 bits of `writable_hpm_counters`.
+
+"scounteren_writable_bits": {
+"len": 32,
+"value": "0xFFFF_FFFF"
+}
+
+"Sscounterenw": {
+"supported": true
+}
+
+END SAIL SOURCE MODEL
+
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the Sail function, clause, mapping, helper, or semantic rule that defines the target.
+2. Identify the semantic entry point and all relevant inputs, including instruction operands, CSR state, privilege state, extension state, memory state, translation state, and architectural mode state.
+3. Follow the Sail semantic control flow.
+4. Identify each architecturally distinct semantic path.
+5. For each path, identify the path conditions.
+6. For each path, identify the semantic actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by helper structure or model-internal detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided Sail source/model text.
+10. If the provided Sail source/model text is incomplete for the target, extract only the paths supported by the provided text.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct semantic behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on the provided Sail model behavior, not on the RISC-V specification unless the Sail model explicitly encodes that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, helper-only, type-only, proof-only, or performance-only paths.
+Do not include model-internal details unless they affect an architecturally visible outcome.
+If multiple Sail branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one Sail branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct semantic paths for the target that can be inferred from the provided Sail source/model text.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Semantic entry: <Sail function, clause, mapping, helper, or semantic rule>
+Path condition: <explicit condition under which this path is taken>
+Semantic behavior: <concise Sail-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

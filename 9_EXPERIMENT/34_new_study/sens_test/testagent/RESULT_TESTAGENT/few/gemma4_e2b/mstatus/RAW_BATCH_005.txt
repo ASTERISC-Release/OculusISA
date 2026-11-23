@@ -1,0 +1,197 @@
+# Test Case Rule: RULE 81: The SUM mechanisms encoded in mstatus have no impact on whether access-fault exceptions are raised due to PMP.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set SUM bits (e.g., bits 31:30 are MBE, SBE)
+li t1, 0x100000
+csrs mstatus, t1
+call machine_to_supervisor
+# Assume PMP setup is done externally or is irrelevant to this specific test state check.
+# Since the rule states no impact, we just ensure the state is set.
+# No explicit trap expected based on the rule description.
+# Result: No architectural state change specified by the rule.
+# Result: mstatus != 0x100000 && mstatus != 0x100000
+
+# Test Case Rule: RULE 82: The MBE, SBE, and UBE bits are fields in mstatus and mstatush that control the endianness of memory accesses other than instruction fetches.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set MBE, SBE, UBE (bits 31:29)
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 83: Instruction fetches are always little-endian and are not affected by the mstatus MBE, SBE, or UBE bits.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set MBE, SBE, UBE
+li t1, 0x100000
+csrs mstatus, t1
+# Test state is set, instruction fetch is unaffected.
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 84: The mstatus.MBE bit controls the endianness of non-instruction-fetch memory accesses made from M-mode when mstatus.MPRV = 0.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set MBE = 1 (Big Endian)
+li t1, 0x100000
+csrs mstatus, t1
+# The behavior depends on mstatus.MPRV, which we assume is 0 for this test condition definition.
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 85: When mstatus.MBE = 0, non-instruction-fetch memory accesses from M-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set MBE = 0 (Little Endian)
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 86: When mstatus.MBE = 1, non-instruction-fetch memory accesses from M-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set MBE = 1 (Big Endian)
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 87: If S-mode is not supported, the mstatus.SBE bit is read-only 0.
+##### ASSEMBLY #####
+li t0, 0x000000
+csrs mstatus, t0
+# Set SBE = 0
+li t1, 0x000000
+csrs mstatus, t1
+# Result: mstatus = 0x000000
+
+# Test Case Rule: RULE 88: The mstatus.SBE bit controls the endianness of explicit load and store memory accesses made from S-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set SBE = 1
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 89: When mstatus.SBE = 0, explicit load and store accesses from S-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set SBE = 0
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 90: When mstatus.SBE = 1, explicit load and store accesses from S-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set SBE = 1
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 91: If U-mode is not supported, the mstatus.UBE bit is read-only 0.
+##### ASSEMBLY #####
+li t0, 0x000000
+csrs mstatus, t0
+# Set UBE = 0
+li t1, 0x000000
+csrs mstatus, t1
+# Result: mstatus = 0x000000
+
+# Test Case Rule: RULE 92: The mstatus.UBE bit controls the endianness of explicit load and store accesses made from U-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set UBE = 1
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 93: When mstatus.UBE = 0, explicit load and store accesses from U-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set UBE = 0
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 94: When mstatus.UBE = 1, explicit load and store accesses from U-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set UBE = 1
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 95: The endianness of implicit accesses to supervisor-level memory-management data structures is always controlled by the mstatus.SBE bit.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set SBE = 1
+li t1, 0x100000
+csrs mstatus, t1
+# Result: mstatus = 0x100000
+
+# Test Case Rule: RULE 96: The TVM field in mstatus is a WARL field.
+##### ASSEMBLY #####
+li t0, 0x000000
+csrs mstatus, t0
+# Write 1 to TVM field (bit 28)
+li t1, 0x100000
+csrs mstatus, t1
+# Read back mstatus to observe the WARL effect
+csrr t2, mstatus
+# Result: mstatus[28] = 1
+
+# Test Case Rule: RULE 97: When the TVM bit in mstatus is 1, attempts to read the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set TVM = 1
+li t1, 0x100000
+csrs mstatus, t1
+call machine_to_supervisor
+csrr a0, satp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 98: When the TVM bit in mstatus is 1, attempts to write the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set TVM = 1
+li t1, 0x100000
+csrs mstatus, t1
+call machine_to_supervisor
+csrr a0, satp
+sw a0, satp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 99: When the TVM bit in mstatus is 1, attempts to execute an SFENCE.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set TVM = 1
+li t1, 0x100000
+csrs mstatus, t1
+call machine_to_supervisor
+# Assume SFENCE.VMA instruction execution leads to trap if TVM=1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 100: When the TVM bit in mstatus is 1, attempts to execute a SINVAL.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+# Set TVM = 1
+li t1, 0x100000
+csrs mstatus, t1
+call machine_to_supervisor
+# Assume SINVAL.VMA instruction execution leads to trap if TVM=1
+# Result: mcause = 2

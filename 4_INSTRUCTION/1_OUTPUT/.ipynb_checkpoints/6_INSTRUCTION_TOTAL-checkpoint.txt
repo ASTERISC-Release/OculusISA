@@ -1,0 +1,19 @@
+INSTRUCTION: CSRRW
+FORMAT: csrrw rd, csr, rs1
+RULE 1: CSRRW atomically swaps the value of the specified CSR with the value in the specified integer register rs1.
+RULE 2: CSRRW reads the old value of the CSR and zero-extends it to XLEN bits before writing it to integer register rd.
+RULE 3: CSRRW writes the initial value in integer register rs1 to the specified CSR.
+RULE 4: If rd is x0, CSRRW does not read the CSR and does not cause any side effects that would occur from reading the CSR.
+RULE 5: If rs1 is x0, CSRRW writes zero to the specified CSR.
+RULE 6: If rd is not x0 and CSRRW is executed, then the destination register rd is loaded with the prior CSR value, and the CSR is updated with the value from rs1.
+RULE 7: When rd is x0, CSRRW does not read the CSR but writes to the CSR.
+RULE 8: CSRRW always attempts a write to the CSR, except when the write is prevented by privilege or permission constraints, in which case an illegal-instruction exception is raised.
+RULE 9: CSRRW triggers all side effects associated with a full-value write to the CSR for all fields within the written CSR.
+RULE 10: CSRRW swaps the contents of the sscratch CSR and an integer register, writing the integer register's original value into sscratch and returning the sscratch CSR's original value in the integer register.
+
+INSTRUCTION: SFENCE.VMA
+FORMAT: sfence.vma rs1, rs2
+RULE 1: When TVM=1, executing SFENCE.VMA while executing in S-mode raises an illegal-instruction exception.
+RULE 2: When TVM=0, executing SFENCE.VMA is permitted in S-mode.
+RULE 3: When TVM=1, executing SFENCE.VMA while executing in S-mode is part of a set of operations that raise an illegal-instruction exception, along with attempts to read or write the satp CSR or execute SINVAL.VMA.
+RULE 4: When VTVM=1, an attempt in VS-mode to execute SFENCE.VMA raises a virtual-instruction exception.

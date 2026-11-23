@@ -1,0 +1,21 @@
+## 3.1. Interrupt files and interrupt identities
+
+In a RISC-V system, MSIs are directed not just to a specific hart but to a specific privilege level of a specific  hart,  such  as  machine  or  supervisor  level.  Furthermore,  when  a  hart  implements  the  H extension,  an  IMSIC  may  optionally  allow  MSIs  to  be  directed  to  a  specific  virtual  hart  at  virtual supervisor level (VS level).
+
+For each privilege level and each virtual hart to which MSIs may be directed at a hart, the hart's IMSIC contains a separate interrupt file . Assuming a hart implements supervisor mode, its IMSIC has at least two  interrupt  files,  one  for  machine  level  and  the  other  for  supervisor  level.  When  a  hart  also implements the H extension, its  IMSIC  may  have  additional  interrupt  files  for  virtual  harts,  called guest  interrupt  files .  The  number  of  guest  interrupt  files  an  IMSIC  has  for  virtual  harts  is  exactly GEILEN , the number of supported guest external interrupts, as defined by the H extension.
+
+Each  individual  interrupt  file  consists  mainly  of  two  arrays  of  bits  of  the  same  size,  one  array  for recording MSIs that have arrived but are not yet serviced (interrupt-pending bits), and the other array for specifying which interrupts the hart will currently accept (interrupt-enable bits). Each bit position in the two arrays corresponds with a different interrupt identity number by which MSIs from different sources are distinguished at an interrupt file. Because an IMSIC is the external interrupt controller for a hart, an interrupt file's interrupt identities become the minor identities for external interrupts at the attached hart.
+
+The number of interrupt identities supported by an interrupt file (and hence the number of active bits in each array) is one less than a multiple of 64, and may be a minimum of 63 and a maximum of 2047.
+
+<image>
+
+Platform standards may increase the minimum number of interrupt identities that must be implemented by each interrupt file.
+
+When an interrupt file supports distinct interrupt identities, valid identity numbers are between 1 and inclusive. The identity numbers within this range are said to be implemented by the interrupt file;  numbers  outside  this  range  are  not  implemented.  The  number  zero  is  never  a  valid  interrupt identity.
+
+IMSIC  hardware  does  not  assume  any  connection  between  the  interrupt  identity  numbers  at  one interrupt file and those at another interrupt file. Software is commonly expected to assign the same interrupt identity number to different MSI sources at different interrupt files, without coordination across  interrupt  files.  Thus  the  total  number  of  MSI  sources  that  can  be  separately  distinguished within a system is potentially the product of the number of interrupt identities at a single interrupt file times the total number of interrupt files in the system, over all harts.
+
+It is not necessarily the case that all interrupt files in a system are the same size (implement the same number of interrupt identities). For a given hart, the interrupt files for guest external interrupts must all be the same size, but the interrupt files at machine level and at supervisor level may differ in size from those of guest external interrupts, and from each other. Likewise, the interrupt files of different harts may be different sizes.
+
+A platform might provide a means for software to configure the number of interrupt files in an IMSIC and/or their sizes, such as by allowing a smaller interrupt file at machine level to be traded for a larger one at supervisor level, or vice versa, for example. Any such configurability is outside the scope of this specification. It is recommended, however, that only machine level be given the power to change the number and sizes of interrupt files in an IMSIC.

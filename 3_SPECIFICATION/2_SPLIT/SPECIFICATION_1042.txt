@@ -1,0 +1,13 @@
+## 3.5. Run Control
+
+For every hart, the Debug Module tracks 4 conceptual bits of state: halt request, resume ack, halt-onreset request, and hart reset. (The hart reset and halt-on-reset request bits are optional.) These 4 bits reset to 0, except for resume ack, which may reset to either 0 or 1. The DM receives halted, running, and  havereset  signals  from  each  hart.  The  debugger  can  observe  the  state  of  resume  ack  in allresumeack and anyresumeack, and the state of halted, running, and havereset signals in allhalted, anyhalted, allrunning, anyrunning, allhavereset, and anyhavereset. The state of the other bits cannot be observed directly.
+
+When a debugger writes 1 to haltreq, each selected hart's halt request bit is set. When a running hart, or a hart just coming out of reset, sees its halt request bit high, it responds by halting, deasserting its running signal, and asserting its halted signal. Halted harts ignore their halt request bit.
+
+When  a  debugger  writes  1  to  resumereq,  each  selected  hart's  resume  ack  bit  is  cleared  and  each selected, halted hart is sent a resume request. Harts respond by resuming, clearing their halted signal, and asserting their running signal. At the end of this process the resume ack bit is set. These status signals of all selected harts are reflected in allresumeack, anyresumeack, allrunning, and anyrunning. Resume requests are ignored by running harts.
+
+When  halt  or  resume  is  requested,  a  hart  must  respond  in  less  than  one  second,  unless  it  is unavailable.  (How  this  is  implemented  is  not  further  specified.  A  few  clock  cycles  will  be  a  more typical latency).
+
+The  DM  can  implement  optional  halt-on-reset  bits  for  each  hart,  which  it  indicates  by  setting hasresethaltreq  to  1.  This  means  the  DM  implements  the  setresethaltreq  and  clrresethaltreq  bits. Writing 1 to setresethaltreq sets the halt-on-reset request bit for each selected hart. When a hart's halton-reset request bit is set, the hart will immediately enter debug mode on the next deassertion of its reset. This is true regardless of the reset's cause. The hart's halt-on-reset request bit remains set until cleared by the debugger writing 1 to clrresethaltreq while the hart is selected, or by DM reset.
+
+If  the  DM is  reset  while  a  hart  is  halted,  it  is  UNSPECIFIED  whether  that  hart  resumes.  Debuggers should use resumereq to explicitly resume harts before clearing dmactive and disconnecting.

@@ -1,0 +1,50 @@
+RULE 1: If satp is not implemented and an instruction attempts to access satp, then an illegal-instruction exception is raised.
+RULE 2: If the current privilege mode is U-mode and an instruction attempts to read satp, then an illegal-instruction exception is raised.
+RULE 3: If the current privilege mode is U-mode and an instruction attempts to write satp, then an illegal-instruction exception is raised and satp is not modified.
+RULE 4: If virtualization mode is VU and an instruction attempts to read satp, then an illegal-instruction exception is raised.
+RULE 5: If virtualization mode is VU and an instruction attempts to write satp, then an illegal-instruction exception is raised and satp is not modified.
+RULE 6: If virtualization mode is V=0, the current privilege mode is S-mode, mstatus.TVM=1, and an instruction attempts to read satp, then an illegal-instruction exception is raised.
+RULE 7: If virtualization mode is V=0, the current privilege mode is S-mode, mstatus.TVM=1, and an instruction attempts to write satp, then an illegal-instruction exception is raised and satp is not modified.
+RULE 8: If virtualization mode is V=0, the current privilege mode is S-mode, mstatus.TVM=0, and an instruction reads satp, then the read returns the current architectural value of satp.
+RULE 9: If virtualization mode is V=0, the current privilege mode is S-mode, mstatus.TVM=0, and an instruction writes satp with a supported MODE value, then satp is written according to its WARL semantics.
+RULE 10: If the current privilege mode is M-mode and an instruction reads satp, then the read returns the current architectural value of satp.
+RULE 11: If the current privilege mode is M-mode and an instruction writes satp with a supported MODE value, then satp is written according to its WARL semantics.
+RULE 12: If the current privilege mode is M-mode, mstatus.TVM=1, and an instruction reads satp, then the read is not prevented by mstatus.TVM.
+RULE 13: If the current privilege mode is M-mode, mstatus.TVM=1, and an instruction writes satp, then the write is not prevented by mstatus.TVM.
+RULE 14: If virtualization mode is VS, hstatus.VTVM=1, and an instruction attempts to read the CSR address normally used for satp, then a virtual-instruction exception is raised.
+RULE 15: If virtualization mode is VS, hstatus.VTVM=1, and an instruction attempts to write the CSR address normally used for satp, then a virtual-instruction exception is raised and satp is not modified.
+RULE 16: If virtualization mode is VS, hstatus.VTVM=0, and an instruction reads the CSR address normally used for satp, then the read accesses vsatp instead of satp.
+RULE 17: If virtualization mode is VS, hstatus.VTVM=0, and an instruction writes the CSR address normally used for satp, then the write modifies vsatp instead of satp.
+RULE 18: If an instruction writes satp with an unsupported MODE value, then no field of satp is modified.
+RULE 19: If an instruction writes satp with a supported MODE value, then the MODE field read from satp after the write is the legal value selected by the write.
+RULE 20: If a hart supports no paged supervisor virtual-memory mode, then satp.MODE is read-only Bare.
+RULE 21: If satp.MODE=Bare and satp is active for a memory access, then that access is not translated by a page-based address-translation scheme selected by satp.
+RULE 22: If satp.MODE=Bare and satp is active for a memory access, then the virtual address of that access is used as the physical address for purposes of satp address translation.
+RULE 23: If satp.MODE=Bare and satp is active for a memory access, then satp.PPN has no effect on the address translation of that access.
+RULE 24: If satp.MODE=Bare and satp is active for a memory access, then satp.ASID has no effect on the address translation of that access.
+RULE 25: If satp is active for a memory access and satp.MODE=Sv32, then the access is translated and protected using the Sv32 address-translation scheme.
+RULE 26: If satp is active for a memory access and satp.MODE=Sv39, then the access is translated and protected using the Sv39 address-translation scheme.
+RULE 27: If satp is active for a memory access and satp.MODE=Sv48, then the access is translated and protected using the Sv48 address-translation scheme.
+RULE 28: If satp is active for a memory access and satp.MODE=Sv57, then the access is translated and protected using the Sv57 address-translation scheme.
+RULE 29: If satp is active for a memory access and satp.MODE selects a paged virtual-memory scheme, then satp.PPN supplies the physical page number of the root page table for that translation.
+RULE 30: If satp is active for a memory access and satp.MODE selects a paged virtual-memory scheme, then the root page-table base address used for that translation is satp.PPN shifted left by 12 bits.
+RULE 31: If satp is active for a memory access and satp.MODE selects a paged virtual-memory scheme, then satp.ASID supplies the address-space identifier associated with that translation.
+RULE 32: If satp is not active for a memory access, then satp.MODE has no effect on the address translation or protection of that access.
+RULE 33: If satp is not active for a memory access, then satp.PPN has no effect on the address translation or protection of that access.
+RULE 34: If satp is not active for a memory access, then satp.ASID has no effect on the address translation or protection of that access.
+RULE 35: If virtualization mode is V=0 and the effective privilege mode of a memory access is S-mode, then satp is active for that access.
+RULE 36: If virtualization mode is V=0 and the effective privilege mode of a memory access is U-mode, then satp is active for that access.
+RULE 37: If the effective privilege mode of a memory access is M-mode, then satp is not active for that access.
+RULE 38: If virtualization mode is V=1 and the memory access is a VS-mode access, then satp is not active for that access.
+RULE 39: If virtualization mode is V=1 and the memory access is a VU-mode access, then satp is not active for that access.
+RULE 40: If ASIDLEN=0, then every read of the satp.ASID field returns zero.
+RULE 41: If ASIDLEN=N and N>0, then writes to satp.ASID[N-1:0] are retained according to the written value.
+RULE 42: If ASIDLEN=N, then every read of satp.ASID bits above bit N-1 returns zero.
+RULE 43: If ASIDLEN=N, then writes to satp.ASID bits above bit N-1 have no architectural effect on the value later read from satp.ASID.
+RULE 44: If satp.PPN is written with a legal PPN value and the write does not use an unsupported MODE value, then a later read of satp.PPN returns that written legal PPN value.
+RULE 45: If satp.PPN is written with a PPN value that is not legal for the hart and the write does not use an unsupported MODE value, then a later read of satp.PPN returns a legal WARL PPN value.
+RULE 46: If satp is written, then that write does not by itself order prior explicit memory writes to page tables before subsequent address translations.
+RULE 47: If satp is written, then that write does not by itself invalidate address-translation cache entries.
+RULE 48: If satp is written, then that write does not by itself make stale address translations architecturally impossible.
+RULE 49: If an instruction successfully writes satp, then the architectural CSR state after the instruction reflects one complete WARL update of satp, not a separately observable partial update of its fields.
+RULE 50: If an instruction attempting to write satp raises an exception before completing the CSR write, then satp is not modified by that instruction.

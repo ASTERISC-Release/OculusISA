@@ -1,0 +1,170 @@
+# Test Case Rule: RULE 121: In harts without additional user extensions requiring new state, the XS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+li t0, 0x18000
+csrs mstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 122: Changing the setting of the FS field in mstatus has no effect on the contents of the floating-point register state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x12345678
+fmv.w.x ft0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+fmv.x.w a0, ft0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 123: Setting the FS field in mstatus to Off does not destroy the floating-point state, and setting the FS field to Initial does not clear the floating-point contents.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x12345678
+fmv.w.x ft0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.x.w a0, ft0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 124: Changing the setting of the VS field in mstatus has no effect on the contents of the vector register state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+vsetivli x0, 1, e8, m1, ta, ma
+li t1, 0x5a
+vmv.v.x v1, t1
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x400
+csrs mstatus, t0
+vmv.x.s a0, v1
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 125: The FS field in mstatus is set directly by privileged code when resuming a user context, while the XS field in mstatus is set indirectly by writing to the status register of the individual extensions.
+##### ASSEMBLY #####
+nop # Skipped because the individual extension status register for XS is not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 126: Machine mode and Supervisor mode share a single copy of the FS, VS, and XS bits in mstatus.
+##### ASSEMBLY #####
+li t0, 0x6600
+csrc mstatus, t0
+li t0, 0x4200
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, sstatus
+li t0, 0x6600
+and a0, a0, t0
+# Result: a0 = 0x4200
+
+# Test Case Rule: RULE 127: The SD bit in mstatus is read-only and is set when either the FS, VS, or XS bits in mstatus encode a Dirty state (i.e., SD = (FS==0b11 OR VS==0b11 OR XS==0b11)).
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x8000000000000000
+csrc mstatus, t1
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 128: In mstatus, the encoding 0 for FS and VS means Off, 1 means Initial, 2 means Clean, and 3 means Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x4000
+
+# Test Case Rule: RULE 129: In mstatus, the encoding 0 for XS means All off, 1 means None dirty or clean with some on, 2 means None dirty with some clean, and 3 means Some dirty.
+##### ASSEMBLY #####
+nop # Skipped because no individual XS extension state is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 130: When an extension's status field in mstatus is set to Off, any instruction that attempts to read or write the corresponding state causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.w.x ft0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 131: If the FS, VS, or XS field in mstatus is Off, executing an instruction that reads the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.x.w a0, ft0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 132: If the FS, VS, or XS field in mstatus is Off, executing an instruction that may modify the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.w.x ft0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 133: If the FS, VS, or XS field in mstatus is Initial, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 134: If the FS, VS, or XS field in mstatus is Clean, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 135: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction that may modify the corresponding state leaves the field in the Dirty state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 136: If the FS, VS, or XS field in mstatus is Off, executing an instruction to unconfigure the unit causes an exception.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 137: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to unconfigure the unit leaves the field in the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 138: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 139: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 140: If the FS, VS, or XS field in mstatus is Off, executing an instruction to disable the unit leaves the field in the Off state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to disable the unit is specified
+# Result: x0 = 0

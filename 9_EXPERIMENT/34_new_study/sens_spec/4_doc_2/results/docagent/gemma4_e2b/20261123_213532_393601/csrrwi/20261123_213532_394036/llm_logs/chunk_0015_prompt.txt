@@ -1,0 +1,870 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `CSRRWI`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+t w2  = rev8(w[ 2 ]); let w1  = rev8(w[ 1 ]); let w0  = rev8(w[ 0 ]); // Note that some of the newly computed words are used in later invocations. let w[ 16 ] = ZVKSH_W(w0 @  w7 @  w13 @   w3 @  w10); let w[ 17 ] = ZVKSH_W(w1 @  w8 @  w14 @   w4 @  w11); let w[ 18 ] = ZVKSH_W(w2 @  w9 @  w15 @   w5 @  w12); let w[ 19 ] = ZVKSH_W(w3 @ w10 @  w16 @   w6 @  w13); let w[ 20 ] = ZVKSH_W(w4 @ w11 @  w17 @   w7 @  w14); let w[ 21 ] = ZVKSH_W(w5 @ w12 @  w18 @   w8 @  w15); let w[ 22 ] = ZVKSH_W(w6 @ w13 @  w19 @   w9 @  w16); let w[ 23 ] = ZVKSH_W(w7 @ w14 @  w20 @  w10 @  w17); // Byte swap outputs from little-endian back to big-endian let w16 : Bits( 32 ) = rev8(W[ 16 ]); let w17 : Bits( 32 ) = rev8(W[ 17 ]); let w18 : Bits( 32 ) = rev8(W[ 18 ]); let w19 : Bits( 32 ) = rev8(W[ 19 ]); let w20 : Bits( 32 ) = rev8(W[ 20 ]); let w21 : Bits( 32 ) = rev8(W[ 21 ]); let w22 : Bits( 32 ) = rev8(W[ 22 ]); let w23 : Bits( 32 ) = rev8(W[ 23 ]); // Update the destination register. set_velem(vd, 256 , i, {w23 @ w22 @ w21 @ w20 @ w19 @ w18 @ w17 @ w16}); } RETIRE_SUCCESS } } function P_1 (X) ((X) ^ ROL32((X), 15 ) ^ ROL32((X), 23 ))
+```
+
+```
+function ZVKSH_W (M16, M9, M3, M13, M6) = \
+```
+
+```
+(P1( (M16) ^  (M9) ^ ROL32((M3), 15 ) ) ^ ROL32((M13), 7 ) ^ (M6))
+```
+
+## Included in
+
+Zvks, Zvksc, Zvksg, Zvksh
+
+## 33.3.25. vsm4k.vi
+
+## Synopsis
+
+Vector SM4 KeyExpansion
+
+## Mnemonic
+
+vsm4k.vi vd, vs2, uimm
+
+## Encoding
+
+<image>
+
+## Reserved Encodings
+
+- ⚫ SEW is any value other than 32
+
+## Arguments
+
+| Register   | Direction   | EGW   | EGS   | EEW   | Definition                   |
+|------------|-------------|-------|-------|-------|------------------------------|
+| uimm       | input       | -     | -     | -     | Round group (rnd)            |
+| Vs2        | input       | 128   | 4     | 32    | Current 4 round keys rK[0:3] |
+| Vd         | output      | 128   | 4     | 32    | Next 4 round keys rK'[0:3]   |
+
+## Description
+
+Four rounds of the SM4 Key Expansion are performed.
+
+Four round keys are read in as a 4-element group from vs2 . Each of the next four round keys are generated by  iteratively  XORing  the  last  three  round  keys  with  a  constant  that  is  indexed  by  the  Round  Group Number, performing a byte-wise substitution, and then performing XORs between rotated versions of this value and the corresponding current round key.
+
+The Round group number ( rnd )  comes from uimm[2:0] ;  the  bits  in uimm[4:3] are  ignored. Round group numbers range from 0 to 7 and indicate which group of four round keys are being generated. Round Keys range from 0-31. For example, if rnd =1, then round keys 4, 5, 6, and 7 are being generated.
+
+<image>
+
+|   FK | constant   |
+|------|------------|
+|    0 | A3B1BAC6   |
+|    1 | 56AA3350   |
+|    2 | 677D9197   |
+|    3 | B27022DC   |
+
+## Implementation Hint
+
+The  round  constants  (CK)  can  be  generated  on  the  fly  fairly  cheaply.  If  the  bytes  of  the constants are assigned an incrementing index from 0 to 127, the value of each byte is equal to its  index  multiplied  by  7  modulo  256.  Since  the  results  are  all  limited  to  8  bits,  the  modulo operation occurs for free:
+
+Software  needs  to  generate  the  initial  round  keys.  This  is  done  by  XORing  the  128-bit encryption key with the system parameters: FK[0:3]
+
+Table 69. System Parameters
+
+<image>
+
+## Operation
+
+```
+function clause execute (vsm4k(uimm, vs2)) = { if (LMUL*VLEN < EGW) then { handle_illegal();  // illegal-instruction exception RETIRE_FAIL } else { eg_len = (vl/EGS) eg_start = (vstart/EGS) let B : bits ( 32 ) = 0 ; let S : bits ( 32 ) = 0 ; let rk4 : bits ( 32 ) = 0 ; let rk5 : bits ( 32 ) = 0 ; let rk6 : bits ( 32 ) = 0 ; let rk7 : bits ( 32 ) = 0 ; let rnd : bits ( 3 ) = uimm[ 2 : 0 ]; // Lower 3 bits foreach (i from eg_start to eg_len-1 ) { let (rk3 @ rk2 @ rk1 @ rk0) : bits ( 128 ) = get_velem(vs2, 128 , i); B = rk1 ^ rk2 ^ rk3 ^ ck( 4 * rnd); S = sm4_subword(B); rk4 = ROUND_KEY(rk0, S); B = rk2 ^ rk3 ^ rk4 ^ ck( 4 * rnd + 1 ); S = sm4_subword(B); rk5 = ROUND_KEY(rk1, S); B = rk3 ^ rk4 ^ rk5 ^ ck( 4 * rnd + 2 ); S = sm4_subword(B); rk6 = ROUND_KEY(rk2, S); B = rk4 ^ rk5 ^ rk6 ^ ck( 4 * rnd + 3 ); S = sm4_subword(B); rk7 = ROUND_KEY(rk3, S); // Update the destination register. set_velem(vd, EGW= 128 , i, (rk7 @ rk6 @ rk5 @ rk4)); } RETIRE_SUCCESS } }
+```
+
+```
+B[n] = n + 2n + 4n; = 8n + ~n + 1;
+```
+
+```
+val round_key : bits ( 32 ) -> bits ( 32 ) function ROUND_KEY (X, S) = ((X) ^ ((S) ^ ROL32((S), 13 ) ^ ROL32((S), 23 ))) // SM4 Constant Key (CK) let ck : list( bits ( 32 )) = [| 0x00070E15 , 0x1C232A31 , 0x383F464D , 0x545B6269 , 0x70777E85 , 0x8C939AA1 , 0xA8AFB6BD , 0xC4CBD2D9 , 0xE0E7EEF5 , 0xFC030A11 , 0x181F262D , 0x343B4249 , 0x50575E65 , 0x6C737A81 , 0x888F969D , 0xA4ABB2B9 , 0xC0C7CED5 , 0xDCE3EAF1 , 0xF8FF060D , 0x141B2229 , 0x30373E45 , 0x4C535A61 , 0x686F767D , 0x848B9299 , 0xA0A7AEB5 , 0xBCC3CAD1 , 0xD8DFE6ED , 0xF4FB0209 , 0x10171E25 , 0x2C333A41 , 0x484F565D , 0x646B7279 |] };
+```
+
+## Included in
+
+Zvks, Zvksc, Zvksed, Zvksg
+
+## 33.3.26. vsm4r.[vv,vs]
+
+## Synopsis
+
+Vector SM4 Rounds
+
+## Mnemonic
+
+vsm4r.vv vd, vs2
+
+vsm4r.vs vd, vs2
+
+## Encoding (Vector-Vector)
+
+<image>
+
+## Encoding (Vector-Scalar)
+
+<image>
+
+## Reserved Encodings
+
+- ⚫ SEW is any value other than 32
+- ⚫ Only for the .vs form: the vd register group overlaps the vs2 register
+
+## Arguments
+
+| Register   | Direction   |   EGW |   EGS |   EEW | Definition           |
+|------------|-------------|-------|-------|-------|----------------------|
+| Vd         | input       |   128 |     4 |    32 | Current state X[0:3] |
+| Vs2        | input       |   128 |     4 |    32 | Round keys rk[0:3]   |
+| Vd         | output      |   128 |     4 |    32 | Next state X'[0:3]   |
+
+## Description
+
+Four rounds of SM4 Encryption/Decryption are performed.
+
+The four words of current state are read as a 4-element group from 'vd' and the round keys are read from either the corresponding 4-element group in vs2 (vector-vector form) or the scalar element group in vs2 (vector-scalar form). The next four words of state are generated by iteratively XORing the last three words of the state with the corresponding round key, performing a byte-wise substitution, and then performing XORs between rotated versions of this value and the corresponding current state.
+
+<image>
+
+In SM4, encryption and decryption are identical except that decryption consumes the round keys in the reverse order.
+
+<image>
+
+## Operation
+
+```
+function clause execute (VSM4R(vd, vs2)) = { if(LMUL*VLEN < EGW)  then { handle_illegal();  // illegal-instruction exception RETIRE_FAIL
+```
+
+For  the  first  four  rounds  of  encryption,  the  current  state  is  the  plain  text.  For  the  first  four rounds  of  decryption,  the  current  state  is  the  cipher  text.  For  all  subsequent  rounds,  the current state is the next state from the previous four rounds.
+
+```
+} else { eg_len = (vl/EGS) eg_start = (vstart/EGS) let B  : bits(32) = 0; let S  : bits(32) = 0; let rk0 : bits(32) = 0; let rk1 : bits(32) = 0; let rk2 : bits(32) = 0; let rk3 : bits(32) = 0; let x0 : bits(32) = 0; let x1 : bits(32) = 0; let x2 : bits(32) = 0; let x3 : bits(32) = 0; let x4 : bits(32) = 0; let x5 : bits(32) = 0; let x6 : bits(32) = 0; let x7 : bits(32) = 0; let keyelem : bits(32) = 0; foreach (i from eg_start to eg_len-1) { keyelem = if suffix == "vv" then i else 0; {rk3 @ rk2 @ rk1 @ rk0} : bits(128) = get_velem(vs2, EGW=128, keyelem); {x3 @ x2 @ x1 @ x0} : bits(128) = get_velem(vd, EGW=128, i); B  = x1 ^ x2 ^ x3 ^ rk0; S = sm4_subword(B); x4 = sm4_round(x0, S); B = x2 ^ x3 ^ x4 ^ rk1; S = sm4_subword(B); x5= sm4_round(x1, S); B = x3 ^ x4 ^ x5 ^ rk2; S = sm4_subword(B); x6 = sm4_round(x2, S); B = x4 ^ x5 ^ x6 ^ rk3; S = sm4_subword(B); x7 = sm4_round(x3, S); set_velem(vd, EGW=128, i, (x7 @ x6 @ x5 @ x4)); } RETIRE_SUCCESS } }
+```
+
+```
+val sm4_round : bits(32) -> bits(32) function sm4_round(X, S) = \ ((X) ^ ((S) ^ ROL32((S), 2) ^ ROL32((S), 10) ^ ROL32((S), 18) ^ ROL32((S), 24)))
+```
+
+## Included in
+
+Zvks, Zvksc, Zvksed, Zvksg
+
+## 33.3.27. vwsll.[vv,vx,vi]
+
+## Synopsis
+
+Vector widening shift left logical by vector/scalar/immediate.
+
+## Mnemonic
+
+vwsll.vv vd, vs2, vs1, vm vwsll.vx vd, vs2, rs1, vm vwsll.vi vd, vs2, uimm, vm
+
+## Encoding (Vector-Vector)
+
+<image>
+
+## Encoding (Vector-Scalar)
+
+<image>
+
+## Encoding (Vector-Immediate)
+
+<image>
+
+## Vector-Vector Arguments
+
+| Register   | Direction   | Definition   |
+|------------|-------------|--------------|
+| Vs1        | input       | Shift amount |
+| Vs2        | input       | Data         |
+| Vd         | output      | Shifted data |
+
+## Vector-Scalar/Immediate Arguments
+
+| Register   | Direction   | EEW   | Definition   |
+|------------|-------------|-------|--------------|
+| Rs1/imm    | input       | SEW   | Shift amount |
+| Vs2        | input       | SEW   | Data         |
+| Vd         | output      | 2*SEW | Shifted data |
+
+## Description
+
+A widening logical shift left is performed on each element of vs2 .
+
+The elements in vs2 are  zero-extended  to  2* SEW bits,  then  shifted  left  by  the  shift  amount  specified  by either  the  corresponding  elements  of vs1 (vector-vector),  integer  register rs1 (vector-scalar),  or  an immediate value (vector-immediate). Only the low log2(2* SEW ) bits of the shift-amount value are used, all other bits are ignored.
+
+## Operation
+
+```
+function clause
+```
+
+```
+execute (VWSLL_VV(vs2, vs1, vd)) = {
+```
+
+```
+foreach (i from vstart to vl 1 ) { set_velem(vd, EEW= 2 *SEW, i, get_velem(vs2, i) << (get_velem(vs1, i) & (( 2 *SEW)1 )) ) } RETIRE_SUCCESS } function clause execute (VWSLL_VX(vs2, rs1, vd)) = { foreach (i from vstart to vl 1 ) { set_velem(vd, EEW= 2 *SEW, i, get_velem(vs2, i) << (X(rs1) & (( 2 *SEW)1 )) ) } RETIRE_SUCCESS } function clause execute (VWSLL_VI(vs2, uimm[ 4 : 0 ], vd)) = { foreach (i from vstart to vl 1 ) { set_velem(vd, EEW= 2 *SEW, i, get_velem(vs2, i) << (uimm[ 4 : 0 ] & (( 2 *SEW)1 )) ) } RETIRE_SUCCESS }
+```
+
+Included in
+
+Zvbb
+
+## 33.4. Crypto Vector Cryptographic Instructions
+
+OP-VE (0x77) Crypto Vector instructions except Zvbb and Zvbc
+
+| Integer   | Integer   | Integer   | Integer   | Integer   | Integer   | Integer   | FP   | FP     | FP   |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|------|--------|------|
+| funct3    |           |           |           | funct3    |           |           |      | funct3 |      |
+| OPIVV     | V         |           |           | OPMVV     | V         |           |      | OPFVV  | V    |
+| OPIVX     |           | X         |           | OPMVX     |           | X         |      | OPFVF  | F    |
+| OPIVI     |           |           | I         |           |           |           |      |        |      |
+
+|   funct6 |   funct6 | funct6   | funct6     |   funct6 | funct6   | funct6   | funct6   |
+|----------|----------|----------|------------|----------|----------|----------|----------|
+|   100000 |   100000 | V        | vsm3me     |   100000 |          |          |          |
+|   100001 |   100001 | V        | vsm4k.vi   |   100001 |          |          |          |
+|   100010 |   100010 | V        | vaeskf1.vi |   100010 |          |          |          |
+|   100011 |   100011 |          |            |   100011 |          |          |          |
+|   100100 |   100100 |          |            |   100100 |          |          |          |
+|   100101 |   100101 |          |            |   100101 |          |          |          |
+|   100110 |   100110 |          |            |   100110 |          |          |          |
+|   100111 |   100111 |          |            |   100111 |          |          |          |
+|   101000 |   101000 | V        | VAES.vv    |   101000 |          |          |          |
+|   101001 |   101001 | V        | VAES.vs    |   101001 |          |          |          |
+|   101010 |   101010 | V        | vaeskf2.vi |   101010 |          |          |          |
+|   101011 |   101011 | V        | vsm3c.vi   |   101011 |          |          |          |
+|   101100 |   101100 | V        | vghsh      |   101100 |          |          |          |
+|   101101 |   101101 | V        | vsha2ms    |   101101 |          |          |          |
+|   101110 |   101110 | V        | vsha2ch    |   101110 |          |          |          |
+|   101111 |   101111 | V        | vsha2cl    |   101111 |          |          |          |
+
+## Table 70. VAES.vv and VAES.vs encoding space
+
+|   vs1 |        |
+|-------|--------|
+| 00000 | vaesdm |
+| 00001 | vaesdf |
+| 00010 | vaesem |
+| 00011 | vaesef |
+| 00111 | vaesz  |
+| 10000 | vsm4r  |
+| 10001 | vgmul  |
+
+## 33.5. Vector Bitmanip and Carry-less Multiply Instructions
+
+OP-V (0x57) Zvbb , Zvkb , and Zvbc Vector instructions in bold
+
+<image>
+
+| Integer   | Integer   | FP     |    |
+|-----------|-----------|--------|----|
+| funct3    | funct3    | funct3 |    |
+| OPIVV     | OPMVV     | OPFVV  | V  |
+| OPIVX     | OPMVX     | OPFVF  | F  |
+| OPIVI     | I         |        |    |
+
+|   funct6 |    |    |    |              | funct6   |    |    |             | funct6   |    |    |              |
+|----------|----|----|----|--------------|----------|----|----|-------------|----------|----|----|--------------|
+|   000000 | V  | X  | I  | vadd         | 000000   | V  |    | vredsum     | 000000   | V  | F  | vfadd        |
+|   000001 | V  | X  |    | vandn        | 000001   | V  |    | vredand     | 000001   | V  |    | vfredusum    |
+|   000010 | V  | X  |    | vsub         | 000010   | V  |    | vredor      | 000010   | V  | F  | vfsub        |
+|   000011 |    | X  | I  | vrsub        | 000011   | V  |    | vredxor     | 000011   | V  |    | vfredosum    |
+|   000100 | V  | X  |    | vminu        | 000100   | V  |    | vredminu    | 000100   | V  | F  | vfmin        |
+|   000101 | V  | X  |    | vmin         | 000101   | V  |    | vredmin     | 000101   | V  |    | vfredmin     |
+|   000110 | V  | X  |    | vmaxu        | 000110   | V  |    | vredmaxu    | 000110   | V  | F  | vfmax        |
+|   000111 | V  | X  |    | vmax         | 000111   | V  |    | vredmax     | 000111   | V  |    | vfredmax     |
+|   001000 |    |    |    |              | 001000   | V  | X  | vaaddu      | 001000   | V  | F  | vfsgnj       |
+|   001001 | V  | X  | I  | vand         | 001001   | V  | X  | vaadd       | 001001   | V  | F  | vfsgnjn      |
+|   001010 | V  | X  | I  | vor          | 001010   | V  | X  | vasubu      | 001010   | V  | F  | vfsgnjx      |
+|   001011 | V  | X  | I  | vxor         | 001011   | V  | X  | vasub       | 001011   |    |    |              |
+|   001100 | V  | X  | I  | vrgather     | 001100   | V  | X  | vclmul      | 001100   |    |    |              |
+|   001101 |    |    |    |              | 001101   | V  | X  | vclmulh     | 001101   |    |    |              |
+|   001110 |    | X  | I  | vslideup     | 001110   |    | X  | vslide1up   | 001110   |    | F  | vfslide1up   |
+|   001110 | V  |    |    | vrgatherei16 |          |    |    |             |          |    |    |              |
+|   001111 |    | X  | I  | vslidedown   | 001111   |    | X  | vslide1down | 001111   |    | F  | vfslide1down |
+
+| funct6   | funct6   |    |    |      |    |           |   funct6 |    |    |           |
+|----------|----------|----|----|------|----|-----------|----------|----|----|-----------|
+| 010000   | V 010000 | X  | I  | vadc | V  | VWXUNARY0 |   010000 | V  |    | VWFUNARY0 |
+|          | 010000   |    |    |      | X  | VRXUNARY0 |   010000 |    | F  | VRFUNARY0 |
+
+| funct6   | funct6   | funct6   | funct6   | funct6     | funct6   | funct6   | funct6    | funct6   | funct6   | funct6   | funct6       |
+|----------|----------|----------|----------|------------|----------|----------|-----------|----------|----------|----------|--------------|
+| 010001   | V        | X        | I        | vmadc      | 010001   |          |           | 010001   |          |          |              |
+| 010010   | V        | X        |          | vsbc       | 010010   | V        | VXUNARY0  | 010010   | V        |          | VFUNARY0     |
+| 010011   | V        | X        |          | vmsbc      | 010011   |          |           | 010011   | V        |          | VFUNARY1     |
+| 010100   | V        | X        |          | vror       | 010100   | V        | VMUNARY0  | 010100   |          |          |              |
+| 010101   | V        | X        |          | vrol       | 010101   |          |           | 010101   |          |          |              |
+| 01010x   |          |          | I        | vror       |          |          |           |          |          |          |              |
+| 010110   |          |          |          |            | 010110   |          |           | 010110   |          |          |              |
+| 010111   | V        | X        | I        | vmerge/vmv | 010111   | V        | vcompress | 010111   |          | F        | vfmerge/vfmv |
+| 011000   | V        | X        | I        | vmseq      | 011000   | V        | vmandn    | 011000   | V        | F        | vmfeq        |
+| 011001   | V        | X        | I        | vmsne      | 011001   | V        | vmand     | 011001   | V        | F        | vmfle        |
+| 011010   | V        | X        |          | vmsltu     | 011010   | V        | vmor      | 011010   |          |          |              |
+| 011011   | V        | X        |          | vmslt      | 011011   | V        | vmxor     | 011011   | V        | F        | vmflt        |
+| 011100   | V        | X        | I        | vmsleu     | 011100   | V        | vmorn     | 011100   | V        | F        | vmfne        |
+| 011101   | V        | X        | I        | vmsle      | 011101   | V        | vmnand    | 011101   |          | F        | vmfgt        |
+| 011110   |          | X        | I        | vmsgtu     | 011110   | V        | vmnor     | 011110   |          |          |              |
+| 011111   |          | X        | I        | vmsgt      | 011111   | V        | vmxnor    | 011111   |          | F        | vmfge        |
+
+| funct6   |    |    |    |          | funct6   |    |    |         | funct6   |    |    |         |
+|----------|----|----|----|----------|----------|----|----|---------|----------|----|----|---------|
+| 100000   | V  | X  | I  | vsaddu   | 100000   | V  | X  | vdivu   | 100000   | V  | F  | vfdiv   |
+| 100001   | V  | X  | I  | vsadd    | 100001   | V  | X  | vdiv    | 100001   |    | F  | vfrdiv  |
+| 100010   | V  | X  |    | vssubu   | 100010   | V  | X  | vremu   | 100010   |    |    |         |
+| 100011   | V  | X  |    | vssub    | 100011   | V  | X  | vrem    | 100011   |    |    |         |
+| 100100   |    |    |    |          | 100100   | V  | X  | vmulhu  | 100100   | V  | F  | vfmul   |
+| 100101   | V  | X  | I  | vsll     | 100101   | V  | X  | vmul    | 100101   |    |    |         |
+| 100110   |    |    |    |          | 100110   | V  | X  | vmulhsu | 100110   |    |    |         |
+| 100111   | V  | X  |    | vsmul    | 100111   | V  | X  | vmulh   | 100111   |    | F  | vfrsub  |
+|          |    |    | I  | vmv<nr>r |          |    |    |         |          |    |    |         |
+| 101000   | V  | X  | I  | vsrl     | 101000   |    |    |         | 101000   | V  | F  | vfmadd  |
+| 101001   | V  | X  | I  | vsra     | 101001   | V  | X  | vmadd   | 101001   | V  | F  | vfnmadd |
+| 101010   | V  | X  | I  | vssrl    | 101010   |    |    |         | 101010   | V  | F  | vfmsub  |
+| 101011   | V  | X  | I  | vssra    | 101011   | V  | X  | vnmsub  | 101011   | V  | F  | vfnmsub |
+| 101100   | V  | X  | I  | vnsrl    | 101100   |    |    |         | 101100   | V  | F  | vfmacc  |
+| 101101   | V  | X  | I  | vnsra    | 101101   | V  | X  | vmacc   | 101101   | V  | F  | vfnmacc |
+| 101110   | V  | X  | I  | vnclipu  | 101110   |    |    |         | 101110   | V  | F  | vfmsac  |
+| 101111   | V  | X  | I  | vnclip   | 101111   | V  | X  | vnmsac  | 101111   | V  | F  | vfnmsac |
+
+|   funct6 |    | funct6    |        |    |    |        |   funct6 |    |    |            |
+|----------|----|-----------|--------|----|----|--------|----------|----|----|------------|
+|   110000 | V  | vwredsumu | 110000 | V  | X  | vwaddu |   110000 | V  | F  | vfwadd     |
+|   110001 | V  | vwredsum  | 110001 | V  | X  | vwadd  |   110001 | V  |    | vfwredusum |
+|   110010 |    |           | 110010 | V  | X  | vwsubu |   110010 | V  | F  | vfwsub     |
+
+|   funct6 | funct6   | funct6   | funct6   | funct6   |   funct6 | funct6   | funct6   | funct6   |   funct6 | funct6   | funct6   | funct6     |
+|----------|----------|----------|----------|----------|----------|----------|----------|----------|----------|----------|----------|------------|
+|   110011 |          |          |          |          |   110011 | V        | X        | vwsub    |   110011 | V        |          | vfwredosum |
+|   110100 |          |          |          |          |   110100 | V        | X        | vwaddu.w |   110100 | V        | F        | vfwadd.w   |
+|   110101 | V        | X        | I        | vwsll    |   110101 | V        | X        | vwadd.w  |   110101 |          |          |            |
+|   110110 |          |          |          |          |   110110 | V        | X        | vwsubu.w |   110110 | V        | F        | vfwsub.w   |
+|   110111 |          |          |          |          |   110111 | V        | X        | vwsub.w  |   110111 |          |          |            |
+|   111000 |          |          |          |          |   111000 | V        | X        | vwmulu   |   111000 | V        | F        | vfwmul     |
+|   111001 |          |          |          |          |   111001 |          |          |          |   111001 |          |          |            |
+|   111010 |          |          |          |          |   111010 | V        | X        | vwmulsu  |   111010 |          |          |            |
+|   111011 |          |          |          |          |   111011 | V        | X        | vwmul    |   111011 |          |          |            |
+|   111100 |          |          |          |          |   111100 | V        | X        | vwmaccu  |   111100 | V        | F        | vfwmacc    |
+|   111101 |          |          |          |          |   111101 | V        | X        | vwmacc   |   111101 | V        | F        | vfwnmacc   |
+|   111110 |          |          |          |          |   111110 |          | X        | vwmaccus |   111110 | V        | F        | vfwmsac    |
+|   111111 |          |          |          |          |   111111 | V        | X        | vwmaccsu |   111111 | V        | F        | vfwnmsac   |
+
+|   vs1 |           |
+|-------|-----------|
+| 00010 | vzext.vf8 |
+| 00011 | vsext.vf8 |
+| 00100 | vzext.vf4 |
+| 00101 | vsext.vf4 |
+| 00110 | vzext.vf2 |
+| 00111 | vsext.vf2 |
+| 01000 | vbrev8    |
+| 01001 | vrev8     |
+| 01010 | vbrev     |
+| 01100 | vclz      |
+| 01101 | vctz      |
+| 01110 | vcpop     |
+
+## 33.6. Supporting Sail Code
+
+This section contains the supporting Sail code referenced by the instruction descriptions throughout the specification. The Sail Manual is recommended reading in order to best understand the supporting code.
+
+```
+/* Auxiliary function for performing GF multiplication */ val xt2 : bits ( 8 ) -> bits ( 8 ) function xt2 (x) = { (x << 1 ) ^ ( if bit_to_bool(x[ 7 ]) then 0x1b else 0x00 ) } val xt3 : bits ( 8 ) -> bits ( 8 ) function xt3 (x) = x ^ xt2(x) /* Multiply 8-bit field element by 4-bit value for AES MixCols step */ val gfmul : ( bits ( 8 ), bits ( 4 )) -> bits ( 8 ) function gfmul ( x, y) = { ( if bit_to_bool(y[ 0 ]) then x else 0x00 ) ^ ( if bit_to_bool(y[ 1 ]) then xt2(        x) else 0x00 ) ^ ( if bit_to_bool(y[ 2 ]) then xt2(xt2(    x)) else 0x00 ) ^ ( if bit_to_bool(y[ 3 ]) then xt2(xt2(xt2(x))) else 0x00 ) } /* 8-bit to 32-bit partial AES Mix Column - forwards */ val aes_mixcolumn_byte_fwd : bits ( 8 ) -> bits ( 32 ) function aes_mixcolumn_byte_fwd (so) = { gfmul(so, 0x3 ) @ so @ so @ gfmul(so, 0x2 ) } /* 8-bit to 32-bit partial AES Mix Column - inverse*/ val aes_mixcolumn_byte_inv : bits ( 8 ) -> bits ( 32 )
+```
+
+Table 71. VXUNARY0 encoding space
+
+```
+function aes_mixcolumn_byte_inv (so) = { gfmul(so, 0xb ) @ gfmul(so, 0xd ) @ gfmul(so, 0x9 ) @ gfmul(so, 0xe ) } /* 32-bit to 32-bit AES forward MixColumn */ val aes_mixcolumn_fwd : bits ( 32 ) -> bits ( 32 ) function aes_mixcolumn_fwd (x) = { let s0 : bits ( 8 ) = x[ 7 .. 0 ]; let s1 : bits ( 8 ) = x[ 15 .. 8 ]; let s2 : bits ( 8 ) = x[ 23 .. 16 ]; let s3 : bits ( 8 ) = x[ 31 .. 24 ]; let b0 : bits ( 8 ) = xt2(s0) ^ xt3(s1) ^    (s2) ^    (s3); let b1 : bits ( 8 ) =    (s0) ^ xt2(s1) ^ xt3(s2) ^    (s3); let b2 : bits ( 8 ) =    (s0) ^    (s1) ^ xt2(s2) ^ xt3(s3); let b3 : bits ( 8 ) = xt3(s0) ^    (s1) ^    (s2) ^ xt2(s3); b3 @ b2 @ b1 @ b0 /* Return value */ } /* 32-bit to 32-bit AES inverse MixColumn */ val aes_mixcolumn_inv : bits ( 32 ) -> bits ( 32 ) function aes_mixcolumn_inv (x) = { let s0 : bits ( 8 ) = x[ 7 .. 0 ]; let s1 : bits ( 8 ) = x[ 15 .. 8 ]; let s2 : bits ( 8 ) = x[ 23 .. 16 ]; let s3 : bits ( 8 ) = x[ 31 .. 24 ]; let b0 : bits ( 8 ) = gfmul(s0, 0xE ) ^ gfmul(s1, 0xB ) ^ gfmul(s2, 0xD ) ^ gfmul (s3, 0x9 ); let b1 : bits ( 8 ) = gfmul(s0, 0x9 ) ^ gfmul(s1, 0xE ) ^ gfmul(s2, 0xB ) ^ gfmul (s3, 0xD ); let b2 : bits ( 8 ) = gfmul(s0, 0xD ) ^ gfmul(s1, 0x9 ) ^ gfmul(s2, 0xE ) ^ gfmul (s3, 0xB ); let b3 : bits ( 8 ) = gfmul(s0, 0xB ) ^ gfmul(s1, 0xD ) ^ gfmul(s2, 0x9 ) ^ gfmul (s3, 0xE ); b3 @ b2 @ b1 @ b0 /* Return value */ } val aes_decode_rcon : bits ( 4 ) -> bits ( 32 ) function aes_decode_rcon (r) = { match r { 0x0 => 0x00000001 , 0x1 => 0x00000002 , 0x2 => 0x00000004 , 0x3 => 0x00000008 , 0x4 => 0x00000010 , 0x5 => 0x00000020 , 0x6 => 0x00000040 , 0x7 => 0x00000080 , 0x8 => 0x0000001b , 0x9 => 0x00000036 , 0xA => 0x00000000 ,
+```
+
+```
+0xB => 0x00000000 , 0xC => 0x00000000 , 0xD => 0x00000000 , 0xE => 0x00000000 , 0xF => 0x00000000 } } /* SM4 SBox - only one sbox for forwards and inverse */ let sm4_sbox_table : list( bits ( 8 )) = [| 0xD6 , 0x90 , 0xE9 , 0xFE , 0xCC , 0xE1 , 0x3D , 0xB7 , 0x16 , 0xB6 , 0x14 , 0xC2 , 0x28 , 0xFB , 0x2C , 0x05 , 0x2B , 0x67 , 0x9A , 0x76 , 0x2A , 0xBE , 0x04 , 0xC3 , 0xAA , 0x44 , 0x13 , 0x26 , 0x49 , 0x86 , 0x06 , 0x99 , 0x9C , 0x42 , 0x50 , 0xF4 , 0x91 , 0xEF , 0x98 , 0x7A , 0x33 , 0x54 , 0x0B , 0x43 , 0xED , 0xCF , 0xAC , 0x62 , 0xE4 , 0xB3 , 0x1C , 0xA9 , 0xC9 , 0x08 , 0xE8 , 0x95 , 0x80 , 0xDF , 0x94 , 0xFA , 0x75 , 0x8F , 0x3F , 0xA6 , 0x47 , 0x07 , 0xA7 , 0xFC , 0xF3 , 0x73 , 0x17 , 0xBA , 0x83 , 0x59 , 0x3C , 0x19 , 0xE6 , 0x85 , 0x4F , 0xA8 , 0x68 , 0x6B , 0x81 , 0xB2 , 0x71 , 0x64 , 0xDA , 0x8B , 0xF8 , 0xEB , 0x0F , 0x4B , 0x70 , 0x56 , 0x9D , 0x35 , 0x1E , 0x24 , 0x0E , 0x5E , 0x63 , 0x58 , 0xD1 , 0xA2 , 0x25 , 0x22 , 0x7C , 0x3B , 0x01 , 0x21 , 0x78 , 0x87 , 0xD4 , 0x00 , 0x46 , 0x57 , 0x9F , 0xD3 , 0x27 , 0x52 , 0x4C , 0x36 , 0x02 , 0xE7 , 0xA0 , 0xC4 , 0xC8 , 0x9E , 0xEA , 0xBF , 0x8A , 0xD2 , 0x40 , 0xC7 , 0x38 , 0xB5 , 0xA3 , 0xF7 , 0xF2 , 0xCE , 0xF9 , 0x61 , 0x15 , 0xA1 , 0xE0 , 0xAE , 0x5D , 0xA4 , 0x9B , 0x34 , 0x1A , 0x55 , 0xAD , 0x93 , 0x32 , 0x30 , 0xF5 , 0x8C , 0xB1 , 0xE3 , 0x1D , 0xF6 , 0xE2 , 0x2E , 0x82 , 0x66 , 0xCA , 0x60 , 0xC0 , 0x29 , 0x23 , 0xAB , 0x0D , 0x53 , 0x4E , 0x6F , 0xD5 , 0xDB , 0x37 , 0x45 , 0xDE , 0xFD , 0x8E , 0x2F , 0x03 , 0xFF , 0x6A , 0x72 , 0x6D , 0x6C , 0x5B , 0x51 , 0x8D , 0x1B , 0xAF , 0x92 , 0xBB , 0xDD , 0xBC , 0x7F , 0x11 , 0xD9 , 0x5C , 0x41 , 0x1F , 0x10 , 0x5A , 0xD8 , 0x0A , 0xC1 , 0x31 , 0x88 , 0xA5 , 0xCD , 0x7B , 0xBD , 0x2D , 0x74 , 0xD0 , 0x12 , 0xB8 , 0xE5 , 0xB4 , 0xB0 , 0x89 , 0x69 , 0x97 , 0x4A , 0x0C , 0x96 , 0x77 , 0x7E , 0x65 , 0xB9 , 0xF1 , 0x09 , 0xC5 , 0x6E , 0xC6 , 0x84 , 0x18 , 0xF0 , 0x7D , 0xEC , 0x3A , 0xDC , 0x4D , 0x20 , 0x79 , 0xEE , 0x5F , 0x3E , 0xD7 , 0xCB , 0x39 , 0x48 |] let aes_sbox_fwd_table : list( bits ( 8 )) = [| 0x63 , 0x7c , 0x77 , 0x7b , 0xf2 , 0x6b , 0x6f , 0xc5 , 0x30 , 0x01 , 0x67 , 0x2b , 0xfe , 0xd7 , 0xab , 0x76 , 0xca , 0x82 , 0xc9 , 0x7d , 0xfa , 0x59 , 0x47 , 0xf0 , 0xad , 0xd4 , 0xa2 , 0xaf , 0x9c , 0xa4 , 0x72 , 0xc0 , 0xb7 , 0xfd , 0x93 , 0x26 , 0x36 , 0x3f , 0xf7 , 0xcc , 0x34 , 0xa5 , 0xe5 , 0xf1 , 0x71 , 0xd8 , 0x31 , 0x15 , 0x04 , 0xc7 , 0x23 , 0xc3 , 0x18 , 0x96 , 0x05 , 0x9a , 0x07 , 0x12 , 0x80 , 0xe2 , 0xeb , 0x27 , 0xb2 , 0x75 , 0x09 , 0x83 , 0x2c , 0x1a , 0x1b , 0x6e , 0x5a , 0xa0 , 0x52 , 0x3b , 0xd6 , 0xb3 , 0x29 , 0xe3 , 0x2f , 0x84 , 0x53 , 0xd1 , 0x00 , 0xed , 0x20 , 0xfc , 0xb1 , 0x5b , 0x6a , 0xcb , 0xbe , 0x39 , 0x4a , 0x4c , 0x58 , 0xcf , 0xd0 , 0xef , 0xaa , 0xfb , 0x43 , 0x4d , 0x33 , 0x85 , 0x45 , 0xf9 , 0x02 , 0x7f , 0x50 , 0x3c , 0x9f , 0xa8 , 0x51 , 0xa3 , 0x40 , 0x8f , 0x92 , 0x9d , 0x38 , 0xf5 , 0xbc , 0xb6 , 0xda , 0x21 , 0x10 , 0xff , 0xf3 , 0xd2 , 0xcd , 0x0c , 0x13 , 0xec , 0x5f , 0x97 , 0x44 , 0x17 , 0xc4 , 0xa7 , 0x7e , 0x3d , 0x64 , 0x5d , 0x19 , 0x73 , 0x60 , 0x81 , 0x4f , 0xdc , 0x22 , 0x2a , 0x90 , 0x88 , 0x46 , 0xee , 0xb8 , 0x14 , 0xde , 0x5e , 0x0b , 0xdb , 0xe0 , 0x32 , 0x3a , 0x0a , 0x49 , 0x06 , 0x24 , 0x5c , 0xc2 , 0xd3 , 0xac , 0x62 , 0x91 , 0x95 , 0xe4 , 0x79 , 0xe7 , 0xc8 , 0x37 , 0x6d , 0x8d , 0xd5 , 0x4e , 0xa9 , 0x6c , 0x56 , 0xf4 , 0xea , 0x65 , 0x7a , 0xae , 0x08 , 0xba , 0x78 , 0x25 , 0x2e , 0x1c , 0xa6 , 0xb4 , 0xc6 , 0xe8 , 0xdd , 0x74 , 0x1f , 0x4b , 0xbd , 0x8b , 0x8a , 0x70 , 0x3e , 0xb5 , 0x66 , 0x48 , 0x03 , 0xf6 , 0x0e , 0x61 , 0x35 , 0x57 , 0xb9 , 0x86 ,
+```
+
+```
+0xc1 , 0x1d , 0x9e , 0xe1 , 0xf8 , 0x98 , 0x11 , 0x69 , 0xd9 , 0x8e , 0x94 , 0x9b , 0x1e , 0x87 , 0xe9 , 0xce , 0x55 , 0x28 , 0xdf , 0x8c , 0xa1 , 0x89 , 0x0d , 0xbf , 0xe6 , 0x42 , 0x68 , 0x41 , 0x99 , 0x2d , 0x0f , 0xb0 , 0x54 , 0xbb , 0x16 |] let aes_sbox_inv_table : list( bits ( 8 )) = [| 0x52 , 0x09 , 0x6a , 0xd5 , 0x30 , 0x36 , 0xa5 , 0x38 , 0xbf , 0x40 , 0xa3 , 0x9e , 0x81 , 0xf3 , 0xd7 , 0xfb , 0x7c , 0xe3 , 0x39 , 0x82 , 0x9b , 0x2f , 0xff , 0x87 , 0x34 , 0x8e , 0x43 , 0x44 , 0xc4 , 0xde , 0xe9 , 0xcb , 0x54 , 0x7b , 0x94 , 0x32 , 0xa6 , 0xc2 , 0x23 , 0x3d , 0xee , 0x4c , 0x95 , 0x0b , 0x42 , 0xfa , 0xc3 , 0x4e , 0x08 , 0x2e , 0xa1 , 0x66 , 0x28 , 0xd9 , 0x24 , 0xb2 , 0x76 , 0x5b , 0xa2 , 0x49 , 0x6d , 0x8b , 0xd1 , 0x25 , 0x72 , 0xf8 , 0xf6 , 0x64 , 0x86 , 0x68 , 0x98 , 0x16 , 0xd4 , 0xa4 , 0x5c , 0xcc , 0x5d , 0x65 , 0xb6 , 0x92 , 0x6c , 0x70 , 0x48 , 0x50 , 0xfd , 0xed , 0xb9 , 0xda , 0x5e , 0x15 , 0x46 , 0x57 , 0xa7 , 0x8d , 0x9d , 0x84 , 0x90 , 0xd8 , 0xab , 0x00 , 0x8c , 0xbc , 0xd3 , 0x0a , 0xf7 , 0xe4 , 0x58 , 0x05 , 0xb8 , 0xb3 , 0x45 , 0x06 , 0xd0 , 0x2c , 0x1e , 0x8f , 0xca , 0x3f , 0x0f , 0x02 , 0xc1 , 0xaf , 0xbd , 0x03 , 0x01 , 0x13 , 0x8a , 0x6b , 0x3a , 0x91 , 0x11 , 0x41 , 0x4f , 0x67 , 0xdc , 0xea , 0x97 , 0xf2 , 0xcf , 0xce , 0xf0 , 0xb4 , 0xe6 , 0x73 , 0x96 , 0xac , 0x74 , 0x22 , 0xe7 , 0xad , 0x35 , 0x85 , 0xe2 , 0xf9 , 0x37 , 0xe8 , 0x1c , 0x75 , 0xdf , 0x6e , 0x47 , 0xf1 , 0x1a , 0x71 , 0x1d , 0x29 , 0xc5 , 0x89 , 0x6f , 0xb7 , 0x62 , 0x0e , 0xaa , 0x18 , 0xbe , 0x1b , 0xfc , 0x56 , 0x3e , 0x4b , 0xc6 , 0xd2 , 0x79 , 0x20 , 0x9a , 0xdb , 0xc0 , 0xfe , 0x78 , 0xcd , 0x5a , 0xf4 , 0x1f , 0xdd , 0xa8 , 0x33 , 0x88 , 0x07 , 0xc7 , 0x31 , 0xb1 , 0x12 , 0x10 , 0x59 , 0x27 , 0x80 , 0xec , 0x5f , 0x60 , 0x51 , 0x7f , 0xa9 , 0x19 , 0xb5 , 0x4a , 0x0d , 0x2d , 0xe5 , 0x7a , 0x9f , 0x93 , 0xc9 , 0x9c , 0xef , 0xa0 , 0xe0 , 0x3b , 0x4d , 0xae , 0x2a , 0xf5 , 0xb0 , 0xc8 , 0xeb , 0xbb , 0x3c , 0x83 , 0x53 , 0x99 , 0x61 , 0x17 , 0x2b , 0x04 , 0x7e , 0xba , 0x77 , 0xd6 , 0x26 , 0xe1 , 0x69 , 0x14 , 0x63 , 0x55 , 0x21 , 0x0c , 0x7d |] /* Lookup function - takes an index and a list, and retrieves the * x'th element of that list. */ val sbox_lookup : ( bits ( 8 ), list( bits ( 8 ))) -> bits ( 8 ) function sbox_lookup (x, table) = { match (x, table) { ( 0x00 , t0::tn) => t0, (   y, t0::tn) => sbox_lookup(x 0x01 , tn) } } /* Easy function to perform a forward AES SBox operation on 1 byte. */ val aes_sbox_fwd : bits ( 8 ) -> bits ( 8 ) function aes_sbox_fwd (x) = sbox_lookup(x, aes_sbox_fwd_table) /* Easy function to perform an inverse AES SBox operation on 1 byte. */ val aes_sbox_inv : bits ( 8 ) -> bits ( 8 ) function aes_sbox_inv (x) = sbox_lookup(x, aes_sbox_inv_table) /* AES SubWord function used in the key expansion * - Applies the forward sbox to each byte in the input word. */
+```
+
+```
+val aes_subword_fwd : bits ( 32 ) -> bits ( 32 ) function aes_subword_fwd (x) = { aes_sbox_fwd(x[ 31 .. 24 ]) @ aes_sbox_fwd(x[ 23 .. 16 ]) @ aes_sbox_fwd(x[ 15 .. 8 ]) @ aes_sbox_fwd(x[ 7 .. 0 ]) } /* AES Inverse SubWord function. * - Applies the inverse sbox to each byte in the input word. */ val aes_subword_inv : bits ( 32 ) -> bits ( 32 ) function aes_subword_inv (x) = { aes_sbox_inv(x[ 31 .. 24 ]) @ aes_sbox_inv(x[ 23 .. 16 ]) @ aes_sbox_inv(x[ 15 .. 8 ]) @ aes_sbox_inv(x[ 7 .. 0 ]) } /* Easy function to perform an SM4 SBox operation on 1 byte. */ val sm4_sbox : bits ( 8 ) -> bits ( 8 ) function sm4_sbox (x) = sbox_lookup(x, sm4_sbox_table) val aes_get_column : ( bits ( 128 ), nat) -> bits ( 32 ) function aes_get_column (state,c) = (state >> (to_bits( 7 , 32 * c)))[ 31 .. 0 ] /* 64-bit to 64-bit function which applies the AES forward sbox to each byte * in a 64-bit word. */ val aes_apply_fwd_sbox_to_each_byte : bits ( 64 ) -> bits ( 64 ) function aes_apply_fwd_sbox_to_each_byte (x) = { aes_sbox_fwd(x[ 63 .. 56 ]) @ aes_sbox_fwd(x[ 55 .. 48 ]) @ aes_sbox_fwd(x[ 47 .. 40 ]) @ aes_sbox_fwd(x[ 39 .. 32 ]) @ aes_sbox_fwd(x[ 31 .. 24 ]) @ aes_sbox_fwd(x[ 23 .. 16 ]) @ aes_sbox_fwd(x[ 15 .. 8 ]) @ aes_sbox_fwd(x[ 7 .. 0 ]) } /* 64-bit to 64-bit function which applies the AES inverse sbox to each byte * in a 64-bit word. */ val aes_apply_inv_sbox_to_each_byte : bits ( 64 ) -> bits ( 64 ) function aes_apply_inv_sbox_to_each_byte (x) = { aes_sbox_inv(x[ 63 .. 56 ]) @ aes_sbox_inv(x[ 55 .. 48 ]) @ aes_sbox_inv(x[ 47 .. 40 ]) @ aes_sbox_inv(x[ 39 .. 32 ]) @
+```
+
+```
+aes_sbox_inv(x[ 31 .. 24 ]) @ aes_sbox_inv(x[ 23 .. 16 ]) @ aes_sbox_inv(x[ 15 .. 8 ]) @ aes_sbox_inv(x[ 7 .. 0 ]) } /* * AES full-round transformation functions. */ val getbyte : ( bits ( 64 ), int ) -> bits ( 8 ) function getbyte (x, i) = (x >> to_bits( 6 , i * 8 ))[ 7 .. 0 ] val aes_rv64_shiftrows_fwd : ( bits ( 64 ), bits ( 64 )) -> bits ( 64 ) function aes_rv64_shiftrows_fwd (rs2, rs1) = { getbyte(rs1, 3 ) @ getbyte(rs2, 6 ) @ getbyte(rs2, 1 ) @ getbyte(rs1, 4 ) @ getbyte(rs2, 7 ) @ getbyte(rs2, 2 ) @ getbyte(rs1, 5 ) @ getbyte(rs1, 0 ) } val aes_rv64_shiftrows_inv : ( bits ( 64 ), bits ( 64 )) -> bits ( 64 ) function aes_rv64_shiftrows_inv (rs2, rs1) = { getbyte(rs2, 3 ) @ getbyte(rs2, 6 ) @ getbyte(rs1, 1 ) @ getbyte(rs1, 4 ) @ getbyte(rs1, 7 ) @ getbyte(rs2, 2 ) @ getbyte(rs2, 5 ) @ getbyte(rs1, 0 ) } /* 128-bit to 128-bit implementation of the forward AES ShiftRows transform. * Byte 0 of state is input column 0, bits  7..0. * Byte 5 of state is input column 1, bits 15..8. */ val aes_shift_rows_fwd : bits ( 128 ) -> bits ( 128 ) function aes_shift_rows_fwd (x) = { let ic3 : bits ( 32 ) = aes_get_column(x, 3 ); let ic2 : bits ( 32 ) = aes_get_column(x, 2 ); let ic1 : bits ( 32 ) = aes_get_column(x, 1 ); let ic0 : bits ( 32 ) = aes_get_column(x, 0 ); let oc0 : bits ( 32 ) = ic3[ 31 .. 24 ] @ ic2[ 23 .. 16 ] @ ic1[ 15 .. 8 ] @ ic0[ 7 .. 0 ]; let oc1 : bits ( 32 ) = ic0[ 31 .. 24 ] @ ic3[ 23 .. 16 ] @ ic2[ 15 .. 8 ] @ ic1[ 7 .. 0 ]; let oc2 : bits ( 32 ) = ic1[ 31 .. 24 ] @ ic0[ 23 .. 16 ] @ ic3[ 15 .. 8 ] @ ic2[ 7 .. 0 ];
+```
+
+```
+let oc3 : bits ( 32 ) = ic2[ 31 .. 24 ] @ ic1[ 23 .. 16 ] @ ic0[ 15 .. 8 ] @ ic3[ 7 .. 0 ]; (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* 128-bit to 128-bit implementation of the inverse AES ShiftRows transform. * Byte 0 of state is input column 0, bits  7..0. * Byte 5 of state is input column 1, bits 15..8. */ val aes_shift_rows_inv : bits ( 128 ) -> bits ( 128 ) function aes_shift_rows_inv (x) = { let ic3 : bits ( 32 ) = aes_get_column(x, 3 ); /* In column 3 */ let ic2 : bits ( 32 ) = aes_get_column(x, 2 ); let ic1 : bits ( 32 ) = aes_get_column(x, 1 ); let ic0 : bits ( 32 ) = aes_get_column(x, 0 ); let oc0 : bits ( 32 ) = ic1[ 31 .. 24 ] @ ic2[ 23 .. 16 ] @ ic3[ 15 .. 8 ] @ ic0[ 7 .. 0 ]; let oc1 : bits ( 32 ) = ic2[ 31 .. 24 ] @ ic3[ 23 .. 16 ] @ ic0[ 15 .. 8 ] @ ic1[ 7 .. 0 ]; let oc2 : bits ( 32 ) = ic3[ 31 .. 24 ] @ ic0[ 23 .. 16 ] @ ic1[ 15 .. 8 ] @ ic2[ 7 .. 0 ]; let oc3 : bits ( 32 ) = ic0[ 31 .. 24 ] @ ic1[ 23 .. 16 ] @ ic2[ 15 .. 8 ] @ ic3[ 7 .. 0 ]; (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* Applies the forward sub-bytes step of AES to a 128-bit vector * representation of its state. */ val aes_subbytes_fwd : bits ( 128 ) -> bits ( 128 ) function aes_subbytes_fwd (x) = { let oc0 : bits ( 32 ) = aes_subword_fwd(aes_get_column(x, 0 )); let oc1 : bits ( 32 ) = aes_subword_fwd(aes_get_column(x, 1 )); let oc2 : bits ( 32 ) = aes_subword_fwd(aes_get_column(x, 2 )); let oc3 : bits ( 32 ) = aes_subword_fwd(aes_get_column(x, 3 )); (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* Applies the inverse sub-bytes step of AES to a 128-bit vector * representation of its state. */ val aes_subbytes_inv : bits ( 128 ) -> bits ( 128 ) function aes_subbytes_inv (x) = { let oc0 : bits ( 32 ) = aes_subword_inv(aes_get_column(x, 0 )); let oc1 : bits ( 32 ) = aes_subword_inv(aes_get_column(x, 1 )); let oc2 : bits ( 32 ) = aes_subword_inv(aes_get_column(x, 2 )); let oc3 : bits ( 32 ) = aes_subword_inv(aes_get_column(x, 3 )); (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* Applies the forward MixColumns step of AES to a 128-bit vector * representation of its state. */ val aes_mixcolumns_fwd : bits ( 128 ) -> bits ( 128 ) function aes_mixcolumns_fwd (x) = {
+```
+
+```
+let oc0 : bits ( 32 ) = aes_mixcolumn_fwd(aes_get_column(x, 0 )); let oc1 : bits ( 32 ) = aes_mixcolumn_fwd(aes_get_column(x, 1 )); let oc2 : bits ( 32 ) = aes_mixcolumn_fwd(aes_get_column(x, 2 )); let oc3 : bits ( 32 ) = aes_mixcolumn_fwd(aes_get_column(x, 3 )); (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* Applies the inverse MixColumns step of AES to a 128-bit vector * representation of its state. */ val aes_mixcolumns_inv : bits ( 128 ) -> bits ( 128 ) function aes_mixcolumns_inv (x) = { let oc0 : bits ( 32 ) = aes_mixcolumn_inv(aes_get_column(x, 0 )); let oc1 : bits ( 32 ) = aes_mixcolumn_inv(aes_get_column(x, 1 )); let oc2 : bits ( 32 ) = aes_mixcolumn_inv(aes_get_column(x, 2 )); let oc3 : bits ( 32 ) = aes_mixcolumn_inv(aes_get_column(x, 3 )); (oc3 @ oc2 @ oc1 @ oc0) /* Return value */ } /* Performs the word rotation for AES key schedule */ val aes_rotword : bits ( 32 ) -> bits ( 32 ) function aes_rotword (x) = { let a0 : bits ( 8 ) = x[ 7 .. 0 ]; let a1 : bits ( 8 ) = x[ 15 .. 8 ]; let a2 : bits ( 8 ) = x[ 23 .. 16 ]; let a3 : bits ( 8 ) = x[ 31 .. 24 ]; (a0 @ a3 @ a2 @ a1) /* Return Value */ } val brev : bits (SEW) -> bits (SEW) function brev (x) = { let output : bits (SEW) = 0 ; foreach (i from 0 to SEW8 by 8 ) output[i+ 7 ..i] = reverse_bits_in_byte(input[i+ 7 ..i]); output /* Return Value */ } val reverse_bits_in_byte : bits ( 8 ) -> bits ( 8 ) function reverse_bits_in_byte (x) = { let output : bits ( 8 ) = 0 ; foreach (i from 0 to 7 ) output[i] = x[ 7 -i]); output /* Return Value */ } val rev8 : bits (SEW) -> bits (SEW) function rev8 (x) = {     // endian swap let output : bits (SEW) = 0 ;
+```
+
+```
+let j = SEW 1 ; foreach (k from 0 to (SEW 8 ) by 8 ) { output[k..(k + 7 )] = x[(j 7 )..j]; j = j 8 ; output /* Return Value */ } RETIRE_SUCCESS val rol32 : bits ( 32 ) -> bits ( 32 ) function ROL32 (x,n) = (X << N) | (X >> ( 32 - N)) val sm4_subword : bits ( 32 ) -> bits ( 32 ) function sm4_subword (x) = { sm4_sbox(x[ 31 .. 24 ]) @ sm4_sbox(x[ 23 .. 16 ]) @ sm4_sbox(x[ 15 .. 8 ]) @ sm4_sbox(x[ 7 .. 0 ]) }
+```
+
+## Chapter 34. Control-flow Integrity (CFI)
+
+Control-flow  Integrity  (CFI)  capabilities  help  defend  against  Return-Oriented  Programming  (ROP)  and Call/Jump-Oriented Programming (COP/JOP) style control-flow subversion attacks. These attack methodologies use code sequences in authorized modules, with at least one instruction in the sequence being a control transfer instruction that depends on attacker-controlled data either in the return stack or in memory used to obtain the target address for a call or jump. Attackers stitch these sequences together by diverting the control flow instructions (e.g., JALR , C.JR , C.JALR ), from their original target address to a new target via modification in the return stack or in the memory used to obtain the jump/call target address.
+
+RV32/RV64  provides  two  types  of  control  transfer  instructions  -  unconditional  jumps  and  conditional branches. Conditional branches encode an offset in the immediate field of the instruction and are thus direct branches that are not susceptible to control-flow subversion. Unconditional direct jumps using JAL transfer control to a target that is in a +/- 1 MiB range from the current pc . Unconditional indirect jumps using the JALR obtain  their  branch  target  by  adding  the  sign  extended  12-bit  immediate  encoded  in  the instruction to the rs1 register.
+
+The  RV32I/RV64I  does  not  have  a  dedicated  instruction  for  calling  a  procedure  or  returning  from  a procedure. A JAL or JALR may be used to perform a procedure call and JALR to return from a procedure. The RISC-V ABI however defines the convention that a JAL / JALR where rd (i.e. the link register) is x1 or x5 is a procedure  call,  and  a JALR where rs1 is  the  conventional  link  register  (i.e. x1 or x5 )  is  a  return  from procedure.  The  architecture  allows  for  using  these  hints  and  conventions  to  support  return  address prediction (See Table 3).
+
+The RVC standard extension for compressed instructions provides unconditional jump and conditional branch  instructions.  The C.J and C.JAL instructions  encode  an  offset  in  the  immediate  field  of  the instruction and thus are not susceptible to control-flow subversion. The C.JR and C.JALR RVC instructions perform an unconditional control transfer to the address in register rs1 . The C.JALR additionally writes the address of the instruction following the jump ( pc+2 ) to the link register x1 and is a procedure call. The C.JR is a return from procedure if rs1 is a conventional link register (i.e. x1 or x5 ); else it is an indirect jump.
+
+The term call is  used  to  refer  to  a JAL or JALR instruction  with  a  link  register  as  destination,  i.e., rd ≠ x0 . Conventionally, the link  register  is x1 or x5 .  A call using JAL or C.JAL is  termed  a  direct  call.  A C.JALR expands to JALR x1, 0(rs1) and is a call . A call using JALR or C.JALR is termed an indirect-call .
+
+The  term return is  used  to  refer  to  a JALR instruction  with rd = x0 and  with rs1 = x1 or rs1 = x5 .  A C.JR instruction expands to JALR x0, 0(rs1) and is a return if rs1 = x1 or rs1 = x5 .
+
+The term indirect-jump is  used to refer to a JALR instruction with rd = x0 and where the rs1 is  not x1 or x5 (i.e., not a return). A C.JR instruction where rs1 is not x1 or x5 (i.e., not a return) is an indirect-jump .
+
+The Zicfiss and Zicfilp extensions build on these conventions and hints and provide backward-edge and forward-edge control flow integrity respectively.
+
+The Unprivileged ISA for Zicfilp extension is specified in Section 34.1 and for the Unprivileged ISA for Zicfiss  extension  is  specified  in  Section  34.2.  The  Privileged  ISA  for  these  extensions  is  specified  in  the Privileged ISA specification.
+
+## 34.1. Landing Pad (Zicfilp)
+
+To  enforce  forward-edge  control-flow  integrity,  the  Zicfilp  extension  introduces  a  landing  pad  ( LPAD ) instruction. The LPAD instruction must be placed at the program locations that are valid targets of indirect jumps or calls. The LPAD instruction (See Section 34.1.2) is encoded using the AUIPC major opcode with rd = x0 .
+
+Compilers emit a landing pad instruction as the first instruction of an address-taken function, as well as at any indirect  jump  targets.  A  landing  pad  instruction  is  not  required  in  functions  that  are  only  reached using a direct call or direct jump.
+
+The landing pad is designed to provide integrity to control transfers performed using indirect calls and jumps, and this is  referred  to  as  forward-edge  protection.  When  the  Zicfilp  is  active,  the  hart  tracks  an expected landing pad ( ELP )  state that is updated by an indirect\_call or indirect\_jump to  require a landing pad  instruction  at  the  target  of  the  branch.  If  the  instruction  at  the  target  is  not  a  landing  pad,  then  a software-check exception is raised.
+
+A  landing  pad  may  be  optionally  associated  with  a  20-bit  label.  With  labeling  enabled,  the  number  of landing pads that can be reached from an indirect call or jump sites can be defined using programming language-based  policies.  Labeling  of  the  landing  pads  enables  software  to  achieve  greater  precision  in pairing up indirect call/jump sites with valid targets. When labeling of landing pads is used, indirect call or indirect jump site can specify the expected label of the landing pad and thereby constrain the set of landing pads that may be reached from each indirect call or indirect jump site in the program.
+
+In  the  simplest  form,  a  program  can  be  built  with  a  single  label  value  to  implement  a  coarse-grained version of forward-edge control-flow integrity. By constraining gadgets to be preceded by a landing pad instruction  that  marks  the  start  of  indirect  callable  functions,  the  program  can  significantly  reduce  the available gadget space. A second form of label generation may generate a signature, such as a MAC, using the  prototype  of  the  function.  Programs  that  use  this  approach  would  further  constrain  the  gadgets accessible  from  a  call  site  to  only  indirectly  callable  functions  that  match  the  prototype  of  the  called functions.  Another  approach  to  label  generation  involves  analyzing  the  control-flow-graph  (CFG)  of  the program, which can lead to even more stringent constraints on the set of reachable gadgets. Such programs may further use multiple labels per function, which means that if a function is called from two or more call sites, the functions can be labeled as being reachable from each of the call sites. For instance, consider two call sites A and B, where A calls the functions X and Y, and B calls the functions Y and Z. In a single label scheme, functions X, Y, and Z would need to be assigned the same label so that both call sites A and B can invoke the common function Y. This scheme would allow call site A to also call function Z and call site B to also call function X. However, if function Y was assigned two labels - one corresponding to call site A and the other to call site B, then Y can be invoked by both call sites, but X can only be invoked by call site A and Z can only be invoked by call site B. To support multiple labels, the compiler could generate a call-sitespecific  entry  point  for  shared  functions,  with  each  entry  point  having  its  own  landing  pad  instruction followed by a direct branch to the start of the function. This would allow the function to be labeled with multiple labels, each corresponding to a specific call site. A portion of the label space may be dedicated to labeled landing pads that are only valid targets of an indirect jump (and not an indirect call).
+
+The LPAD instruction  uses  the  code  points  defined  as  HINTs  for  the AUIPC opcode.  When  Zicfilp  is  not active at a privilege level or when the extension is not implemented, the landing pad instruction executes as  a  no-op.  A  program  that  is  built  with LPAD instructions  can  thus  continue  to  operate  correctly,  but without forward-edge control-flow integrity, on processors that do not support the Zicfilp extension or if the Zicfilp extension is not active.
+
+Compilers and linkers should provide an attribute flag to indicate if the program has been compiled with the Zicfilp extension and use that to determine if the Zicfilp extension should be activated. The dynamic loader should activate the use of Zicfilp extension for an application only if all executables (the application and the dependent dynamically linked libraries) used by that application use the Zicfilp extension.
+
+When  Zicfilp  extension  is  not  active  or  not  implemented,  the  hart  does  not  require  landing  pad instructions at the targets of indirect calls/jumps, and the landing instructions revert to being no-ops. This allows a program compiled with landing pad instructions to operate correctly but without forward-edge control-flow integrity.
+
+The Zicfilp extensions may be activated for use individually and independently for each privilege mode.
+
+The Zicfilp extension depends on the Zicsr extension.
+
+## 34.1.1. Landing Pad Enforcement
+
+To enforce that the target of an indirect call or indirect jump must be a valid landing pad instruction, the hart maintains an expected landing pad ( ELP ) state to determine if a landing pad instruction is required at the target of an indirect call or an indirect jump. The ELP state can be one of:
+
+- ⚫ 0 -NO\_LP\_EXPECTED
+- ⚫ 1 -LP\_EXPECTED
+
+The ELP state is initialized to NO\_LP\_EXPECTED by the hart upon reset.
+
+The Zicfilp extension, when enabled, determines if an indirect call or an indirect jump must land on a landing pad, as specified in Listing 4. If is\_lp\_expected is 1, then the hart updates the ELP to LP\_EXPECTED .
+
+```
+is_lp_expected = ( (JALR || C.JR || C.JALR) && (rs1 != x1) && (rs1 != x5) && (rs1 != x7) ) ? 1 : 0;
+```
+
+Listing 4. Landing pad expected determination
+
+An indirect branch using JALR , C.JALR ,  or C.JR with rs1 as x7 is termed a software guarded branch. Such branches do not need to land on a LPAD instruction and thus do not set ELP to LP\_EXPECTED .
+
+When the register source is a link register and the register destination is x0 , then it's a return from a procedure and does not require a landing pad at the target.
+
+<image>
+
+When  the  register  source  and  register  destination  are  both  link  registers,  then  it  is  a semantically-direct-call.  For  example,  the call offset pseudoinstruction  may expand to a two instruction sequence composed of a lui ra, imm20 or  a auipc ra, imm20 instruction followed by a jalr ra, imm12(ra) instruction where ra is the link register (either x1 or x5 ). Since the address of the procedure was not explicitly taken and the computed address is not obtained from mutable memory, such semantically-direct calls do not require a landing pad to be placed at the target. Compilers and JITers must use the semantically-direct calls only if the rs1 was computed as a PC-relative or an absolute offset to the symbol.
+
+The tail  offset pseudoinstruction  used  to  tail  call  a  far-away  procedure  may  also  be expanded to a two instruction sequence composed of a lui x7, imm20 or auipc x7, imm20 followed by a jalr x0, x7 . Since the address of the procedure was not explicitly taken and the computed address is not obtained from mutable memory, such semantically-direct tail-calls do not require a landing pad to be placed at the target.
+
+Software guarded branches may also be used by compilers to generate code for constructs like switch-cases. When using the software guarded branches, the compiler is required to ensure it has full control on the possible jump targets (e.g., by obtaining the targets from a read-only table in memory and performing bounds checking on the index into the table, etc.).
+
+The landing pad may be labeled. Zicfilp extension designates the register x7 for use as the landing pad label register.  To  support  labeled  landing pads, the indirect call/jump sites establish an expected landing pad label (e.g., using the LUI instruction) in the bits 31:12 of the x7 register. The LPAD instruction is encoded with a 20-bit immediate value called the landing-pad-label ( LPL )  that is matched to the expected landing pad label. When LPL is encoded as zero, the LPAD instruction does not perform the label check and in programs built  with  this  single  label  mode  of  operation  the  indirect  call/jump  sites  do  not  need  to  establish  an
+
+expected landing pad label value in x7 .
+
+When ELP is set to LP\_EXPECTED , if the next instruction in the instruction stream is not 4-byte aligned, or is not LPAD , or if the landing pad label encoded in LPAD is not zero and does not match the expected landing pad  label  in  bits  31:12  of  the x7 register,  then  a  software-check  exception  (cause=18)  with x tval set  to "landing pad fault (code=2)" is raised else the ELP is updated to NO\_LP\_EXPECTED .
+
+The tracking of ELP and the requirement for a landing pad instruction at the target of indirect call  and  jump  enables  a  processor  implementation  to  significantly  reduce  or  to  prevent speculation to non-landing-pad instructions. Constraining speculation using this technique, greatly  reduces  the  gadget  space  and  increases  the  difficulty  of  using  techniques  such  as branch-target-injection, also known as Spectre variant 2, which use speculative execution to leak data through side channels.
+
+<image>
+
+The LPAD requires a 4-byte alignment to address the concatenation of two instructions A and B accidentally forming an unintended landing pad in the program. For example, consider a 32bit instruction where the bytes 3 and 2 have a pattern of ?017h (for example, the immediate fields of a LUI , AUIPC , or a JAL instruction), followed by a 16-bit or a 32-bit instruction. When patterns that can accidentally form a valid landing pad are detected, the assembler or linker can force instruction A to be aligned to a 4-byte boundary to force the unintended LPAD pattern to  become  misaligned,  and  thus  not  a  valid  landing  pad,  or  may  use  an  alternate  register allocation to prevent the accidental landing pad.
+
+## 34.1.2. Landing Pad Instruction
+
+When Zicfilp is enabled, LPAD is the only instruction allowed to execute when the ELP state is LP\_EXPECTED . If Zicfilp is not enabled then the instruction is a no-op. If Zicfilp is enabled, the LPAD instruction causes a software-check exception with x tval set to "landing pad fault (code=2)" if any of the following conditions are true:
+
+- ⚫ The pc is not 4-byte aligned and ELP is LP\_EXPECTED .
+- ⚫ The ELP is LP\_EXPECTED and the LPL is not zero and the LPL does not match the expected landing pad label in bits 31:12 of the x7 register.
+
+If a software-check exception is not caused then the ELP is updated to NO\_LP\_EXPECTED .
+
+<image>
+
+The operation of the LPAD instruction is as follows:
+
+```
+if (xLPE == 1 && ELP == LP_EXPECTED) // If PC not 4-byte aligned then software-check exception if pc[1:0] != 0 raise software-check exception // If landing pad label not matched -> software-check exception else if (inst.LPL != x7[31:12] && inst.LPL != 0) raise software-check exception else ELP = NO_LP_EXPECTED else no-op endif
+```
+
+Listing 5. LPAD operation
+
+# <<<
+
+## 34.2. Shadow Stack (Zicfiss)
+
+The Zicfiss extension introduces a shadow stack to enforce backward-edge control-flow integrity. A shadow stack is a second stack used to store a shadow copy of the return address in the link register if it needs to be spilled.
+
+The shadow stack is designed to provide integrity to control transfers performed using a return , where the return may be from a procedure invoked using an indirect call or a direct call, and this is referred to as backward-edge protection.
+
+A program using backward-edge control-flow integrity has two stacks: a regular stack and a shadow stack. The shadow stack is used to spill the link register, if required, by non-leaf functions. An additional register, shadow-stack-pointer ( ssp ),  is  introduced in the architecture to hold the address of the top of the active shadow stack.
+
+The shadow stack, similar to the regular stack, grows downwards, from higher addresses to lower addresses. Each entry on the shadow stack is XLEN wide and holds the link register value. The ssp points to the top of
+
+the shadow stack, which is the address of the last element stored on the shadow stack.
+
+The shadow stack is architecturally protected from inadvertent corruptions and modifications, as detailed in the Privileged specification.
+
+The Zicfiss extension provides instructions to store and load the link register to/from the shadow stack and to check the integrity of the return address. The extension provides instructions to support common stack maintenance operations such as stack unwinding and stack switching.
+
+When Zicfiss is enabled, each function that needs to spill the link register, typically non-leaf functions, store the link register value to the regular stack and a shadow copy of the link register value to the shadow stack  when  the  function  is  entered  (the  prologue).  When  such  a  function  returns  (the  epilogue),  the function loads the link register from the regular stack and the shadow copy of the link register from the shadow stack. Then, the link register value from the regular stack and the shadow link register value from the shadow stack are compared. A mismatch of the two values is indicative of a subversion of the return address control variable and causes a software-check exception.
+
+The  Zicfiss instructions,  except SSAMOSWAP.W/D ,  are  encoded  using  a  subset  of  May-Be-Operation instructions  defined  by  the  Zimop  and  Zcmop  extensions.  This  subset  of  instructions  revert  to  their Zimop/Zcmop defined behavior when the Zicfiss extension is not implemented or if the extension has not been activated. A program that is built with Zicfiss instructions can thus continue to operate correctly, but without backward-edge control-flow integrity, on processors that do not support the Zicfiss extension or if the  Zicfiss  extension  is  not  active.  The  Zicfiss  extension  may  be  activated  for  use  individually  and independently for each privilege mode.
+
+Compilers should flag  each  object  file  (for  example,  using  flags  in  the  ELF  attributes)  to  indicate  if  the object file has been compiled with the Zicfiss instructions. The linker should flag (for example, using flags in the ELF attributes) the binary/executable generated by linking objects as being compiled with the Zicfiss instructions only if all the object files that are linked have the same Zicfiss attributes.
+
+The dynamic loader should activate the use of Zicfiss extension for an application only if all executables (the application and the dependent dynamically-linked libraries) used by that application use the Zicfiss extension.
+
+An application that has the Zicfiss extension active may request the dynamic loader at runtime to load a new dynamic shared object (using dlopen() for example). If the requested object does not have the Zicfiss attribute  then  the  dynamic  loader,  based  on  its  policy  (e.g.,  established  by  the  operating  system  or  the administrator)  configuration,  could  either  deny  the  request  or  deactivate  the  Zicfiss  extension  for  the application. It is strongly recommended that the policy enforces a strict security posture and denies the request.
+
+The  Zicfiss  extension  depends  on  the  Zicsr,  Zimop  and  Zaamo  extensions.  Furthermore,  if  the  Zcmop extension is implemented, the Zicfiss extension also provides the C.SSPUSH and C.SSPOPCHK instructions. Moreover, use of Zicfiss in U-mode requires S-mode to be implemented. Use of Zicfiss in M-mode is not supported.
+
+## 34.2.1. Zicfiss Instructions Summary
+
+The Zicfiss extension introduces the following instructions:
+
+- ⚫ Push to the shadow stack (See Section 34.2.4)
+- ⚫ SSPUSH x1 and SSPUSH x5 - encoded using MOP.RR.7
+- ⚫ C.SSPUSH x1 - encoded using C.MOP.1
+- ⚫ Pop from the shadow stack (See Section 34.2.5)
+- ⚫ SSPOPCHK x1 and SSPOPCHK x5 - encoded using MOP.R.28
+- ⚫ C.SSPOPCHK x5 - encoded using C.MOP.5
+- ⚫ Read the value of ssp into a register (See Section 34.2.6)
+- ⚫ SSRDP - encoded using MOP.R.28
+- ⚫ Perform an atomic swap from a shadow stack location (See Section 34.2.7)
+- ⚫ SSAMOSWAP.W and SSAMOSWAP.D
+
+Zicfiss does not use all encodings of MOP.RR.7 or MOP.R.28 . When a MOP.RR.7 or MOP.R.28 encoding is not used by the Zicfiss extension, the corresponding instruction adheres to its Zimop-defined behavior, unless redefined by another extension.
+
+## 34.2.2. Shadow Stack Pointer ( ssp )
+
+The ssp CSR is  an  unprivileged  read-write  (URW) CSR that reads and writes XLEN low  order  bits  of  the shadow stack pointer ( ssp ). The CSR address is 0x011. There is no high CSR defined as the ssp is always as wide as the XLEN of  the  current  privilege  mode.  The  bits  1:0  of ssp are  read-only  zero.  If  the  UXLEN  or SXLEN may never be 32, then the bit 2 is also read-only zero.
+
+## 34.2.3. Zicfiss Instructions
+
+## 34.2.4. Push to the Shadow Stack
+
+A shadow stack push operation is defined as decrement of the ssp by XLEN/8 followed  by  a  store  of  the value in the link register to memory at the new top of the shadow stack.
+
+<image>
+
+Only x1 and x5 registers are supported as rs2 for SSPUSH . Zicfiss provides a 16-bit version of the SSPUSH x1 instruction using the Zcmop defined C.MOP.1 encoding. The C.SSPUSH x1 expands to SSPUSH x1 .
+
+The SSPUSH instruction  and  its  compressed  form C.SSPUSH can  be  used  to  push  a  link  register  on  the shadow  stack.  The SSPUSH and C.SSPUSH instructions  perform  a  store  identically  to  the  existing  store instructions, with the difference that the base is implicitly ssp and the width is implicitly XLEN .
+
+The operation of the SSPUSH and C.SSPUSH instructions is as follows:
+
+```
+if (xSSE == 1) mem[ssp - (XLEN/8)] = X(src)  # Store src value to ssp - XLEN/8 ssp = ssp - (XLEN/8)          # decrement ssp by XLEN/8 endif
+```
+
+Listing 6. SSPUSH and C.SSPUSH operation
+
+The ssp is  decremented  by SSPUSH and C.SSPUSH only  if  the  store  to  the  shadow  stack  completes successfully.
+
+## 34.2.5. Pop from the Shadow Stack
+
+A shadow stack pop operation is defined as an XLEN wide read from the current top of the shadow stack followed by an increment of the ssp by XLEN/8 .
+
+<image>
+
+Only x1 and x5 registers are supported as rs1 for SSPOPCHK . Zicfiss provides a 16-bit version of the SSPOPCHK x5 using the Zcmop defined C.MOP.5 encoding. The C.SSPOPCHK x5 expands to SSPOPCHK x5 .
+
+Programs with a shadow stack push the return address onto the regular stack as well as the shadow stack in the prologue of non-leaf functions. When returning from these non-leaf functions, such programs pop the link register from the regular stack and pop a shadow copy of the link register from the shadow stack. The two values are then compared. If the values do not match, it is indicative of a corruption of the return address variable on the regular stack.
+
+The SSPOPCHK instruction,  and  its  compressed  form C.SSPOPCHK ,  can  be  used  to  pop  the  shadow  return address value from the shadow stack and check that the value matches the contents of the link register, and if not cause a software-check exception with x tval set to "shadow stack fault (code=3)".
+
+While any register may be used as link register, conventionally the x1 or x5 registers are used. The shadow stack  instructions  are  designed  to  be  most  efficient  when  the x1 and x5 registers  are  used  as  the  link register.
+
+Return-address prediction stacks are a common feature of high-performance instruction-fetch units, but they require accurate detection of instructions used for procedure calls and returns to be effective. For RISC-V, hints as to the instructions' usage are encoded implicitly via the register numbers used. The return-address stack (RAS) actions to pop and/or push onto the RAS are specified in Table 3.
+
+<image>
+
+Using x1 or x5 as  the  link  register  allows  a  program  to  benefit  from  the  return-address prediction stacks. Additionally, since the shadow stack instructions are designed around the use of x1 or x5 as the link register, using any other register as a link register would incur the cost of additional register movements.
+
+Compilers, when generating code with backward-edge CFI, must protect the link register, e.g., x1 and/or x5 , from arbitrary modification by not emitting unsafe code sequences.
+
+<image>
+
+Storing the return address on both stacks preserves the call stack layout and the ABI, while also allowing for the detection of corruption of the return address on the regular stack. The prologue and epilogue of a non-leaf function that uses shadow stacks is as follows:
+
+```
+function_entry: addi sp,sp,-8  # push link register x1 sd x1,(sp)     # on regular stack sspush x1      # push link register x1 on shadow stack : ld x1,(sp)     # pop link register x1 from regular stack addi sp,sp,8 sspopchk x1    # fault if x1 not equal to shadow # return address ret
+```
+
+This example illustrates the use of x1 register as the link register. Alternatively, the x5 register may also be used as the link register.
+
+A leaf function, a function that does not itself make function calls, does not need to spill the link  register.  Consequently,  the  return  value  may  be  held  in  the  link  register  itself  for  the duration of the leaf function's execution.
+
+The C.SSPOPCHK ,  and SSPOPCHK instructions  perform  a  load  identically  to  the  existing  load  instructions, with the difference that the base is implicitly ssp and the width is implicitly XLEN .
+
+The operation of the SSPOPCHK and C.SSPOPCHK instructions is as follows:
+
+```
+if (xSSE == 1) temp = mem[ssp]            # Load temp from address in ssp and if temp != X(src)          # Compare temp to value in src and # cause a software-check exception # if they are not bitwise equal. # Only x1 and x5 may be used as src raise software-check exception else ssp = ssp + (XLEN/8)    # increment ssp by XLEN/8. endif endif
+```
+
+Listing 7. SSPOPCHK and C.SSPOPCHK operation
+
+If  the value loaded from the address in ssp does not match the value in rs1 ,  a  software-check exception (cause=18) is raised with x tval set to "shadow stack fault (code=3)". The software-check exception caused by SSPOPCHK / C.SSPOPCHK is lower in priority than a load/store/AMO access-fault exception.
+
+The ssp is  incremented  by SSPOPCHK and C.SSPOPCHK only  if  the  load  from  the  shadow  stack  completes successfully and no software-check exception is raised.
+
+
+
+The  use  of  the  compressed  instruction C.SSPUSH x1 to  push  on  the  shadow  stack  is  most efficient  when  the  ABI  uses x1 as  the  link  register,  as  the  link  register  may  then  be  pushed without needing a register-to-register move in the function prologue. To use the compressed instruction C.SSPOPCHK x5 ,  the  function  should  pop  the  return  address  from  regular  stack into the alternate link register x5 and use the C.SSPOPCHK x5 to compare the return address to the shadow copy stored on the shadow stack. The function then uses C.JR x5 to jump to the return address.
+
+```
+function_entry: c.addi sp,sp,-8  # push link register x1 c.sd x1,(sp)     # on regular stack c.sspush x1      # push link register x1 on shadow stack : c.ld x5,(sp)     # pop link register x5 from regular stack c.addi sp,sp,8 c.sspopchk x5    # fault if x5 not equal to shadow return address c.jr x5
+```
+
+Store-to-load  forwarding  is  a  common  technique  employed  by  high-performance  processor implementations. Zicfiss implementations may prevent forwarding from a non-shadow-stack store  to  the SSPOPCHK or  the C.SSPOPCHK instructions.  A  non-shadow-stack  store  causes  a fault  if  done  to  a  page  mapped  as  a  shadow  stack.  However,  such  determination  may  be delayed till the PTE has been examined and thus may be used to transiently forward the data from such stores to SSPOPCHK or to C.SSPOPCHK .
+
+## 34.2.6. Read ssp into a Register
+
+The SSRDP instruction is provided to move the contents of ssp to a destination register.
+
+<image>
+
+Encoding rd as x0 is not supported for SSRDP .
+
+The operation of the SSRDP instructions is as follows:
+
+```
+if (xSSE == 1) X(dst) = ssp else X(dst) = 0 endif
+```
+
+Listing 8. SSRDP operation
+
+The property of Zimop writing 0 to the rd when the extension using Zimop is not implemented or not active may be used by to determine if Zicfiss extension is active. For example, functions that unwind shadow stacks may skip over the unwind actions by dynamically detecting if the Zicfiss extension is active.
+
+An example sequence such as the following may be used:
+
+<image>
+
+To assist with the use of such code sequences, operating systems and runtimes must not locate shadow stacks at address 0.
+
+<image>
+
+A  common  operation  performed  on  stacks  is  to  unwind  them  to  support  constructs  like setjmp / longjmp ,  C++  exception  handling,  etc.  A  program  that  uses  shadow  stacks  must unwind the  shadow  stack  in  addition  to  the  stack  used  to  store  data.  The  unwind  function must verify that it does not accidentally unwind past the bounds of the shadow stack. Shadow stacks are expected to be bounded on each end using guard pages. A guard page for a stack is a page that is not accessible by the process that owns the stack. To detect if the unwind occurs past the bounds of the shadow stack, the unwind may be done in maximal increments of 4 KiB, testing whether the ssp is still pointing to a shadow stack page or has unwound into the guard page.  The  following  examples  illustrate  the  use  of  shadow  stack  instructions  to  unwind  a shadow stack. This example assumes that the setjmp function itself does not push on to the shadow stack (being a leaf function, it is not required to).
+
+```
+setjmp() { : : // read and save the shadow stack pointer to jmp_buf asm("ssrdp %0" : "=r"(cur_ssp):); jmp_buf ->saved_ssp = cur_ssp; : : } longjmp() { : // Read current shadow stack pointer and // compute number of call frames to unwind asm("ssrdp %0" : "=r"(cur_ssp):); // Skip the unwind if backward-edge CFI not active asm("beqz %0, back_cfi_not_active" : "=r"(cur_ssp):); // Unwind the frames in a loop while ( jmp_buf ->saved_ssp > cur_ssp ) { // advance by a maximum of 4K at a time to avoid // unwinding past bounds of the shadow stack cur_ssp = ( ( jmp_buf ->saved_ssp - cur_ssp) >= 4096 ) ? (cur_ssp + 4096 ) : jmp_buf ->saved_ssp; asm("csrw ssp, %0" : :  "r" (cur_ssp)); // Test if unwound past the shadow stack bounds asm("sspush x5"); asm("sspopchk x5"); } back_cfi_not_active: : }
+```
+
+## 34.2.7. Atomic Swap from a Shadow Stack Location
+
+<image>
+
+For RV32, SSAMOSWAP.W atomically loads a 32-bit data value from address of a shadow stack location in rs1 , puts the loaded value into register rd , and stores the 32-bit value held in rs2 to the original address in rs1 . SSAMOSWAP.D (RV64 only) is similar to SSAMOSWAP.W but operates on 64-bit data values.
+
+```
+if privilege_mode != M && menvcfg.SSE == 0 raise illegal-instruction exception else if S-mode not implemented raise illegal-instruction exception else if privilege_mode == U && senvcfg.SSE == 0 raise illegal-instruction exception else if privilege_mode == VS && henvcfg.SSE == 0 raise virtual-instruction  exception else if privilege_mode == VU && senvcfg.SSE == 0 raise virtual-instruction  exception else X(rd) = mem[X(rs1)] mem[X(rs1)] = X(rs2) endif
+```
+
+Listing 9. SSAMOSWAP.W for RV32 and SSAMOSWAP.D (RV64 only) operation
+
+For RV64, SSAMOSWAP.W atomically loads a 32-bit data value from address of a shadow stack location in rs1 , sign-extends the loaded value and puts it in rd , and stores the lower 32 bits of the value held in rs2 to the original address in rs1 .
+
+```
+if privilege_mode != M && menvcfg.SSE == 0 raise illegal-instruction exception else if S-mode not implemented raise illegal-instruction exception else if privilege_mode == U && senvcfg.SSE == 0 raise illegal-instruction exception else if privilege_mode == VS && henvcfg.SSE == 0 raise virtual-instruction  exception else if privilege_mode == VU && senvcfg.SSE == 0 raise virtual-instruction  exception else temp[31:0] = mem[X(rs1)] X(rd) = SignExtend(temp[31:0]) mem[X(rs1)] = X(rs2)[31:0] endif
+```
+
+Listing 10. SSAMOSWAP.W for RV64
+
+Just  as  for  AMOs  in  the  A  extension, SSAMOSWAP.W/D requires  that  the  address  held  in rs1 be  naturally aligned to the size of the operand (i.e., eight-byte aligned for doublewords , and four-byte aligned for words ).
+
+The same exception options apply if the address is not naturally aligned.
+
+Just  as  for  AMOs  in  the  A  extension, SSAMOSWAP.W/D optionally  provides  release  consistency  semantics, using the aq and rl bits, to help implement multiprocessor synchronization. An SSAMOSWAP.W/D operation has acquire semantics if aq=1 and release semantics if rl=1 .
+
+Stack  switching  is  a  common  operation  in  user  programs  as  well  as  supervisor  programs. When a stack switch is performed the stack pointer of the currently active stack is saved into a context data structure and the new stack is made active by loading a new stack pointer from a context data structure.
+
+<image>
+
+<image>
+
+When shadow stacks are active for a program, the program needs to additionally switch the shadow stack pointer. If the pointer to the top of the deactivated shadow stack is held in a context  data  structure,  then  it  may  be  susceptible  to  memory  corruption  vulnerabilities.  To protect the pointer value, the program may store it at the top of the deactivated shadow stack itself and thereby create a checkpoint. A legal checkpoint is defined as one that holds a value of X , where X is the address at which the checkpoint is positioned on the shadow stack.
+
+An example sequence to restore the shadow stack pointer from the new shadow stack and save the old shadow stack pointer on the old shadow stack is as follows:
+
+```
+# a0 hold pointer to top of new shadow stack to switch to stack_switch: ssrdp ra beqz ra, 2f                    # skip if Zicfiss not active ssamoswap.d ra, x0,  (a0)      # ra=*[a0] and *[a0]=0 beq         ra, a0,  1f        # [a0] must be == [ra] unimp                          # else crash 1: addi        ra, ra,  XLEN/8    # pop the checkpoint csrrw       ra, ssp, ra        # swap ssp: ra=ssp, ssp=ra addi        ra, ra,  -(XLEN/8) # checkpoint = "old ssp XLEN/8" ssamoswap.d x0, ra,  (ra)      # Save checkpoint at "old ssp XLEN/8" 2:
+```
+
+This sequence uses the ra register. If the privilege mode at which this sequence is executed can be interrupted, then the trap handler should save the ra on the shadow stack itself. There it is guarded against tampering and can be restored prior to returning from the trap.
+
+When a new shadow stack is created by the supervisor, it needs to store a checkpoint at the highest address on that stack. This enables the shadow stack pointer to be switched using the process  outlined  in  this  note.  The SSAMOSWAP.W/D instruction  can  be  used  to  store  this checkpoint. When the old value at the memory location operated on by SSAMOSWAP.W/D is not required, rd can be set to x0 .
+
+## Chapter 35. "Zilsd", "Zclsd" Extensions for Load/Store pair for RV32, Version 1.0
+
+The  Zilsd  &  Zclsd  extensions  provide  load/store  pair  instructions  for  RV32,  reusing  the  existing  RV64 doubleword load/store instruction encodings.
+
+Operands containing src for store instructions and dest for load instructions are held in aligned x -register pairs, i.e., register numbers must be even. Use of misaligned (odd-numbered) registers for these operands is reserved .
+
+Regardless of endianness, the lower-numbered register holds the low-order bits, and the higher-numbered register holds the high-order bits: e.g., bits 31:0 of an operand in Zilsd might be held in register x14 ,  with bits 63:32 of that operand held in x15 .
+
+## 35.1. Load/Store pair instructions (Zilsd)
+
+The Zilsd extension adds the following RV32-only instructions:
+
+| RV32   | RV64   | Mnemonic            | Instruction                                          |
+|--------|--------|---------------------|------------------------------------------------------|
+| yes    | no     | ld rd, offset(rs1)  | Load doubleword to register pair, 32-bit encoding    |
+| yes    | no     | sd rs2, offset(rs1) | Store doubleword from register pair, 32-bit encoding |
+
+As the access size is 64-bit, accesses are only considered naturally aligned for effective addresses that are a multiple of 8. In this case, these instructions are guaranteed to not raise an address-misaligned exception. Even if naturally aligned, the memory access might not be performed atomically.
+
+If the effective address is a multiple of 4, then each word access is required to be performed atomically.
+
+The following table summarizes the required behavior:
+
+| Alignment   | Word accesses guaranteed atomic?   | Can cause misaligned trap?   |
+|-------------|------------------------------------|------------------------------|
+| 8 B         | yes                                | no                           |
+| 4 B not 8 B | yes                                | yes                          |
+| else        | no                                 | yes                          |
+
+To ensure resumable trap handling is possible for the load instructions, the base register must have its original value if a trap is taken. The other register in the pair can have been updated. This affects x2 for the stack pointer relative instruction and rs1 otherwise.
+
+<image>
+
+If  an  implementation  performs  a  doubleword  load  access  atomically  and  the  register  file implements write-back for even/odd register pairs, the mentioned atomicity requirements are inherently fulfilled. Otherwise, an implementation either needs to delay the write-back until the write  can  be  performed  atomically,  or  order  sequential  writes  to  the  registers  to  ensure  the requirement above is satisfied.
+
+## 35.2. Compressed Load/Store pair instructions (Zclsd)
+
+Zclsd depends on Zilsd and Zca. It has overlapping encodings with Zcf and is thus incompatible with Zcf.
+
+Zclsd adds the following RV32-only instructions:
+
+| RV32   | RV64   | Mnemonic                | Instruction                                                              |
+|--------|--------|-------------------------|--------------------------------------------------------------------------|
+| yes    | no     | c.ldsp rd, offset(sp)   | Stack-pointer based load doubleword to register pair, 16-bit encoding    |
+| yes    | no     | c.sdsp rs2, offset(sp)  | Stack-pointer based store doubleword from register pair, 16-bit encoding |
+| yes    | no     | c.ld rd', offset(rs1')  | Load doubleword to register pair, 16-bit encoding                        |
+| yes    | no     | c.sd rs2', offset(rs1') | Store doubleword from register pair, 16-bit encoding                     |
+
+## 35.3. Use of x0 as operand
+
+LD instructions with destination x0 are processed as any other load, but the result is discarded entirely and x1 is not written. For C.LDSP, usage of x0 as the destination is reserved.
+
+If using x0 as src of SD or C.SDSP, the entire 64-bit operand is zero - i.e., register x1 is not accessed.
+
+C.LD and C.SD instructions can only use x8-15 .
+
+## 35.4. Exception Handling
+
+For  the  purposes  of  RVWMO  and  exception  handling,  LD  and  SD  instructions  are  considered  to  be misaligned  loads  and  stores,  with  one  additional  constraint:  an  LD  or  SD  instruction  whose  effective address is a multiple of 4 gives rise to two 4-byte memory operations.
+
+<image>
+
+
+
+Final instruction for CSRRWI: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

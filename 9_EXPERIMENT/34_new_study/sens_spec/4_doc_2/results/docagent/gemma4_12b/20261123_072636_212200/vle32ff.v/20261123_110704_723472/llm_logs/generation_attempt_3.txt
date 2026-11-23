@@ -1,0 +1,24 @@
+Based on the provided RISC-V Privileged Architecture specification, here is the detailed information regarding the **`mcycle`** register:
+
+### 1. Definition and Purpose
+The `mcycle` register is a **machine-mode CSR (Control and Status Register)** that serves as a hardware performance monitor. Its primary purpose is to count the number of **clock cycles executed by the processor core** on which the hart (hardware thread) is running.
+
+### 2. Precision and Implementation
+*   **Precision:** It has **64-bit precision** on all RV32 and RV64 harts.
+*   **Reset State:** The counter registers have an arbitrary value after the hart is reset and can be written with a specific value by software.
+*   **Write Behavior:** Any CSR write (including to `mcycle`) takes effect after the writing instruction has otherwise completed.
+*   **Sharing:** The `mcycle` CSR may be shared between harts on the same core. If shared, writes to `mcycle` will be visible to those other harts. The platform must provide a mechanism to indicate which harts share an `mcycle` CSR.
+
+### 3. Related Registers and Functions
+*   **`minstret`:** This is the companion register to `mcycle`; it counts the number of instructions the hart has retired.
+*   **`cycle`:** This is a read-only shadow of `mcycle`.
+*   **`cycleh` (for RV32):** This is a read-only shadow of the upper 32 bits of `mcycle`.
+*   **`mcounteren`:** A register used to control the availability of the cycle counter to the next-lower privileged mode (S-mode or U-mode). If the `CY` bit is clear, attempts to read `cycle` in a lower mode will cause an illegal-instruction exception.
+*   **`mcountinhibit`:** A register that allows machine-mode software to inhibit the incrementing of the `mcycle` counter to reduce energy consumption.
+
+### 4. Summary Table (Contextual)
+| Register | Description | Precision | Accessibility |
+| :--- | :--- | :--- | :--- |
+| **`mcycle`** | Counter for clock cycles executed | 64-bit | Machine Mode |
+| **`minstret`** | Counter for instructions retired | 64-bit | Machine Mode |
+| **`cycle`** | Read-only shadow of `mcycle` | 64-bit | Lower Modes (if enabled) |

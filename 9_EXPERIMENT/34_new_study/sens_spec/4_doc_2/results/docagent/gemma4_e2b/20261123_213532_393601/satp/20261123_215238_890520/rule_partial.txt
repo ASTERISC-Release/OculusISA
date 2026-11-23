@@ -1,0 +1,59 @@
+RULE 1: If a hardware thread is running in Supervisor mode, it can read and write the Supervisor address translation and protection CSR (satp) located at address 0x180.
+RULE 2: If a hardware thread is running in User mode, an attempt to access the Supervisor address translation and protection CSR (satp) at address 0x180 shall cause an illegal-instruction exception or a virtual-instruction exception.
+RULE 3: When the TVM bit is set to 1, attempts to read or write the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+RULE 4: When the TVM bit is set to 1, attempts to execute the SFENCE.VMA instruction will raise an illegal-instruction exception.
+RULE 5: When the TVM bit is set to 1, attempts to execute the SINVAL.VMA instruction will raise an illegal-instruction exception.
+RULE 6: When the TVM bit is set to 0, attempts to read or write the satp CSR while executing in S-mode are permitted.
+RULE 7: When the TVM bit is set to 0, attempts to execute the SFENCE.VMA instruction while executing in S-mode are permitted.
+RULE 8: When the TVM bit is set to 0, attempts to execute the SINVAL.VMA instruction while executing in S-mode are permitted.
+RULE 9: The TVM bit is read-only 0 when S-mode is not supported.
+RULE 10: If satp .MODE is read-only zero (always Bare), the implementation may make FIOM read-only zero.
+RULE 11: PBMTE controls whether the Svpbmt extension is available for use in S-mode and G-stage address translation, which involves page tables pointed to by satp or hgatp.
+RULE 12: When PBMTE is set to 1, Svpbmt is available for S-mode and G-stage address translation.
+RULE 13: When PBMTE is set to 0, the implementation behaves as though Svpbmt were not implemented.
+RULE 14: If Svpbmt is not implemented, PBMTE is read-only zero.
+RULE 15: For implementations with the hypervisor extension, henvcfg .PBMTE is read-only zero if menvcfg .PBMTE is zero.
+RULE 16: ADUE controls whether hardware updating of PTE A/D bits is enabled for S-mode and G-stage address translations when the Svadu extension is implemented.
+RULE 17: When ADUE is set to 1, hardware updating of PTE A/D bits is enabled during S-mode address translation, and the implementation behaves as though the Svade extension were not implemented for S-mode address translation.
+RULE 18: When ADUE is set to 0, the implementation behaves as though Svade were implemented for S-mode and G-stage address translation.
+RULE 19: If the Svadu extension is not implemented, ADUE is read-only zero.
+RULE 20: After changing menvcfg .PBMTE, executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with respect to the altered interpretation of page-table entries' PBMT fields, when the hypervisor extension is implemented.
+RULE 21: When the effective privilege mode is S-mode or U-mode, the supervisor address translation algorithm may begin using the value of `satp`.
+RULE 22: Writing `satp` does not imply any ordering constraints between page-table updates and subsequent address translations.
+RULE 23: Changes to `satp .MODE` from Bare to other modes or vice versa take effect immediately without requiring an `SFENCE.VMA` instruction.
+RULE 24: Changes to `satp .ASID` take effect immediately without requiring an `SFENCE.VMA` instruction.
+RULE 25: Attempting to select `satp .MODE` to Bare with a nonzero pattern results in an UNSPECIFIED effect on the value and an UNSPECIFIED effect on address translation and protection behavior.
+RULE 26: If `satp .MODE` is read-only zero (Bare), attempting to execute `SFENCE.VMA` may raise an illegal-instruction exception.
+RULE 27: If an address-translation is initiated while `satp` is active, the translation is not required to complete or terminate when `satp` is no longer active, unless an `SFENCE.VMA` instruction matching the address and ASID is executed.
+RULE 28: An implicit read of memory-management data structures may return any translation for an address that was valid at any time since the most recent `SFENCE.VMA` that subsumes that address.
+RULE 29: If a hart employs an address-translation cache, the meaning of an ASID is local to that hart.
+RULE 30: To ensure that implicit reads observe writes to the same memory locations, an `SFENCE.VMA` instruction must be executed after the writes to flush the relevant cached translations.
+RULE 31: If the Svade extension is not implemented, accessing a virtual page when the accessed bit (`pte . a`) is clear or a store operation when the dirty bit (`pte . d`) is clear raises a page-fault exception.
+RULE 32: When performing a PTE update, the operation must be atomic with respect to other accesses to the PTE, and must atomically perform all page-table walk checks before conditionally updating the PTE value.
+RULE 33: If an atomic PTE update fails the comparison check (step 14 in the translation process), the algorithm must return to step 2.
+RULE 34: The dirty bit (`pte . d`) update resulting from an explicit store must be exact (non-speculative) and observed in program order by the local hart.
+RULE 35: PTE updates resulting from memory accesses must appear in global memory order before the memory access that caused the PTE update and before any subsequent explicit memory access to that virtual page by the local hart.
+RULE 36: Speculative executions of the address-translation algorithm must not set the dirty bit for a PTE.
+RULE 37: Speculative executions of the address-translation algorithm must not trigger an exception.
+RULE 38: Speculative executions of the address-translation algorithm must not create address-translation cache entries if those entries would have been invalidated by any `SFENCE.VMA` instruction executed by the hart since the speculative execution began.
+RULE 39: If `satp` is written with an unsupported `MODE`, the entire write has no effect, and no fields in `satp` are modified.
+RULE 40: If `satp .MODE` is read-only zero (Bare), attempts to execute `SFENCE.VMA` may raise an illegal-instruction exception.
+RULE 41: When V=1, an attempt to access CSR satp raises a virtual-instruction exception.
+RULE 42: When V=1, instructions that normally read or modify satp actually access vsatp instead.
+RULE 43: When V=0, vsatp does not directly affect the behavior of the machine.
+RULE 44: vsatp controls VS-stage address translation.
+RULE 45: vsatp is considered active for the purposes of the address-translation algorithm unless the effective privilege mode is U and hstatus.HU is 0.
+RULE 46: When V=1, VS-stage page-table entries' A bits must not be set as a result of speculative execution, unless the effective privilege mode is VS or VU.
+RULE 47: When V=1, virtual-machine load/store instructions (HLV, HLVX, or HSV) that are mispredicted must not cause VS-stage A bits to be set.
+RULE 48: When V=1, two-stage address translation and protection is in effect.
+RULE 49: When V=1, either VS-stage or G-stage translation can be effectively disabled by zeroing the corresponding vsatp or hgatp register.
+RULE 50: When V=1, memory accesses that would normally bypass address translation are subject to G-stage address translation alone.
+RULE 51: When V=1, guest-page-fault exceptions are raised instead of regular page-fault exceptions during G-stage address translation.
+RULE 52: When V=1, the SFENCE.VMA instruction orders stores only to the VS-level address-translation structures with subsequent VS-stage address translations for the same virtual machine when hgatp.VMID is the same as when the SFENCE.VMA executed.
+RULE 53: When running with virtualization in VS/VU mode with vsatp.MODE = Bare, guest physical address bits may be subject to pointer masking, depending on hgatp.MODE and senvcfg.PMM or henvcfg.PMM.
+RULE 54: When henvcfg.PMM is changed from or to a value where (XLEN-PMLEN) is less than GPA width supported by the hgatp translation mode of that guest, an HFENCE.GVMA instruction with rs1 = x0 must be executed.
+RULE 55: An HFENCE.GVMA instruction with rs1 = x0 must be executed when PMLEN is 7 and hgatp.MODE is sv57x4, or when PMLEN is 16 and hgatp.MODE is sv57x4, or when PMLEN is 16 and hgatp.MODE is sv48x4.
+RULE 56: If Pointer Masking is enabled, the pointer masking setting applied is determined by the active privilege mode and configuration registers of the next-higher privilege mode.
+RULE 57: When an address translation mode is not Bare, the ignore transformation applied to a physical address replaces the upper PMLEN bits with zero.
+RULE 58: When Pointer Masking is enabled, the ignore transformation is applied to every explicit memory access, including loads/stores, atomics operations, and floating point loads/stores.
+RULE 59: When the active `satp` register's MODE field is not Bare, the ignore transformation applied to a physical address replaces the upper PMLEN bits with zero.

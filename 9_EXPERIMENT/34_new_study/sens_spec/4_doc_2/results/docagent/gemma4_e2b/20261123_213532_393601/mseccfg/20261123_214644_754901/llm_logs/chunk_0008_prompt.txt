@@ -1,0 +1,2289 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `mseccfg`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+yte-reverse
+
+rev8 reverses the byte-ordering of rs .
+
+| RV32   | RV64   | Mnemonic     | Instruction           |
+|--------|--------|--------------|-----------------------|
+| ✓      | ✓      | rev8 rd , rs | Byte-reverse register |
+
+## 30.4. Zbc: Extension for Carry-less multiplication, Version 1.0.0
+
+Carry-less multiplication is the multiplication in the polynomial ring over GF(2).
+
+clmul produces the lower half of the carry-less product and clmulh produces the upper half of the 2 × XLEN carry-less product.
+
+clmulr produces bits 2 × XLEN -2:XLEN-1 of the 2 × XLEN carry-less product.
+
+| RV32   | RV64   | Mnemonic              | Instruction                     |
+|--------|--------|-----------------------|---------------------------------|
+| ✓      | ✓      | clmul rd , rs1 , rs2  | Carry-less multiply (low-part)  |
+| ✓      | ✓      | clmulh rd , rs1 , rs2 | Carry-less multiply (high-part) |
+| ✓      | ✓      | clmulr rd , rs1 , rs2 | Carry-less multiply (reversed)  |
+
+## 30.5. Zbs: Extension for Single-bit instructions, Version 1.0.0
+
+The single-bit instructions provide a mechanism to set, clear, invert, or extract a single bit in a register. The bit is specified by its index.
+
+| RV32   | RV64   | Mnemonic             | Instruction                    |
+|--------|--------|----------------------|--------------------------------|
+| ✓      | ✓      | bclr rd , rs1 , rs2  | Single-Bit Clear (Register)    |
+| ✓      | ✓      | bclri rd , rs1 , imm | Single-Bit Clear (Immediate)   |
+| ✓      | ✓      | bext rd , rs1 , rs2  | Single-Bit Extract (Register)  |
+| ✓      | ✓      | bexti rd , rs1 , imm | Single-Bit Extract (Immediate) |
+| ✓      | ✓      | binv rd , rs1 , rs2  | Single-Bit Invert (Register)   |
+| ✓      | ✓      | binvi rd , rs1 , imm | Single-Bit Invert (Immediate)  |
+| ✓      | ✓      | bset rd , rs1 , rs2  | Single-Bit Set (Register)      |
+| ✓      | ✓      | bseti rd , rs1 , imm | Single-Bit Set (Immediate)     |
+
+## 30.6. Zbkb: Extension for Bit-manipulation for Cryptography, Version 1.0.0
+
+This  extension  contains  instructions  essential  for  implementing  common  operations  in  cryptographic workloads.
+
+| RV32   | RV64   | Mnemonic   | Instruction                          |
+|--------|--------|------------|--------------------------------------|
+| ✓      | ✓      | rol        | Rotate left (Register)               |
+|        | ✓      | rolw       | Rotate Left Word (Register)          |
+| ✓      | ✓      | ror        | Rotate right (Register)              |
+| ✓      | ✓      | rori       | Rotate right (Immediate)             |
+|        | ✓      | roriw      | Rotate right Word (Immediate)        |
+|        | ✓      | rorw       | Rotate right Word (Register)         |
+| ✓      | ✓      | andn       | ANDwith inverted operand             |
+| ✓      | ✓      | orn        | ORwith inverted operand              |
+| ✓      | ✓      | xnor       | ExclusiveNOR                         |
+| ✓      | ✓      | pack       | Pack low halves of registers         |
+| ✓      | ✓      | packh      | Pack low bytes of registers          |
+|        | ✓      | packw      | Pack low 16-bits of registers (RV64) |
+| ✓      | ✓      | brev8      | Reverse bits in bytes                |
+| ✓      | ✓      | rev8       | Byte-reverse register                |
+| ✓      |        | zip        | Bit interleave                       |
+| ✓      |        | unzip      | Bit deinterleave                     |
+
+## 30.7. Zbkc: Extension for Carry-less multiplication for Cryptography, Version 1.0.0
+
+Carry-less  multiplication  is  the  multiplication  in  the  polynomial  ring  over  GF(2).  This  is  a  critical operation in some cryptographic workloads, particularly the AES-GCM authenticated encryption scheme. This  extension  provides  only  the  instructions  needed  to  efficiently  implement  the  GHASH  operation, which is part of this workload.
+
+| RV32   | RV64   | Mnemonic              | Instruction                     |
+|--------|--------|-----------------------|---------------------------------|
+| ✓      | ✓      | clmul rd , rs1 , rs2  | Carry-less multiply (low-part)  |
+| ✓      | ✓      | clmulh rd , rs1 , rs2 | Carry-less multiply (high-part) |
+
+## 30.8. Zbkx: Extension for Crossbar permutations, Version 1.0.0
+
+These instructions implement a "lookup table" for 4 and 8 bit elements inside the general purpose registers. rs1 is  used  as  a  vector  of  N-bit  words,  and rs2 as  a  vector  of  N-bit  indices  into rs1 .  Elements  in rs1 are replaced by the indexed element in rs2 , or zero if the index into rs2 is out of bounds.
+
+These  instructions  are  useful  for  expressing  N-bit  to  N-bit  boolean  operations,  and  implementing cryptographic code with secret dependent memory accesses (particularly SBoxes) such that the execution latency does not depend on the (secret) data being operated on.
+
+| RV32   | RV64   | Mnemonic              | Instruction                    |
+|--------|--------|-----------------------|--------------------------------|
+| ✓      | ✓      | xperm4 rd , rs1 , rs2 | Crossbar permutation (nibbles) |
+| ✓      | ✓      | xperm8 rd , rs1 , rs2 | Crossbar permutation (bytes)   |
+
+## 30.9. Instructions (in alphabetical order)
+
+The semantics of each instruction is expressed in a SAIL-like syntax.
+
+## 30.9.1. add.uw
+
+## Synopsis
+
+Add unsigned word
+
+## Mnemonic
+
+add.uw rd , rs1 , rs2
+
+## Pseudoinstructions
+
+zext.w rd , rs1 -> add.uw rd , rs1 , zero
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs an XLEN-wide addition between rs2 and the zero-extended least-significant word of rs1 .
+
+## Operation
+
+```
+let base = X(rs2); let index = EXTZ(X(rs1)[ 31 .. 0 ]); X(rd) = base + index;
+```
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.2. andn
+
+## Synopsis
+
+AND with inverted operand
+
+## Mnemonic
+
+andn rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs the bitwise logical AND operation between rs1 and the bitwise inversion of rs2 .
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | v1.0              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+<image>
+
+## 30.9.3. bclr
+
+## Synopsis
+
+Single-Bit Clear (Register)
+
+## Mnemonic
+
+bclr rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns rs1 with a single bit cleared at the index specified in rs2 . The index is read from the lower log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let index = X(rs2) & (XLEN 1 X(rd) = X(rs1) & ~( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+```
+);
+```
+
+## 30.9.4. bclri
+
+## Synopsis
+
+Single-Bit Clear (Immediate)
+
+## Mnemonic
+
+bclri rd , rs1 , shamt
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction returns rs1 with a single bit cleared at the index specified in shamt .  The index is read from  the  lower  log2(XLEN)  bits  of shamt .  For  RV32,  the  encodings  corresponding  to  shamt[5]=1  are reserved.
+
+## Operation
+
+```
+let index = shamt & (XLEN 1 ); X(rd) = X(rs1) & ~( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.5. bext
+
+## Synopsis
+
+Single-Bit Extract (Register)
+
+## Mnemonic
+
+bext rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns a single bit extracted from rs1 at the index specified in rs2 .  The index is read from the lower log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let index = X(rs2) & (XLEN 1 ); X(rd) = (X(rs1) >> index) & 1 ;
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.6. bexti
+
+## Synopsis
+
+Single-Bit Extract (Immediate)
+
+## Mnemonic
+
+bexti rd , rs1 , shamt
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction returns a single bit extracted from rs1 at the index specified in shamt . The index is read from  the  lower  log2(XLEN)  bits  of shamt .  For  RV32,  the  encodings  corresponding  to  shamt[5]=1  are reserved.
+
+## Operation
+
+```
+let index = shamt & (XLEN 1 ); X(rd) = (X(rs1) >> index) & 1 ;
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.7. binv
+
+## Synopsis
+
+Single-Bit Invert (Register)
+
+## Mnemonic
+
+binv rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns rs1 with  a  single  bit  inverted  at  the  index  specified  in rs2 .  The  index is read from the lower log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let index = X(rs2) & (XLEN 1 ); X(rd) = X(rs1) ^ ( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.8. binvi
+
+## Synopsis
+
+Single-Bit Invert (Immediate)
+
+## Mnemonic
+
+binvi rd , rs1 , shamt
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction returns rs1 with a single bit inverted at the index specified in shamt . The index is read from  the  lower  log2(XLEN)  bits  of shamt .  For  RV32,  the  encodings  corresponding  to  shamt[5]=1  are reserved.
+
+## Operation
+
+```
+let index = shamt & (XLEN 1 ); X(rd) = X(rs1) ^ ( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.9. bset
+
+## Synopsis
+
+Single-Bit Set (Register)
+
+## Mnemonic
+
+bset rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns rs1 with a single bit set at the index specified in rs2 . The index is read from the lower log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let index = X(rs2) & (XLEN 1 ); X(rd) = X(rs1) | ( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+## 30.9.10. bseti
+
+## Synopsis
+
+Single-Bit Set (Immediate)
+
+## Mnemonic
+
+bseti rd , rs1 , shamt
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction returns rs1 with a single bit set at the index specified in shamt . The index is read from the lower log2(XLEN) bits of shamt . For RV32, the encodings corresponding to shamt[5]=1 are reserved.
+
+## Operation
+
+```
+let index = shamt & (XLEN 1 X(rd) = X(rs1) | ( 1 << index)
+```
+
+## Included in
+
+| Extension                     | Minimum version   | Lifecycle state   |
+|-------------------------------|-------------------|-------------------|
+| Zbs (Single-bit instructions) | v1.0              | Ratified          |
+
+```
+);
+```
+
+## 30.9.11. clmul
+
+## Synopsis
+
+Carry-less multiply (low-part)
+
+## Mnemonic
+
+clmul rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+clmul produces the lower half of the 2·XLEN carry-less product.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let output : xlenbits = 0 ; foreach (i from 0 to (xlen 1 ) by 1 ) { output = if ((rs2_val >> i) & 1 ) then output ^ (rs1_val << i); else output; } X[rd] = output
+```
+
+## Included in
+
+| Extension                                         | Minimum version   | Lifecycle state   |
+|---------------------------------------------------|-------------------|-------------------|
+| Zbc (Carry-less multiplication)                   | v1.0              | Ratified          |
+| Zbkc (Carry-less multiplication for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.12. clmulh
+
+## Synopsis
+
+Carry-less multiply (high-part)
+
+## Mnemonic
+
+clmulh rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+clmulh produces the upper half of the 2·XLEN carry-less product.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let output : xlenbits = 0 ; foreach (i from 1 to xlen by 1 ) { output = if ((rs2_val >> i) & 1 ) then output ^ (rs1_val >> (xlen - i)); else output; } X[rd] = output
+```
+
+## Included in
+
+| Extension                                         | Minimum version   | Lifecycle state   |
+|---------------------------------------------------|-------------------|-------------------|
+| Zbc (Carry-less multiplication)                   | v1.0              | Ratified          |
+| Zbkc (Carry-less multiplication for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.13. clmulr
+
+## Synopsis
+
+Carry-less multiply (reversed)
+
+## Mnemonic
+
+clmulr rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+clmulr produces bits 2·XLEN -2:XLEN-1 of the 2·XLEN carry-less product.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let output : xlenbits = 0 ; foreach (i from 0 to (xlen 1 ) by 1 ) { output = if ((rs2_val >> i) & 1 ) then output ^ (rs1_val >> (xlen - i 1 )); else output; } X[rd] = output
+```
+
+## Note
+
+The clmulr instruction  is  used  to  accelerate  CRC  calculations.  The r in  the  instruction's mnemonic  stands  for  reversed,  as  the  instruction  is  equivalent  to  bit-reversing  the  inputs, performing a clmul , then bit-reversing the output.
+
+<image>
+
+## Included in
+
+| Extension                       | Minimum version   | Lifecycle state   |
+|---------------------------------|-------------------|-------------------|
+| Zbc (Carry-less multiplication) | v1.0              | Ratified          |
+
+## 30.9.14. clz
+
+## Synopsis
+
+Count leading zero bits
+
+## Mnemonic
+
+clz rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  counts  the  number  of  0's  before  the  first  1,  starting  at  the  most-significant  bit  (i.e., XLEN-1) and progressing to bit 0. Accordingly, if the input is 0, the output is XLEN, and if the mostsignificant bit of the input is a 1, the output is 0.
+
+## Operation
+
+```
+val HighestSetBit : forall ('N : Int ), 'N >= 0 . bits ('N) -> int function HighestSetBit x = { foreach (i from (xlen 1 ) to 0 by 1 in dec ) if [x[i]] == 0b1 then return (i) else (); return -1 ; } let rs = X(rs); X[rd] = (xlen 1 ) - HighestSetBit(rs);
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.15. clzw
+
+## Synopsis
+
+Count leading zero bits in word
+
+## Mnemonic
+
+clzw rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction counts the number of 0's before the first 1 starting at bit 31 and progressing to bit 0. Accordingly, if the least-significant word is 0, the output is 32, and if the most-significant bit of the word (i.e., bit 31) is a 1, the output is 0.
+
+## Operation
+
+```
+val HighestSetBit32 : forall ('N : Int ), 'N >= 0 . bits ('N) -> int function HighestSetBit32 x = { foreach (i from 31 to 0 by 1 in dec ) if [x[i]] == 0b1 then return (i) else (); return -1 ; } let rs = X(rs); X[rd] = 31 - HighestSetBit(rs);
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.16. cpop
+
+## Synopsis
+
+Count set bits
+
+## Mnemonic
+
+cpop rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instructions counts the number of 1's (i.e., set bits) in the source register.
+
+## Operation
+
+```
+let bitcount = 0 ; let rs = X(rs); foreach (i from 0 to (xlen 1 ) in inc ) if rs[i] == 0b1 then bitcount = bitcount + 1 else (); X[rd] = bitcount
+```
+
+Software Hint
+
+This  operation  is  known  as  population  count,  popcount,  sideways  sum,  bit  summation,  or Hamming weight.
+
+The GCC builtin function \_\_builtin\_popcount (unsigned int x) is implemented by cpop on  RV32  and  by cpopw on RV64. The GCC  builtin function \_\_builtin\_popcountl (unsigned long x) for LP64 is implemented by cpop on RV64.
+
+<image>
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.17. cpopw
+
+## Synopsis
+
+Count set bits in word
+
+## Mnemonic
+
+```
+cpopw rd , rs
+```
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instructions  counts  the  number  of  1's  (i.e.,  set  bits)  in  the  least-significant  word  of  the  source register.
+
+## Operation
+
+```
+let bitcount = 0 ; let val = X(rs); foreach (i from 0 to 31 in inc ) if val [i] == 0b1 then bitcount = bitcount + 1 else (); X[rd] = bitcount
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.18. ctz
+
+## Synopsis
+
+Count trailing zeros
+
+## Mnemonic
+
+ctz rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction counts the number of 0's before the first 1, starting at the least-significant bit (i.e., 0) and progressing to the most-significant bit (i.e., XLEN-1). Accordingly, if the input is 0, the output is XLEN, and if the least-significant bit of the input is a 1, the output is 0.
+
+## Operation
+
+```
+val LowestSetBit : forall ('N : Int ), 'N >= 0 . bits ('N) -> int function LowestSetBit x = { foreach (i from 0 to (xlen 1 ) by 1 in dec ) if [x[i]] == 0b1 then return (i) else (); return xlen; } let rs = X(rs); X[rd] = LowestSetBit(rs);
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.19. ctzw
+
+## Synopsis
+
+Count trailing zero bits in word
+
+## Mnemonic
+
+ctzw rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction counts the number of 0's before the first 1, starting at the least-significant bit (i.e., 0) and  progressing  to  the  most-significant  bit  of  the  least-significant  word  (i.e.,  31).  Accordingly,  if  the least-significant word is 0, the output is 32, and if the least-significant bit of the input is a 1, the output is 0.
+
+## Operation
+
+```
+val LowestSetBit32 : forall ('N : Int ), 'N >= 0 . bits ('N) -> int function LowestSetBit32 x = { foreach (i from 0 to 31 by 1 in dec ) if [x[i]] == 0b1 then return (i) else (); return 32 ; } let rs = X(rs); X[rd] = LowestSetBit32(rs);
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.20. max
+
+## Synopsis
+
+Maximum
+
+## Mnemonic
+
+max rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns the larger of two signed integers.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let result = if rs1_val < _ s rs2_val then rs2_val else rs1_val; X(rd) = result;
+```
+
+## Software Hint
+
+Calculating  the  absolute  value  of  a  signed  integer  can  be  performed  using  the  following sequence: neg  rD,rS followed  by max  rD,rS,rD .  When  using  this  common  sequence,  it  is suggested that they are scheduled with no intervening instructions so that implementations that are so optimized can fuse them together.
+
+<image>
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.21. maxu
+
+## Synopsis
+
+Unsigned maximum
+
+## Mnemonic
+
+maxu rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns the larger of two unsigned integers.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let result = if rs1_val < _ u rs2_val then rs2_val else rs1_val; X(rd) = result;
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.22. min
+
+## Synopsis
+
+Minimum
+
+## Mnemonic
+
+min rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns the smaller of two signed integers.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let result = if rs1_val < _ s rs2_val then rs1_val else rs2_val; X(rd) = result;
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.23. minu
+
+## Synopsis
+
+Unsigned minimum
+
+## Mnemonic
+
+minu rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction returns the smaller of two unsigned integers.
+
+## Operation
+
+```
+let rs1_val = X(rs1); let rs2_val = X(rs2); let result = if rs1_val < _ u rs2_val then rs1_val else rs2_val; X(rd) = result;
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.24. orc.b
+
+## Synopsis
+
+Bitwise OR-Combine, byte granule
+
+## Mnemonic
+
+orc.b rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+Combines the bits within each byte using bitwise logical OR. This sets the bits of each byte in the result rd to all zeros if no bit within the respective byte of rs is set, or to all ones if any bit within the respective byte of rs is set.
+
+## Operation
+
+```
+let input = X(rs); let output : xlenbits = 0 ; foreach (i from 0 to (xlen 8 ) by 8 ) { output[(i + 7 )..i] = if input[(i + 7 )..i] == 0 then 0b00000000 else 0b11111111 ; } X[rd] = output;
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) | v1.0              | Ratified          |
+
+## 30.9.25. orn
+
+## Synopsis
+
+OR with inverted operand
+
+## Mnemonic
+
+orn rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs the bitwise logical OR operation between rs1 and the bitwise inversion of rs2 .
+
+## Operation
+
+<image>
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | v1.0              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.26. pack
+
+## Synopsis
+
+Pack the low halves of rs1 and rs2 into rd .
+
+## Mnemonic
+
+pack rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+The pack instruction packs the XLEN/2-bit lower halves of rs1 and rs2 into rd , with rs1 in the lower half and rs2 in the upper half.
+
+## Operation
+
+```
+let lo_half : bits (xlen/ 2 ) = X(rs1)[xlen/ 2 -1 .. 0 ]; let hi_half : bits (xlen/ 2 ) = X(rs2)[xlen/ 2 -1 .. 0 ]; X(rd) = EXTZ(hi_half @ lo_half);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+<image>
+
+For RV32, the pack instruction with rs2= x0 is  the zext.h instruction. Hence, for RV32, any extension  that  contains  the pack instruction  also  contains  the zext.h instruction  (but  not necessarily the c.zext.h instruction, which is only guaranteed to exist if both the Zcb and Zbb extensions are implemented).
+
+## 30.9.27. packh
+
+## Synopsis
+
+Pack the low bytes of rs1 and rs2 into rd .
+
+## Mnemonic
+
+packh rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+The packh instruction packs the least-significant bytes of rs1 and rs2 into the 16 least-significant bits of rd , zero extending the rest of rd .
+
+## Operation
+
+```
+let lo_half : bits ( 8 ) = X(rs1)[ 7 .. 0 ]; let hi_half : bits ( 8 ) = X(rs2)[ 7 .. 0 ]; X(rd) = EXTZ(hi_half @ lo_half);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.28. packw
+
+## Synopsis
+
+Pack the low 16-bits of rs1 and rs2 into rd on RV64.
+
+## Mnemonic
+
+packw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction packs the low 16 bits of rs1 and rs2 into the 32 least-significant bits of rd , sign extending the 32-bit result to the rest of rd . This instruction only exists on RV64 based systems.
+
+## Operation
+
+```
+let lo_half : bits ( 16 ) = X(rs1)[ 15 .. 0 ]; let hi_half : bits ( 16 ) = X(rs2)[ 15 .. 0 ]; X(rd) = EXTS(hi_half @ lo_half);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+<image>
+
+For RV64, the packw instruction with rs2= x0 is the zext.h instruction. Hence, for RV64, any extension that contains the packw instruction also contains the zext.h instruction (but not necessarily the c.zext.h instruction, which is only guaranteed to exist if both the Zcb and Zbb extensions are implemented).
+
+## 30.9.29. rev8
+
+## Synopsis
+
+Byte-reverse register
+
+## Mnemonic
+
+rev8 rd , rs
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction reverses the order of the bytes in rs .
+
+## Operation
+
+```
+let input = X(rs); let output : xlenbits = 0 ; let j = xlen 1 ; foreach (i from 0 to (xlen 8 ) by 8 ) { output[i..(i + 7 )] = input[(j 7 )..j]; j = j 8 ; } X[rd] = output
+```
+
+<image>
+
+<image>
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | v1.0              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+Note
+
+The rev8 mnemonic corresponds to different instruction encodings in RV32 and RV64.
+
+Software Hint
+
+The byte-reverse operation is only available for the full register width. To emulate word-sized and halfword-sized byte-reversal, perform a rev8 rd,rs followed by a srai rd,rd,K , where K is XLEN-32 and XLEN-16, respectively.
+
+## 30.9.30. brev8
+
+## Synopsis
+
+Reverse the bits in each byte of a source register.
+
+## Mnemonic
+
+brev8 rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction reverses the order of the bits in every byte of a register.
+
+## Operation
+
+```
+result : xlenbits = EXTZ( 0b0 ); foreach (i from 0 to sizeof(xlen) by 8 ) { result[i+ 7 ..i] = reverse_bits_in_byte(X(rs1)[i+ 7 ..i]); }; X(rd) = result;
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.31. rol
+
+## Synopsis
+
+Rotate Left (Register)
+
+## Mnemonic
+
+rol rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs a rotate left of rs1 by the amount in least-significant log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let shamt = if xlen == 32 then X(rs2)[ 4 .. 0 ] else X(rs2)[ 5 .. 0 ]; let result = (X(rs1) << shamt) | (X(rs1) >> (xlen - shamt)); X(rd) = result;
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.32. rolw
+
+## Synopsis
+
+Rotate Left Word (Register)
+
+## Mnemonic
+
+rolw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  performs  a  rotate  left  on  the  least-significant  word  of rs1 by  the  amount  in  leastsignificant 5 bits of rs2 . The resulting word value is sign-extended by copying bit 31 to all of the moresignificant bits.
+
+## Operation
+
+```
+let rs1 = EXTZ(X(rs1)[ 31 .. 0 ]) let shamt = X(rs2)[ 4 .. 0 ]; let result = (rs1 << shamt) | (rs1 >> ( 32 - shamt)); X(rd) = EXTS(result[ 31 .. 0 ]);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.33. ror
+
+## Synopsis
+
+Rotate Right
+
+## Mnemonic
+
+ror rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs a rotate right of rs1 by the amount in least-significant log2(XLEN) bits of rs2 .
+
+## Operation
+
+```
+let shamt = if xlen == 32 then X(rs2)[ 4 .. 0 ] else X(rs2)[ 5 .. 0 ]; let result = (X(rs1) >> shamt) | (X(rs1) << (xlen - shamt)); X(rd) = result;
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.34. rori
+
+## Synopsis
+
+Rotate Right (Immediate)
+
+## Mnemonic
+
+rori rd , rs1 , shamt
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction performs a rotate right of rs1 by the amount in the least-significant log2(XLEN) bits of shamt . For RV32, the encodings corresponding to shamt[5]=1 are reserved.
+
+## Operation
+
+```
+let shamt = if xlen == 32 then shamt[ 4 .. 0 ] else shamt[ 5 .. 0 ]; let result = (X(rs1) >> shamt) | (X(rs1) << (xlen - shamt)); X(rd) = result;
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.35. roriw
+
+## Synopsis
+
+Rotate Right Word by Immediate
+
+## Mnemonic
+
+roriw rd , rs1 , shamt
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs a rotate right on the least-significant word of rs1 by the amount in the leastsignificant log2(XLEN) bits of shamt . The resulting word value is sign-extended by copying bit 31 to all of the more-significant bits.
+
+## Operation
+
+```
+let rs1_data = EXTZ(X(rs1)[ 31 .. 0 ]; let result = (rs1_data >> shamt) | (rs1_data << ( 32 - shamt)); X(rd) = EXTS(result[ 31 .. 0 ]);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.36. rorw
+
+## Synopsis
+
+Rotate Right Word (Register)
+
+## Mnemonic
+
+rorw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  performs  a  rotate  right  on  the  least-significant  word  of rs1 by  the  amount  in  leastsignificant  5  bits  of rs2 .  The  resultant  word  is  sign-extended  by  copying  bit  31  to  all  of  the  moresignificant bits.
+
+## Operation
+
+```
+let rs1 = EXTZ(X(rs1)[ 31 .. 0 ]) let shamt = X(rs2)[ 4 .. 0 ]; let result = (rs1 >> shamt) | (rs1 << ( 32 - shamt)); X(rd) = EXTS(result);
+```
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.37. sext.b
+
+## Synopsis
+
+Sign-extend byte
+
+## Mnemonic
+
+sext.b rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  sign-extends  the  least-significant  byte  in  the  source  to  XLEN  by  copying  the  mostsignificant bit in the byte (i.e., bit 7) to all of the more-significant bits.
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                    |   Minimum version | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) |              0.93 | Ratified          |
+
+## 30.9.38. sext.h
+
+## Synopsis
+
+Sign-extend halfword
+
+## Mnemonic
+
+sext.h rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  sign-extends  the  least-significant  halfword  in rs to  XLEN  by  copying  the  mostsignificant bit in the halfword (i.e., bit 15) to all of the more-significant bits.
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                    |   Minimum version | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) |              0.93 | Ratified          |
+
+## 30.9.39. sh1add
+
+## Synopsis
+
+Shift left by 1 and add
+
+## Mnemonic
+
+sh1add rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction shifts rs1 to the left by 1 bit and adds it to rs2 .
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.40. sh1add.uw
+
+## Synopsis
+
+Shift unsigned word left by 1 and add
+
+## Mnemonic
+
+sh1add.uw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs an XLEN-wide addition of two addends. The first addend is rs2 . The second addend is the unsigned value formed by extracting the least-significant word of rs1 and shifting it left by 1 place.
+
+## Operation
+
+```
+let base = X(rs2); let index = EXTZ(X(rs1)[ 31 .. 0 ]); X(rd) = base + (index << 1 );
+```
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.41. sh2add
+
+## Synopsis
+
+Shift left by 2 and add
+
+## Mnemonic
+
+sh2add rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction shifts rs1 to the left by 2 places and adds it to rs2 .
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.42. sh2add.uw
+
+## Synopsis
+
+Shift unsigned word left by 2 and add
+
+## Mnemonic
+
+sh2add.uw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs an XLEN-wide addition of two addends. The first addend is rs2 . The second addend is the unsigned value formed by extracting the least-significant word of rs1 and shifting it left by 2 places.
+
+## Operation
+
+```
+let base = X(rs2); let index = EXTZ(X(rs1)[ 31 .. 0 ]); X(rd) = base + (index << 2 );
+```
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.43. sh3add
+
+## Synopsis
+
+Shift left by 3 and add
+
+## Mnemonic
+
+sh3add rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction shifts rs1 to the left by 3 places and adds it to rs2 .
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.44. sh3add.uw
+
+## Synopsis
+
+Shift unsigned word left by 3 and add
+
+## Mnemonic
+
+sh3add.uw rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs an XLEN-wide addition of two addends. The first addend is rs2 . The second addend is the unsigned value formed by extracting the least-significant word of rs1 and shifting it left by 3 places.
+
+## Operation
+
+```
+let base = X(rs2); let index = EXTZ(X(rs1)[ 31 .. 0 ]); X(rd) = base + (index << 3 );
+```
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+## 30.9.45. slli.uw
+
+## Synopsis
+
+Shift-left unsigned word (Immediate)
+
+## Mnemonic
+
+slli.uw rd , rs1 , shamt
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  takes  the  least-significant  word  of rs1 ,  zero-extends  it,  and  shifts  it  left  by  the immediate.
+
+## Operation
+
+```
+X(rd) = (EXTZ(X(rs)[ 31 .. 0 ]) << shamt);
+```
+
+## Included in
+
+| Extension                             |   Minimum version | Lifecycle state   |
+|---------------------------------------|-------------------|-------------------|
+| Zba (Address generation instructions) |              0.93 | Ratified          |
+
+<image>
+
+## Architecture Explanation
+
+This instruction is the same as slli with zext.w performed on rs1 before shifting.
+
+## 30.9.46. unzip
+
+## Synopsis
+
+Place odd and even bits of the source register into upper and lower halves of the destination register, respectively.
+
+## Mnemonic
+
+unzip rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction scatters all of the odd and even bits of a source word into the high and low halves of a destination word. It is the inverse of the zip instruction. This instruction is available only on RV32.
+
+## Operation
+
+```
+foreach (i from 0 to xlen/ 2 -1 ) { X(rd)[i] = X(rs1)[ 2 *i] X(rd)[i+xlen/ 2 ] = X(rs1)[ 2 *i+ 1 ] }
+```
+
+## Software Hint
+
+This instruction is useful for implementing the SHA3 cryptographic hash function on a 32-bit architecture,  as  it  implements  the  bit-interleaving  operation  used  to  speed  up  the  64-bit rotations directly.
+
+<image>
+
+## Included in
+
+| Extension                                       | Minimum version   | Lifecycle state   |
+|-------------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) (RV32) | v1.0              | Ratified          |
+
+## 30.9.47. xnor
+
+## Synopsis
+
+Exclusive NOR
+
+## Mnemonic
+
+xnor rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction performs the bit-wise exclusive-NOR operation on rs1 and rs2 .
+
+## Operation
+
+<formula>
+
+## Included in
+
+| Extension                                | Minimum version   | Lifecycle state   |
+|------------------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation)             | 0.93              | Ratified          |
+| Zbkb (Bit-manipulation for Cryptography) | v1.0              | Ratified          |
+
+## 30.9.48. xperm8
+
+## Synopsis
+
+Byte-wise lookup of indices into a vector in registers.
+
+## Mnemonic
+
+xperm8 rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+The xperm8 instruction operates on bytes. The rs1 register contains a vector of XLEN/8 8-bit elements. The rs2 register contains a vector of XLEN/8 8-bit indexes. The result is each element in rs2 replaced by the indexed element in rs1 , or zero if the index into rs2 is out of bounds.
+
+## Operation
+
+```
+val xperm8_lookup : ( bits ( 8 ), xlenbits) -> bits ( 8 ) function xperm8_lookup (idx, lut) = { (lut >> (idx @ 0b000 ))[ 7 .. 0 ] } function clause execute ( XPERM8 (rs2,rs1,rd)) = { result : xlenbits = EXTZ( 0b0 ); foreach (i from 0 to xlen by 8 ) { result[i+ 7 ..i] = xperm8_lookup(X(rs2)[i+ 7 ..i], X(rs1)); }; X(rd) = result; RETIRE_SUCCESS }
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbkx (Crossbar permutations) | v1.0              | Ratified          |
+
+OP
+
+## 30.9.49. xperm4
+
+## Synopsis
+
+Nibble-wise lookup of indices into a vector.
+
+## Mnemonic
+
+xperm4 rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+The  xperm4  instruction  operates  on  nibbles.  The rs1 register  contains  a  vector  of  XLEN/4  4-bit elements. The rs2 register contains a vector of XLEN/4 4-bit indexes. The result is each element in rs2 replaced by the indexed element in rs1 , or zero if the index into rs2 is out of bounds.
+
+## Operation
+
+```
+val xperm4_lookup : ( bits ( 4 ), xlenbits) -> bits ( 4 ) function xperm4_lookup (idx, lut) = { (lut >> (idx @ 0b00 ))[ 3 .. 0 ] } function clause execute ( XPERM4 (rs2,rs1,rd)) = { result : xlenbits = EXTZ( 0b0 ); foreach (i from 0 to xlen by 4 ) { result[i+ 3 ..i] = xperm4_lookup(X(rs2)[i+ 3 ..i], X(rs1)); }; X(rd) = result; RETIRE_SUCCESS }
+```
+
+## Included in
+
+| Extension                    | Minimum version   | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbkx (Crossbar permutations) | v1.0              | Ratified          |
+
+OP
+
+## 30.9.50. zext.h
+
+## Synopsis
+
+Zero-extend halfword
+
+## Mnemonic
+
+zext.h rd , rs
+
+## Encoding (RV32)
+
+<image>
+
+## Encoding (RV64)
+
+<image>
+
+## Description
+
+This instruction zero-extends the least-significant halfword of the source to XLEN by inserting 0's into all of the bits more significant than 15.
+
+## Operation
+
+<formula>
+
+<image>
+
+## Included in
+
+| Extension                    |   Minimum version | Lifecycle state   |
+|------------------------------|-------------------|-------------------|
+| Zbb (Basic bit-manipulation) |              0.93 | Ratified          |
+
+Note
+
+The zext.h mnemonic corresponds to different instruction encodings in RV32 and RV64.
+
+## 30.9.51. zip
+
+## Synopsis
+
+Interleave  upper  and  lower  halves  of  the  source  register  into  odd  and  even  bits  of  the  destination register, respectively.
+
+## Mnemonic
+
+zip rd , rs
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  gathers  bits  from  the  high  and  low  halves  of  the  source  word  into  odd/even  bit positions in the destination word. It is the inverse of the unzip instruction. This instruction is available only on RV32.
+
+## Operation
+
+```
+foreach (i from 0 to xlen/ 2 -1 ) { X(rd)[ 2 *i] = X(rs1)[i] X(rd)[ 2 *i+ 1 ] = X(rs1)[i+xlen/ 2 ] }
+```
+
+Software Hint
+
+This instruction is useful for implementing the SHA3 cryptographic hash function on a 32-bit architecture,  as  it  implements  the  bit-interleaving  operation  used  to  speed  up  the  64-bit rotations directly.
+
+<image>
+
+## Included in
+
+| Extension                                       | Minimum version   | Lifecycle state   |
+|-------------------------------------------------|-------------------|-------------------|
+| Zbkb (Bit-manipulation for Cryptography) (RV32) | v1.0              | Ratified          |
+
+## Chapter 31. "V" Standard Extension for Vector Operations, Version 1.0
+
+<image>
+
+The base vector extension is intended to provide general support for data-parallel execution within  the  32-bit  instruction  encoding  space,  with  later  vector  extensions  supporting  richer functionality for certain domains.
+
+## 31.1. Introduction
+
+Section 31.18 lists the standard vector extensions and which instructions and element widths are supported by each extension.
+
+## 31.2. Implementation-defined Constant Parameters
+
+Each hart supporting a vector extension defines two parameters:
+
+1. The maximum size in bits of a vector element that any operation can produce or consume, ELEN ≥ 8, which must be a power of 2.
+2. The number of bits in a single vector register, VLEN ≥ ELEN, which must be a power of 2, and must be no greater than 2 16 .
+
+Standard vector extensions (Section 31.18) and architecture profiles may set further constraints on ELEN and VLEN .
+
+<image>
+
+Future extensions may allow ELEN > VLEN by holding one element using bits from multiple vector registers, but this extension does not include this option.
+
+<image>
+
+The  upper  limit  on  VLEN  allows  software  to  know  that  indices  will  fit  into  16  bits  (largest VLMAX of 65,536 occurs for LMUL=8 and SEW=8 with VLEN=65,536). Any future extension beyond 64Kib per vector register will require new configuration instructions such that software using the old configuration instructions does not see greater vector lengths.
+
+The vector extension supports writing binary code that under certain constraints will execute portably on harts with different values for the VLEN parameter, provided the harts support the required element types and instructions.
+
+<image>
+
+Code can be written that will expose differences in implementation parameters.
+
+<image>
+
+In  general,  thread  contexts  with  active  vector  state  cannot  be  migrated  during  execution between harts that have any difference in VLEN or ELEN parameters.
+
+## 31.3. Vector Extension Programmer's Model
+
+The  vector  extension  adds  32  vector  registers,  and  seven  unprivileged  CSRs  ( vstart , vxsat , vxrm , vcsr , vtype , vl , vlenb ) to a base scalar RISC-V ISA.
+
+Table 42. New vector CSRs
+
+| Address   | Privilege   | Name   | Description                |
+|-----------|-------------|--------|----------------------------|
+| 0x008     | URW         | vstart | Vector start element index |
+| 0x009     | URW         | vxsat  | Fixed-Point Saturate Flag  |
+
+| Address   | Privilege   | Name   | Description                              |
+|-----------|-------------|--------|------------------------------------------|
+| 0x00A     | URW         | vxrm   | Fixed-Point Rounding Mode                |
+| 0x00F     | URW         | vcsr   | Vector control and status register       |
+| 0xC20     | URO         | vl     | Vector length                            |
+| 0xC21     | URO         | vtype  | Vector data type register                |
+| 0xC22     | URO         | vlenb  | VLEN/8 (vector register length in bytes) |
+
+<image>
+
+The four CSR numbers 0x00B -0x00E are tentatively reserved for future vector CSRs, some of which may be mirrored into vcsr .
+
+## 31.3.1. Vector Registers
+
+The vector extension adds 32 architectural vector registers, v0 -v31 to the base scalar RISC-V ISA.
+
+Each vector register has a fixed VLEN bits of state.
+
+## 31.3.2. Vector Context Status in mstatus
+
+A vector context status field, VS , is added to mstatus[10:9] and shadowed in sstatus[10:9] . It is defined analogously to the floating-point context status field, FS .
+
+Attempts  to  execute  any  vector  instruction,  or  to  access  the  vector  CSRs,  raise  an  illegal-instruction exception when mstatus.VS is set to Off.
+
+When mstatus.VS is set to Initial or Clean, executing any instruction that changes vector state, including the  vector  CSRs,  will  change mstatus.VS to  Dirty.  Implementations  may  also  change mstatus.VS from Initial or Clean to Dirty at any time, even when there is no change in vector state.
+
+<image>
+
+Accurate setting of mstatus.VS is  an  optimization.  Software  will  typically  use  VS  to  reduce context-swap overhead.
+
+If mstatus.VS is  Dirty, mstatus.SD is  1;  otherwise, mstatus.SD is  set  in  accordance  with  existing specifications.
+
+Implementations may have a writable misa.V field. Analogous to the way in which the floating-point unit is handled, the mstatus.VS field may exist even if misa.V is clear.
+
+<image>
+
+Allowing mstatus.VS to  exist  when misa.V is  clear,  enables vector emulation and simplifies handling of mstatus.VS in systems with writable misa.V .
+
+## 31.3.3. Vector Context Status in vsstatus
+
+When the hypervisor extension is present, a vector context status field, VS , is added to vsstatus[10:9] . It is defined analogously to the floating-point context status field, FS .
+
+When V=1, both vsstatus.VS and mstatus.VS are in effect: attempts to execute any vector instruction, or to access the vector CSRs, raise an illegal-instruction exception when either field is set to Off.
+
+When V=1 and neither vsstatus.VS nor mstatus.VS is  set  to  Off,  executing any instruction that changes vector  state,  including  the  vector  CSRs,  will  change  both mstatus.VS and vsstatus.VS to Dirty. Implementations may also change mstatus.VS or vsstatus.VS from Initial or Clean to Dirty at any time, even when there is no change in vector state.
+
+If vsstatus.VS is  Dirty, vsstatus.SD is  1;  otherwise, vsstatus.SD is  set  in  accordance  with  existing specifications.
+
+If mstatus.VS is  Dirty, mstatus.SD is  1;  otherwise, mstatus.SD is  set  in  accordance  with  existing specifications.
+
+For implementations with a writable misa.V field, the vsstatus.VS field may exist even if misa.V is clear.
+
+## 31.3.4. Vector Type ( vtype ) Register
+
+The read-only XLEN-wide vector type CSR, vtype provides the default type used to interpret the contents of the vector register file, and can only be updated by vset{i}vl{i} instructions. The vector type determines the organization of elements in each vector register, and how multiple vector registers are grouped. The vtype register  also  indicates  how  masked-off  elements and elements past the current vector length in a vector result are handled.
+
+<image>
+
+Allowing updates only via the vset{i}vl{i} instructions simplifies maintenance of the vtype register state.
+
+The vtype register has five fields, vill , vma , vta , vsew[2:0] , and vlmul[2:0] . Bits vtype[XLEN-2:8] should be written with zero, and non-zero values in this field are reserved.
+
+<image>
+
+<image>
+
+<image>
+
+ This  diagram shows the layout for RV32 systems, whereas in general vill should  be  at  bit XLEN-1.
+
+Table 43. vtype register layout
+
+| Bits     | Name       | Description                                     |
+|----------|------------|-------------------------------------------------|
+| XLEN-1   | vill       | Illegal value if set                            |
+| XLEN-2:8 | 0          | Reserved if non-zero                            |
+| 7        | vma        | Vector mask agnostic                            |
+| 6        | vta        | Vector tail agnostic                            |
+| 5:3      | vsew[2:0]  | Selected element width (SEW) setting            |
+| 2:0      | vlmul[2:0] | Vector register group multiplier (LMUL) setting |
+
+A small implementation supporting ELEN=32 requires only seven bits of state in vtype :  two bits  for ma and ta ,  two  bits  for vsew[1:0] and  three  bits  for vlmul[2:0] .  The  illegal  value represented  by vill can  be  internally  encoded  using  the  illegal  64-bit  combination  in vsew[1:0] without requiring an additional storage bit to hold vill .
+
+<image>
+
+-  Further standard and custom vector extensions may extend these fields to support a greater variety of data types.
+
+<image>
+
+The primary motivation for the vtype CSR is to allow the vector instruction set to fit into a 32bit  instruction  encoding  space.  A  separate vset{i}vl{i} instruction  can  be  used  to  set vl and/or vtype fields before execution of a vector instruction, and implementations may choose to fuse these two instructions into a single internal vector microop. In many cases, the vl and vtype values  can  be  reused  across  multiple  instructions,  reducing  the  static  and  dynamic instruction  overhead  from  the vset{i}vl{i} instructions.  It  is  anticipated  that  a  future extended 64-bit instruction encoding would allow these fields to be specified statically in the
+
+<image>
+
+instruction encoding.
+
+## 31.3.4.1. Vector Selected Element Width ( vsew[2:0] )
+
+The value in vsew sets the dynamic selected element width (SEW). By default, a vector register is viewed as being divided into VLEN/SEW elements.
+
+Table 44. vsew[2:0] (selected element width) encoding
+
+|   vsew[2:0] | vsew[2:0]   | vsew[2:0]   | SEW      |
+|-------------|-------------|-------------|----------|
+|           0 | 0           | 0           | 8        |
+|           0 | 0           | 1           | 16       |
+|           0 | 1           | 0           | 32       |
+|           0 | 1           | 1           | 64       |
+|           1 | X           | X           | Reserved |
+
+While it is anticipated the larger vsew[2:0] encodings ( 100 -111 ) will be used to encode larger SEW, the encodings are formally reserved at this point.
+
+Table 45. Example VLEN = 128 bits
+
+|   SEW |   Elements per vector register |
+|-------|--------------------------------|
+|    64 |                              2 |
+|    32 |                              4 |
+|    16 |                              8 |
+|     8 |                             16 |
+
+The supported element width may vary with LMUL.
+
+<image>
+
+The current set of standard vector extensions do not vary supported element width with LMUL. Some future extensions may support larger SEWs only when bits from multiple vector registers are combined using LMUL. In this case, software that relies on large SEW should attempt to use the largest LMUL, and hence the fewest vector register groups, to increase the number of implementations on which the code will run. The vill bit  in vtype should be checked after setting vtype to  see  if  the  configuration is supported, and an alternate code path should be provided if  it  is  not.  Alternatively,  a  profile  can  mandate  the  minimum  SEW  at  each  LMUL setting.
+
+## 31.3.4.2. Vector Register Grouping ( vlmul[2:0] )
+
+Multiple  vector  registers  can  be  grouped  together,  so  that  a  single  vector  instruction  can  operate  on multiple  vector  registers.  The  term vector register group is  used  herein  to  refer  to  one  or  more  vector registers  used  as  a  single  operand  to  a  vector  instruction.  Vector  register  groups  can  be  used  to  provide greater  execution  efficiency  for  longer  application  vectors,  but  the  main  reason  for  their  inclusion  is  to allow  double-width  or  larger  elements  to  be  operated  on  with  the  same  vector  length  as  single-width elements. The vector length multiplier, LMUL , when greater than 1, represents the default number of vector registers that are combined to form a vector register group. Implementations must support LMUL integer values of 1, 2, 4, and 8.
+
+<image>
+
+The vector architecture includes instructions that take multiple source and destination vector operands with different element widths, but the same number of elements. The effective LMUL (EMUL) of each vector operand is determined by the number of registers required to hold the
+
+elements. For example, for a widening add operation, such as add 32-bit values to produce 64bit results, a double-width result requires twice the LMUL of the single-width inputs.
+
+LMUL can also be a fractional value, reducing the number of bits used in a single vector register. Fractional LMUL is used to increase the number of effective usable vector register groups when operating on mixedwidth values.
+
+<image>
+
+With only integer LMUL values, a loop operating on a range of sizes would have to allocate at least one whole vector register (LMUL=1) for the narrowest data type and then would consume multiple  vector  registers  (LMUL>1)  to  form  a  vector  register  group  for  each  wider  vector operand. This can limit the number of vector register groups available. With fractional LMUL, the widest values need occupy only a single vector register while narrower values can occupy a fraction of  a  single  vector  register,  allowing  all  32  architectural  vector  register  names  to  be used for different values in a vector loop even when handling mixed-width values. Fractional LMUL implies portions of vector registers are unused, but in some cases, having more shorter register-resident vectors improves efficiency relative to fewer longer register-resident vectors.
+
+Implementations must provide fractional LMUL settings that allow the narrowest supported type to occupy a fraction of a vector register corresponding to the ratio of the narrowest supported type's width to that of the largest supported type's width. In general, the requirement is to support LMUL ≥ SEWMIN/ELEN, where SEWMIN  is  the  narrowest  supported  SEW  value  and  ELEN  is  the  widest  supported  SEW  value.  In  the standard extensions, SEWMIN=8. For standard vector extensions with ELEN=32, fractional LMULs of 1/2 and 1/4 must be supported. For standard vector extensions with ELEN=64, fractional LMULs of 1/2, 1/4, and 1/8 must be supported.
+
+<image>
+
+When LMUL < SEWMIN/ELEN, there is no guarantee an implementation would have enough bits in the fractional vector register to store at least one element, as VLEN=ELEN is a valid implementation choice. For example, with VLEN=ELEN=32, and SEWMIN=8, an LMUL of 1/8 would only provide four bits of storage in a vector register.
+
+For  a  given  supported  fractional  LMUL  setting,  implementations  must  support  SEW  settings  between SEWMIN and LMUL * ELEN, inclusive.
+
+The use of vtype encodings with LMUL < SEWMIN/ELEN is reserved ,  but implementations can set vill if they do not support these configurations.
+
+<image>
+
+Requiring all implementations to set vill in this case would prohibit future use of this case in an extension, so to allow for a future definition of LMUL<SEW MIN/ELEN behavior, we consider the use of this case to be reserved.
+
+<image>
+
+It is recommended that assemblers provide a warning (not an error) if a vsetvli instruction attempts to write an LMUL < SEWMIN/ELEN.
+
+LMUL is set by the signed vlmul field in vtype (i.e., LMUL = 2 vlmul[2:0] ).
+
+The derived value VLMAX = LMUL*VLEN/SEW represents the maximum number of elements that can be operated on with a single vector instruction given the current SEW and LMUL settings as shown in the table below.
+
+|   vlmul[2:0] |   vlmul[2:0] |   vlmul[2:0] | LMUL   | #groups   | VLMAX      | Registers grouped with register n   |
+|--------------|--------------|--------------|--------|-----------|------------|-------------------------------------|
+|            1 |            0 |            0 | -      | -         | -          | reserved                            |
+|            1 |            0 |            1 | 1/8    | 32        | VLEN/SEW/8 | v n (single register in group)      |
+|            1 |            1 |            0 | 1/4    | 32        | VLEN/SEW/4 | v n (single register in group)      |
+
+|   vlmul[2:0] |   vlmul[2:0] |   vlmul[2:0] | LMUL   |   #groups | VLMAX      | Registers grouped with register n   |
+|--------------|--------------|--------------|--------|-----------|------------|-------------------------------------|
+|            1 |            1 |            1 | 1/2    |        32 | VLEN/SEW/2 | v n (single register in group)      |
+|            0 |            0 |            0 | 1      |        32 | VLEN/SEW   | v n (single register in group)      |
+|            0 |            0 |            1 | 2      |        16 | 2*VLEN/SEW | v n , v n +1                        |
+|            0 |            1 |            0 | 4      |         8 | 4*VLEN/SEW | v n , …, v n +3                     |
+|            0 |            1 |            1 | 8      |         4 | 8*VLEN/SEW | v n , …, v n +7                     |
+
+When LMUL=2, the vector register group contains vector register v n and vector register v n +1, providing twice  the  vector  length  in  bits.  Instructions  specifying  an  LMUL=2  vector  register  group  with  an  oddnumbered vector register are reserved.
+
+When LMUL=4, the vector  register  group  contains  four  vector  registers,  and  instructions  specifying  an LMUL=4 vector register group using vector register numbers that are not multiples of four are reserved.
+
+When LMUL=8, the vector register group contains eight vector registers, and instructions specifying an LMUL=8 vector register group using register numbers that are not multiples of eight are reserved.
+
+Mask registers are always contained in a single vector register, regardless of LMUL.
+
+## 31.3.4.3. Vector Tail Agnostic and Vector Mask Agnostic vta and vma
+
+These  two  bits  modify  the  behavior  of  destination  tail  elements  and  destination  inactive  masked-off elements  respectively  during  the  execution  of  vector  instructions.  The  tail  and  inactive  sets  contain element positions that are not receiving new results during a vector operation, as defined in Section 31.5.4.
+
+All systems must support all four options:
+
+|   vta |   vma | Tail Elements   | Inactive Elements   |
+|-------|-------|-----------------|---------------------|
+|     0 |     0 | undisturbed     | undisturbed         |
+|     0 |     1 | undisturbed     | agnostic            |
+|     1 |     0 | agnostic        | undisturbed         |
+|     1 |     1 | agnostic        | agnostic            |
+
+Mask destination tail elements are always treated as tail-agnostic, regardless of the setting of vta .
+
+When a set is marked undisturbed, the corresponding set of destination elements in a vector register group retain the value they previously held.
+
+When a set is marked agnostic, the corresponding set of destination elements in any vector destination operand can either retain the value they previously held, or are overwritten with 1s. Within a single vector instruction,  each  destination  element  can  be  either  left  undisturbed  or  overwritten  with  1s,  in  any combination,  and  the  pattern  of  undisturbed  or  overwritten  with  1s  is  not  required  to  be  deterministic when the instruction is executed with the same inputs.
+
+<image>
+
+The agnostic policy was added to accommodate machines with vector register renaming. With an undisturbed policy, all elements would have to be read from the old physical destination vector register to be copied into the new physical destination vector register. This causes an inefficiency when these inactive or tail values are not required for subsequent calculations.
+
+<image>
+
+The value of all 1s instead of all 0s was chosen for the overwrite value to discourage software developers from depending on the value written.
+
+<image>
+
+<image>
+
+<image>
+
+A  simple  in-order  implementation  can  ignore  the  settings  and  simply  execute  all  vector instructions using the undisturbed policy. The vta and vma state bits must still be provided in vtype for compatibility and to support thread migration.
+
+An out-of-order implementation can choose to implement tail-agnostic + mask-agnostic using tail-agnostic + mask-undisturbed to reduce implementation complexity.
+
+The  definition  of  agnostic  result  policy  is  left  loose  to  accommodate  migrating  application threads  between  harts  on  a  small  in-order  core  (which  probably  leaves  agnostic  regions undisturbed) and harts on a larger out-of-order core with register renaming (which probably overwrites  agnostic  elements  with  1s).  As  it  might  be  necessary  to  restart  in  the  middle,  we allow  arbitrary  mixing  of  agnostic  policies  within  a  single  vector  instruction.  This  allowed mixing  of  policies  also  enables  implementations  that  might  change  policies  for  different granules of a vector register, for example, using undisturbed within a granule that is actively operated on but renaming to all 1s for granules in the tail.
+
+In addition, except for mask load instructions, any element in the tail of a mask result can also be written with  the  value  the  mask-producing  operation  would  have  calculated  with vl =VLMAX. Furthermore, for mask-logical instructions and vmsbf.m , vmsif.m , vmsof.m mask-manipulation instructions, any element in the tail of the result can be written with the value the mask-producing operation would have calculated with vl =VLEN, SEW=8, and LMUL=8 (i.e., all bits of the mask register can be overwritten).
+
+<image>
+
+Mask tails are always treated as agnostic to reduce complexity of managing mask data, which can  be  written  at  bit  granularity.  There  appears  to  be  little  software  need  to  support  tailundisturbed for mask register values. Allowing mask-generating instructions to write back the result  of  the  instruction  avoids  the  need  for  logic  to  mask  out  the  tail,  except  mask  loads cannot write memory values to destination mask tails as this would imply accessing memory past software intent.
+
+The assembly syntax adds two mandatory flags to the vsetvli instruction:
+
+```
+ta   # Tail agnostic tu   # Tail undisturbed ma   # Mask agnostic mu   # Mask undisturbed vsetvli t0, a0, e32, m4, ta, ma   # Tail agnostic, mask agnostic vsetvli t0, a0, e32, m4, tu, ma   # Tail undisturbed, mask agnostic vsetvli t0, a0, e32, m4, ta, mu   # Tail agnostic, mask undisturbed vsetvli t0, a0, e32, m4, tu, mu   # Tail undisturbed, mask undisturbed
+```
+
+<image>
+
+Prior  to  v0.9,  when  these  flags  were  not  specified  on  a vsetvli ,  they  defaulted  to  maskundisturbed/tail-undisturbed. The use of vsetvli without these flags is deprecated, however, and  specifying  a  flag  setting  is  now  mandatory.  The  default  should  perhaps  be  tailagnostic/mask-agnostic, so software has to specify when it cares about the non-participating elements,  but  given  the  historical  meaning  of  the  instruction  prior  to  introduction  of  these flags, it was decided to always require them in future assembly code.
+
+## 31.3.4.4. Vector Type Illegal ( vill )
+
+The vill bit is used to encode that a previous vset{i}vl{i} instruction attempted to write an unsupported value to vtype .
+
+<image>
+
+The vill bit  is  held  in  bit  XLEN-1  of  the  CSR  to  support  checking  for  illegal  values  with  a branch on the sign bit.
+
+If the vill bit is set, then any attempt to execute a vector instruction that depends upon vtype will raise an illegal-instruction exception.
+
+<image>
+
+vset{i}vl{i} and whole register loads and stores do not depend upon vtype .
+
+When the vill bit is set, the other XLEN-1 bits in vtype shall be zero.
+
+## 31.3.5. Vector Length ( vl ) Register
+
+The XLEN -bit-wide read-only vl CSR can only be updated by the vset{i}vl{i} instructions, and the faultonly-first vector load instruction variants.
+
+The vl register  holds an unsigned integer specifying the number of elements to be updated with results from a vector instruction, as further detailed in Section 31.5.4.
+
+<image>
+
+The  number  of  bits  implemented  in vl depends  on  the  implementation's  maximum  vector length of the smallest supported type. The smallest vector implementation with VLEN=32 and supporting SEW=8 would need at least six bits in vl to hold the values 0-32 (VLEN=32, with LMUL=8 and SEW=8, yields VLMAX=32).
+
+## 31.3.6. Vector Byte Length ( vlenb ) Register
+
+The XLEN -bit-wide read-only CSR vlenb holds the value VLEN/8, i.e., the vector register length in bytes.
+
+<image>
+
+<image>
+
+The value in vlenb is a design-time constant in any implementation.
+
+Without this CSR, several instructions are needed to calculate VLEN in bytes, and the code has to disturb current vl and vtype settings which require them to be saved and restored.
+
+## 31.3.7. Vector Start Index ( vstart ) Register
+
+The XLEN -bit-wide  read-write vstart CSR  specifies  the  index  of  the  first  element  to  be  executed  by  a vector instruction, as described in Section 31.5.4.
+
+Normally, vstart is  only  written  by  hardware  on  a  trap  on  a  vector  instruction,  with  the vstart value representing the element on which the trap was taken (either a synchronous exception or an asynchronous interrupt), and at which execution should resume after a resumable trap is handled.
+
+All vector instructions are defined to begin execution with the element number given in the vstart CSR, leaving earlier elements in the destination vector undisturbed, and to reset the vstart CSR to zero at the end of execution.
+
+<image>
+
+All vector instructions, including vset{i}vl{i} , reset the vstart CSR to zero.
+
+vstart is not modified by vector instructions that raise illegal-instruction exceptions.
+
+The vstart CSR is defined to have only enough writable bits to hold the largest element index (one less than the maximum VLMAX).
+
+<image>
+
+The maximum vector length is obtained with the largest LMUL setting (8) and the smallest SEW setting (8), so VLMAX\_max = 8*VLEN/8 = VLEN. For example, for VLEN=256, vstart
+
+would have 8 bits to represent indices from 0 through 255.
+
+The use of vstart values greater than the largest element index for the current vtype setting is reserved.
+
+<image>
+
+It is recommended that implementations trap if vstart is out of bounds. It is not required to trap, as a possible future use of upper vstart bits is to store imprecise trap information.
+
+The vstart CSR  is  writable  by  unprivileged  code,  but  non-zero vstart values  may  cause  vector instructions  to  run  substantially  slower  on  some  implementations,  so vstart should  not  be  used  by application programmers. A few vector instructions cannot be executed with a non-zero vstart value and will raise an illegal-instruction exception as defined below.
+
+<image>
+
+Making vstart visible to unprivileged code supports user-level threading libraries.
+
+Implementations are permitted to raise illegal-instruction exceptions when attempting to execute a vector instruction with a value of vstart that the implementation can never produce when executing that same instruction with the same vtype setting.
+
+<image>
+
+For  example,  some  implementations  will  never  take  interrupts  during  execution  of  a  vector arithmetic  instruction,  instead  waiting  until  the  instruction  completes  to  take  the  interrupt. Such implementations are permitted to raise an illegal-instruction exception when attempting to execute a vector arithmetic instruction when vstart is nonzero.
+
+<image>
+
+When migrating a software thread between two harts with different microarchitectures, the vstart value might not be supported by the new hart microarchitecture. The runtime on the receiving  hart  might  then  have  to  emulate  instruction  execution  up  to  the  next  supported vstart element position. Alternatively, migration events can be constrained to only occur at mutually supported vstart locations.
+
+## 31.3.8. Vector Fixed-Point Rounding Mode ( vxrm ) Register
+
+The vector fixed-point rounding-mode register holds a two-bit read-write rounding-mode field in the leastsignificant bits ( vxrm[1:0] ). The upper bits, vxrm[XLEN-1:2] , should be written as zeros.
+
+The vector fixed-point rounding-mode is given a separate CSR address to allow independent access, but is also reflected as a field in vcsr .
+
+<image>
+
+A new rounding mode can be set while saving the original rounding mode using a single csrwi instruction.
+
+The fixed-point rounding algorithm is specified as follows. Suppose the pre-rounding result is v , and d bits of  that  result  are  to  be  rounded  off.  Then  the  rounded result is (v >> d) + r ,  where r depends on the rounding mode as specified in the following table.
+
+Table 46. vxrm encoding
+
+|   vxrm[1:0] |   vxrm[1:0] | Abbreviation   | Rounding Mode                              | Rounding increment, r             |
+|-------------|-------------|----------------|--------------------------------------------|-----------------------------------|
+|           0 |           0 | rnu            | round-to-nearest-up (add +0.5 LSB)         | v[d-1]                            |
+|           0 |           1 | rne            | round-to-nearest-even                      | v[d-1] & (v[d-2:0]≠0 | v[d]) |
+|           1 |           0 | rdn            | round-down                                 | 0                                 |
+|           1 |           1 | rod            | round-to-odd (OR bits into LSB, aka "jam") | !v[d] & v[d-1:0]≠0                |
+
+The rounding functions:
+
+```
+roundoff_unsigned(v, d) = (unsigned(v) >> d) + r roundoff_signed(v, d) = (signed(v) >> d) + r
+```
+
+are used to represent this operation in the instruction descriptions below.
+
+## 31.3.9. Vector Fixed-Point Saturation Flag ( vxsat )
+
+The vxsat CSR  has  a  single  read-write  least-significant  bit  ( vxsat[0] )  that  indicates  if  a  fixed-point instruction  has  had  to  saturate  an  output  value  to  fit  into  a  destination  format.  Bits vxsat[XLEN-1:1] should be written as zeros.
+
+The vxsat bit is mirrored in vcsr .
+
+## 31.3.10. Vector Control and Status ( vcsr ) Register
+
+The vxrm and vxsat separate CSRs can also be accessed via fields in the XLEN -bit-wide vector control and status CSR, vcsr .
+
+Table 47. vcsr layout
+
+| Bits     | Name      | Description                         |
+|----------|-----------|-------------------------------------|
+| XLEN-1:3 |           | Reserved                            |
+| 2:1      | vxrm[1:0] | Fixed-point rounding mode           |
+| 0        | vxsat     | Fixed-point accrued saturation flag |
+
+## 31.3.11. State of Vector Extension at Reset
+
+The vector extension must have a consistent state at reset. In particular, vtype and vl must have values that can be read and then restored with a single vsetvl instruction.
+
+<image>
+
+It is recommended that at reset, vtype.vill is set, the remaining bits in vtype are zero, and vl is set to zero.
+
+The vstart , vxrm , vxsat CSRs can have arbitrary values at reset.
+
+<image>
+
+Most uses of the vector unit will require an initial vset{i}vl{i} , which will reset vstart . The vxrm and vxsat fields should be reset explicitly in software before use.
+
+The vector registers can have arbitrary values at reset.
+
+## 31.4. Mapping of Vector Elements to Vector Register State
+
+The  following  diagrams  illustrate  how  different  width  elements  are  packed  into  the  bytes  of  a  vector register depending on the current SEW and LMUL settings, as well as implementation VLEN. Elements are packed into each vector register with the least-significant byte in the lowest-numbered bits.
+
+The mapping was chosen to provide the simplest and most portable model for software, but might appear to incur large wiring cost for wider vector datapaths on certain operations. The vector instruction set was expressly designed to support implementations that internally rearrange vector data for different SEW to reduce datapath wiring costs, while externally preserving the simple software model.
+
+<image>
+
+For example, microarchitectures can track the EEW with which a vector register was written, and then insert additional scrambling operations to rearrange data if the register is accessed with a different EEW.
+
+## 31.4.1. Mapping for LMUL = 1
+
+When LMUL=1, elements are simply packed in order from the least-significant to most-significant bits of the vector register.
+
+<image>
+
+To increase readability, vector register layouts are drawn with bytes ordered from right to left with increasing byte address. Bits within an element are numbered in a little-endian format with increasing bit index from right to left corresponding to increasing magnitude.
+
+LMUL=1 examples. The element index is given in hexadecimal and is shown placed at the least-significant byte of the stored element. VLEN=32b Byte         3 2 1 0 SEW=8b       3 2 1 0 SEW=16b        1   0 SEW=32b            0 VLEN=64b Byte        7 6 5 4 3 2 1 0 SEW=8b      7 6 5 4 3 2 1 0 SEW=16b       3   2   1   0 SEW=32b           1       0 SEW=64b                   0 VLEN=128b Byte        F E D C B A 9 8 7 6 5 4 3 2 1 0 SEW=8b      F E D C B A 9 8 7 6 5 4 3 2 1 0 SEW=16b       7   6   5   4   3   2   1   0 SEW=32b           3       2       1       0 SEW=64b                   1               0 VLEN=256b Byte     1F1E1D1C1B1A19181716151413121110 F E D C B A 9 8 7 6 5 4 3 2 1 0 SEW=8b   1F1E1D1C1B1A19181716151413121110 F E D C B A 9 8 7 6 5 4 3 2 1 0
+
+| SEW=16b   | F   | E D   |   C B | A   | 9   |   8 | 7   | 6   | 5   |   4 | 3   | 2   | 1   |   0 |
+|-----------|-----|-------|-------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| SEW=32b   |     | 7     |     6 | 5   |     |   4 |     | 3   |     |   2 |     | 1   |     |   0 |
+| SEW=64b   |     |       |     3 |     |     |   2 |     |     |     |   1 |     |     |     |   0 |
+
+## 31.4.2. Mapping for LMUL < 1
+
+When LMUL < 1, only the first LMUL*VLEN/SEW elements in the vector register are used. The remaining space in the vector register is treated as part of the tail, and hence must obey the vta setting.
+
+```
+Example, VLEN=128b, LMUL=1/4 Byte        F E D C B A 9 8 7 6 5 4 3 2 1 0 SEW=8b      - - - - - - - - - - - - 3 2 1 0 SEW=16b       -   -   -   -   -   -   1   0 SEW=32b           -       -       -       0
+```
+
+## 31.4.3. Mapping for LMUL > 1
+
+When vector registers are grouped, the elements of the vector register group are packed contiguously in element  order  beginning  with  the  lowest-numbered  vector  register  and  moving  to  the  next-highestnumbered vector register in the group once each vector register is filled.
+
+```
+LMUL > 1 examples VLEN=32b, SEW=8b, LMUL=2 Byte         3 2 1 0 v2*n         3 2 1 0 v2*n+1       7 6 5 4 VLEN=32b, SEW=16b, LMUL=2 Byte         3 2 1 0 v2*n           1   0 v2*n+1         3   2 VLEN=32b, SEW=16b, LMUL=4 Byte         3 2 1 0 v4*n           1   0 v4*n+1         3   2 v4*n+2         5   4 v4*n+3         7   6 VLEN=32b, SEW=32b, LMUL=4
+```
+
+```
+Byte         3 2 1 0 v4*n               0 v4*n+1             1 v4*n+2             2 v4*n+3             3 VLEN=64b, SEW=32b, LMUL=2 Byte         7 6 5 4 3 2 1 0 v2*n               1       0 v2*n+1             3       2 VLEN=64b, SEW=32b, LMUL=4 Byte         7 6 5 4 3 2 1 0 v4*n               1       0 v4*n+1             3       2 v4*n+2             5       4 v4*n+3             7       6 VLEN=128b, SEW=32b, LMUL=2 Byte        F E D C B A 9 8 7 6 5 4 3 2 1 0 v2*n              3       2       1       0 v2*n+1            7       6       5       4 VLEN=128b, SEW=32b, LMUL=4 Byte          F E D C B A 9 8 7 6 5 4 3 2 1 0 v4*n                3       2       1       0 v4*n+1              7       6       5       4 v4*n+2              B       A       9       8 v4*n+3              F       E       D       C
+```
+
+## 31.4.4. Mapping across Mixed-Width Operations
+
+
+
+Final instruction for mseccfg: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

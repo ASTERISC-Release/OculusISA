@@ -1,0 +1,141 @@
+# Test Case Rule: RULE 61: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=0, W=0, X=1
+# Attempt Read access in S-mode
+csrr a0, satp
+# Result: mcause = 11
+# Note: mcause=11 corresponds to Instruction Decode Error/Access Exception in many environments,
+# but specifically for PMP violations, we rely on the specified exception type.
+# Since the exact error code mapping for PMP violations depends on the specific environment/simulator, 
+# and we are testing the rule's stated behavior (Access Exception), we check for a trap.
+# We will assume a general Access Exception trap code (e.g., 11 for PMP violation).
+# If the simulation environment defines a specific code for PMP access violations, this needs adjustment.
+# Standard RISC-V spec usually maps PMP violations to Access Faults.
+# For maximum determinism, we rely on the fact that an Access Exception occurs.
+# We'll use a generic trap code if the exact mapping is unknown, but based on the provided examples,
+# we stick to what the rule demands.
+
+# Result: mcause = 11
+
+# Test Case Rule: RULE 62: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in M-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=0, W=1, X=0
+# Attempt Read access in M-mode
+csrr a0, satp
+# Result: mcause = 11
+
+# Test Case Rule: RULE 63: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in S-mode or U-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=0, W=1, X=0
+# Attempt Read access in S-mode
+csrr a0, satp
+# Result: mcause = 11
+
+# Test Case Rule: RULE 64: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in M-mode to the region permits read and execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=0, W=1, X=1
+# Attempt Read access in M-mode
+csrr a0, satp
+# Result: a0 = 0
+
+# Test Case Rule: RULE 65: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in S-mode or U-mode to the region permits only execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=0, W=1, X=1
+# Attempt Read access in S-mode
+csrr a0, satp
+# Result: mcause = 11
+
+# Test Case Rule: RULE 66: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in M-mode to the region is permitted as a locked read-only region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=0, X=0
+# Attempt Write access in M-mode
+sw x0, 0(a0)
+# Result: mcause = 11
+
+# Test Case Rule: RULE 67: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=0, X=0
+# Attempt Read access in S-mode
+csrr a0, satp
+# Result: mcause = 11
+
+# Test Case Rule: RULE 68: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in M-mode to the region is permitted as a locked read/execute region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=0, X=1
+# Attempt Write access in M-mode
+sw x0, 0(a0)
+# Result: a0 = 0
+
+# Test Case Rule: RULE 69: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=0, X=1
+# Attempt Read access in S-mode
+csrr a0, satp
+# Result: mcause = 11
+
+# Test Case Rule: RULE 70: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in M-mode to the region is permitted as a locked read/write region.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=1, X=0
+# Attempt Execute access in M-mode
+jal x0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 71: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in S-mode or U-mode causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=1, X=0
+# Attempt Execute access in S-mode
+jal x0, 0
+# Result: mcause = 11
+
+# Test Case Rule: RULE 72: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in M-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=1, X=1
+# Attempt Write access in M-mode (testing the read-only constraint)
+sw x0, 0(a0)
+# Result: mcause = 11
+
+# Test Case Rule: RULE 73: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in S-mode or U-mode is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume PMP entry 0 is configured: L=1, R=1, W=1, X=1
+# Attempt Write access in S-mode (testing the read-only constraint)
+sw x0, 0(a0)
+# Result: mcause = 11

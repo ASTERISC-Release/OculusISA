@@ -1,0 +1,164 @@
+# Test Case Rule: RULE 181: If a virtual-machine load/store instruction (HLV, HLVX, or HSV) is used to execute a load or store as though V=1, then vsstatus can affect the behavior of the machine even when the V field in mstatus is 0.
+##### ASSEMBLY #####
+nop # Skipped because effect depends on guest translation and permission state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 182: If the MPRV feature in mstatus is used to execute a load or store as though V=1, then vsstatus can affect the behavior of the machine even when the V field in mstatus is 0.
+##### ASSEMBLY #####
+nop # Skipped because effect depends on guest translation and permission state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 183: The MPRV feature in the mstatus register can be used to execute a load or store as though the V bit is 1.
+##### ASSEMBLY #####
+nop # Skipped because observation requires configured guest translation state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 184: When the V bit is 0, the vsatp register does not directly affect the behavior of the machine unless a virtual-machine load/store or the MPRV feature in the mstatus register is used to execute a load or store as though V is 1.
+##### ASSEMBLY #####
+addi sp, sp, -16
+li t0, 0x5a
+sd t0, 0(sp)
+li t1, 8 << 60
+csrw vsatp, t1
+call machine_to_supervisor
+ld a0, 0(sp)
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 185: mstatus.TVM does not cause HFENCE.VVMA to trap.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+call machine_to_supervisor
+hfence.vvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 186: HFENCE.GVMA is valid only in HS-mode when mstatus.TVM = 0.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+hfence.gvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 187: HFENCE.GVMA is valid in M-mode irrespective of the value of mstatus.TVM.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+hfence.gvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 188: Executing HFENCE.GVMA in HS-mode when mstatus.TVM = 1 causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+call machine_to_supervisor
+hfence.gvma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 189: MPV is written by the implementation whenever a trap is taken into M-mode.
+##### ASSEMBLY #####
+nop # Skipped because the written value is not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 190: When a trap is taken into M-mode, MPV in mstatus is set to the value of the virtualization mode V at the time of the trap.
+##### ASSEMBLY #####
+li t0, 1 << 39
+csrc mstatus, t0
+li t0, 1 << 2
+csrc medeleg, t0
+li t0, 1 << 22
+csrc medeleg, t0
+call machine_to_virtual
+csrr a0, mstatus
+# Result: mstatus[39] = 1
+
+# Test Case Rule: RULE 191: When an MRET instruction is executed, the virtualization mode V is set to MPV in mstatus unless MPP = 3, in which case V remains 0.
+##### ASSEMBLY #####
+li t0, 1 << 18
+csrc mstatus, t0
+csrs vsstatus, t0
+la t1, after_mret
+csrw mepc, t1
+li t1, 3 << 11
+csrc mstatus, t1
+li t1, 1 << 39
+csrs mstatus, t1
+li t1, 1 << 11
+csrs mstatus, t1
+mret
+after_mret:
+csrr a0, sstatus
+li t0, 1 << 18
+and a0, a0, t0
+# Result: a0 = 0x40000
+
+# Test Case Rule: RULE 192: GVA is written by the implementation whenever a trap is taken into M-mode.
+##### ASSEMBLY #####
+nop # Skipped because the written value is not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 193: For any trap that writes a guest virtual address to mtval, GVA in mstatus is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because generating the required trap depends on guest translation state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 194: For any other trap into M-mode, GVA in mstatus is set to 0.
+##### ASSEMBLY #####
+li t0, 1 << 38
+csrs mstatus, t0
+csrw cycle, x0
+# Result: mstatus[38] = 0
+
+# Test Case Rule: RULE 195: The TSR field of mstatus affects execution only in HS-mode and does not affect execution in VS-mode.
+##### ASSEMBLY #####
+li t0, 1 << 22
+csrc hstatus, t0
+csrs mstatus, t0
+call machine_to_virtual
+call vs_to_vu
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 196: The TVM field of mstatus affects execution only in HS-mode and does not affect execution in VS-mode.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc hstatus, t0
+csrs mstatus, t0
+call machine_to_virtual
+csrr t1, satp
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 197: The TW field of mstatus affects execution in all modes except M-mode.
+##### ASSEMBLY #####
+nop # Skipped because direct testing requires the forbidden WFI instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 198: Setting TVM = 1 in mstatus prevents HS-mode from accessing hgatp or executing HFENCE.GVMA or HINVAL.GVMA.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, hgatp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 199: Setting TVM = 1 in mstatus has no effect on accesses to vsatp or on execution of HFENCE.VVMA or HINVAL.VVMA.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+call machine_to_supervisor
+csrr t1, vsatp
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 200: Setting TVM = 1 in mstatus does not cause traps for accesses to vsatp, for execution of HFENCE.VVMA or HINVAL.VVMA, or for any actions taken in VS-mode.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrs mstatus, t0
+call machine_to_supervisor
+hinval.vvma x0, x0
+li a0, 0
+# Result: a0 = 0

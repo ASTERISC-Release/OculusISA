@@ -1,0 +1,41 @@
+## 5.2.2. Machine top interrupt CSR ( mtopi )
+
+Machine-level CSR mtopi is read-only with width MXLEN. A read of mtopi returns information about the highest-priority pending-and-enabled interrupt for machine level, in this format:
+
+bits 27:16 IID
+
+bits 7:0 IPRIO
+
+All other bits of mtopi are reserved and read as zeros.
+
+The value of mtopi is zero unless there is an interrupt pending in mip and enabled in mie that is not delegated to a less-privileged level. When there is a pending-and-enabled major interrupt for machine level, field IID (Interrupt Identity) is the major identity number of the highest-priority interrupt, and field IPRIO indicates its priority.
+
+If all bytes of the machine-level iprio array are read-only zeros, a simplified implementation of field IPRIO is allowed in which its value is always 1 whenever mtopi is not zero.
+
+Otherwise, when mtopi is not zero, if the priority number for the reported interrupt is in the range 1 to 255, IPRIO is simply that number. If the interrupt's priority number is zero or greater than 255, IPRIO is set to either 0 or 255 as follows:
+
+- If  the  interrupt's  priority  number  is  greater  than  255,  then  IPRIO  is  255  (lowest  representable priority).
+- If  the interrupt's priority number is zero and interrupt number IID has a default priority higher than a machine external interrupt, then IPRIO is 0 (highest priority).
+- If  the  interrupt's  priority  number  is  zero  and  interrupt  number  IID  has  a  default  priority  lower than a machine external interrupt, then IPRIO is 255 (lowest representable priority).
+
+<image>
+
+To ensure that mtopi is never zero when an interrupt is pending and enabled for machine level, if major interrupt 0 can trap to M-mode, it must have a default priority lower than a machine external interrupt.
+
+The value of mtopi is not affected by the global interrupt enable MIE in CSR mstatus .
+
+The RISC-V Privileged Architecture ensures that, when the value of mtopi is not zero, a trap is taken to M-mode  for  the  interrupt  indicated  by  field  IID  if  either  the  current  privilege  mode  is  M  and mstatus .MIE is one, or the current privilege mode has less privilege than M-mode. The trap itself does not cause the value of mtopi to change.
+
+The  following  pseudocode  shows  how  a  machine-level  trap  handler  might  read mtopi to  avoid redundant restoring and saving of processor registers when an interrupt arrives during the handling of another trap (either a synchronous exception or an earlier interrupt):
+
+```
+save processor registers i = read CSR mcause if (i >= 0 ) { handle synchronous exception i restore mstatus if necessary } if (mstatus.MPIE == 1 ) { loop { i = read CSR mtopi if (i == 0 ) exit loop i = i>> 16 call the interrupt handler for major interrupt i } } restore processor registers return from trap
+```
+
+(This example can be further optimized, but with an increase in complexity.)
+
+In order for this algorithm to function correctly, mstatus .MPIE must be set to 1 before executing an MRET that changes the privilege mode.
+
+<image>
+
+Assuming mstatus is saved and restored by trap handlers at entry and exit as is common, it  is  sufficient  to  set mstatus .MPIE  =  1  only  once,  before  the  first  use  of  MRET  that changes privilege mode. After an MRET, a trap back to M-mode  will restore mstatus .MPIE = 1; and if the trap handler preserves mstatus , it will still be true before the next MRET that ends the handler.

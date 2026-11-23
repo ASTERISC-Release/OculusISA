@@ -1,0 +1,67 @@
+This document excerpt details various features of the RISC-V Privileged Architecture, focusing heavily on **address translation**, **virtualization (Hypervisor extension)**, and **Control-flow Integrity (CFI)** capabilities through several extensions.
+
+Here is a structured summary of the key concepts and mechanisms described:
+
+---
+
+## I. Core Address Translation and Protection (satp Register)
+
+The `satp` (Supervisor Address Translation and Protection) CSR controls how addresses are translated in supervisor mode (S-mode or U-mode).
+
+*   **Format:** `satp` contains the Physical Page Number (PPN) of the root page table, an Address Space Identifier (ASID), and a **MODE** field.
+*   **MODE Schemes:**
+    *   **Bare:** Supervisor virtual addresses equal physical addresses (no translation/protection).
+    *   **Sv32:** Supports 32-bit paged virtual memory (SXLEN=32).
+    *   **Sv39, Sv48, Sv57:** Support larger page-based virtual address spaces (SXLEN=64).
+*   **ASID Management:** ASIDs allow address-translation fences to be managed per-address space, facilitating context switches.
+*   **Active State:** The `satp` register is active when the effective privilege mode is S-mode or U-mode.
+
+## II. Two-Stage Address Translation (Virtualization - H Extension)
+
+The Hypervisor extension enables **two-stage address translation**:
+1.  **VS-Stage:** Guest Virtual Address (VA) $\rightarrow$ Guest Physical Address (GPA) (controlled by `vsatp`).
+2.  **G-Stage:** GPA $\rightarrow$ Supervisor Physical Address (PA) (controlled by `hgatp`).
+
+*   **Modes:** Virtualization mode **V=1** activates two-stage translation.
+*   **Guest Physical Address Translation (G-Stage):** The `hgatp` register selects the G-stage scheme (e.g., Sv32x4, Sv39x4, Sv48x4, Sv57x4).
+*   **Memory-Management Fences:**
+    *   `SFENCE.VMA` orders stores to VS-level structures (when V=1).
+    *   `HFENCE.VVMA` orders stores to VS-stage translation structures (controlled by `vsatp`).
+    *   `HFENCE.GVMA` orders stores to G-stage translation structures (controlled by `hgatp`).
+*   **Guest-Physical Address Translation:** Guest physical addresses (GPAs) are widened (e.g., by 2 bits for Sv32x4) and the root page table size is increased (e.g., to 16 KiB).
+
+## III. Privilege Modes and State Management
+
+The architecture supports multiple privilege modes, including **HS-mode** (Hypervisor-extended Supervisor mode), **VS-mode** (Virtual Supervisor mode), and **VU-mode** (Virtual User mode).
+
+*   **Privilege Transitions (Trap Returns):**
+    *   **MRET:** Returns from M-mode, sets `MPV=0` and `MPP=0`.
+    *   **SRET:** Returns from HS/VS-mode, sets appropriate context status bits (`SPP`, `SIE`, `SPIE`) based on the virtualization mode (V).
+*   **Hypervisor Status (`hstatus`):** Tracks exception behavior for VS-mode guests, including control over virtualization instructions (`HU`) and external interrupts (`VGEIN`).
+*   **Virtual Supervisor Registers (VS CSRs):** Registers like `vsstatus`, `vstvec`, `vsepc`, and `vscause` replicate supervisor registers (`sstatus`, `stvec`, `sepc`, `scause`) for use in VS-mode.
+
+## IV. Extensions for Security and Performance
+
+Several extensions are introduced to enhance security and performance:
+
+*   **Zicfiss (CFI):** Provides backward-edge CFI using **Shadow Stacks (SS)**.
+    *   **SS Page:** PTEs with `R=0, W=1, X=0` represent SS pages.
+    *   **Protection:** Accesses to SS pages by non-SS instructions trigger access faults (fatal errors), distinguishing them from page faults.
+*   **Svvptc:** Relieves the need for synchronization instructions (`SFENCE.VMA`, `SINVAL.VMA`) when a PTE changes from **Invalid (0) to Valid (1)**.
+*   **Svinval:** Provides fine-grained invalidation instructions (`SINVAL.VMA`, `SFENCE.W.INVAL`, `SFENCE.INVAL.IR`) for better cache management.
+*   **Ssdbltrp:** Enables a **double trap** mechanism for critical error handling.
+*   **Ssqosid:** Introduces QoS identifiers (`RCID`, `MCID`) in `srmcfg` to allow hardware to monitor and manage resource allocation (cache, bandwidth) for different workloads.
+*   **Sscofpmf:** Standardizes event counting in `mhpmevent` CSRs with overflow and mode-based filtering.
+*   **Ssnpm, Smnpm, Smmpm (Pointer Masking Extensions):** Allow pointer masking for different privilege levels (M-mode, S/HS-mode, U-mode, VS-mode), impacting explicit memory accesses based on the active privilege mode.
+
+## V. Pointer Masking Details
+
+Pointer Masking allows ignoring the upper bits of the effective address (PMLEN bits) during address generation.
+
+*   **Virtual Addresses:** The upper bits are replaced with the sign extension of the PMLEN+1st bit (NVBITS).
+*   **Physical Addresses (Including GPAs):** The upper PMLEN bits are replaced with **zero** (if `MODE != Bare`).
+*   **Application:** Pointer masking applies to a wide range of instructions, including loads, stores, atomics, and cache management operations.
+*   **Safety:** It is applied per privilege mode, and operations involving Cache Management Operations (CMOs) must respect masking to prevent security vulnerabilities.
+
+---
+***If you have a specific question about a particular extension, register, or translation scheme mentioned above, please let me know!***

@@ -1,0 +1,31 @@
+## 5.7.17. Trigger Extra (RV32) (textra32, at 0x7a3)
+
+This  register  provides  access  to  the  trigger  selected  by  tselect.  The  reset  values  listed  here  apply  to every underlying trigger.
+
+This register is accessible as tdata3 when type is 2, 3, 4, 5, or 6 and XLEN=32.
+
+If  DXLEN >= 64, then this register provides access to the low bits of each field defined in textra64. Writes to this register will clear the high bits of the corresponding fields in textra64.
+
+All functionality in this register is optional. Any number of upper bits of mhvalue and svalue may be tied to 0. mhselect and sselect may only support 0 (ignore).
+
+Byte-granular comparison of scontext to svalue allows scontext to be defined to include more than one element of comparison. For example, software instrumentation can program the scontext value to be the  concatenation  of  different  ID  contexts  such  as  process  ID  and  thread  ID.  The  user  can  then program byte compares based on sbytemask to include one or more of the contexts in the compare.
+
+Byte masking only applies to scontext comparison; i.e when sselect is 1.
+
+<image>
+
+Note  that  sselect  and  mhselect  filtering  apply  in  all  modes,  including  M-mode  and  Smode. If desired, debuggers can use a trigger's mode filtering bits to restrict the matching to modes where it considers ASID/VMID/scontext/hcontext to be active.
+
+This CSR is read/write.
+
+|   31 - mhvalue |   26 25 - mhselect |   23 22 - 0 |   20 19 18 17 - sbytemask |   svalue |   2 1 0 - sselect |
+|----------------|--------------------|-------------|---------------------------|----------|-------------------|
+|              6 |                  3 |           3 |                         2 |       16 |                 2 |
+
+| Field     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Access   |   Reset |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| mhvalue   | Data used together with mhselect.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | WARL     |       0 |
+| mhselect  | 0 (ignore): Ignore mhvalue. 4 (mcontext): This trigger will only match or fire if the low bits of mcontext/hcontext equal mhvalue. 1, 5 (mcontext_select): This trigger will only match or fire if the low bits of mcontext/hcontext equal {mhvalue, mhselect[2]}. 2, 6 (vmid_select): This trigger will only match or fire if VMID in hgatp equals the lower VMIDMAX (defined in the Privileged Spec) bits of {mhvalue, mhselect[2]}. 3, 7 (reserved): Reserved. If the H extension is not supported, the only legal values are 0 and 4. | WARL     |       0 |
+| sbytemask | When the least significant bit of this field is 1, it causes bits 7:0 in the comparison to be ignored, when sselect=1. When the next most significant bit of this field is 1, it causes bits 15:8 to be ignored in the comparison, when sselect=1.                                                                                                                                                                                                                                                                                        | WARL     |       0 |
+| svalue    | Data used together with sselect. This field should be tied to 0 when S-mode is not supported.                                                                                                                                                                                                                                                                                                                                                                                                                                             | WARL     |       0 |
+| sselect   | 0 (ignore): Ignore svalue. 1 (scontext): This trigger will only match or fire if the low bits of scontext equal svalue. 2 (asid): This trigger will only match or fire if: • the mode is VS-mode or VU-mode and ASID in vsatp equals the lower ASIDMAX (defined in the Privileged Spec) bits of svalue. • in all other modes, ASID in satp equals the lower ASIDMAX (defined in the Privileged Spec) bits of svalue. This field should be tied to 0 when S-mode is not supported.                                                         | WARL     |       0 |

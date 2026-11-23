@@ -1,0 +1,58 @@
+## 4.5.2. Source configurations ( sourcecfg[1]-sourcecfg[1023] )
+
+For each possible interrupt source  , register sourcecfg[ ] controls the source mode for source in this interrupt  domain  as  well  as  any  delegation  of  the  source  to  a  child  domain.  When  source is  not implemented, or appears in this domain not to be implemented, sourcecfg[ ] is  read-only  zero.  If source    was  not  delegated  to  this  domain  and  is  then  changed  (at  the  parent  domain)  to  become delegated to this domain, sourcecfg[ ] remains zero until successfully written with a nonzero value.
+
+Bit  10  of sourcecfg[ ] is  a  1-bit  field  called  D  (Delegate).  If  D  =  1,  source is  delegated  to  a  child domain, and if D = 0, it is not delegated to a child domain. Interpretation of the rest of sourcecfg[ ] depends on field D.
+
+When interrupt source   is delegated to a child domain, sourcecfg[ ] has this format:
+
+bit 10 D, =1
+
+bits 9:0 Child Index ( WLRL )
+
+All other register bits are reserved and read as zeros.
+
+Child Index is a WLRL field that specifies the interrupt domain to which this source is delegated. For an interrupt domain with child domains, this field must be able to hold integer values in the range 0 to . Each interrupt domain has a fixed mapping from these index numbers to child domains.
+
+If  an  interrupt  domain has no children in the domain hierarchy, bit D cannot be set to one in any sourcecfg register for that domain. For such a leaf domain, attempting to write a sourcecfg register with a value that has bit 10 = 1 causes the entire register to be set to zero instead.
+
+When interrupt source   is not delegated to a child domain, sourcecfg[ ] has this format:
+
+<formula>
+
+bits 2:0 SM ( WARL )
+
+All other register bits are reserved and read as zeros.
+
+The  SM  (Source  Mode)  field  is WARL and  controls  whether  the  interrupt  source  is  active  in  this domain, and if so, what values or transitions on the incoming wire are interpreted as interrupts. The values allowed for SM and their meanings are listed in Table 7. Inactive (zero) is always supported for field  SM.  Implementations  are  free  to  choose,  independently  for  each  interrupt  source,  what  other values are supported for SM.
+
+Table 7. Encoding of the SM (Source Mode) field of a sourcecfg register when bit D = 0
+
+|   Value | Name     | Description                                 |
+|---------|----------|---------------------------------------------|
+|       0 | Inactive | Inactive in this domain (and not delegated) |
+
+| Value   | Name     | Description                                                |
+|---------|----------|------------------------------------------------------------|
+| 1       | Detached | Active, detached from the source wire                      |
+| 2-3     | -        | Reserved                                                   |
+| 4       | Edge1    | Active, edge-sensitive; interrupt asserted on rising edge  |
+| 5       | Edge0    | Active, edge-sensitive; interrupt asserted on falling edge |
+| 6       | Level1   | Active, level-sensitive; interrupt asserted when high      |
+| 7       | Level0   | Active, level-sensitive; interrupt asserted when low       |
+
+An interrupt  source  is  inactive  in  the  interrupt  domain  if  either  the  source  is  delegated  to  a  child domain  (D  =  1)  or  it  is  not  delegated  (D  =  0)  and  SM  is  Inactive.  Whenever  interrupt  source is inactive  in  an  interrupt  domain,  the  corresponding  interrupt-pending  and  interrupt-enable  bits within the domain are read-only zeros, and register target[ ] is  also  read-only  zero.  If  source is changed from inactive to an active mode, the interrupt source's pending and enable bits remain zeros, unless set automatically for a reason specified later in this section or in Section 4.7, and the defined subfields of target[ ] obtain UNSPECIFIED values.
+
+When a source is configured as Detached, its wire input is ignored; however, the interrupt-pending bit may still be set by a write to a setip or setipnum register. (This mode can be useful for receiving MSIs, for example.)
+
+An edge-sensitive source can be configured to recognize an incoming interrupt on either a rising edge (low-to-high transition) or a falling edge (high-to-low transition). When configured for a falling edge (mode Edge0), the source is said to be inverted .
+
+A level-sensitive source can be configured to interpret either a high level (1) or a low level (0) on the wire as the assertion of an interrupt. When configured for a low level (mode Level0), the source is said to be inverted .
+
+For an interrupt source that is configured as edge-sensitive or level-sensitive, define
+
+rectified input value = (incoming wire value) XOR (source is inverted).
+
+For a source that is inactive or Detached, the rectified input value is zero.
+
+Any write to a sourcecfg register might (or might not) cause the corresponding interrupt-pending bit to  be  set  to  one  if  the  rectified  input  value  is  high  (=  1)  under  the  new  source  mode.  A  write  to  a sourcecfg register will not by itself cause a pending bit to be cleared except when the source is made inactive. (But see Section 4.7.)

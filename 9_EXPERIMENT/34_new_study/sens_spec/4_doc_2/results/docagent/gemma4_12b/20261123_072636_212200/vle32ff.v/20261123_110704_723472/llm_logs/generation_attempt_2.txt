@@ -1,0 +1,41 @@
+Based on the documentation provided, here are the answers to your questions:
+
+### 1. What is the difference between `mstatus.MPV` and `mstatus.MPP`?
+The difference lies in what specific state value they capture when a trap occurs:
+*   **`mstatus.MPP` (Machine Previous Privilege):** This field records the **nominal privilege mode** at which the hart was executing before the trap. For example, if a trap occurs while executing in User mode, `MPP` is set to 0.
+*   **`mstatus.MPV` (Machine Previous Virtualization):** This field is specific to the Hypervisor extension. It records the **virtualization mode ($V$)** at which the hart was executing before the trap. It is set to 1 if the hart was in a guest mode (VS or VU) and 0 otherwise.
+
+Essentially, `MPP` tracks "Who was running?" (User, Supervisor, Machine), while `MPV` tracks "Was it a guest?" (Virtualized or not).
+
+### 2. How does `mstatus.MXR` affect memory access?
+The **`MXR` (Make eXecutable Readable)** bit modifies the privilege level with which **loads** access virtual memory:
+*   **When `MXR=0`:** Only loads from pages explicitly marked as **readable** ($R=1$ in the Page Table Entry) will succeed.
+*   **When `MXR=1`:** Loads from pages marked as **either readable or executable** ($R=1$ or $X=1$) will succeed.
+
+It essentially allows the supervisor to treat "executable" pages as "readable" for the purpose of load instructions, which can be useful for certain types of memory management or security policies.
+
+### 3. What is the purpose of the `mstatus.SUM` bit?
+The **`SUM` (permit Supervisor User Memory access)** bit is a security mechanism designed to prevent supervisor software from inadvertently accessing user-mode memory.
+*   **When `SUM=0`:** Supervisor-mode memory accesses to pages marked as accessible by user-mode (where $U=1$ in the PTE) will **fault**.
+*   **When `SUM=1`:** Supervisor-mode software is permitted to access those user-mode pages.
+
+The standard design is to keep `SUM` clear so that a bug in the supervisor kernel cannot easily be exploited to read or write data belonging to a user process.
+
+### 4. What is the purpose of the `mstatus.UBE` bit?
+The **`UBE` (User Byte Enable)** bit controls the **endianness** of explicit memory accesses performed in **User-mode**.
+*   It allows a system to run a User-mode program with a different endianness than the Supervisor-mode OS.
+*   If `UBE=0`, User-mode explicit loads and stores are **little-endian**.
+*   If `UBE=1`, User-mode explicit loads and stores are **big-endian**.
+*   It does **not** affect instruction fetches, which are always little-endian.
+
+### 5. What are the three types of faults defined in the `Zicfiss` extension?
+The `Zicfiss` extension (Shadow Stack) defines three types of faults/exceptions when interacting with the **Shadow Stack (SS) page** (where $R=0, W=1, X=0$):
+1.  **Store/AMO access-fault:** Triggered when instructions *other* than shadow-stack instructions attempt to write to an SS page. This is considered a fatal error.
+2.  **Store/AMO page-fault:** Triggered when a shadow-stack instruction attempts to write to a page that is not a shadow-stack page (e.g., a read-only page). This is a recoverable fault.
+3.  **Access-fault:** Triggered when an instruction fetch or an implicit access occurs on an SS page. Shadow stack pages are not permitted to be accessed in this manner.
+
+### 6. How does `mstatus.UBE` differ from `mstatus.UBE` in the context of `hstatus`?
+While the document doesn't provide a direct "hstatus.UBE" comparison table, it explains the hierarchy of these bits:
+*   In **`mstatus`**, `UBE` controls the endianness of **User-mode** memory accesses.
+*   In **`hstatus`**, the equivalent field (implied by the $V$ virtualization mode) controls the endianness of **Virtual Supervisor-mode** (VS-mode) memory accesses.
+*   Furthermore, the `hstatus` register includes a **`VSBE`** bit, which specifically controls the endianness of memory accesses in **VS-mode**, which is the guest-side version of the Supervisor-mode endianness control.

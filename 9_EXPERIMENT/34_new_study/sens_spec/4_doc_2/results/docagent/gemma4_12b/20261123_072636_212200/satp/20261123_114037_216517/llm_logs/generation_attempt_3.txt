@@ -1,0 +1,27 @@
+Based on the provided RISC-V Privileged Specification, here is the information regarding the **Hypervisor Virtual-Machine Load and Store instructions (HLV/HSV)** and their behavior during a **guest-page fault**:
+
+### 1. Instruction Overview
+The hypervisor extension provides instructions that perform explicit memory accesses with an **effective privilege mode of VS or VU** (depending on the `hstatus.SPVP` bit). These are used to access a virtual machine's memory. 
+
+*   **HLV instructions** (Load): `HLV.B`, `HLV.BU`, `HLV.H`, `HLV.HU`, `HLV.W`, `HLV.WU`, `HLV.D`.
+*   **HSV instructions** (Store): `HSV.B`, `HSV.H`, `HSV.W`, `HSV.D`.
+*   **HLVX instructions**: Special variants (`HLVX.HU`, `HLVX.WU`) where execute permission replaces read permission during address translation.
+
+### 2. Behavior during Guest-Page Faults
+When a **guest-page fault** occurs (which happens when the two-stage address translation—VS-stage and G-stage—fails to resolve an address), the following CSRs are updated to assist the hypervisor in handling the trap:
+
+*   **`mtval` / `stval`**: These registers are written with the **faulting guest virtual address**.
+*   **`mtval2` / `htval`**: These registers provide the **faulting guest physical address** (shifted right by 2 bits). 
+    *   If the fault occurred during an implicit memory access for VS-stage translation (e.g., reading a VS-level page table), the value reflects the address of the implicit access.
+    *   If the fault occurred during a misaligned memory access, the value corresponds to the faulting portion of the access.
+*   **`mtinst` / `htinst`**: These registers may be written with a transformation of the trapping instruction or a special pseudoinstruction to help the handler identify the exact instruction and fault type.
+
+### 3. Hardware-Assisted Fault Information
+Specifically for **guest-page faults**, the specification notes that `mtval2` or `htval` may contain the guest physical address even if the fault was caused by an implicit memory access during VS-stage translation. This allows the hypervisor to identify which guest physical page is missing without needing to manually walk the entire translation path to find the faulting point.
+
+### 4. Summary Table of Trap Register Updates
+| Register | Value on Guest-Page Fault |
+| :--- | :--- |
+| **`mtval` / `stval`** | Faulting guest virtual address |
+| **`mtval2` / `htval`** | Faulting guest physical address (shifted right by 2 bits) |
+| **`mtinst` / `htinst`** | Transformation of the trapping instruction or pseudoinstruction |

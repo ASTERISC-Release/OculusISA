@@ -1,0 +1,18 @@
+## 3.8. Program Buffer
+
+To support executing arbitrary instructions on a halted hart, a Debug Module can include a Program Buffer that a debugger can write small programs to. DMs that support all necessary functionality using abstract commands only may choose to omit the Program Buffer.
+
+A debugger can write a small program to the Program Buffer, and then execute it exactly once with the Access  Register  Abstract  Command,  setting  the  postexec  bit  in  command.  The  debugger  can  write whatever program it likes (including jumps out of the Program Buffer), but the program must end with ebreak or c.ebreak . An implementation may support an implicit ebreak that is executed when a hart runs off the end of the Program Buffer. This is indicated by impebreak. With this feature, a Program Buffer of just 2 32-bit words can offer efficient debugging.
+
+While  these  programs  are  executed,  the  hart  does  not  leave  Debug  Mode  (see  Section  4.1).  If  an exception is encountered during execution of the Program Buffer, no more instructions are executed, the hart remains in Debug Mode, and cmderr is set to 3 ( exception error ). If the debugger executes a program that doesn't terminate with an ebreak instruction, the hart will remain in Debug Mode and the debugger will lose control of the hart.
+
+If progbufsize is 1 then the following apply:
+
+1. impebreak must be 1.
+2. If the debugger writes a compressed instruction into the Program Buffer, it must be placed into the lower 16 bits and accompanied by a compressed nop in the upper 16 bits.
+
+<image>
+
+This requirement on the debugger for the case of progbufsize equal to 1 is to accommodate hardware designs that prefer to stuff instructions directly into the pipeline when halted, instead of having the Program Buffer exist in the address space somewhere.
+
+The Program Buffer may be implemented as RAM which is accessible to the hart. A debugger can determine if this is the case by executing small programs that attempt to write and read back relative to pc while executing from the Program Buffer. If so, the debugger has more flexibility in what it can do with the program buffer.

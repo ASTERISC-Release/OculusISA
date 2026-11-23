@@ -1,0 +1,3175 @@
+# 1 # Extension Must Be Active: NONE
+csrrwi x5, mtvec, 0x12
+# Result: mtvec = 0x12
+
+# 2 # Extension Must Be Active: NONE
+csrrwi x0, mcycle, 0xA
+csrr t0, mcycle
+# Result: t0 = 0xA
+
+# 3 # Extension Must Be Active: NONE
+csrrwi x0, mscratch, 0x1a
+# Result: mscratch = 0x1a
+
+# 4 # Extension Must Be Active: NONE
+li t0, 0xdeadbeefdeadbeef
+csrw mscratch, t0
+csrrwi x5, mscratch, 0x5
+# Result: x5 = 0xdeadbeefdeadbeef
+
+# 5 # Extension Must Be Active: D
+li t0, 0x4018000000000000
+fmv.d.x f0, t0
+fcvt.w.d t1, f0
+# Result: t1 = 6
+
+# 6 # Extension Must Be Active: D
+li t0, 0x4004CCCCCCCCCCCD
+fmv.d.x ft0, t0
+fcvt.w.d x5, ft0, 2
+# Result: x5 = 4
+
+# 7 # Extension Must Be Active: D
+csrw fflags, x0
+li a0, 0x7ff8000000000000
+fmv.d.x f0, a0
+fcvt.w.d x5, f0
+csrrs x6, fflags, x0
+# Result: x6 = 0x10
+
+# 8 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x100000 # set TVM bit (bit 20)
+csrs mstatus, t1 # TVM = 1
+la t2, trap_handler
+csrw mtvec, t2 # set trap vector
+
+call machine_to_supervisor # switch to S-mode
+
+sfence.vma # should raise illegal‑instruction exception
+
+# continue after trap
+nop
+
+trap_handler:
+csrr t3, mcause # read exception cause
+mv t0, t3 # save into t0 for result checking
+csrr t4, mepc
+addi t4, t4, 4 # skip faulting instruction
+csrw mepc, t4
+mret
+
+# Result: t0 = 2
+
+# 9 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrw sstatus, zero
+sfence.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# 10 # Extension Must Be Active: NONE
+li x5,0
+li x6,0x0000800000000000
+sfence.vma x6, x0
+# Result: x5 = 0
+
+# 11 # Extension Must Be Active: NONE
+li t0, 0
+csrw satp, t0
+li t0, 0x8000000000012345
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x8000000000012345
+
+# 12 # Extension Must Be Active: NONE
+call machine_to_user
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 13 # Extension Must Be Active: NONE
+lui t0, 0x00100 # t0 = 0x00100000 (TVM bit)
+csrs mstatus, t0 # set mstatus.TVM = 1
+la t1, trap_handler
+csrw mtvec, t1 # mtvec -> trap_handler
+call machine_to_supervisor # switch to S-mode
+csrr x5, mcause # x5 should contain exception code (2)
+# end of test
+
+trap_handler:
+csrr t2, mcause # capture mcause (optional)
+csrr t3, mepc
+addi t3, t3, 4 # skip offending instruction
+csrw mepc, t3
+mret # return to M-mode after trap
+# Result: x5 = 2
+
+# 14 # Extension Must Be Active: H
+call machine_to_virtual_user
+sfence.vma
+csrr t0, mcause
+# Result: t0 = 0x7F
+
+# 15 # Extension Must Be Active: H
+li t0, 0x19
+li t1, handler
+csrw mtvec, t1 # set trap vector to handler
+li t2, 1
+csrrs x0, hstatus, t2 # set hstatus.VTVM = 1
+call machine_to_virtual # switch to VS-mode
+handler:
+csrr a0, mcause # capture exception cause
+mret # return to M-mode after trap
+sfence.vma x0, x0 # attempt SFENCE.VMA in VS-mode (should trap)
+# Result: a0 = 0x19
+
+# 16 # Extension Must Be Active: NONE
+li t0, 0x2000 # Set VTVM (bit 13) in hstatus
+csrs hstatus, t0
+call machine_to_virtual
+sfence.vma
+# Result: a0 != 0
+
+# 17 # Extension Must Be Active: NONE
+call machine_to_virtual_user
+li t0, 1
+sfence.vma
+li t0, 2
+# Result: t0 = 1
+
+# 18 # Extension Must Be Active: H
+call machine_to_virtual
+sfence.vma
+csrr t0, vscause
+# Result: t0 = 22
+
+# 19 # Extension Must Be Active: NONE
+sfence.vma x0, x0
+# Result: mtval = 0x12000073
+
+# 20 # Extension Must Be Active: NONE
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause != 0 && mcause != 2
+
+# 21 # Extension Must Be Active: V
+li t3, 0x80001000
+li t2, 0xdeadbeef
+sw t2, 0(t3)
+addi a0, t3, 0
+li t0, 1
+vsetvli t1, t0, e32, m1
+vle32ff.v v8, (a0)
+vmv.x.s t1, v8
+# Result: t1 = 0xdeadbeef
+
+# 22 # Extension Must Be Active: V
+li a0, 0xfffffffffffffffc # invalid (unmapped) address, 32‑bit aligned
+li a1, 4 # desired AVL = 4 elements
+vsetvli t0, a1, e32,m1 # set VL = 4, t0 receives the VL value
+vle32ff.v v8, (a0) # element‑0 fault -> trap, VL must stay unchanged
+# Result: vl = 4
+
+# 23 # Extension Must Be Active: V
+li a0, 0x80000000
+li t1, 2
+vsetvli t0, t1, e32, m1
+vle32ff.v v0, (a0)
+li t1, -1
+vsetvli t0, t1, e32, m1
+# Result: t0 = 1
+
+# 24 # Extension Must Be Active: V
+li x10,0x10000000
+li x11,0xdeadbeef
+sw x11,0(x10)
+vsetvli x0,x0,e32,m1
+vle32ff.v v0,0(x10)
+vmv.x.s x12,v0
+# Result: x12 = 0xdeadbeef
+
+# 25 # Extension Must Be Active: V
+csrw vstart, zero
+vsetvli t0, zero, e32,m1
+li t1, 0x12345678
+sw t1, 0(sp)
+addi a0, sp, 0
+vle32ff.v v2, (a0)
+vmv.x.s x5, v2
+# Result: x5 != 0
+
+# 26 # Extension Must Be Active: NONE
+csrr x5, mseccfg
+andi x6, x5, 0x3
+# Result: x6 = 0
+
+# 27 # Extension Must Be Active: NONE
+li t0, 0x3
+csrw mseccfg, t0
+csrr t1, mseccfg
+# Result: t1 = 0x3
+
+# 28 # Extension Must Be Active: NONE
+li t0, 0x5
+csrw mseccfg, t0
+csrr t1, mseccfg
+# Result: t1 = 0x5
+
+# 29 # Extension Must Be Active: NONE
+csrw mseccfg, x0 # Ensure mseccfg.USED = 0
+
+# Set mtvec to point to the trap handler
+auipc t2, 0
+addi t2, t2, handler - . # t2 = address of handler
+csrw mtvec, t2
+
+# Transfer to U-mode
+call machine_to_user
+
+# -------- U-mode code --------
+csrr t0, seed # Access seed CSR (should trap)
+
+# -------- M-mode trap handler --------
+handler:
+csrr t1, mcause # Read exception cause
+lui t2, 0x80002 # t2 = 0x80002000 (upper 20 bits)
+sd t1, 0(t2) # Store cause to memory
+
+# Set mepc to continue at label "done"
+auipc t3, 0
+addi t3, t3, done - . # t3 = address of done
+csrw mepc, t3
+mret
+
+# -------- Continue after handling --------
+done:
+lui t2, 0x80002 # t2 = 0x80002000
+ld s0, 0(t2) # Load stored mcause into s0
+
+# Result: s0 = 2
+
+# 30 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+call machine_to_user
+li a0, 0xdeadbeefdeadbeef
+csrw seed, a0
+csrr a1, seed
+# Result: a1 = 0xdeadbeefdeadbeef
+
+# 31 # Extension Must Be Active: NONE
+csrr x5, mseccfg
+srli x5, x5, 16
+andi x5, x5, 0xff
+# Result: x5 = 0
+
+# 32 # Extension Must Be Active: NONE
+li t0, 0
+csrw mseccfg, t0 # Clear SSEED field (set to 0)
+la t0, trap_handler
+csrw mtvec, t0 # Install trap handler
+call machine_to_supervisor
+
+# S-mode: illegal access to seed CSR (address 0x7c1)
+csrr t1, 0x7c1
+
+li t2, 1 # Should not reach here if exception occurs
+j test_done
+
+trap_handler:
+csrr t2, mcause # Capture exception cause
+csrr t3, mepc
+addi t3, t3, 4 # Skip offending instruction
+csrw mepc, t3
+mret
+
+test_done:
+nop
+
+# Result: t2 = 0x2
+
+# 33 # Extension Must Be Active: NONE
+li x6, 1
+csrrw x0, mseccfg, x6
+call machine_to_supervisor
+li x5, 0x12345678
+csrrw x0, seed, x5
+csrr x5, seed
+# Result: x5 = 0x12345678
+
+# 34 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+andi t0, t0, 0x1
+# Result: t0 = 0
+
+# 35 # Extension Must Be Active: H
+call machine_to_virtual
+csrr t0, mseccfg
+# Result: mcause = 7
+
+# 36 # Extension Must Be Active: NONE
+li x5, 0x12345678
+csrw mseeds, x5
+csrr x6, mseeds
+# Result: x6 = 0x12345678
+
+# 37 # Extension Must Be Active: NONE
+li t0,0
+csrw mseccfg,t0
+call machine_to_user
+csrr t1,sseed
+# Result: mcause = 2
+
+# 38 # Extension Must Be Active: NONE
+li t0, 1
+csrrw t1, mseccfg, t0
+call machine_to_user
+li t2, 0x12345678abcdef00
+csrrw t3, seed, t2
+csrr t4, seed
+# Result: t4 = 0x12345678abcdef00
+
+# 39 # Extension Must Be Active: NONE
+csrw mseccfg, x0 # Ensure mseccfg.SSEED = 0
+call machine_to_supervisor
+csrr t0, sseed # Access a seed CSR in S-mode (should trap)
+# Result: mcause = 2
+
+# 40 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+call machine_to_supervisor
+li t1, 0xdeadbeefdeadbeef
+csrw seed, t1
+csrr x5, seed
+# Result: x5 = 0xdeadbeefdeadbeef
+
+# 41 # Extension Must Be Active: NONE
+csrw mseccfg, x0
+call machine_to_virtual
+csrr t0, seed
+# Result: mcause = 2
+
+# 42 # Extension Must Be Active: NONE
+li t0, 1
+csrw 0x7c0, t0 # Set mseccfg.SSEED = 1
+call machine_to_virtual
+csrrw t1, 0x7c0, t0 # Read‑write seed CSR in VS mode (should raise virtual‑instruction exception)
+# Result: mcause = 7
+
+# 43 # Extension Must Be Active: NONE
+li t0, 0x80
+csrw pmpcfg0, t0
+li t1, 0x1
+csrw mseccfg, t1
+csrr t2, mseccfg
+andi t2, t2, 0x1
+# Result: mseccfg.RLB = 0
+
+# 44 # Extension Must Be Active: NONE
+csrrwi t0, 0x307, 0x2
+csrr t1, 0x307
+andi t2, t1, 0x2
+# Result: t2 = 0x2
+
+# 45 # Extension Must Be Active: NONE
+li x5, 1
+csrw mseccfg, x5
+li x5, 0x80
+csrw pmpcfg0, x5
+csrr x6, pmpcfg0
+# Result: x6 = 0x80
+
+# 46 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0xFFFFFFFFFFFFFFFF
+csrw mpmpcfg0, t1
+csrr t2, mpmpcfg0
+# Result: t2 = 0
+
+# 47 # Extension Must Be Active: NONE
+csrs mseccfg, 1
+# Result: mseccfg.MML = 0x1
+
+# 48 # Extension Must Be Active: PMP
+li t0, 0x1
+csrw 0x747, t0 # set mseccfg.MML
+li t0, 0x0
+csrw 0x3A0, t0 # clear pmpcfg0 (L=0, X=0)
+li t0, -1
+csrw 0x3B0, t0 # pmpaddr0 = all ones (covers whole memory)
+li t1, 0x80002000
+li t2, 0xdeadbeefdeadbeef
+sd t2, 0(t1) # M-mode write to shared region
+call machine_to_supervisor
+li t1, 0x80002000
+ld x10, 0(t1) # S-mode read from shared region
+# Result: x10 = 0xdeadbeefdeadbeef
+
+# 49 # Extension Must Be Active: NONE
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x81
+csrw pmpcfg0, t1
+# Result: mseccfg.MML = 1
+
+# 50 # Extension Must Be Active: NONE
+li t0, 1 # Set mseccfg.MML (bit 0)
+csrw mseccfg, t0
+li t1, 0xF # pmpcfg.LRWX = 1111
+csrw pmpcfg0, t1
+csrr t2, pmpcfg0
+# Result: t2 = 0xf
+
+# 51 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t0, 2
+csrc mseccfg, t0
+csrr t1, pmpcfg0
+li t2, 0x7
+csrw pmpcfg0, t2
+csrr t3, pmpcfg0
+# Result: pmpcfg0 = 0
+
+# 52 # Extension Must Be Active: NONE
+csrrwi t0, mseccfg, 0x1
+csrr t1, mseccfg
+# Result: t1 = 0x1
+
+# 53 # Extension Must Be Active: NONE
+addi t0, x0, 1
+csrw mseccfg, t0
+csrr t1, mseccfg
+# Result: mseccfg.PMM = 1
+
+# 54 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+# Result: mseccfg.PMM = 0
+
+# 55 # Extension Must Be Active: Zicfilp
+li t0, 1
+csrrs x0, mseccfg, t0
+# Result: mseccfg.MLPE = 1
+
+# 56 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+# Result: mseccfg.MLPE = 0
+
+# 57 # Extension Must Be Active: NONE
+li x5, 0x1122334455667788
+li x6, 0x0
+csrw mseccfg, x0
+lpadd x5, (x6)
+# Result: x5 = 0x1122334455667788
+
+# 58 # Extension Must Be Active: Zicfilp
+csrr t0, mseccfg
+# Result: t0 = 0
+
+# 59 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+# Result: mseccfg[MML] = 0
+
+# 60 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+andi t0, t0, 0x2
+# Result: t0 = 0
+
+# 61 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+andi t0, t0, 0x1
+# Result: t0 = 0
+
+# 62 # Extension Must Be Active: NONE
+# Enable MML in mseccfg (bit 0)
+li t0, 0x1
+csrw mseccfg, t0
+
+# Configure PMP entry 0 as NA4 with no permissions (R=W=X=0, L=0)
+li t1, 0x10 # A=NA4 (bits 4:3 = 10b), all permission bits cleared
+csrw pmpcfg0, t1
+
+# Set the PMP address to 0x80000000 (NA4 matches this 4‑byte region)
+li t2, 0x80000000
+srli t2, t2, 2 # pmpaddr0 holds address[XLEN-1:2]
+csrw pmpaddr0, t2
+
+# Install exception handler
+la t3, handler
+csrw mtvec, t3
+
+# Attempt a load from the protected region (should trap)
+li a1, 0x80000000
+lw a0, 0(a1) # access exception expected here
+
+# Skip over the load after handling (won’t be reached if trap works)
+j done
+
+handler:
+# Capture the exception cause
+csrr a0, mcause # a0 will hold the exception code (expected 5 for load access fault)
+# Advance mepc to skip the faulting instruction
+csrr t4, mepc
+addi t4, t4, 4
+csrw mepc, t4
+mret
+
+done:
+nop
+# Result: a0 = 5
+
+# 63 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 0
+csrw pmpcfg0, t0
+li t0, 0x20000000
+csrw pmpaddr0, t0
+call machine_to_supervisor
+li t1, 0x80000000
+ld t2, 0(t1)
+# Result: mcause = 13
+
+# 64 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 0x04
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+ld t3, 0(t2)
+# Result: mcause = 5
+
+# 65 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0 # set MML = 1
+
+li t0, 0x09
+csrw pmpcfg0, t0 # L=0, X=1, R=0, W=0, A=NA4 (execute‑only)
+
+li t0, -1
+csrw pmpaddr0, t0 # NA4 region covering the whole address space (execute‑only)
+
+call machine_to_supervisor # switch to S‑mode
+
+# ---- S‑mode code ----
+jal ra, exec_region # fetch instruction from execute‑only region
+
+# test finishes here
+
+exec_region:
+li a0, 0xdead # set result register
+ret
+
+# Result: a0 = 0xdead
+
+# 66 # Extension Must Be Active: NONE
+csrw mseccfg, 1 # Set MML = 1
+li t0, 0xdeadbeefdeadbeef # Value to test
+li t2, -1
+csrw pmpaddr0, t2 # Set upper bound = all 1s (full address range)
+li t2, 0x0a # pmpcfg0: L=0,R=0,W=1,X=0, A=TOR
+csrw pmpcfg0, t2
+sd t0, 0(sp) # Store to memory (M-mode, should be permitted)
+ld t1, 0(sp) # Load back
+# Result: t1 = 0xdeadbeefdeadbeef
+
+# 67 # Extension Must Be Active: NONE
+li t0, 0x1 # set MSECCFG.MML = 1
+csrw mseccfg, t0
+li t0, 0xFFFFFFFFFFFFFFFF
+csrw pmpaddr0, t0 # PMP entry covers whole address space
+li t0, 0x1A # L=0, R=0, W=1, X=0, A=NAPOT
+csrw pmpcfg0, t0
+li t0, 0x12345678
+li t1, 0x80001000
+sw t0, 0(t1) # initialise memory region
+call machine_to_supervisor
+li t1, 0x80001000
+lw a0, 0(t1) # S‑mode read; should succeed
+# Result: a0 = 0x12345678
+
+# 68 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 0x20000000
+csrw pmpaddr0, t0
+li t0, 0x3
+csrw pmpcfg0, t0
+li t2, 0x80000000
+li t1, 0xdeadbeefdeadbeef
+sd t1, 0(t2)
+ld t3, 0(t2)
+# Result: t3 = 0xdeadbeefdeadbeef
+
+# 69 # Extension Must Be Active: NONE
+csrw 0x307, 1 # set mseccfg.MML = 1
+csrw 0x3A0, 0x06 # pmpcfg0: L=0, R=0, W=1, X=1
+addi t0, x0, -1 # t0 = 0xFFFFFFFFFFFFFFFF
+csrw 0x3B0, t0 # pmpaddr0 = all 1s (full address range)
+call machine_to_supervisor # switch to S-mode
+lui t0, 0x80002 # t0 = 0x80002000 (test address)
+lui t1, 0xdeadb # load high 20 bits of 0xdeadbeef
+addi t1, t1, 0xef # t1 = 0xdeadbeef
+sd t1, 0(t0) # store value to memory
+ld a0, 0(t0) # load back into a0
+# Result: a0 = 0xdeadbeef
+
+# 70 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 0x01
+csrw pmpcfg0, t0
+li t0, 0x20000000
+csrw pmpaddr0, t0
+li t0, 0x80000000
+la t2, trap
+csrw mtvec, t2
+lw t1, 0(t0)
+j done
+trap:
+csrr t3, mcause
+mret
+done:
+# Result: t3 = 5
+
+# 71 # Extension Must Be Active: NONE
+li x10, 0x80000000
+li x11, 0xdeadbeefdeadbeef
+sd x11, 0(x10)
+csrrsi x0, mseccfg, 1 # set MML = 1
+li x12, 0x0b
+csrw pmpcfg0, x12
+li x12, 0x200003ff
+csrw pmpaddr0, x12
+call machine_to_supervisor
+li x10, 0x80000000
+ld x5, 0(x10)
+# Result: x5 = 0xdeadbeefdeadbeef
+
+# 72 # Extension Must Be Active: NONE
+la t0, trap_handler
+csrw mtvec, t0
+
+li t1, 1
+csrs mseccfg, t1 # set MML = 1
+
+li t2, 0x200001ff
+csrw pmpaddr0, t2
+
+li t3, 0x1d
+csrw pmpcfg0, t3 # L=0, R=1, W=0, X=1, NAPOT
+
+li t4, 0x80000004
+li t5, 0xdeadbeef
+sw t5, 0(t4) # store should cause Access Exception
+
+j done
+
+trap_handler:
+csrr a0, mcause # capture exception cause
+csrr t6, mepc
+addi t6, t6, 4 # skip faulting instruction
+csrw mepc, t6
+mret
+
+done:
+# Result: a0 = 0x7
+
+# 73 # Extension Must Be Active: NONE
+li t0, 0xdeadbeef
+li t1, 0x80002000
+sw t0, 0(t1) # store test value
+li t0, 0x00100393 # addi x7, x0, 1 (executable instruction)
+sw t0, 4(t1) # store executable instruction
+li t0, 0x1
+csrw 0x307, t0 # mseccfg.MML = 1
+li t0, 0x1d # PMP entry: L=0,R=1,W=0,X=1, A=NAPOT
+csrw 0x3a0, t0 # pmpcfg0
+li t0, 0x80002003 # pmpaddr0 = (0x80002000>>2) | 0b11
+csrw 0x3b0, t0
+call machine_to_supervisor
+li t1, 0x80002000
+lw t2, 0(t1) # read test value (should succeed)
+li t3, 0x80002004
+jalr x0, 0(t3) # execute instruction at region
+nop
+# Result: x7 = 0x1
+
+# 74 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 0x13
+csrw pmpcfg0, t0
+li t0, 0x80002000
+csrw pmpaddr0, t0
+lw t1, 0(t0) # M-mode load to PMP‑protected region, should raise exception
+# Result: mcause = 5
+
+# 75 # Extension Must Be Active: NONE
+csrw mseccfg, 1
+li t0, 0x03
+csrw pmpcfg0, t0
+li t1, 0x80002000
+csrw pmpaddr0, t1
+call machine_to_supervisor
+li a0, 0xdeadbeef
+li t2, 0x80002000
+sw a0, 0(t2)
+lw a1, 0(t2)
+# Result: a1 = 0xdeadbeef
+
+# 76 # Extension Must Be Active: NONE
+csrr t2, 0x747 # read mseccfg
+ori t2, t2, 0x1 # set MML = 1
+csrw 0x747, t2 # write back mseccfg
+
+li t3, 0x0F # PMP cfg: L=0, R=1, W=1, X=1, A=NAPOT
+csrw 0x3A0, t3 # pmpcfg0
+
+li t4, 0x200001FF # pmpaddr0 for 4 KB NAPOT region at 0x80000000
+csrw 0x3B0, t4 # pmpaddr0
+
+auipc t5, 0
+addi t5, t5, handler - .
+csrw mtvec, t5 # set trap vector
+
+li t1, 0x80000000 # address inside protected region
+lw t2, 0(t1) # this load should raise an access exception
+j done
+
+handler:
+csrr t0, mcause # capture exception cause
+csrr t6, mepc
+addi t6, t6, 4 # skip faulting instruction
+csrw mepc, t6
+mret
+
+done:
+# Result: t0 = 0x5
+
+# 77 # Extension Must Be Active: NONE
+csrw 0x7c0, x0 # clear mseccfg
+li x5, 1
+csrw 0x7c0, x5 # set mseccfg.MML = 1
+
+li x5, 0x39
+csrw 0x3a0, x5 # pmpcfg0: L=0, R=1, W=1, X=1, A=TOR
+
+li x5, 0x2000800
+csrw 0x3b0, x5 # pmpaddr0 = 0x80020000 >> 2 (region start)
+
+li x6, 0x80020000 # test address
+li x7, 0x12345678
+sw x7, 0(x6) # store known value (M-mode)
+
+call machine_to_supervisor
+
+li x6, 0x80020000
+lw x10, 0(x6) # load in S-mode, should succeed
+# Result: x10 = 0x12345678
+
+# 78 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0 # set MML = 1
+li t0, 0x88 # L=1, A=TOR (bits7 and 3)
+csrw pmpcfg0, t0 # configure PMP entry 0
+li t0, 0x70000000
+csrw pmpaddr0, t0 # lower bound of locked region
+li t0, 0x70001000
+csrw pmpaddr1, t0 # upper bound of locked region
+li t1, 0x70000004
+lw t2, 0(t1) # access should raise an exception
+# Result: mcause = 5
+
+# 79 # Extension Must Be Active: PMP
+li t0, 1
+csrw mseccfg, t0
+li t0, 0x200005FF
+csrw pmpaddr0, t0
+li t0, 0x83
+csrw pmpcfg0, t0
+call machine_to_supervisor
+li t1, 0x80001000
+lw t2, 0(t1)
+j . # should not be reached
+trap_handler:
+csrr t0, mcause
+mret
+# Result: mcause = 5
+
+# 80 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+ori t0, t0, 0x1 # set MML = 1
+csrw mseccfg, t0
+
+# compute address of target_func and program PMP entry 0 (NA4, L=1, X=1)
+auipc t4, 0
+addi t4, t4, target_func - .
+srli t4, t4, 2
+csrw pmpaddr0, t4
+
+# PMP config: L=1, X=1 (0b10000001 = 0x81)
+li t5, 0x81
+csrw pmpcfg0, t5
+
+# jump to the locked execute‑only region
+jal ra, target_func
+
+# after return, a0 should contain the value set in the region
+# Result: a0 = 0xdeadbeef
+
+target_func:
+li a0, 0xdeadbeef
+jalr x0, 0(ra)
+
+# 81 # Extension Must Be Active: NONE
+li t0, 0x1 # set MSECCFG.MML = 1
+csrw mseccfg, t0
+li t0, 0x84 # PMP0: L=1, X=1, R=0, W=0 (A=0 OFF)
+csrw pmpcfg0, t0
+li t0, 0x2000000 # pmpaddr0 = 0x80000000 >> 2 (covers address 0x80000000)
+csrw pmpaddr0, t0
+call machine_to_supervisor
+li t1, 0x80000000 # address inside protected region
+lw t2, 0(t1) # attempt load -> should raise Access Exception
+# Result: mcause = 5
+
+# 82 # Extension Must Be Active: P
+addi x5, x0, 1
+csrw mseccfg, x5
+addi x5, x0, 0x82
+csrw pmpcfg0, x5
+lui x6, 0x80000
+csrw pmpaddr0, x6
+# Result: mseccfg.MML = 1
+# Result: pmpcfg0 = 0x82
+
+# 83 # Extension Must Be Active: NONE
+li t0, 0
+csrr t0, mseccfg
+andi t0, t0, -2
+csrw mseccfg, t0
+li t1, 1
+csrs mseccfg, t1
+csrr t2, mseccfg
+andi t2, t2, 1
+# Result: t2 = 1
+
+# 84 # Extension Must Be Active: NONE
+csrr t0, mseccfg # read current mseccfg (optional)
+li t1, 1 # set MML = 1 (bit 0)
+csrw mseccfg, t1 # activate MML
+
+# Configure PMP entry 0: L=1, R=0, W=1, X=1
+li t2, (1 << 7) | (1 << 3) | (1 << 2) # L=1 (bit7), X=1 (bit3), W=1 (bit2), R=0
+csrw pmpcfg0, t2
+
+# Define the region (NAPOT) covering address 0x80000000
+li t3, 0x20000000 # pmpaddr0 = 0x80000000 >> 2
+csrw pmpaddr0, t3
+
+# Access the region in M‑mode: read from 0x80000000
+li t4, 0x80000000
+lw t5, 0(t4) # should succeed because region is a locked shared code region
+
+# (Optional) execute an instruction at the region address
+# jalr ra, t4, 0 # would transfer control to the region (allowed)
+
+# Result: mseccfg.MML = 1
+
+# 85 # Extension Must Be Active: NONE
+li t0, 1
+csrw 0x757, t0 # set mseccfg.MML = 1
+
+li t1, -1
+csrw 0x3b0, t1 # pmpaddr0 = all 1s (covers entire address space)
+
+li t2, 0x86
+csrw 0x3a0, t2 # pmpcfg0 = L=1, X=1, W=1, R=0
+
+call machine_to_supervisor
+
+li x5, 0x1234 # execute in S‑mode; should be permitted
+# Result: x5 = 0x1234
+
+# 86 # Extension Must Be Active: NONE
+li t0, 0xDEADBEEF
+li t1, 0x80010000
+sw t0, 0(t1)
+li t2, 0x1
+csrw mseccfg, t2
+li t3, 0x200041FF
+csrw pmpaddr0, t3
+li t4, 0x9A
+csrw pmpcfg0, t4
+lw t5, 0(t1)
+# Result: t5 = 0xDEADBEEF
+
+# 87 # Extension Must Be Active: NONE
+li t0, 1 # set MML=1
+csrw 0x747, t0 # write to mseccfg
+li t0, 0x89 # PMP cfg: L=1,R=1,W=0,X=0, A=TOR
+csrw 0x3A0, t0 # pmpcfg0
+li t1, 0x20000000 # pmpaddr0 = 0x80000000>>2
+csrw 0x3B0, t1 # write pmpaddr0
+li t2, 0x20000400 # pmpaddr1 = 0x80001000>>2
+csrw 0x3B1, t2 # write pmpaddr1
+li t3, 0x800 # set MPP = S-mode in mstatus
+csrw 0x300, t3 # mstatus
+call machine_to_supervisor # switch to S-mode
+li a0, 0x80000004 # address inside PMP region
+lw a1, 0(a0) # expected to raise Access Exception
+# Result: mcause = 0x5
+
+# 88 # Extension Must Be Active: NONE
+li t0, 0xdeadbeef
+li t1, 0x80001000
+sw t0, 0(t1) # initialize memory before PMP lock
+csrr t0, mseccfg
+ori t0, t0, 1 # set MML = 1
+csrw mseccfg, t0
+li t0, 0x95
+csrw pmpcfg0, t0 # L=1, R=1, W=0, X=1, A=NAPOT
+li t0, 0x2000040
+csrw pmpaddr0, t0 # region covers 0x80001000 (NAPOT, 8‑byte size)
+li t1, 0x80001000
+lw t2, 0(t1) # read access in M‑mode
+# Result: t2 = 0xdeadbeef
+
+# 89 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 0x95
+csrw pmpcfg0, t0
+li t0, 0x200001ff
+csrw pmpaddr0, t0
+call machine_to_supervisor
+# S-mode code
+li t0, 0x80000000
+lw t1, 0(t0)
+# Result: mcause = 5
+
+# 90 # Extension Must Be Active: NONE
+csrw mseccfg, x0 # clear mseccfg
+li x1, 1
+csrw mseccfg, x1 # set MML = 1
+li x2, 0x8B
+csrw pmpcfg0, x2 # PMP0: L=1, R=1, W=1, X=0, TOR
+li x3, 0x20003FFF
+csrw pmpaddr0, x3 # set upper bound for TOR region
+li x4, 0xdeadbeef
+li x5, 0x80001000
+sd x4, 0(x5) # store to locked RW region
+ld x6, 0(x5) # load back
+# Result: x6 = 0xdeadbeef
+
+# 91 # Extension Must Be Active: NONE
+li t0, 0x80002000
+li t1, 0xDEADBEEFDEADBEEF
+sd t1, 0(t0) # store test data before MML is enabled
+li t0, 1
+csrs mseccfg, t0 # set MML = 1
+li t0, 0x2000080 # (0x80002000 >> 2)
+csrw pmpaddr0, t0
+li t0, 0x20000c0 # (0x80003000 >> 2)
+csrw pmpaddr1, t0
+li t0, 0x8b # L=1,R=1,W=1,X=0, A=TOR
+csrw pmpcfg0, t0
+la t0, trap_handler
+csrw mtvec, t0
+li t2, 0x80004000 # result storage address
+call machine_to_supervisor
+ld a0, 0(t2) # load mcause result for verification
+# end of test
+
+trap_handler:
+csrr t1, mcause
+li t3, 8
+beq t1, t3, handle_ecall # ecall from S-mode
+mv a0, t1 # save exception code for S-mode code
+csrr t4, mepc
+addi t4, t4, 4
+csrw mepc, t4
+mret
+
+handle_ecall:
+csrr t4, mepc
+addi t4, t4, 4
+csrw mepc, t4
+mret
+
+# Result: a0 = 5
+
+# 92 # Extension Must Be Active: NONE
+addi t0, x0, 1 # t0 = 1 (MML bit)
+csrw mseccfg, t0 # set mseccfg.MML = 1
+addi t1, x0, -1 # t1 = 0xFFFFFFFFFFFFFFFF (all 1s for pmpaddr0)
+csrw pmpaddr0, t1 # configure PMP address (covers whole address space)
+addi t2, x0, 0x87 # t2 = 0b10000111 (R=1,W=1,X=1,L=1)
+csrw pmpcfg0, t2 # set PMP entry permissions
+lui a0, 0x80000 # a0 = 0x80000000 (address inside PMP region)
+lw a1, 0(a0) # read from the region (should be permitted)
+# Result: mseccfg.MML = 1
+
+# 93 # Extension Must Be Active: NONE
+addi t0, x0, 1 # set MML = 1
+csrw mseccfg, t0
+
+addi t1, x0, 255 # pmpcfg0 = 0xFF (L=R=W=X=1, A=NAPOT)
+csrw pmpcfg0, t1
+
+lui t2, 0x2000 # pmpaddr0 = (0x80001000 >> 2) = 0x2000040
+addi t2, t2, 0x40
+csrw pmpaddr0, t2
+
+li t3, 0xDEADBEEFDEADBEEF # value to store
+sd t3, 0x80001000(x0) # write value in M-mode before locking
+
+call machine_to_supervisor # switch to S-mode
+
+lui a1, 0x8000 # a1 = 0x80001000 address
+addi a1, a1, 0x1000
+ld a0, 0(a1) # read the value in S-mode
+
+# Result: a0 = 0xDEADBEEFDEADBEEF
+
+# 94 # Extension Must Be Active: Zicbom
+li t0, 0x20000
+csrrs zero, mstatus, t0
+cbo.flush a0
+csrr t1, mstatus
+and t2, t1, t0
+# Result: t2 = 0x20000
+
+# 95 # Extension Must Be Active: Zicbom
+li t0, (1 << 6)
+csrrs x0, mstatus, t0
+li a0, 0x80000000
+cbo.flush a0
+# Result: mstatus.MPV = 1
+
+# 96 # Extension Must Be Active: Zicbom
+li t0, 0xFFFFFFFFFFFFE7FF
+csrr t1, mstatus
+and t1, t1, t0
+li t0, 0x1800
+or t1, t1, t0
+csrw mstatus, t1
+li a0, 0x80000000
+cmo.flush a0
+# Result: mstatus.MPP = 0x3
+
+# 97 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0
+csrw mstatus, t0
+csrrsi t0, mstatus, 0x40000
+li x5, 0x80000000
+cmo.flush x5
+# Result: t0 = 0x40000
+
+# 98 # Extension Must Be Active: Zicbom
+li t0, 0x80000
+csrs mstatus, t0
+li a0, 0x80000000
+cmo.flush a0
+# Result: mstatus.mxr = 1
+
+# 99 # Extension Must Be Active: Zfinx
+csrr t0, mstatus
+# Result: mstatus.FS = 0
+
+# 100 # Extension Must Be Active: Zfinx
+li t0,0x6000
+csrrc x0,mstatus,t0
+li t1,0
+csrw fcsr,t1
+csrr t2,fcsr
+addi a0,t2,0
+# Result: a0 = 0
+
+# 101 # Extension Must Be Active: V
+vadd.vv v0, v1, v2
+# Result: mcause = 2
+
+# 102 # Extension Must Be Active: V
+csrrw x5, vtype, x0
+csrr x6, mstatus
+# Result: mstatus.VS = 0x3
+
+# 103 # Extension Must Be Active: V
+li t0, 0xC0
+csrw mstatus, t0
+# Result: mstatus.SD = 1
+
+# 104 # Extension Must Be Active: NONE
+li x5, 0x80
+csrw mstatus, x5
+vadd.vv v0, v1, v2
+csrr x6, mcause
+# Result: x6 = 2
+
+# 105 # Extension Must Be Active: V
+li t0, (1 << 7) # set mstatus.V = 1
+csrs mstatus, t0
+li t1, (1 << 12) # set mstatus.VS = Initial (01)
+csrs mstatus, t1
+li t2, (1 << 12) # set vsstatus.VS = Initial (01)
+csrw vsstatus, t2
+call machine_to_virtual
+vadd.vv v0, v0, v0 # vector instruction changes vector state
+# Result: mstatus.VS = 3
+
+# 106 # Extension Must Be Active: V
+csrr t1, mstatus
+li t2, -(0b11 << 22) # clear VS field
+and t1, t1, t2
+li t2, (3 << 22) # set VS = Dirty (3)
+or t1, t1, t2
+csrw mstatus, t1
+csrr t3, mstatus
+# Result: mstatus.SD = 1
+
+# 107 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.SD = 0
+
+# 108 # Extension Must Be Active: V
+vfmul.vv v1, v2, v3
+# Result: mcause = 2
+
+# 109 # Extension Must Be Active: V
+li t0, 0
+vsetvli t0, t0, e64,m1
+vfmul.vv v8, v8, v8
+# Result: mstatus.FS = 0x3
+
+# 110 # Extension Must Be Active: H
+li t1, 0x80 # set V=1 in mstatus
+csrs mstatus, t1
+li t2, 0x3000 # clear FS field (bits 13:12) -> Off
+csrrc mstatus, t2
+csrw stvec, trap_handler
+call machine_to_virtual
+vfadd.s v0, v1, v2 # vector FP instruction, should fault
+j done
+
+trap_handler:
+csrr t0, mcause # capture exception cause (2 = illegal instruction)
+j done
+
+done:
+nop
+# Result: t0 = 2
+
+# 111 # Extension Must Be Active: H
+li t0, (1 << 7) # set V=1 in mstatus
+csrs mstatus, t0 # enable virtualization
+# vsstatus.FS is Off by default after reset
+vfmul.vv v0, v1, v2 # vector floating‑point instruction (should trap)
+# Result: mcause = 2
+
+# 112 # Extension Must Be Active: H
+call machine_to_virtual
+vfadd.vv v0, v1, v2
+# Result: mstatus.FS = 3
+# Result: vsstatus.FS = 3
+
+# 113 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: t0 != 0
+
+# 114 # Extension Must Be Active: NONE
+li x6, 0x8
+csrrc x5, mstatus, x6
+csrrs x5, mstatus, x6
+# Result: mstatus.MIE = 1
+
+# 115 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.MIE = 0
+
+# 116 # Extension Must Be Active: NONE
+csrs mstatus, 0xA
+# Result: mstatus[MIE] = 1
+
+# 117 # Extension Must Be Active: NONE
+csrs mstatus, 0x3 # attempt to set UIE (bit0) and SIE (bit1)
+csrr a0, mstatus # read back mstatus
+andi a0, a0, 0x1 # isolate UIE field
+# Result: a0 = 0
+
+# 118 # Extension Must Be Active: NONE
+csrr t0, mstatus # t0 = original mstatus
+li t1, 0x8 # bit mask for MIE (bit 3)
+csrs mstatus, t1 # set MIE = 1 (enable machine interrupts)
+li t2, 0x1 # bit mask for UIE (bit 0)
+csrc mstatus, t2 # clear UIE = 0 (disable user interrupts)
+call machine_to_user # switch to U-mode (using provided helper)
+csrr a0, mstatus # read mstatus in U-mode
+# Result: mstatus.MIE = 1
+
+# 119 # Extension Must Be Active: NONE
+li x5, 0x22
+csrrw x0, mstatus, x5
+csrr x5, mstatus
+# Result: x5 != 0
+
+# 120 # Extension Must Be Active: NONE
+li t0, 0x1800
+csrrc x0, mstatus, t0
+csrrs x0, mstatus, t0
+csrr t2, mstatus
+srli t3, t2, 11
+andi t3, t3, 0x3
+# Result: t3 = 3
+
+# 121 # Extension Must Be Active: NONE
+li t0, 0x8
+csrs mstatus, t0
+call machine_to_user
+ecall
+# Result: mstatus.MPP = 0
+
+# 122 # Extension Must Be Active: NONE
+li t0, 0x20800
+csrw mstatus, t0
+mret
+# Result: mstatus.MPP = 0
+
+# 123 # Extension Must Be Active: NONE
+li t0, 0x1000 # attempt to set MPP field to the reserved value 0b10
+csrw mstatus, t0
+csrr t1, mstatus # read back mstatus
+# Result: mstatus.MPP != 0x2
+
+# 124 # Extension Must Be Active: NONE
+li x5,0x800
+csrw mstatus,x5
+csrr x6,mstatus
+srli x6,x6,11
+andi x6,x6,0x3
+# Result: x6 = 0x1
+
+# 125 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 11
+andi t0, t0, 0x3
+# Result: t0 = 3
+
+# 126 # Extension Must Be Active: NONE
+csrr x5, mstatus
+# Result: mstatus = 0x8
+
+# 127 # Extension Must Be Active: NONE
+li t0, 0x8 # set MIE bit
+csrs mstatus, t0 # enable machine interrupts
+li t1, 0x4000008 # set MDT=1 (bit 22) and keep MIE=1 for the write
+csrw mstatus, t1 # explicit write; MDT=1 should clear MIE automatically
+# Result: mstatus.MIE = 0
+
+# 128 # Extension Must Be Active: NONE
+li t0, 0x400008
+csrrw x0, mstatus, t0
+# Result: mstatus.MIE = 0
+
+# 129 # Extension Must Be Active: NONE
+li t0, 0x8 # set MIE bit (bit 3) while MDT remains 0
+csrw mstatus, t0 # write to mstatus
+# Result: mstatus.MIE = 1
+
+# 130 # Extension Must Be Active: NONE
+csrw mstatus, zero
+ecall
+# Result: mstatus.MDT = 1
+
+# 131 # Extension Must Be Active: NONE
+li t0, 0x80000000
+csrrw x0, mtvec, t0
+li t1, 0x1
+csrrw x0, 0x7c0, t1
+csrr t2, mstatus
+# Result: mstatus.MDT = 0
+
+# 132 # Extension Must Be Active: NONE
+addi t0, x0, 0x80
+csrrs x0, mstatus, t0
+mret
+csrr t1, mstatus
+# Result: mstatus.MDT = 0
+
+# 133 # Extension Must Be Active: NONE
+sret
+# Result: mstatus.MDT = 0
+
+# 134 # Extension Must Be Active: NONE
+csrr t0, mstatus
+ori t0, t0, 0x80
+csrw mstatus, t0
+call machine_to_supervisor
+# Result: mstatus.MDT = 0
+
+# 135 # Extension Must Be Active: NONE
+li t1, 0x8000 # assume SDT is bit 15
+csrrs zero, sstatus, t1 # set sstatus.SDT = 1
+call machine_to_user # transition to U-mode (contains MRET)
+csrr t0, sstatus # read back sstatus (optional)
+
+# 136 # Extension Must Be Active: NONE
+call machine_to_virtual_user
+csrr t0, vsstatus
+# Result: vsstatus.SDT = 0
+
+# 137 # Extension Must Be Active: NONE
+csrr t0, mstatus
+call machine_to_user
+csrr t1, sstatus
+# Result: sstatus.SDT = 0
+
+# 138 # Extension Must Be Active: NONE
+li t0, 0x80 # set MDT bit in mstatus (assuming MDT is bit 7)
+csrs mstatus, t0 # set the MDT bit
+call machine_to_virtual_user # transition to VU mode (uses MRET, which clears MDT)
+csrr t1, vsstatus # read vsstatus CSR
+# Result: vsstatus.SDT = 0
+
+# 139 # Extension Must Be Active: NONE
+addi x5, x0, 2
+slli x5, x5, 32
+addi x6, x0, 2
+slli x6, x6, 34
+or x5, x5, x6
+csrrw x0, mstatus, x5
+# Result: mstatus.SXL = 0x2
+
+# 140 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 34
+andi t0, t0, 0x3
+csrr t1, misa
+srli t1, t1, 62
+andi t1, t1, 0x3
+xor t2, t0, t1
+# Result: t2 = 0
+
+# 141 # Extension Must Be Active: NONE
+li t0, 0x800000000 # Set SXL field to 0b10 (value 2) by setting bits 35-34
+csrs mstatus, t0 # Write to mstatus SXL field
+csrr t1, mstatus # Read back mstatus
+srai t1, t1, 34 # Shift SXL field down to bits[1:0]
+andi t1, t1, 0x3 # Mask to obtain only SXL bits
+# Result: t1 = 2
+
+# 142 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 32
+andi t0, t0, 3
+# Result: t0 = 2
+
+# 143 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 32
+andi t0, t0, 0x3
+# Result: t0 = 2
+
+# 144 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 30
+andi t0, t0, 0x3
+# Result: t0 = 1
+
+# 145 # Extension Must Be Active: NONE
+csrr x5, mstatus
+li x6, 0xFFFFFFFFCFFFFFFF
+and x5, x5, x6
+li x7, 0x200000000
+or x5, x5, x7
+csrw mstatus, x5
+csrr x8, mstatus
+# Result: mstatus[UXL] = 1
+
+# 146 # Extension Must Be Active: NONE
+li t1, 0xC00000000
+csrrc t0, mstatus, t1
+call machine_to_supervisor
+li a0, 0x00000000FFFFFFFF
+li a1, 0xFFFFFFFF00000000
+add a0, a0, a1
+# Result: a0 = 0xFFFFFFFFFFFFFFFF
+
+# 147 # Extension Must Be Active: NONE
+li t0, 0x4000000000000000 # set MXL field to 01 (32‑bit XLEN for M‑mode)
+csrw mstatus, t0
+
+jal x0, 0 # write to PC (PC update triggers sign‑extension)
+auipc x5, 0 # capture the updated PC value
+
+# Result: x5 = 0xffffffff800001f2
+
+# 148 # Extension Must Be Active: NONE
+li x5, 0xC00000000
+csrw mstatus, x5
+csrr x6, mstatus
+# Result: mstatus.SXL = 3
+
+# 149 # Extension Must Be Active: NONE
+li t0, 0x1000
+li t1, 0xdeadbeefdeadbeef
+sd t1, 0(t0)
+ld t2, 0(t0)
+# Result: t2 = 0xdeadbeefdeadbeef
+
+# 150 # Extension Must Be Active: NONE
+lui x5, 0x20 # x5 = 0x20000 (sets MPRV bit position)
+addi x5, x5, 0x800 # x5 = 0x20800 (adds MPP=S field)
+csrw mstatus, x5 # Write value to mstatus (MPRV=1, MPP=S)
+csrr x6, mstatus # Read back mstatus for verification
+# Result: mstatus.MPRV = 1
+
+# 151 # Extension Must Be Active: NONE
+li t0, 0x20000
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0x20000
+
+# 152 # Extension Must Be Active: NONE
+li x5, 0x20000
+csrrs x0, mstatus, x5
+csrr x6, mstatus
+srli x7, x6, 17
+andi x7, x7, 1
+# Result: x7 = 1
+
+# 153 # Extension Must Be Active: NONE
+li t0, 0x20000
+csrs mstatus, t0
+call machine_to_supervisor
+# Result: mstatus.MPRV = 0
+
+# 154 # Extension Must Be Active: NONE
+li t0, 0x20800
+csrs mstatus, t0
+# Result: mstatus.MPRV = 1
+
+# 155 # Extension Must Be Active: NONE
+csrrs t0, mstatus, x0
+srli t0, t0, 19
+andi t0, t0, 1
+# Result: t0 = 0
+
+# 156 # Extension Must Be Active: NONE
+li t0, 0x80000
+csrrs t1, mstatus, t0
+# Result: mstatus.MXR = 1
+
+# 157 # Extension Must Be Active: NONE
+li x5, 0x80000 # Set MXR bit (bit 19) in mstatus
+csrs mstatus, x5 # Write MXR=1
+li x6, 0
+csrw satp, x6 # Ensure page-based virtual memory is disabled (MODE=0)
+# Result: mstatus.mxr = 1
+
+# 158 # Extension Must Be Active: NONE
+li t0, 0x80000
+csrs mstatus, t0
+csrr t1, mstatus
+srl t2, t1, 19
+andi t2, t2, 1
+# Result: t2 = 1
+
+# 159 # Extension Must Be Active: NONE
+csrw mstatus, zero
+csrr t0, mstatus
+# Result: t0 = 0
+
+# 160 # Extension Must Be Active: NONE
+li t0, 0x40000
+csrs mstatus, t0
+csrr t1, mstatus
+andi t1, t1, 0x40000
+# Result: t1 = 0x40000
+
+# 161 # Extension Must Be Active: NONE
+li t1,0x12345678
+li t2,0x1000
+sd t1,0(t2)
+csrw satp,zero
+li t0,0x40000 # bit 18 (SUM) in mstatus
+csrs mstatus,t0
+call machine_to_supervisor
+ld x10,0(t2)
+# Result: x10 = 0x12345678
+
+# 162 # Extension Must Be Active: NONE
+li t0, 0x60800
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.SUM = 0x1
+
+# 163 # Extension Must Be Active: NONE
+li t0, 0x40000
+csrs mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.SUM = 0
+
+# 164 # Extension Must Be Active: NONE
+li t0, 0x80000 # t0 = 1 << 19 (MXR bit)
+csrrs x0, mstatus, t0 # set MXR in mstatus
+li t1, -1 # illegal address for load
+ld t2, 0(t1) # raise load access‑fault exception
+csrr t3, mcause # read exception cause
+# Result: mcause = 5
+
+# 165 # Extension Must Be Active: NONE
+li t0, -1 # pmpaddr0 = all 1s (matches entire address space)
+csrw pmpaddr0, t0
+li t1, 0x08 # pmpcfg0 = NAPOT, no R/W/X permissions
+csrw pmpcfg0, t1
+li t2, (1 << 18) # set SUM bit in mstatus
+csrs mstatus, t2
+call machine_to_supervisor # switch to S-mode
+li t3, 0
+ld t4, 0(t3) # load from a protected address -> PMP access‑fault
+# Result: mcause = 5
+
+# 166 # Extension Must Be Active: NONE
+li t0, (1 << 25)
+csrc mstatus, t0
+li t0, (1 << 17)
+csrc mstatus, t0
+addi sp, sp, -16
+li t1, 0x1122334455667788
+sd t1, 0(sp)
+li t0, (1 << 25)
+csrs mstatus, t0
+ld t2, 0(sp)
+# Result: t2 = 0x8877665544332211
+
+# 167 # Extension Must Be Active: NONE
+li t0, 0x2000
+csrrc x0, mstatus, t0
+addi sp, sp, -8
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu t2, 0(sp)
+# Result: t2 = 0x44
+
+# 168 # Extension Must Be Active: NONE
+li t0, (1 << 12) # Set MBE bit in mstatus
+csrrs x0, mstatus, t0
+
+li a0, 0x80002000 # Memory address for test
+li t1, 0x11223344 # Test pattern
+sw t1, 0(a0) # Store word (big‑endian because MBE=1)
+
+lb t2, 0(a0) # Load first byte; should be most‑significant byte 0x11
+# Result: t2 = 0x11
+
+# 169 # Extension Must Be Active: NONE
+csrr t0, mstatus
+lui t1, 0x40
+csrs mstatus, t1
+csrr t2, mstatus
+# Result: mstatus.SBE = 1
+
+# 170 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0x2000 # set bit 13 (SBE) -> 1 << 13 = 0x2000
+csrs mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.SBE = 1
+
+# 171 # Extension Must Be Active: NONE
+csrw mstatus, x0
+call machine_to_supervisor
+li x10, 0x1122334455667788
+sd x10, 0(sp)
+lbu x11, 0(sp)
+# Result: x11 = 0x88
+
+# 172 # Extension Must Be Active: NONE
+li t0, 0x400000 # bit 22 (SBE) = 1 -> 1 << 22 = 0x400000
+csrs mstatus, t0 # set SBE=1 in mstatus
+li t1, 0x80001000 # base address for test memory
+li t2, 0x1122334455667788 # value to store (little‑endian view)
+sd t2, 0(t1) # store from M‑mode (unaltered endianness)
+call machine_to_supervisor # switch to S‑mode (SBE now active)
+ld x5, 0(t1) # load in S‑mode, should be big‑endian interpreted
+# Result: x5 = 0x8877665544332211
+
+# 173 # Extension Must Be Active: NONE
+csrr x5, mstatus
+andi x5, x5, 0x1000
+# Result: x5 = 0
+
+# 174 # Extension Must Be Active: NONE
+li t0, 0x40
+csrrs x0, mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.UBE = 1
+
+# 175 # Extension Must Be Active: NONE
+li t0, 0x11223344 # value to store
+add t1, sp, zero # use stack pointer as address
+sw t0, 0(t1) # store word in memory (M-mode)
+
+# Ensure mstatus.UBE = 0 (clear UBE bit, which is bit 22)
+li t2, 0x00400000 # mask for UBE
+csrrc zero, mstatus, t2 # clear UBE
+
+# Switch to U-mode
+call machine_to_user
+
+# In U-mode: load a byte from the same address
+lbu a0, 0(t1) # a0 should contain 0x44 on little‑endian
+
+# Result: a0 = 0x44
+
+# 176 # Extension Must Be Active: NONE
+# Allocate stack space and store a known little‑endian value
+li t0, 0x1122334455667788
+addi sp, sp, -8
+sd t0, 0(sp)
+mv s0, sp # preserve address for later use
+
+# Set mstatus.UBE = 1 (bit 22)
+li a0, (1 << 22)
+csrs mstatus, a0
+
+# Switch to U‑mode
+call machine_to_user
+
+# In U‑mode: explicit load (affected by UBE)
+ld t1, 0(s0)
+
+# Result: t1 = 0x8877665544332211
+
+# 177 # Extension Must Be Active: NONE
+csrr t0, mstatus
+andi t0, t0, 0xFFFFFFFFFFBFFFFF
+addi t1, x0, 1
+slli t1, t1, 22
+or t0, t0, t1
+csrw mstatus, t0
+csrr t2, mstatus
+andi t2, t2, 0x400000
+srli t2, t2, 22
+# Result: t2 = 0x1
+
+# 178 # Extension Must Be Active: NONE
+li t0, 0x100000
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.TVM = 0
+
+# 179 # Extension Must Be Active: NONE
+csrr t0, mstatus
+lui t1, 0x1
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+csrr t0, satp
+# Result: mcause = 2
+
+# 180 # Extension Must Be Active: NONE
+li t0, (1 << 20) # set TVM bit in mstatus
+csrs mstatus, t0
+
+li t1, 0xdeadbeef
+csrw satp, t1 # initialize satp with known value
+
+la t2, handler
+csrw mtvec, t2 # set trap vector to our handler
+
+li t0, (3 << 11) # clear MPP bits
+csrc mstatus, t0
+li t0, (1 << 11) # set MPP = S-mode
+csrs mstatus, t0
+
+call machine_to_supervisor # switch to S-mode
+
+li t0, 0x12345678
+csrw satp, t0 # illegal write (TVM=1) -> raise exception
+
+csrr t0, satp # read satp (should be unchanged)
+j done
+
+handler:
+csrr t0, mcause # capture exception cause (illegal instruction = 2)
+mret
+
+done:
+nop
+# Result: t0 = 2
+
+# 181 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x100000
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 182 # Extension Must Be Active: NONE
+li t0, 0x100000 # set TVM bit in mstatus (bit 20)
+csrrs zero, mstatus, t0
+la t1, trap_handler
+csrw mtvec, t1
+call machine_to_supervisor # switch to S-mode
+sINVAL.VMA x0, x0 # illegal in S-mode when TVM=1
+
+j end_test
+trap_handler:
+csrr t2, scause # read exception cause
+mv a0, t2 # store cause for result checking
+csrr t3, sepc
+addi t3, t3, 4 # skip offending instruction
+csrw sepc, t3
+sret
+end_test:
+nop
+# Result: a0 = 2
+
+# 183 # Extension Must Be Active: NONE
+li t1, 0x100000 # TVM bit mask (bit 20)
+csrrc x0, mstatus, t1 # clear TVM in mstatus
+call machine_to_supervisor
+csrr t2, satp # read satp CSR in S-mode
+# Result: t2 = 0
+
+# 184 # Extension Must Be Active: NONE
+li t0, 0x100000
+csrrc x0, mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# 185 # Extension Must Be Active: NONE
+csrrwi x1, mstatus, 0
+call machine_to_supervisor
+sINVAL.VMA x0, x0
+addi x5, x0, 1
+# Result: x5 = 1
+
+# 186 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 20
+andi t0, t0, 1
+# Result: t0 = 0
+
+# 187 # Extension Must Be Active: NONE
+li t0, 0x200000 # set TW field (bit 21) to 1, other bits cleared
+csrw mstatus, t0
+csrr t1, mstatus # read back mstatus into t1
+# Result: mstatus = 0x200000
+
+# 188 # Extension Must Be Active: NONE
+addi t0, x0, 0x200000
+csrrs t1, mstatus, t0
+csrr t2, mstatus
+# Result: mstatus.TW = 1
+
+# 189 # Extension Must Be Active: NONE
+li t0, 0x400000
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 22
+andi t1, t1, 1
+# Result: t1 = 1
+
+# 190 # Extension Must Be Active: NONE
+addi t0, x0, 0x400000
+csrs mstatus, t0
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# 191 # Extension Must Be Active: NONE
+li t1, 0x400000
+csrrc x0, mstatus, t1
+call machine_to_supervisor
+sret
+li a0, 0xdeadbeef
+# Result: a0 = 0xdeadbeef
+
+# 192 # Extension Must Be Active: NONE
+lui t1, 0x400 # load mask with bit 22 set (1<<22)
+csrrs t0, mstatus, t1 # set TSR bit in mstatus
+csrr t1, mstatus # read back mstatus
+srli t1, t1, 22 # shift TSR bit to LSB
+andi t1, t1, 1 # isolate TSR bit
+# Result: t1 = 1
+
+# 193 # Extension Must Be Active: NONE
+csrrs x5, mstatus, x0
+li x7, 0xC000
+csrrw x0, mstatus, x7
+csrrs x8, mstatus, x0
+# Result: mstatus.XS = 0
+
+# 194 # Extension Must Be Active: NONE
+li t1, 0x8000000000000000
+csrw mstatus, t1
+csrr t2, mstatus
+# Result: mstatus.SD = 0
+
+# 195 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.SD = 0
+
+# 196 # Extension Must Be Active: F
+csrr t0, mstatus
+# Result: mstatus.fs != 0
+
+# 197 # Extension Must Be Active: NONE
+lui x6, 0x3
+csrrw x5, mstatus, x6
+csrrs x7, mstatus, x0
+andi x7, x7, 0x3000
+# Result: x7 = 0x3000
+
+# 198 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t1, t0, 12
+andi t1, t1, 0x3
+# Result: t1 = 0
+
+# 199 # Extension Must Be Active: V
+csrr t0, mstatus
+srli t0, t0, 22
+andi t0, t0, 0x3
+# Result: t0 != 0
+
+# 200 # Extension Must Be Active: NONE
+li t0, 0x400000 # set VS field to 01 (bit 22)
+csrrw x0, mstatus, t0 # write VS field, discard old mstatus
+csrr t1, mstatus # read back mstatus
+srli t2, t1, 22 # shift VS field to LSBs
+andi t2, t2, 0x3 # mask to obtain VS[1:0]
+# Result: t2 != 0
+
+# 201 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srli t0, t0, 22
+andi t0, t0, 0x3
+# Result: t0 = 0
+
+# 202 # Extension Must Be Active: NONE
+csrrs t0, mstatus, x0
+srli t0, t0, 13
+andi t0, t0, 0x7
+# Result: t0 = 0
+
+# 203 # Extension Must Be Active: F
+li x5, 0x1122334455667788
+fmv.d.x f0, x5
+li x6, 0x2000
+csrw mstatus, x6
+li x6, 0x4000
+csrw mstatus, x6
+fmv.x.d x7, f0
+# Result: x7 = 0x1122334455667788
+
+# 204 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x3000 # set FS = Dirty (11)
+or t0, t0, t1
+csrw mstatus, t0
+
+li a0, 0x1122334455667788
+fmv.d.x f0, a0 # load known value into f0
+
+csrr t0, mstatus
+li t1, 0xFFFFFFFFFFFFCFFF # clear FS bits
+and t0, t0, t1
+csrw mstatus, t0 # set FS = Off (00)
+
+fmv.x.d a1, f0 # capture FP register after FS=Off
+
+csrr t0, mstatus
+li t1, 0x1000 # set FS = Initial (01)
+or t0, t0, t1
+csrw mstatus, t0
+
+fmv.x.d a2, f0 # capture FP register after FS=Initial
+# Result: a2 = 0x1122334455667788
+
+# 205 # Extension Must Be Active: V
+li a0, 0x12345678
+vsetvli t0, x0, e64, m1
+vmv.v.x v0, a0
+csrr t1, mstatus
+li t2, -0x300 # clear VS field bits [9:8]
+and t1, t1, t2
+li t3, 0x100 # set VS field to 01
+or t1, t1, t3
+csrw mstatus, t1
+vmv.x.s a1, v0
+# Result: a1 = 0x12345678
+
+# 206 # Extension Must Be Active: NONE
+csrrc x0, 0x300, 0x3000
+call machine_to_user
+csrr t0, 0x300
+# Result: mstatus.FS = 0
+
+# 207 # Extension Must Be Active: NONE
+li t0, 0x2000
+csrw mstatus, t0
+call machine_to_supervisor
+csrr t1, mstatus
+# Result: mstatus.FS = 1
+
+# 208 # Extension Must Be Active: NONE
+li x5, 0x6000 # FS = 0b11 (dirty)
+csrw mstatus, x5
+csrr x6, mstatus
+srli x6, x6, 63 # extract SD bit into LSB
+# Result: x6 = 1
+
+# 209 # Extension Must Be Active: F
+csrw mstatus, zero
+li t0, 0x3000
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 12
+andi t1, t1, 3
+# Result: t1 = 3
+
+# 210 # Extension Must Be Active: NONE
+lui t0,0x4
+csrw mstatus,t0
+# Result: mstatus.XS = 2
+
+# 211 # Extension Must Be Active: NONE
+fadd.s ft0, ft1, ft2
+# Result: mcause = 2
+
+# 212 # Extension Must Be Active: NONE
+fadd.s f0, f0, f0
+# Result: mcause = 2
+
+# 213 # Extension Must Be Active: NONE
+fadd.d ft0, ft0, ft0
+# Result: mcause = 2
+
+# 214 # Extension Must Be Active: F
+fadd.s f0, f0, f0
+# Result: mstatus.FS = 3
+
+# 215 # Extension Must Be Active: NONE
+li t1, 0x6000
+csrrc x0, mstatus, t1
+li t2, 0x4000
+csrrs x0, mstatus, t2
+fadd.d f0, f0, f0
+csrr t0, mstatus
+# Result: mstatus.FS = 3
+
+# 216 # Extension Must Be Active: F
+li t0, 0x6000
+csrw mstatus, t0
+fadd.s f0, f0, f0
+# Result: mstatus.FS = 3
+
+# 217 # Extension Must Be Active: F
+fadd.d f0, f1, f2
+# Result: mcause = 2
+
+# 218 # Extension Must Be Active: NONE
+li t0, 0x1000
+csrw mstatus, t0
+li t0, 0x0
+csrw mstatus, t0
+csrr t0, mstatus
+andi t0, t0, 0x1800
+# Result: mstatus.FS = 0x1
+
+# 219 # Extension Must Be Active: NONE
+li x5, 0x2000 # Set FS field to Clean (2)
+csrw mstatus, x5 # Write back to mstatus
+li x6, 0x3000 # Mask for FS field bits
+csrrc x0, mstatus, x6 # Unconfigure FP unit (clear FS)
+# Result: mstatus.FS = 0x1
+
+# 220 # Extension Must Be Active: NONE
+li t0, (3 << 13) # FS field = Dirty (11b)
+csrs mstatus, t0 # Set FS to Dirty
+fscsr x0, x0 # Write zero to fcsr, unconfiguring FP unit
+csrr t1, mstatus # Read mstatus
+li t2, (3 << 13) # Mask for FS field
+and t1, t1, t2 # Isolate FS field
+# Result: t1 = 0
+
+# 221 # Extension Must Be Active: NONE
+li t0, 0x3000
+csrrc x0, mstatus, t0
+# Result: mstatus.FS = 0
+
+# 222 # Extension Must Be Active: NONE
+li t0, 0x2000
+csrs mstatus, t0
+csrrc x0, mstatus, t0
+# Result: mstatus.FS = 0
+
+# 223 # Extension Must Be Active: NONE
+li t0, 0x2000
+csrs mstatus, t0
+li t1, 0x3000
+csrrc zero, mstatus, t1
+# Result: mstatus.FS = 0
+
+# 224 # Extension Must Be Active: NONE
+lui x5, 0x3
+csrrs x0, mstatus, x5
+csrrc x0, mstatus, x5
+# Result: mstatus.FS = 0
+
+# 225 # Extension Must Be Active: F
+li t0, 0
+fmv.d.x f1, t0
+fmv.d.x f2, t0
+fadd.d f0, f1, f2
+# Result: mstatus.FS = 0x1
+
+# 226 # Extension Must Be Active: F
+li t0, 0x1000 # FS field = Initial (01)
+csrw mstatus, t0
+csrs mstatus, 0x2000 # attempt to enable FP unit
+csrr t1, mstatus
+# Result: mstatus.FS = 0x1
+
+# 227 # Extension Must Be Active: F
+fadd.d f0, f0, f0
+csrr t0, mstatus
+# Result: mstatus.FS = 0x1
+
+# 228 # Extension Must Be Active: F
+li t0, 0x3000
+csrw mstatus, t0
+fadd.s f0, f1, f2
+# Result: mstatus.FS = 1
+
+# 229 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.MPELP = 0
+
+# 230 # Extension Must Be Active: NONE
+li t0, (1 << 8)
+csrw medeleg, t0
+la t1, trap_handler
+csrw stvec, t1
+call machine_to_user
+ecall
+trap_handler:
+csrr t2, mstatus
+srli t2, t2, 8
+andi t2, t2, 1
+mv a0, t2
+1: j 1b
+# Result: a0 = 0
+
+# 231 # Extension Must Be Active: NONE
+li t0, (1 << 9)
+csrw medeleg, t0
+la t0, trap_handler
+csrw stvec, t0
+call machine_to_supervisor
+supervisor_entry:
+li t0, 0x2
+csrs mstatus, t0
+li s0, 0
+ecall
+li t1, 0x20
+and t2, s0, t1
+srli t2, t2, 5
+mv a0, t2
+j .
+trap_handler:
+csrr s0, mstatus
+sret
+# Result: a0 = 1
+
+# 232 # Extension Must Be Active: NONE
+csrs mstatus, 0x2 # Enable SIE in mstatus
+li t0, (1 << 8) # Bit 8 = ECALL from U-mode
+csrw medeleg, t0 # Delegate ECALL to S-mode
+la t1, handler # Load address of trap handler
+csrw mtvec, t1 # Set mtvec to handler (direct mode)
+
+call machine_to_user # Switch to U-mode
+
+ecall # Trigger delegated trap
+
+handler:
+j . # Loop forever in S-mode
+
+# Result: mstatus.SIE = 0
+
+# 233 # Extension Must Be Active: NONE
+li t0, 0x80 # MPIE=1, MPP=0 (User) in mstatus
+csrw mstatus, t0
+li t1, 0x100 # Delegate ECALL from U-mode (bit 8) via medeleg
+csrw medeleg, t1
+la t2, s_trap_handler # Load address of S-mode trap handler
+csrw stvec, t2 # Set trap vector to handler
+call machine_to_user # Switch to U-mode
+ecall # Delegated trap to S-mode
+
+s_trap_handler:
+csrr t3, mstatus # Read mstatus in S-mode handler
+# Return to U-mode after handling
+call supervisor_to_user
+j . # Should never reach here
+
+# Result: mstatus.MPP = 0
+
+# 234 # Extension Must Be Active: NONE
+csrs mstatus, 0x8
+# Result: mstatus[MIE] = 1
+
+# 235 # Extension Must Be Active: NONE
+csrrc t0, mstatus, 0x8
+call machine_to_supervisor
+csrs sstatus, 0x2
+csrs sip, 0x2
+wfi
+# Result: mstatus.MPP = 0x1
+
+# 236 # Extension Must Be Active: NONE
+li x6, 8
+csrrs x0, mstatus, x6
+# Result: mstatus.MIE = 1
+
+# 237 # Extension Must Be Active: NONE
+li t0, 8 # clear MIE (bit 3)
+csrrc x0, mstatus, t0
+li t0, 128 # set MPIE (bit 7)
+csrrs x0, mstatus, t0
+la t1, after_ret
+csrw mepc, t1
+mret
+after_ret:
+# Result: mstatus.MIE = 1
+
+# 238 # Extension Must Be Active: NONE
+addi t1, zero, 0x400000 # set bit 22 (TSR) in t1 (0x400000 = 1<<22)
+csrs mstatus, t1 # set TSR=1 in mstatus
+call machine_to_supervisor # transition to S-mode
+sret # should raise illegal-instruction exception
+csrr a0, mcause # capture exception cause
+# Result: a0 = 0x2
+
+# 239 # Extension Must Be Active: NONE
+addi t0, x0, 0xa
+csrrc x0, mstatus, t0
+addi t0, x0, 0x80
+csrrs x0, mie, t0
+csrs mip, t0
+wfi
+csrr t0, mcause
+# Result: t0 = 0x8000000000000007
+
+# 240 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.MIE = 0
+
+# 241 # Extension Must Be Active: NONE
+li t0, 0x20800 # set MPRV (bit17) and MPP=S (bits12:11 = 01)
+csrrs x0, mstatus, t0 # set the bits in mstatus
+csrr t1, mstatus # read back mstatus for verification
+# Result: mstatus.MPP = 1
+
+# 242 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.NMIE = 0
+
+# 243 # Extension Must Be Active: NONE
+li t0, 0x20000
+csrs mstatus, t0
+call machine_to_supervisor
+# Result: mstatus.MPRV = 0
+
+# 244 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: mstatus.SPP = 0
+
+# 245 # Extension Must Be Active: NONE
+la t1, trap_handler
+csrw mtvec, t1
+call machine_to_user
+ecall
+nop
+
+trap_handler:
+csrr t0, mstatus
+srli t0, t0, 8
+andi t0, t0, 1
+mv a0, t0
+mret
+# Result: a0 = 0
+
+# 246 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr t0, mstatus
+li t1, -0x11
+and t0, t0, t1
+csrw mstatus, t0
+sret
+# Result: mstatus.SPP = 0
+
+# 247 # Extension Must Be Active: NONE
+li t0, (1 << 8) # delegate ECALL from U-mode to S-mode
+csrw medeleg, t0
+li t0, (1 << 5) # clear SPIE bit in mstatus
+csrrc x0, mstatus, t0
+li t0, (1 << 1) # set SIE bit in mstatus
+csrrs x0, mstatus, t0
+la t0, trap_handler # set S-mode trap vector
+csrw stvec, t0
+call machine_to_user # transition to U-mode
+ecall # cause trap to S-mode
+trap_handler:
+j after_trap # resume after trap handling
+after_trap:
+# Result: mstatus.SPIE = 1
+# Result: mstatus.SIE = 0
+
+# 248 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrci mstatus, 0x20
+csrci mstatus, 0x2
+sret
+# Result: mstatus.SPIE = 1
+
+# 249 # Extension Must Be Active: Zicfilp
+csrrc x0, mstatus, 0x200 # Clear V bit (assume V mask = 0x200)
+csrrsi x0, sstatus, 0x2000 # Set SPELP field via S-mode status CSR
+# Result: mstatus.SPELP = 1
+
+# 250 # Extension Must Be Active: NONE
+lui t0, 0x80001 # t0 = 0x80001000 (user virtual address)
+li t1, 0xdeadbeefdeadbeef
+sd t1, 0(t0) # store test value in memory (M-mode)
+li t3, (1 << 18) # SUM bit mask (bit 18)
+csrs mstatus, t3 # set SUM=1 in mstatus
+call machine_to_supervisor
+ld t4, 0(t0) # load from user page in S-mode
+# Result: t4 = 0xdeadbeefdeadbeef
+
+# 251 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x80000
+csrs mstatus, t1
+csrr t2, mstatus
+andi t2, t2, 0x80000
+# Result: t2 = 0x80000
+
+# 252 # Extension Must Be Active: NONE
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sINVAL.VMA x0, x0
+csrr t1, mcause
+# Result: mcause = 2
+
+# 253 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x100000 # TVM bit = bit 20
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+sfence.w.inval
+csrr a0, mstatus
+# Result: mstatus.TVM = 1
+
+# 254 # Extension Must Be Active: NONE
+li t0, 0x100000
+csrs mstatus, t0
+sfence.w.inval
+sfence.inval.ir
+# Result: mstatus.TVM = 1
+
+# 255 # Extension Must Be Active: H
+call machine_to_virtual
+li t0, 0x1
+csrs hstatus, t0
+# Result: hstatus.VTSR = 0x1
+
+# 256 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x100000 # TVM bit (bit 20)
+or t0, t0, t1
+csrw mstatus, t0
+
+la t0, exception_handler
+csrw mtvec, t0
+
+call machine_to_supervisor # enter HS-mode
+
+hs_start:
+csrr a0, hgatp # should raise illegal‑instruction exception
+j after_test
+
+exception_handler:
+csrr t1, mcause
+mv a0, t1 # capture exception cause
+csrr t2, mepc
+addi t2, t2, 4 # skip offending instruction
+csrw mepc, t2
+mret
+
+after_test:
+# Result: a0 = 2
+
+# 257 # Extension Must Be Active: NONE
+li t0, 0x80
+csrrc x0, mstatus, t0
+li t1, 0x1234
+csrw vsstatus, t1
+# Result: mstatus.V = 0
+
+# 258 # Extension Must Be Active: H
+li x1, 0xdeadbeefdeadbeef
+li x2, 0x80000000
+sd x1, 0(x2)
+li x4, 0x80
+csrrc x0, mstatus, x4
+li x5, 0x40000
+csrrs x0, vsstatus, x5
+li a0, 0x80000000
+call machine_to_virtual
+hlv x6, (a0)
+# Result: x6 = 0xdeadbeefdeadbeef
+
+# 259 # Extension Must Be Active: NONE
+li t0, (1 << 17) # set MPRV bit in mstatus
+csrs mstatus, t0
+li t1, (1 << 13) # clear V bit in mstatus
+csrc mstatus, t1
+li t2, (1 << 18) # set SUM bit in vsstatus
+csrw vsstatus, t2
+lw a0, 0(t0) # dummy load executed with MPRV active
+csrr a1, vsstatus # read back vsstatus
+# Result: a1 = 0x40000
+
+# 260 # Extension Must Be Active: NONE
+li t0, (1 << 17) # t0 = bit mask for MPRV (bit 17)
+csrrs x0, mstatus, t0 # Set MPRV in mstatus
+# Result: mstatus.MPRV = 1
+
+# 261 # Extension Must Be Active: NONE
+li x10,0x80
+csrrc x0,mstatus,x10
+li x5,0x12345000
+csrw vsatp,x5
+li x7,0x80000000
+li x6,0xdeadbeefdeadbeef
+sd x6,0(x7)
+ld x8,0(x7)
+csrr x9,vsatp
+# Result: x9 = 0x12345000
+
+# 262 # Extension Must Be Active: H
+csrs mstatus, 0x00100000 # Set mstatus.TVM (bit 20)
+hfence.vvma x0, x0 # Execute HFENCE.VVMA
+li x5, 0x1234 # Sentinel after HFENCE.VVMA
+# Result: x5 = 0x1234
+
+# 263 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0x200000
+csrrc zero, mstatus, t0
+hfence.gvma x0, x0
+li a0, 0x1
+# Result: a0 = 0x1
+
+# 264 # Extension Must Be Active: H
+csrs mstatus, 0x100000
+hfence.gvma x0, x0
+csrr t0, mcause
+# Result: t0 = 0
+
+# 265 # Extension Must Be Active: H
+li t0, (2 << 11) # set MPP = HS in mstatus
+csrs mstatus, t0
+call machine_to_supervisor # enter HS-mode via MRET
+li t0, 0x100000 # set mstatus.TVM = 1 (bit 20)
+csrs mstatus, t0
+hfence.gvma x0, x0
+# Result: mcause = 2
+
+# 266 # Extension Must Be Active: H
+call machine_to_virtual
+ecall
+# Result: mstatus.MPV = 1
+
+# 267 # Extension Must Be Active: NONE
+csrs mstatus, 0x1800
+mret
+csrr t0, mstatus
+# Result: mstatus.V = 0
+
+# 268 # Extension Must Be Active: H
+call machine_to_virtual
+li t1, 0xFFFFFFFFFFFFFFFF
+ld t2, 0(t1)
+csrr t0, mstatus
+srli t0, t0, 23
+andi t0, t0, 1
+# Result: t0 = 1
+
+# 269 # Extension Must Be Active: NONE
+call machine_to_supervisor
+ebreak
+csrr a0, mstatus
+# Result: mstatus.GVA = 0
+
+# 270 # Extension Must Be Active: NONE
+li t0, 0 # result flag = 0 (no trap)
+li t1, 1 << 22 # TSR bit mask (bit 22)
+csrrs x0, mstatus, t1 # set TSR in mstatus
+la t2, trap_handler
+csrw stvec, t2 # trap vector points to handler
+call machine_to_virtual # switch M-mode -> VS-mode
+
+sret # execute SRET in VS-mode; should NOT trap
+
+# execution continues here if TSR has no effect in VS-mode
+# t0 should remain 0
+
+trap_handler:
+li t0, 1 # indicate a trap occurred (unexpected)
+sret # return from trap to continue after SRET
+# Result: t0 = 0
+
+# 271 # Extension Must Be Active: NONE
+li t0, 0x100000 # mask for TVM bit (bit 20)
+call machine_to_supervisor # enter HS-mode
+csrrs x5, mstatus, t0 # set TVM in HS-mode
+csrrs x6, mstatus, x0 # read back mstatus (TVM should be set)
+call machine_to_virtual # enter VS-mode
+csrrs x7, mstatus, t0 # attempt to set TVM again (should have no effect in VS-mode)
+csrrs x8, mstatus, x0 # read back mstatus
+# Result: mstatus.TVM = 1
+
+# 272 # Extension Must Be Active: NONE
+csrr t0, mstatus
+lui t1, 0x200 # set TW bit (bit 21) in t1 = 0x200000
+csrs mstatus, t1
+addi a0, x0, 0
+wfi
+addi a0, x0, 1
+# Result: a0 = 1
+
+# 273 # Extension Must Be Active: NONE
+li t0, 0x100000 # set TVM bit (bit 20)
+csrs mstatus, t0 # write to mstatus
+# Result: mstatus.TVM = 1
+
+# 274 # Extension Must Be Active: NONE
+li t2, 0x100000
+csrrs x0, mstatus, t2
+csrr x5, vsatp
+hfence.vvma x0, x0
+li x6, 1
+# Result: x6 = 0x1
+
+# 275 # Extension Must Be Active: H
+csrr t0, mstatus
+li t1, 0x100000 # set TVM bit (bit 20)
+csrs mstatus, t1
+call machine_to_virtual
+li t2, 0x12345000
+csrw vsatp, t2
+csrr t3, vsatp
+# Result: vsatp = 0x12345000
+
+# 276 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus.MPRV = 0
+
+# 277 # Extension Must Be Active: NONE
+li t0, 0x20000
+csrs mstatus, t0
+li t1, 0x1000
+ld t2, 0(t1)
+csrr t3, mstatus
+# Result: mstatus.MPRV = 1
+
+# 278 # Extension Must Be Active: NONE
+li t0, 0x20000
+csrw mstatus, t0
+# Result: mstatus = 0x20000
+
+# 279 # Extension Must Be Active: NONE
+li t0, 0x2002000 # set MPRV (bit 17) and MPP=S (bits 12‑11 = 01), MPV=0
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, 0x2002000
+# Result: t1 = 0x2002000
+
+# 280 # Extension Must Be Active: NONE
+li t0, 0x26000
+csrw mstatus, t0
+# Result: mstatus = 0x26000
+
+# 281 # Extension Must Be Active: NONE
+li t0, (1 << 17) | (1 << 16) | (1 << 19) # set MPRV, MPV, HS‑level MXR
+csrw mstatus, t0
+
+call machine_to_virtual # enter VS‑mode
+
+li t1, (1 << 19) # set vsstatus.MXR
+csrw vsstatus, t1
+
+li t2, 0x1000 # test address
+li t3, 0xdeadbeefdeadbeef # test pattern
+sd t3, 0(t2) # store pattern
+ld t4, 0(t2) # load it back
+# Result: t4 = 0xdeadbeefdeadbeef
+
+# 282 # Extension Must Be Active: V
+li x2, (1 << 13) | (1 << 11) # MPRV=1, MPP=01 (S-mode)
+csrw mstatus, x2
+li x6, (1 << 8) | (1 << 9) # vsstatus.MXR=1, vsstatus.SUM=1 (assumed bit positions)
+csrw 0x240, x6 # vsstatus CSR assumed address 0x240
+li x7, 0xdeadbeef
+li x8, 0x80001000
+sw x7, 0(x8)
+lw x5, 0(x8)
+# Result: x5 = 0xdeadbeef
+
+# 283 # Extension Must Be Active: H
+li x5, 0x10000 # address to test
+li x6, 0xdeadbeef # test data
+sd x6, 0(x5) # store data in memory (machine mode)
+
+li t0, (1 << 13) # MPRV is bit 13 in mstatus
+csrrs x0, mstatus, t0 # set MPRV = 1
+
+hlv x10, 0(x5) # hypervisor load from the same address
+
+# Result: x10 = 0xdeadbeef
+
+# 284 # Extension Must Be Active: H
+csrs mstatus, 0x20000 # set MPRV = 1
+csrs mstatus, 0x800 # set MPP = S-mode
+li t2, 0x1122334455667788 # value to store
+li t1, 0x80000000 # guest virtual address
+hsv.d t2, (t1) # hypervisor store to guest address
+hlv.d t0, (t1) # hypervisor load from guest address
+# Result: t0 = 0x1122334455667788
+
+# 285 # Extension Must Be Active: H
+csrr t0, mstatus
+li t1, 0x200 # V bit (bit 9) = 1
+csrs mstatus, t1
+call machine_to_supervisor
+hfence.vvma x0, x0
+# Result: mcause = 22
+
+# 286 # Extension Must Be Active: NONE
+call machine_to_virtual
+lui t0, 0x600 # t0 = 0x00600000 (set TSR and TVM bits)
+csrs mstatus, t0 # set TSR and TVM in mstatus
+sret # should NOT trap in VS-mode despite TSR=1
+addi t1, x0, 1 # t1 = 1 if execution continues past SRET
+# Result: t1 = 1
+
+# 287 # Extension Must Be Active: NONE
+csrs mstatus, 0x80 # Set V bit to 1
+ecall # Take a trap into M-mode
+csrr t0, mstatus # Read mstatus after trap
+# Result: mstatus.V = 0
+
+# 288 # Extension Must Be Active: NONE
+li t0, 0x21800
+csrw mstatus, t0
+mret
+# Result: mstatus.MPP = 0
+
+# 289 # Extension Must Be Active: NONE
+csrr x5, sstatus
+srli x5, x5, 8
+andi x5, x5, 1
+# Result: x5 = 0
+
+# 290 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrrw x0, 0xFFF, x0
+# Result: mstatus.SPELP = 1
+
+# 291 # Extension Must Be Active: NONE
+csrrw x0, 0xFFF, x0
+csrr t0, mstatus
+# Result: mstatus.elp = 0x0
+
+# 292 # Extension Must Be Active: NONE
+li t0, 0
+csrw mstatus, t0
+li t1, 0x3 << 5 # set S-mode PELP field (placeholder position)
+csrs mstatus, t1
+li t2, 1 << 10 # set LPE bit for S-mode (placeholder position)
+csrs mstatus, t2
+call machine_to_supervisor
+# Result: mstatus.ELP = 0x3
+
+# 293 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: mstatus.ELP = 0
+
+# 294 # Extension Must Be Active: NONE
+li t0, 0
+la t1, after_ret
+csrw mepc, t1
+csrw mstatus, t0
+mret
+after_ret:
+csrr t2, mstatus
+# Result: mstatus.PELP = 0
+
+# 295 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0x8000000000000000
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x8000000000000000
+
+# 296 # Extension Must Be Active: NONE
+li t0, 0x8000000000000000
+csrw satp, t0
+addi x0, x0, 0
+csrr t1, satp
+# Result: t1 = 0x8000000000000000
+
+# 297 # Extension Must Be Active: NONE
+li t0, 0x40000
+csrr t1, sstatus
+or t1, t1, t0
+csrw sstatus, t1
+csrr t2, sstatus
+# Result: sstatus.SUM = 1
+
+# 298 # Extension Must Be Active: NONE
+li a0, 0 # initialize result register
+li t0, (1 << 20) # TVM bit mask (bit 20)
+csrs mstatus, t0 # set TVM = 1 in mstatus
+call machine_to_supervisor
+csrr t1, satp # attempt to read satp in S-mode (should fault)
+li a0, 1 # set result to 1 only if no fault occurs
+# Result: a0 != 1
+
+# 299 # Extension Must Be Active: NONE
+li t0, 0x100000
+csrrc x0, mstatus, t0
+call machine_to_supervisor
+csrr a0, satp
+csrw satp, a0
+# Result: a0 = 0
+
+# 300 # Extension Must Be Active: NONE
+li x5, 0x81234ABCDE12345
+csrw satp, x5
+csrr x6, satp
+# Result: x6 = 0x81234ABCDE12345
+
+# 301 # Extension Must Be Active: NONE
+li t0, 0xF000000000000000
+csrw satp, t0
+csrr t1, satp
+# Result: satp != 0xF000000000000000
+
+# 302 # Extension Must Be Active: NONE
+csrw satp, x0
+call machine_to_supervisor
+addi x5, x0, 0x7F
+lui x6, 0x80001
+sw x5, 0(x6)
+lw x10, 0(x6)
+# Result: x10 = 0x7F
+
+# 303 # Extension Must Be Active: NONE
+csrw satp, x0
+csrr t0, satp
+# Result: t0 = 0
+
+# 304 # Extension Must Be Active: NONE
+li t0, 0
+csrw satp, t0
+# Result: satp = 0x0
+
+# 305 # Extension Must Be Active: NONE
+li t0, 0x1000012345678
+csrw satp, t0
+csrr t1, satp
+# Result: t1 != 0x1000012345678
+
+# 306 # Extension Must Be Active: NONE
+li t0, 0
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0
+
+# 307 # Extension Must Be Active: NONE
+li t0, 0x8000000000000000
+csrw satp, t0
+csrr x5, satp
+li t1, 0x1000000000000000
+csrw satp, t1
+csrr x6, satp
+# Result: x6 = 0x8000000000000000
+
+# 308 # Extension Must Be Active: NONE
+li t0, 0x8000000000000000 # MODE=8 (Sv39)
+li t1, 0xABCD
+slli t1, t1, 44 # place ASID in bits 59-44
+li t2, 0x12345
+or t0, t0, t1
+or t0, t0, t2
+csrw satp, t0
+csrr t3, satp
+srli t3, t3, 44
+andi t3, t3, 0xFFFF
+# Result: t3 = 0xABCD
+
+# 309 # Extension Must Be Active: NONE
+addi t0, zero, 0
+csrw satp, t0
+# Result: satp.MODE = 0
+
+# 310 # Extension Must Be Active: NONE
+li t0, 0x5000000000000000
+csrw satp, t0
+csrr t1, satp
+# Result: t1 != 0x5000000000000000
+
+# 311 # Extension Must Be Active: NONE
+li t0, 0x8000000000000000
+csrw satp, t0
+csrr t1, satp
+# Result: satp = 0x8000000000000000
+
+# 312 # Extension Must Be Active: NONE
+li t0, 0x900000000012345
+csrw satp, t0
+csrr t1, satp
+srli t1, t1, 60
+# Result: t1 = 9
+
+# 313 # Extension Must Be Active: NONE
+li t0, 10
+slli t0, t0, 60
+csrw satp, t0
+csrr t1, satp
+srli t1, t1, 60
+andi t1, t1, 0xF
+# Result: t1 = 10
+
+# 314 # Extension Must Be Active: NONE
+li t0,0xb000000000000000
+csrw satp, t0
+# Result: satp.MODE != 0xb
+
+# 315 # Extension Must Be Active: NONE
+li x5, 0xc
+slli x5, x5, 60
+csrw satp, x5
+csrr x6, satp
+srli x7, x6, 60
+andi x7, x7, 0xf
+# Result: x7 != 0xc
+
+# 316 # Extension Must Be Active: NONE
+li t0,0xE000000000000000
+csrw satp,t0
+csrr t1,satp
+# Result: t1 = 0xE000000000000000
+
+# 317 # Extension Must Be Active: NONE
+csrw satp, x0
+li x5, 0x8000000000000000
+csrw satp, x5
+csrr x6, satp
+# Result: x6 = 0x8000000000000000
+
+# 318 # Extension Must Be Active: NONE
+li t0, 0
+csrw satp, t0
+li t2, 0x8012340000000000
+csrw satp, t2
+# Result: satp.ASID = 0x1234
+
+# 319 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0x8000000000000000
+csrw satp, t0
+# Result: satp = 0x8000000000000000
+
+# 320 # Extension Must Be Active: NONE
+li t0, 1 # set VTVM bit
+csrs hstatus, t0
+la t0, trap_handler # set trap vector for VS-mode exceptions
+csrw hstvec, t0
+call machine_to_virtual # enter VS-mode
+
+csrr t1, satp # attempt to access satp (should trap)
+
+li t2, 0 # should not reach here if exception occurs
+j end
+
+trap_handler:
+csrr t2, vscause # capture exception cause
+j end # skip returning to VS-mode
+
+end:
+nop
+
+# Result: vscause = 0x7
+
+# 321 # Extension Must Be Active: NONE
+csrr x5, satp
+addi x6, x0, 2
+slli x6, x6, 60
+csrw satp, x6
+csrr x7, satp
+# Result: x7 = 0
+
+# 322 # Extension Must Be Active: H
+call machine_to_virtual
+li t0, 0xdeadbeefdeadbeef
+csrw satp, t0
+csrr a0, satp
+# Result: a0 = 0xdeadbeefdeadbeef
+
+# 323 # Extension Must Be Active: NONE
+li x5, 0
+csrw vsatp, x5
+li x6, 0xF000000000000000
+csrw vsatp, x6
+csrr x7, vsatp
+srli x7, x7, 60
+andi x7, x7, 0xF
+# Result: x7 = 0
+
+# 324 # Extension Must Be Active: NONE
+call machine_to_virtual
+li t0, 0xF000000000000000
+csrw satp, t0
+csrr t1, vsatp
+# Result: t1 = 0x0
+
+# 325 # Extension Must Be Active: NONE
+# Set hstatus.VTVM = 1
+li t0, 0x1
+csrw hstatus, t0
+
+# Set mtvec to trap handler
+la t1, trap_handler
+csrw mtvec, t1
+
+# Initialize satp (optional)
+li t2, 0x0
+csrw satp, t2
+
+# Switch to VS-mode
+call machine_to_virtual
+
+# In VS-mode: attempt to read satp (should raise virtual-instruction exception)
+csrr a0, satp
+
+# Normal continuation (should not be reached if exception occurs)
+j end
+
+trap_handler:
+# Save mcause into a0 for result checking
+csrr a0, mcause
+j end
+
+end:
+# End of test case
+# Result: a0 = 7
+
+# 326 # Extension Must Be Active: NONE
+csrw satp, x0
+call machine_to_supervisor
+sspush x0, x0
+# Result: mcause = 8
+
+# 327 # Extension Must Be Active: NONE
+li t0, 0x8000000000000000
+csrw satp, t0
+# Result: satp.MODE != 0
+
+# 328 # Extension Must Be Active: NONE
+csrw satp, x0
+csrr t0, satp
+# Result: satp.MODE = 0
+
+# 329 # Extension Must Be Active: NONE
+csrr a0, satp
+# Result: mcause = 0x0
+
+# 330 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 331 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, 0x180
+# Result: mcause = 0x2
+
+# 332 # Extension Must Be Active: NONE
+li a0, 0x1000000000000000
+csrs satp, a0
+csrr a1, satp
+and a2, a0, a1
+# Result: a2 = 0x0
+
+# 333 # Extension Must Be Active: NONE
+li a0, 0x100000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x100000000000
+
+# 334 # Extension Must Be Active: NONE
+li a0, 0x1
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# 335 # Extension Must Be Active: NONE
+li a0, 0xffffffffffffffff
+csrw 0x180, a0
+csrr a1, 0x180
+# Result: a1 != 0xffffffff && a1 != 0xffffffffffffffff
+
+# 336 # Extension Must Be Active: Svade
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 337 # Extension Must Be Active: Svadu
+csrr a0, satp
+# Result: mcause = 0x0
+
+# 338 # Extension Must Be Active: Svnapot
+csrr a0, satp
+# Result: mcause = 0x0
+
+# 339 # Extension Must Be Active: Svpbmt
+csrr a0, satp
+csrr t0, mcause
+# Result: mcause = 0x0
+
+# 340 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li x5, 0xFFFFFFFFFFFFFFFF
+csrw scounteren, x5
+csrr x5, scounteren
+# Result: scounteren = 0xFFFFFFFFFFFFFFFF
+
+# 341 # Extension Must Be Active: NONE
+csrw scounteren, x0
+call machine_to_user
+csrr a0, cycle
+# Result: mcause = 2
+
+# 342 # Extension Must Be Active: NONE
+addi x6, x0, 1
+csrrw x5, scounteren, x6
+csrr x7, cycle
+# Result: x7 != 0
+
+# 343 # Extension Must Be Active: NONE
+csrrwi t0, mcounteren, 0
+csrrwi t0, scounteren, 0
+call machine_to_user
+rdcycle a0
+# Result: a0 = 0
+
+# 344 # Extension Must Be Active: NONE
+call machine_to_virtual
+call vs_to_vu
+csrrs x5, cycle, x0
+# Result: x5 = 0
+
+# 345 # Extension Must Be Active: NONE
+la t0, trap_handler
+csrw mtvec, t0
+call machine_to_virtual
+trap_start:
+csrw scounteren, x0
+rdcycle x5
+j after_exception
+after_exception:
+nop
+trap_handler:
+csrr t1, mcause
+mv a0, t1
+csrr t2, mepc
+addi t2, t2, 4
+csrw mepc, t2
+mret
+# Result: a0 = 22
+
+# 346 # Extension Must Be Active: NONE
+csrr a0, scounteren
+# Result: mcause = 0x0
+
+# 347 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr a0, 0x106
+# Result: mcause = 0x0
+
+# 348 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 0x2
+
+# 349 # Extension Must Be Active: NONE
+li a0, 0x40000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40000
+
+# 350 # Extension Must Be Active: NONE
+li a0, 0x20000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20000
+
+# 351 # Extension Must Be Active: NONE
+li a0, 0x10000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10000
+
+# 352 # Extension Must Be Active: NONE
+li a0, 0x8000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8000
+
+# 353 # Extension Must Be Active: NONE
+li a0, 0x4000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4000
+
+# 354 # Extension Must Be Active: NONE
+li a0, 0x2000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2000
+
+# 355 # Extension Must Be Active: NONE
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1000
+
+# 356 # Extension Must Be Active: NONE
+li a0, 0x800
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x800
+
+# 357 # Extension Must Be Active: NONE
+li a0, 0x400
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x400
+
+# 358 # Extension Must Be Active: NONE
+li a0, 0x200
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x200
+
+# 359 # Extension Must Be Active: NONE
+li a0, 0x100
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x100
+
+# 360 # Extension Must Be Active: NONE
+li a0, 0x80
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x80
+
+# 361 # Extension Must Be Active: NONE
+li a0, 0x40
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40
+
+# 362 # Extension Must Be Active: NONE
+li a0, 0x20
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20
+
+# 363 # Extension Must Be Active: NONE
+li a0, 0x10
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10
+
+# 364 # Extension Must Be Active: NONE
+li a0, 0x8
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8
+
+# 365 # Extension Must Be Active: NONE
+li a0, 0x4
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4
+
+# 366 # Extension Must Be Active: NONE
+li a0, 0x2
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2
+
+# 367 # Extension Must Be Active: NONE
+li a0, 0x1
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# 368 # Extension Must Be Active: NONE
+li t0, -1
+csrw scounteren, t0
+# Result: scounteren != -1 && scounteren != 0xffffffff

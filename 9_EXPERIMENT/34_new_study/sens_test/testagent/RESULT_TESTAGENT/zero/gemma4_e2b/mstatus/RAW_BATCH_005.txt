@@ -1,0 +1,191 @@
+# Test Case RULE 81: The SUM mechanisms encoded in mstatus have no impact on whether access-fault exceptions are raised due to PMP.
+##### ASSEMBLY #####
+li x10, 1
+csrw mstatus, 1
+call supervisor_to_user
+li x10, 1
+csrw mstatus, 0
+call supervisor_to_user
+# Result: mcause != 2
+
+# Test Case RULE 82: The MBE, SBE, and UBE bits are fields in mstatus and mstatush that control the endianness of memory accesses other than instruction fetches.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+sd x1, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 83: Instruction fetches are always little-endian and are not affected by the mstatus MBE, SBE, or UBE bits.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+jal x0, x1
+# Result: x0 = 1
+
+# Test Case RULE 84: The mstatus.MBE bit controls the endianness of non-instruction-fetch memory accesses made from M-mode when mstatus.MPRV = 0.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+sd x1, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 85: When mstatus.MBE = 0, non-instruction-fetch memory accesses from M-mode are little-endian.
+##### ASSEMBLY #####
+li x1, 0
+csrw mstatus, 0
+li x2, 0x1000
+sd x1, 0(x2)
+# Result: x0 = 0
+
+# Test Case RULE 86: When mstatus.MBE = 1, non-instruction-fetch memory accesses from M-mode are big-endian.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+sd x1, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 87: If S-mode is not supported, the mstatus.SBE bit is read-only 0.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+# Attempting to modify mstatus.SBE should not succeed if S-mode is unsupported (assuming read-only enforcement)
+# Since we cannot explicitly test S-mode non-support, we check that the bit is 0 when potentially set.
+call machine_to_supervisor
+li x1, 1
+csrw mstatus, 1
+call supervisor_to_user
+li x1, 0
+csrw mstatus, 0
+call supervisor_to_user
+# Result: mstatus[13] = 0
+
+# Test Case RULE 88: The mstatus.SBE bit controls the endianness of explicit load and store memory accesses made from S-mode.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li x1, 1
+csrw mstatus, 1
+call supervisor_to_user
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 89: When mstatus.SBE = 0, explicit load and store memory accesses from S-mode are little-endian.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li x1, 0
+csrw mstatus, 0
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 0
+
+# Test Case RULE 90: When mstatus.SBE = 1, explicit load and store memory accesses from S-mode are big-endian.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 91: If U-mode is not supported, the mstatus.UBE bit is read-only 0.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+# Attempting to modify mstatus.UBE should not succeed if U-mode is unsupported
+# Checking that the bit is 0 when potentially set.
+call machine_to_user
+li x1, 0
+csrw mstatus, 0
+call machine_to_user
+# Result: mstatus[11] = 0
+
+# Test Case RULE 92: The mstatus.UBE bit controls the endianness of explicit load and store memory accesses made from U-mode.
+##### ASSEMBLY #####
+call machine_to_user
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 93: When mstatus.UBE = 0, explicit load and store memory accesses from U-mode are little-endian.
+##### ASSEMBLY #####
+call machine_to_user
+li x1, 0
+csrw mstatus, 0
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 0
+
+# Test Case RULE 94: When mstatus.UBE = 1, explicit load and store memory accesses from U-mode are big-endian.
+##### ASSEMBLY #####
+call machine_to_user
+li x1, 1
+csrw mstatus, 1
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 95: The endianness of implicit accesses to supervisor-level memory-management data structures is always controlled by the mstatus.SBE bit.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li x1, 1
+csrw mstatus, 1
+call supervisor_to_user
+li x2, 0x1000
+ld x0, 0(x2)
+# Result: x0 = 1
+
+# Test Case RULE 96: The TVM field in mstatus is a WARL field.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+# Attempting to write to TVM field should result in a fault (illegal write).
+# Assuming the instruction sequence itself is what checks the conformance violation.
+# Since we cannot rely on a specific trap handler setup, we rely on the state change being disallowed.
+# We check if the TVM bit remains 0 after a failed write attempt (or if we can read it back).
+li x1, 0
+csrw mstatus, 0
+# If writing fails, mstatus should not change.
+call supervisor_to_user
+# Result: mstatus[31] = 0
+
+# Test Case RULE 97: When the TVM bit in mstatus is 1, attempts to read the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+call machine_to_supervisor
+# Attempt to read SATP. Assuming this instruction traps if TVM=1.
+# We rely on the trap mechanism itself being the observed result.
+# Execution stops at the trapping instruction.
+# Result: mcause = 2
+
+# Test Case RULE 98: When the TVM bit in mstatus is 1, attempts to write the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+call machine_to_supervisor
+# Attempt to write SATP. Assuming this instruction traps if TVM=1.
+# Execution stops at the trapping instruction.
+# Result: mcause = 2
+
+# Test Case RULE 99: When the TVM bit in mstatus is 1, attempts to execute an SFENCE.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+call machine_to_supervisor
+sfence.vma
+# Execution stops at the trapping instruction.
+# Result: mcause = 2
+
+# Test Case RULE 100: When the TVM bit in mstatus is 1, attempts to execute a SINVAL.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw mstatus, 1
+call machine_to_supervisor
+sinval.vma
+# Execution stops at the trapping instruction.
+# Result: mcause = 2

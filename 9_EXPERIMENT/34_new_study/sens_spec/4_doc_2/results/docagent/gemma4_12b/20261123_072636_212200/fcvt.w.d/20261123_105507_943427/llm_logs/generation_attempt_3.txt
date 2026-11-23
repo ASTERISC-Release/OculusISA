@@ -1,0 +1,41 @@
+Based on the provided specification, here is the summary of the key machine-mode and supervisor-mode registers, their functions, and the specific behavior of the **`Sctrdepth`** and **`Sctrstatus`** registers.
+
+### 1. Key Machine-Mode Registers (Summary)
+These registers manage the core hardware and trap handling:
+*   **`mstatus`**: Tracks the processor's current operating state (privilege mode, interrupt enables, etc.).
+*   **`mtvec`**: Holds the trap vector base address and mode (Direct or Vectored).
+*   **`mcause`**: Written by hardware to indicate the cause of a trap (Interrupt or Exception).
+*   **`mepc`**: Records the virtual address of the instruction that was interrupted or caused an exception.
+*   **`mtval`**: Holds exception-specific data (e.g., the faulting virtual address).
+*   **`mscratch`**: A scratch register for machine-mode use, often used to save the user context.
+*   **`mip` / `mie`**: Track pending interrupts and interrupt enable bits, respectively.
+*   **`medeleg` / `mideleg`**: Delegate specific traps and interrupts to lower privilege levels (like S-mode).
+*   **`mcycle` / `minstret`**: Hardware counters for the number of clock cycles and retired instructions.
+
+### 2. Key Supervisor-Mode Registers (Summary)
+These registers are used by operating systems for memory management and trap handling:
+*   **`sstatus`**: Tracks supervisor-level operating state (e.g., `SUM` bit for user memory access, `UXL` for user-mode bit width).
+*   **`stvec`**: Holds the supervisor-level trap vector base address and mode.
+*   **`sip` / `sie`**: Supervisor-level interrupt pending and enable bits.
+*   **`sepc` / `scause` / `stval`**: Supervisor-mode equivalents of the trap-handling registers (Program Counter, Cause, and Trap Value).
+*   **`satp`**: Controls supervisor-mode address translation (PPN, ASID, and Mode).
+*   **`stimecmp`**: A 64-bit register used to set the time for a supervisor-mode timer interrupt.
+*   **`sscratch`**: A scratch register dedicated to supervisor-mode use.
+
+### 3. Control Transfer Records (CTR) Registers
+The **Smctr** and **Ssctr** extensions provide a circular buffer to record control flow history (jumps, branches, traps).
+*   **`sctrctl`**: Configures which types of transfers are recorded (e.g., direct calls, indirect jumps, traps).
+*   **`sctrdepth`**: Specifies the depth of the CTR buffer (number of records stored).
+*   **`sctrstatus`**: Provides real-time status of the CTR (e.g., the write pointer `WRPTR` and the `FROZEN` bit).
+
+### 4. Specific Behavior: `sctrdepth` and `sctrstatus`
+*   **`sctrdepth` (Supervisor Control Transfer Records Depth)**: 
+    *   It is a 32-bit register.
+    *   It defines the maximum number of entries in the CTR buffer. 
+    *   Supported depths are: 16, 32, 64, 128, or 256.
+    *   Software typically sets this value at boot. If a depth of $N$ is set, the buffer holds entries $0$ through $N-1$.
+*   **`sctrstatus` (Supervisor Control Transfer Records Status)**:
+    *   It is a 32-bit register updated by hardware.
+    *   **`WRPTR` (Write Pointer)**: Indicates the physical buffer entry to be written next. It wraps around once the depth is reached.
+    *   **`FROZEN`**: If set to 1, it inhibits all transfer recording. This is often set by hardware (e.g., on a local-counter-overflow interrupt) to ensure the control flow history is preserved during the handler execution.
+    *   **Logic**: Logical entry $0$ is always the "youngest" record (the one most recently written). As new transfers occur, older records are pushed down the stack.

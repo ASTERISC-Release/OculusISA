@@ -1,0 +1,864 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `mseccfg`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+ed  by  software  for  forward  compatibility,  or  else  a  page-fault  exception  is raised.
+
+For leaf PTEs, setting bits 62-61 to the value 3 is reserved for future standard use. Until this value is defined by a standard extension, using this reserved value in a leaf PTE raises a page-fault exception.
+
+When PBMT settings override a main memory page into I/O or vice versa, memory accesses to such pages obey the memory ordering rules of the final effective attribute, as follows.
+
+If the underlying physical memory attribute for a page is I/O, and the page has PBMT=NC, then accesses to that page obey RVWMO. However, accesses to such pages are considered to be both I/O and main memory accesses for the purposes of FENCE, .aq , and .rl .
+
+If the underlying physical memory attribute for a page is main memory, and the page has PBMT=IO, then accesses  to  that  page  obey  strong  channel  0  I/O  ordering  rules.  However,  accesses  to  such  pages  are considered to be both I/O and main memory accesses for the purposes of FENCE, .aq , and .rl .
+
+A  device  driver  written  to  rely  on  I/O  strong  ordering  rules  will  not  operate  correctly  if  the address range is mapped with PBMT=NC. As such, this configuration is discouraged.
+
+<image>
+
+It  will  often  still  be  useful  to  map  physical  I/O  regions  using  PBMT=NC  so  that  write combining and speculative accesses can be performed. Such optimizations will likely improve performance when applied with adequate care.
+
+When Svpbmt is used with non-zero PBMT encodings, it is possible for multiple virtual aliases of the same physical page to exist simultaneously with different memory attributes. It is also possible for a U-mode or S-mode mapping through a PTE with Svpbmt enabled to observe different memory attributes for a given region  of  physical  memory  than  a  concurrent  access  to  the  same  page  performed  by  M-mode  or  when MODE=Bare.  In  such  cases,  the  behaviors  dictated  by  the  attributes  (including  coherence,  which  is
+
+otherwise unaffected) may be violated.
+
+Accessing the same location using different attributes that are both non-cacheable (e.g., NC and IO) does not  cause  loss  of  coherence,  but  might  result  in  weaker  memory  ordering  than  the  stricter  attribute ordinarily guarantees. Executing a fence iorw, iorw instruction between such accesses suffices to prevent loss of memory ordering.
+
+Accessing the same location using different cacheability attributes may cause loss of coherence. Executing the  following  sequence  between  such  accesses  prevents  both  loss  of  coherence  and  loss  of  memory ordering: fence iorw, iorw ,  followed  by cbo.flush to  an  address  of  that  location,  followed  by  a fence iorw, iorw .
+
+It follows that, if the same location might later be referenced using the original attributes, then this sequence must be repeated beforehand.
+
+<image>
+
+In certain cases, a weaker sequence might suffice to prevent loss of coherence. These situations will  be  detailed  following  the  forthcoming  formalization  of  the  interaction  of  the  RVWMO memory model with the instructions in the Zicbom extension.
+
+When two-stage address translation is enabled within the H extension, the page-based memory types are also  applied  in  two  stages.  First,  if hgatp .MODE is not  equal  to  zero,  non-zero  G-stage  PTE  PBMT  bits override the attributes in the PMA to produce an intermediate set of attributes. Otherwise, the PMAs serve as the intermediate attributes. Second, if vsatp .MODE is not equal to zero, non-zero VS-stage PTE PBMT bits override the intermediate attributes to produce the final set of attributes used by accesses to the page in question. Otherwise, the intermediate attributes are used as the final set of attributes.
+
+<image>
+
+These final attributes apply to implicit and explicit accesses that are subject to both stages of address translation. For accesses that are not subject to the first stage of address translation, e.g. VS-stage page-table accesses, the intermediate attributes apply instead.
+
+## Chapter 15. "Svinval" Extension for Fine-Grained AddressTranslation Cache Invalidation, Version 1.0
+
+The Svinval extension splits SFENCE.VMA, HFENCE.VVMA, and HFENCE.GVMA instructions into finergrained invalidation and ordering operations that can be more efficiently batched or pipelined on certain classes of high-performance implementation.
+
+<image>
+
+The  SINVAL.VMA  instruction  invalidates  any  address-translation  cache  entries  that  an  SFENCE.VMA instruction  with  the  same  values  of rs1 and rs2 would  invalidate.  However,  unlike  SFENCE.VMA, SINVAL.VMA  instructions  are  only  ordered  with  respect  to  SFENCE.VMA,  SFENCE.W.INVAL,  and SFENCE.INVAL.IR instructions as defined below.
+
+<image>
+
+The SFENCE.W.INVAL instruction guarantees that any previous stores already visible to the current RISCV  hart  are  ordered  before  subsequent  SINVAL.VMA  instructions  executed  by  the  same  hart.  The SFENCE.INVAL.IR  instruction  guarantees  that  any  previous  SINVAL.VMA  instructions  executed  by  the current hart are ordered before subsequent implicit references by that hart to the memory-management data structures.
+
+When executed in order (but not necessarily consecutively) by a single hart, the sequence SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR has the same effect as a hypothetical SFENCE.VMA instruction in which:
+
+- ⚫ the values of rs1 and rs2 for the SFENCE.VMA are the same as those used in the SINVAL.VMA,
+- ⚫ reads and writes prior to the SFENCE.W.INVAL are considered to be those prior to the SFENCE.VMA, and
+- ⚫ reads  and  writes  following  the  SFENCE.INVAL.IR  are  considered  to  be  those  subsequent  to  the SFENCE.VMA.
+
+<image>
+
+If the hypervisor extension is implemented,  the Svinval extension also provides two additional instructions: HINVAL.VVMA and HINVAL.GVMA. These have the same semantics as SINVAL.VMA, except
+
+that  they  combine  with  SFENCE.W.INVAL  and  SFENCE.INVAL.IR  to  replace  HFENCE.VVMA  and HFENCE.GVMA, respectively, instead of SFENCE.VMA. In addition, HINVAL.GVMA uses VMIDs instead of ASIDs.
+
+SINVAL.VMA,  HINVAL.VVMA,  and  HINVAL.GVMA  require  the  same  permissions  and  raise  the  same exceptions as SFENCE.VMA, HFENCE.VVMA, and HFENCE.GVMA, respectively. In particular, an attempt to execute any of these instructions in U-mode always raises an illegal-instruction exception. An attempt to execute  SINVAL.VMA  or  HINVAL.GVMA  in  S-mode  or  HS-mode  when mstatus .TVM=1  also  raises  an illegal-instruction exception. An attempt to execute HINVAL.VVMA or HINVAL.GVMA in VS-mode or VUmode, or to execute SINVAL.VMA in VU-mode, raises a virtual-instruction exception.  When hstatus .VTVM=1,  an  attempt  to  execute  SINVAL.VMA  in  VS-mode  also  raises  a  virtual-instruction exception.
+
+Attempting  to  execute  SFENCE.W.INVAL  or  SFENCE.INVAL.IR  in  U-mode  raises  an  illegal-instruction exception. Doing so in VU-mode raises a virtual-instruction exception. SFENCE.W.INVAL and SFENCE.INVAL.IR are unaffected  by  the mstatus .TVM and hstatus .VTVM fields  and  hence  are  always permitted in S-mode and VS-mode.
+
+SFENCE.W.INVAL  and  SFENCE.INVAL.IR  instructions  do  not  need  to  be  trapped  when mstatus .TVM=1 or when hstatus .VTVM=1, as they only have ordering effects but no visible side effects. Trapping of the SINVAL.VMA instruction is sufficient to enable emulation of the intended overall TLB maintenance functionality.
+
+<image>
+
+In  typical  usage,  software  will  invalidate  a  range  of  virtual  addresses  in  the  addresstranslation  caches  by  executing  an  SFENCE.W.INVAL  instruction,  executing  a  series  of SINVAL.VMA, HINVAL.VVMA,  or HINVAL.GVMA  instructions to the addresses (and optionally ASIDs or VMIDs) in question, and then executing an SFENCE.INVAL.IR instruction.
+
+High-performance  implementations  will  be  able  to  pipeline  the  address-translation  cache invalidation operations, and  will defer any pipeline stalls or  other  memory  ordering enforcement until an SFENCE.W.INVAL, SFENCE.INVAL.IR, SFENCE.VMA, HFENCE.GVMA, or HFENCE.VVMA instruction is executed.
+
+Simpler implementations may implement SINVAL.VMA, HINVAL.VVMA, and HINVAL.GVMA identically to SFENCE.VMA,  HFENCE.VVMA,  and  HFENCE.GVMA,  respectively, while implementing SFENCE.W.INVAL and SFENCE.INVAL.IR instructions as no-ops.
+
+## Chapter 16. "Svadu" Extension for Hardware Updating of A/D Bits, Version 1.0
+
+The Svadu extension adds support and CSR controls for hardware updating of PTE A/D bits.
+
+If the Svadu extension is implemented, the menvcfg .ADUE field is writable. If the hypervisor extension is additionally implemented, the henvcfg .ADUE field is also writable. See Section 3.1.18 and Section 22.2.5 for the definitions of those fields.
+
+Section 12.3.1 defines the semantics of hardware updating of A/D bits. When hardware updating of A/D bits is  disabled,  the  Svade  extension,  which  mandates  exceptions  when  A/D  bits  need  be  set,  instead  takes effect. The Svade extension is also defined in Section 12.3.1.
+
+## Chapter 17. "Svvptc" Extension for Obviating MemoryManagement Instructions after Marking PTEs Valid, Version 1.0
+
+When the Svvptc extension is implemented, explicit stores by a hart that update the Valid bit of leaf and/or non-leaf  PTEs  from  0  to  1  and  are  visible  to  a  hart  will  eventually  become  visible  within  a  bounded timeframe to subsequent implicit accesses by that hart to such PTEs.
+
+<image>
+
+Svvptc relieves an operating system from executing certain memory-management instructions, such as SFENCE.VMA or SINVAL.VMA ,  which would normally be used to synchronize the hart's address-translation  caches  when  a  memory-resident  PTE  is  changed  from  Invalid  to  Valid. Synchronizing the hart's address-translation caches with other forms of updates to a memoryresident  PTE,  including  when  a  PTE  is  changed  from  Valid  to  Invalid,  requires  the  use  of suitable memory-management instructions. Svvptc guarantees that a change to a PTE from Invalid to Valid is made visible within a bounded time, thereby making the execution of these memory-management  instructions  redundant.  The  performance  benefit  of  eliding  these instructions  outweighs  the  cost  of  an  occasional  gratuitous  additional  page  fault  that  may occur.
+
+Depending on the microarchitecture, some possible ways to facilitate implementation of Svvptc include: not having any address-translation caches, not storing Invalid PTEs in the addresstranslation  caches,  automatically  evicting  Invalid  PTEs  using  a  bounded  timer,  or  making address-translation caches coherent with store instructions that modify PTEs.
+
+## Chapter 18. "Svrsw60t59b" Extension for PTE Reserved-forSoftware Bits 60-59, Version 1.0
+
+If the Svrsw60t59b extension is implemented, then bits 60-59 of the page table entries (PTEs) are reserved for use by supervisor software and are ignored by the implementation.
+
+If the Hypervisor (H) extension is also implemented, then bits 60-59 of the G-stage PTEs are reserved for use by supervisor software and are ignored by the implementation.
+
+The Svrsw60t59b extension depends on Sv39.
+
+<image>
+
+Operating systems frequently use reserved bits within PTEs to store metadata for advanced memory management features. Embedding these metadata bits directly within the PTEs allows for fast access with minimal overhead, avoiding costly lookups in auxiliary data structures. By default, Sv39 and Sv39x4 require a page fault and a guest-page fault exception, respectively, to be raised if bits 60-59 are not zero.
+
+## Chapter 19. "Ssqosid" Extension for Quality-of-Service (QoS) Identifiers, Version 1.0
+
+Quality of Service (QoS) is defined as the minimal end-to-end performance guaranteed in advance by a service  level  agreement  (SLA)  to  a  workload.  Performance  metrics  might  include  measures  such  as instructions per cycle (IPC), latency of service, etc.
+
+When multiple workloads execute concurrently on modern processors-equipped with large core counts, multiple  cache  hierarchies,  and  multiple  memory  controllers-  the  performance  of  any  given  workload becomes less deterministic, or even non-deterministic, due to shared resource contention.
+
+To manage performance variability, system software needs resource allocation and monitoring capabilities. These capabilities allow for the reservation of resources like cache and bandwidth, thus meeting individual performance targets while minimizing interference. For resource management, hardware should provide monitoring  features  that  allow  system  software  to  profile  workload  resource  consumption  and  allocate resources accordingly.
+
+To facilitate this, the QoS Identifiers extension (Ssqosid) introduces the srmcfg register, which configures a hart  with  two  identifiers:  a  Resource  Control  ID  ( RCID )  and  a  Monitoring  Counter  ID  ( MCID ).  These identifiers accompany each request issued by the hart to shared resource controllers.
+
+Additional metadata, like the nature of the memory access and the ID of the originating supervisor domain, can accompany RCID and MCID . Resource controllers may use this metadata for differentiated service such as a different capacity allocation for code storage vs. data storage. Resource controllers can use this data for security policies such as not exposing statistics of one security domain to another.
+
+These  identifiers  are  crucial  for  the  RISC-V  Capacity  and  Bandwidth  Controller  QoS  Register  Interface (CBQRI) specification, which provides methods for setting resource usage limits and monitoring resource consumption. The RCID controls resource allocations, while the MCID is used for tracking resource usage.
+
+<image>
+
+The Ssqosid extension does not require that S-mode mode be implemented.
+
+## 19.1. Supervisor Resource Management Configuration ( srmcfg ) register
+
+The srmcfg register is an SXLEN-bit read/write register used to configure a Resource Control ID ( RCID ) and a Monitoring Counter ID ( MCID ). Both RCID and MCID are WARL fields. The register is formatted as shown in Figure 77 when SXLEN=64 and Figure 78 when SXLEN=32.
+
+The RCID and MCID accompany each request made by the hart to shared resource controllers. The RCID is used to determine the resource allocations (e.g., cache occupancy limits, memory bandwidth limits, etc.) to enforce. The MCID is used to identify a counter to monitor resource usage.
+
+Figure 78. Supervisor Resource Management Configuration ( srmcfg ) register for SXLEN=32
+
+<image>
+
+The RCID and MCID configured in the srmcfg CSR apply to all privilege modes of software execution on that
+
+hart by default, but this behavior may be overridden by future extensions.
+
+If extension Smstateen is implemented together with Ssqosid, then Ssqosid also requires the SRMCFG bit in mstateen0 to be implemented. If mstateen0 .SRMCFG is 0, attempts to access srmcfg in privilege modes less  privileged  than  M-mode  raise  an  illegal-instruction  exception.  If mstateen0 .SRMCFG  is  1  or  if extension Smstateen is not implemented, attempts to access srmcfg when V=1 raise  a  virtual-instruction exception.
+
+A  reset  value  of  0  is  suggested  for  the RCID field  matching  resource  controllers'  default behavior  of  associating  all  capacity  with RCID=0 .  The MCID reset  value  does  not  affect functionality and may be implementation-defined.
+
+Typically, fewer bits are allocated for RCID (e.g., to support tens of RCIDs) than for MCID (e.g., to  support  hundreds  of  MCIDs).  A  common RCID is  usually  used  to  group  apps  or  VMs, pooling resource allocations to meet collective SLAs. If an SLA breach occurs, unique MCIDs enable granular monitoring, aiding decisions on resource adjustment, associating a different RCID with a subset of members, or migrating members to other machines. The larger pool of MCIDs speeds up this analysis.
+
+The RCID and MCID in srmcfg apply across all privilege levels on the hart. Typically, higherprivilege modes don't modify srmcfg , as they often serve lower-privileged tasks. If differentiation  is  needed,  higher  privilege  code  can  update srmcfg and  restore  it  before returning to a lower privilege level.
+
+In VM environments, hypervisors usually manage resource allocations, keeping the Guest OS out  of  QoS  flows.  If  needed,  the  hypervisor  can  virtualize srmcfg CSR  for  a  VM  using  the virtual-instruction exceptions triggered upon Guest access. If the direct selection of RCID and MCID by the VM becomes common and emulation overhead is an issue, future extensions may allow  VS-mode  to  use  a  selector  for  a  hypervisor-configured  set  of  CSRs  holding RCID and MCID values designated for that Guest OS use.
+
+During context switches, the supervisor may choose to execute with the srmcfg of the outgoing context to attribute the execution to it. Prior to restoring the new context, it switches to the new VM's srmcfg .  The  supervisor  can  also  use  a  separate  configuration  for  execution  not  to  be attributed to either contexts.
+
+## Chapter 20. "Sstc" Extension for Supervisor-mode Timer Interrupts, Version 1.0
+
+The  current  Privileged  arch  specification  only  defines  a  hardware  mechanism  for  generating  machinemode timer interrupts (based on the mtime and mtimecmp registers). With the resultant requirement that timer services for S-mode/HS-mode (and for VS-mode) have to all be provided by M-mode - via SBI calls from S/HS-mode up to M-mode (or VS-mode calls to HS-mode and then to M-mode). M-mode software then  multiplexes  these  multiple  logical  timers  onto  its  one  physical  M-mode  timer  facility,  and  the  Mmode timer interrupt handler passes timer interrupts back down to the appropriate lower privilege mode.
+
+This extension serves to provide supervisor mode with its own CSR-based timer interrupt facility that it can directly manage to provide its own timer service (in the form of having its own stimecmp register) thus eliminating the large overheads for emulating S/HS-mode timers and timer interrupt generation up in M-mode. Further, this extension adds a similar facility to the Hypervisor extension for VS-mode.
+
+The extension name is "Sstc" ('Ss' for Privileged arch and Supervisor-level extensions, and 'tc' for timecmp). This extension adds the S-level stimecmp CSR (Section 12.1.12) and the VS-level vstimecmp CSR (Section 22.2.19. This extension adds the STCE bit to the menvcfg (Section 3.1.18) and henvcfg (Section 22.2.5) CSRs.
+
+## Chapter 21. "Sscofpmf" Extension for Count Overflow and Mode-Based Filtering, Version 1.0
+
+The current Privileged specification defines mhpmevent CSRs to select and control event counting by the associated hpmcounter CSRs, but provides no standardization of any fields within these CSRs. For at least Linux-class rich-OS systems it is desirable to standardize certain basic features that are broadly desired (and  have  come  up  over  the  past  year  plus  on  RISC-V  lists,  as  well  as  have  been  the  subject  of  past proposals).  This  enables  there  to  be  standard  upstream  software  support  that  eliminates  the  need  for implementations to provide their own custom software support.
+
+This extension serves to accomplish exactly this within the existing mhpmevent CSRs (and correspondingly avoids the unnecessary creation of whole new sets of CSRs - past just one new CSR).
+
+This extension sticks to addressing two basic well-understood needs that have been requested by various people. To make it easy to understand the deltas from the current Priv 1.11/1.12 specs, this is written as the actual exact changes to be made to existing paragraphs of Priv spec text (or additional paragraphs within the existing text).
+
+The extension name is "Sscofpmf" ('Ss' for Privileged arch and Supervisor-level extensions, and 'cofpmf' for Count OverFlow and Privilege Mode Filtering).
+
+Note that the new count overflow interrupt will be treated as a standard local interrupt that is assigned to bit 13 in the mip/mie/sip/sie registers.
+
+## 21.1. Count Overflow Control
+
+The following bits are added to mhpmevent :
+
+| 63   | 62   | 61   | 60   | 59    | 58    | 57   | 56   |
+|------|------|------|------|-------|-------|------|------|
+| OF   | MINH | SINH | UINH | VSINH | VUINH | WPRI | WPRI |
+
+| Field   | Description                                                                  |
+|---------|------------------------------------------------------------------------------|
+| OF      | Overflow status and interrupt disable bit that is set when counter overflows |
+| MINH    | If set, then counting of events in M-mode is inhibited                       |
+| SINH    | If set, then counting of events in S/HS-mode is inhibited                    |
+| UINH    | If set, then counting of events in U-mode is inhibited                       |
+| VSINH   | If set, then counting of events in VS-mode is inhibited                      |
+| VUINH   | If set, then counting of events in VU-mode is inhibited                      |
+| WPRI    | Reserved                                                                     |
+| WPRI    | Reserved                                                                     |
+
+For each x INH bit, if the associated privilege mode is not implemented, the bit is read-only zero.
+
+Each of the five x INH bits, when set, inhibit counting of events while in privilege mode x .  All-zeroes for these bits results in counting of events in all modes.
+
+The OF bit is set when the corresponding hpmcounter overflows, and remains set until written by software. Since hpmcounter  values  are  unsigned  values,  overflow is defined as unsigned  overflow  of  the implemented counter bits. Note that there is no loss of information after an overflow since the counter wraps around and keeps counting while the sticky OF bit remains set.
+
+If supervisor mode is implemented, the 32-bit scountovf register contains read-only shadow copies of the OF bits in all 29 mhpmevent registers.
+
+If an hpmcounter overflows while the associated OF bit is zero, then a "count overflow interrupt request" is generated.  If  the  OF  bit  is  one,  then  no  interrupt  request  is  generated.  Consequently  the  OF  bit  also functions as a count overflow interrupt disable for the associated hpmcounter.
+
+Count  overflow  never  results  from  writes  to  the  mhpmcounter n or  mhpmevent n registers,  only  from hardware increments of counter registers.
+
+This count-overflow-interrupt-request signal is treated as a standard local interrupt that corresponds to bit 13 in the mip / mie / sip / sie registers. The mip / sip LCOFIP and mie / sie LCOFIE bits are, respectively, the interrupt-pending and interrupt-enable bits for this interrupt. ('LCOFI' represents 'Local Count Overflow Interrupt'.)
+
+Generation of a count-overflow-interrupt request by an hpmcounter sets the associated OF bit. When an OF bit is set, it eventually, but not necessarily immediately, sets the LCOFIP bit in the mip / sip registers. The LCOFIP bit is cleared by software before servicing the count overflow interrupt resulting from one or more count overflows. The mideleg register controls the delegation of this interrupt to S-mode versus M-mode.#
+
+<image>
+
+There are not separate overflow status and overflow interrupt enable bits. In practice, enabling overflow interrupt generation (by clearing the OF bit) is done in conjunction with initializing the  counter  to  a  starting  value.  Once  a  counter  has  overflowed,  it  and  the  OF  bit  must  be reinitialized before another overflow interrupt can be generated.
+
+<image>
+
+Software can distinguish newly overflowed counters (yet to be serviced by an overflow interrupt handler) from overflowed counters that have already been serviced or that are configured to not generate an interrupt on overflow, by maintaining a bit mask reflecting which counters are active and due to eventually overflow.
+
+## 21.2. Supervisor Count Overflow ( scountovf ) Register
+
+This extension adds the scountovf CSR, a 32-bit read-only register that contains shadow copies of the OF bits  in  the  29  mhpmevent  CSRs  (mhpmevent 3 -  mhpmevent 31 )  -  where  scountovf  bit X corresponds  to mhpmevent X .
+
+This register enables supervisor-level overflow interrupt handler software to quickly and easily determine which counter(s) have overflowed (without needing to make an execution environment call or series of calls ultimately up to M-mode).
+
+Read access to bit X is subject to the same mcounteren (or mcounteren and hcounteren) CSRs that mediate access to the hpmcounter CSRs by S-mode (or VS-mode). In M-mode, scountovf bit X is always readable. In S/HS-mode,  scountovf  bit X is  readable  when  mcounteren  bit X is  set,  and  otherwise  reads  as  zero. Similarly, in VS mode, scountovf bit X is readable when mcounteren bit X and hcounteren bit X are both set, and otherwise reads as zero.
+
+## Chapter 22. "H" Extension for Hypervisor Support, Version 1.0
+
+This chapter describes the RISC-V hypervisor extension, which virtualizes the supervisor-level architecture to  support  the  efficient  hosting  of  guest  operating  systems  atop  a  type-1  or  type-2  hypervisor.  The hypervisor  extension  changes  supervisor  mode  into hypervisor-extended  supervisor  mode (HS-mode,  or hypervisor mode for short), where a hypervisor or a hosting-capable operating system runs. The hypervisor extension  also  adds  another  stage  of  address  translation,  from guest  physical  addresses to  supervisor physical addresses, to virtualize the memory and memory-mapped I/O subsystems for a guest operating system. HS-mode acts the same as S-mode, but with additional instructions and CSRs that control the new stage of address translation and support hosting a guest OS in virtual S-mode (VS-mode). Regular S-mode operating systems can execute without modification either in HS-mode or as VS-mode guests.
+
+In HS-mode, an OS or hypervisor interacts with the machine through the same SBI as an OS normally does from S-mode. An HS-mode hypervisor is expected to implement the SBI for its VS-mode guest.
+
+The  hypervisor  extension  depends  on  an  "I"  base  integer  ISA  with  32 x registers  (RV32I  or  RV64I),  not RV32E or RV64E, which have only 16 x registers.  CSR mtval must  not  be  read-only  zero,  and  standard page-based address translation must be supported, either Sv32 for RV32, or a minimum of Sv39 for RV64.
+
+The hypervisor extension is enabled by setting bit 7 in the misa CSR, which corresponds to the letter H. RISC-V harts that implement the hypervisor extension are encouraged not to hardwire misa [7], so that the extension may be disabled.
+
+The  baseline  privileged  architecture  is  designed  to  simplify  the  use  of  classic  virtualization techniques,  where  a  guest  OS  is  run  at  user-level,  as  the  few  privileged  instructions  can  be easily detected and trapped. The hypervisor extension improves virtualization performance by reducing the frequency of these traps.
+
+<image>
+
+The hypervisor extension has been designed to be efficiently emulable on platforms that do not implement the extension, by running the hypervisor in S-mode and trapping into M-mode for hypervisor CSR accesses and to maintain shadow page tables. The majority of CSR accesses for  type-2  hypervisors  are  valid  S-mode  accesses  so  need  not  be  trapped.  Hypervisors  can support nested virtualization analogously.
+
+## 22.1. Privilege Modes
+
+The current virtualization  mode ,  denoted  V,  indicates  whether  the  hart  is  currently  executing  in  a  guest. When V=1, the hart is either in virtual S-mode (VS-mode), or in virtual U-mode (VU-mode) atop a guest OS running in VS-mode. When V=0, the hart is either in M-mode, in HS-mode, or in U-mode atop an OS running  in  HS-mode.  The  virtualization  mode  also  indicates  whether  two-stage  address  translation  is active  (V=1)  or  inactive  (V=0).  Table  44  lists  the  possible  privilege  modes  of  a  RISC-V  hart  with  the hypervisor extension.
+
+Table 44. Privilege modes with the hypervisor extension.
+
+| Virtualization Mode (V)   | Nominal Privilege   | Abbreviation    | Name                                          | Two-Stage Translation   |
+|---------------------------|---------------------|-----------------|-----------------------------------------------|-------------------------|
+| 0 0                       | U S                 | U-mode HS-mode  | User mode Hypervisor-extended supervisor mode | Off Off                 |
+| 1                         | U S                 | VU-mode VS-mode | Virtual user mode Virtual supervisor mode     | On On                   |
+| 0                         | M                   | M-mode          | Machine mode                                  | Off                     |
+| 1                         |                     |                 |                                               |                         |
+
+For privilege modes U and VU, the nominal privilege mode is  U,  and  for  privilege  modes  HS  and  VS,  the nominal privilege mode is S.
+
+HS-mode  is  more  privileged  than  VS-mode,  and  VS-mode  is  more  privileged  than  VU-mode.  VS-mode interrupts are globally disabled when executing in U-mode.
+
+<image>
+
+This description does not consider the possibility of U-mode or VU-mode interrupts and will be revised if an extension for user-level interrupts is adopted.
+
+## 22.2. Hypervisor and Virtual Supervisor CSRs
+
+An  OS  or  hypervisor  running  in  HS-mode  uses  the  supervisor  CSRs  to  interact  with  the  exception, interrupt, and address-translation subsystems. Additional CSRs are provided to HS-mode, but not to VSmode, to manage two-stage address translation and to control the behavior of a VS-mode guest: hstatus , hedeleg , hideleg , hvip , hip , hie , hgeip , hgeie , henvcfg , henvcfgh , hcounteren , htimedelta , htimedeltah , htval , htinst , and hgatp .
+
+Furthermore,  several virtual  supervisor CSRs  (VS  CSRs)  are  replicas  of  the  normal  supervisor  CSRs.  For example, vsstatus is the VS CSR that duplicates the usual sstatus CSR.
+
+When V=1, the VS CSRs substitute for the corresponding supervisor CSRs, taking over all functions of the usual  supervisor  CSRs  except  as  specified  otherwise.  Instructions  that  normally  read  or  modify  a supervisor CSR shall instead access the corresponding VS CSR. When V=1, an attempt to read or write a VS CSR directly by its own separate CSR address causes a virtual-instruction exception. (Attempts from Umode cause an illegal-instruction exception as usual.) The VS CSRs can be accessed as themselves only from M-mode or HS-mode.
+
+While V=1, the normal HS-level supervisor CSRs that are replaced by VS CSRs retain their values but do not affect the behavior of the machine unless specifically documented to do so. Conversely, when V=0, the VS CSRs do not ordinarily affect the behavior of the machine other than being readable and writable by CSR instructions.
+
+Some standard supervisor CSRs ( senvcfg , scounteren , and scontext , possibly others) have no matching VS CSR. These supervisor CSRs continue to have their usual function and accessibility even when V=1, except with VS-mode and VU-mode substituting for HS-mode and U-mode. Hypervisor software is expected to manually swap the contents of these registers as needed.
+
+<image>
+
+Matching  VS  CSRs  exist  only  for  the  supervisor  CSRs  that  must  be  duplicated,  which  are mainly  those  that  get  automatically  written  by  traps  or  that  impact  instruction  execution immediately after trap entry and/or right before SRET, when software alone is unable to swap a CSR at exactly the right moment. Currently, most supervisor CSRs fall into this category, but future ones might not.
+
+In this chapter, we use the term HSXLEN to refer to the effective XLEN when executing in HS-mode, and VSXLEN to refer to the effective XLEN when executing in VS-mode.
+
+## 22.2.1. Hypervisor Status ( hstatus ) Register
+
+The hstatus register  is  an  HSXLEN-bit  read/write  register  formatted  as  shown  in  Figure  79  when HSXLEN=32 and Figure 80 when HSXLEN=64. The hstatus register provides facilities analogous to the mstatus register for tracking and controlling the exception behavior of a VS-mode guest.
+
+Figure 80. Hypervisor status register ( hstatus ) when HSXLEN=64.
+
+<image>
+
+The VSXL field controls the effective XLEN for VS-mode (known as VSXLEN), which may differ from the XLEN for HS-mode (HSXLEN). When HSXLEN=32, the VSXL field does not exist, and VSXLEN=32. When HSXLEN=64, VSXL is a WARL field that is encoded the same as the MXL field of misa , shown in Table 11. In  particular,  an  implementation may make VSXL be a read-only field whose value always ensures that VSXLEN=HSXLEN.
+
+If HSXLEN is changed from 32 to a wider width, and if field VSXL is not restricted to a single value, it gets the value corresponding to the widest supported width not wider than the new HSXLEN.
+
+The hstatus fields  VTSR,  VTW, and VTVM are defined analogously to the mstatus fields  TSR,  TW,  and TVM, but affect  execution  only  in  VS-mode,  and  cause  virtual-instruction  exceptions  instead  of  illegalinstruction exceptions. When VTSR=1, an attempt in VS-mode to execute SRET raises a virtual-instruction exception. When VTW=1 (and assuming mstatus .TW=0), an attempt in VS-mode to execute WFI raises a virtual-instruction  exception  if  the  WFI  does  not  complete  within  an  implementation-specific,  bounded time  limit.  An  implementation  may  have  WFI  always  raise  a  virtual-instruction  exception  in  VS-mode when  VTW=1  (and mstatus .TW=0),  even  if  there  are  pending  globally-disabled  interrupts  when  the instruction is executed. When VTVM=1, an attempt in VS-mode to execute SFENCE.VMA or SINVAL.VMA or to access CSR satp raises a virtual-instruction exception.
+
+The VGEIN (Virtual Guest External Interrupt Number) field selects a guest external interrupt source for VS-level external interrupts. VGEIN is a WLRL field that must be able to hold values between zero and the maximum  guest  external  interrupt  number  (known  as  GEILEN),  inclusive.  When  VGEIN=0,  no  guest external interrupt source is selected for VS-level external interrupts. GEILEN may be zero, in which case VGEIN may be read-only zero. Guest external interrupts are explained in Section 22.2.4, and the use of VGEIN is covered further in Section 22.2.3.
+
+Field  HU  (Hypervisor  in  U-mode)  controls  whether  the  virtual-machine  load/store  instructions,  HLV, HLVX, and HSV, can be used also in U-mode. When HU=1, these instructions can be executed in U-mode the same as in HS-mode. When HU=0, all hypervisor instructions cause an illegal-instruction exception in
+
+U-mode.
+
+<image>
+
+The HU bit allows a portion of a hypervisor to be run in U-mode for greater protection against software bugs, while still retaining access to a virtual machine's memory.
+
+When Ssnpm extension is implemented, the HUPMM field enables or disables pointer masking (see Chapter 25) for HLV.* and HSV.* instructions in U-mode, according to the values in Table 47, when their explicit memory  access  is  performed  as  though  in  VU-mode.  In  HS-  and  M-modes,  pointer  masking  for  these instructions  is  enabled  or  disabled  by senvcfg.PMM ,  when  their  explicit  memory  access  is  performed  as though in VU-mode. Setting henvcfg.PMM enables or disables pointer masking for HLV.* and HSV.* when their  explicit  memory  access  is  performed  as  though  in  VS-mode.  When  the  Ssnpm  extension  is  not implemented, the HUPMM field is read-only zero. The HUPMM field is read-only zero for RV32.
+
+<image>
+
+The hypervisor should copy the value written to senvcfg.PMM by the guest to the hstatus.HUPMM field prior to invoking HLV.* or HSV.* instructions in U-mode.
+
+The SPV bit (Supervisor Previous Virtualization mode) is written by the implementation whenever a trap is taken into HS-mode. Just as the SPP bit in sstatus is set to the (nominal) privilege mode at the time of the trap, the SPV bit in hstatus is set to the value of the virtualization mode V at the time of the trap. When an SRET instruction is executed when V=0, V is set to SPV.
+
+When V=1 and a trap is taken into HS-mode, bit SPVP (Supervisor Previous Virtual Privilege) is set to the nominal privilege mode at the time of the trap, the same as sstatus .SPP. But if V=0 before a trap, SPVP is left unchanged on trap entry. SPVP controls the effective privilege of explicit memory accesses made by the virtual-machine load/store instructions, HLV, HLVX, and HSV.
+
+<image>
+
+Without  SPVP,  if  instructions  HLV,  HLVX,  and  HSV  looked  instead  to sstatus .SPP  for  the effective privilege of their memory accesses, then, even with HU=1, U-mode could not access virtual  machine  memory  at  VS-level,  because  to  enter  U-mode  using  SRET  always  leaves SPP=0. Unlike SPP, field SPVP is untouched by transitions back-and-forth between HS-mode and U-mode.
+
+Field  GVA  (Guest  Virtual  Address)  is  written  by  the  implementation  whenever  a  trap  is  taken  into  HSmode. For any trap (breakpoint, address misaligned, access fault, page fault, or guest-page fault) that writes a guest virtual address to stval , GVA is set to 1. For any other trap into HS-mode, GVA is set to 0.
+
+<image>
+
+For  breakpoint  and  memory  access  traps  that  write  a  nonzero  value  to stval ,  GVA  is redundant  with  field  SPV  (the  two  bits  are  set  the  same)  except  when  the  explicit  memory access of an HLV, HLVX, or HSV instruction causes a fault. In that case, SPV=0 but GVA=1.
+
+The VSBE bit is a WARL field  that  controls  the  endianness of explicit memory accesses made from VSmode. If VSBE=0, explicit load and store memory accesses made from VS-mode are little-endian, and if VSBE=1, they are big-endian. VSBE also controls the endianness of all implicit accesses to VS-level memory management data structures, such as page tables. An implementation may make VSBE a read-only field that always specifies the same endianness as HS-mode.
+
+## 22.2.2. Hypervisor Trap Delegation ( hedeleg and hideleg ) Registers
+
+Register hedeleg is  a  64-bit  read/write  register,  formatted  as  shown in Figure 81. Register hideleg is  an HSXLEN-bit read/write register, formatted as shown in Figure 82. By default, all traps at any privilege level are  handled  in  M-mode,  though  M-mode  usually  uses  the medeleg and mideleg CSRs  to  delegate  some traps to HS-mode. The hedeleg and hideleg CSRs allow these traps to be further delegated to a VS-mode guest; their layout is the same as medeleg and mideleg .
+
+| 63                            | 0                             |
+|-------------------------------|-------------------------------|
+| Synchronous Exceptions (WARL) | Synchronous Exceptions (WARL) |
+| 64                            | 64                            |
+| HSXLEN-1                      | 0                             |
+| Interrupts (WARL)             | Interrupts (WARL)             |
+
+HSXLEN
+
+Figure 82. Hypervisor interrupt delegation register ( hideleg ).
+
+A synchronous trap that has been delegated to HS-mode (using medeleg ) is further delegated to VS-mode if V=1 before the trap and the corresponding hedeleg bit is set. Each bit of hedeleg shall be either writable or read-only  zero.  Many  bits  of hedeleg are  required  specifically  to  be  writable  or  zero,  as  enumerated  in Table 45. Bit 0, corresponding  to instruction address-misaligned exceptions, must  be writable if IALIGN=32.
+
+<image>
+
+Requiring that certain bits of hedeleg be writable reduces some of the burden on a hypervisor to handle variations of implementation.
+
+When  XLEN=32, hedelegh is  a  32-bit  read/write  register  that  aliases  bits  63:32  of hedeleg .  Register hedelegh does not exist when XLEN=64.
+
+An interrupt that has been delegated to HS-mode (using mideleg )  is  further delegated to VS-mode if the corresponding hideleg bit  is  set.  Among  bits  15:0  of hideleg ,  bits  10,  6,  and  2  (corresponding  to  the standard VS-level interrupts) are writable, and bits 12, 9, 5, and 1 (corresponding to the standard S-level interrupts) are read-only zeros.
+
+When  a  virtual  supervisor  external  interrupt  (code  10)  is  delegated  to  VS-mode,  it  is  automatically translated by the machine into a supervisor external interrupt (code 9) for VS-mode, including the value written to vscause on an interrupt trap. Likewise, a virtual supervisor timer interrupt (6) is translated into a supervisor timer interrupt (5) for VS-mode, and a virtual supervisor software interrupt (2) is translated into  a  supervisor  software  interrupt  (1)  for  VS-mode.  Similar  translations  may  or  may  not  be  done  for platform interrupt causes (codes 16 and above).
+
+Table 45. Bits of hedeleg that must be writable or must be read-only zero.
+
+|   Bit | Attribute   | Corresponding Exception                 |
+|-------|-------------|-----------------------------------------|
+|     0 | (See text)  | Instruction address misaligned          |
+|     1 | Writable    | Instruction access fault                |
+|     2 | Writable    | Illegal instruction                     |
+|     3 | Writable    | Breakpoint                              |
+|     4 | Writable    | Load address misaligned                 |
+|     5 | Writable    | Load access fault                       |
+|     6 | Writable    | Store/AMO address misaligned            |
+|     7 | Writable    | Store/AMO access fault                  |
+|     8 | Writable    | Environment call from U-mode or VU-mode |
+|     9 | Read-only 0 | Environment call from HS-mode           |
+|    10 | Read-only 0 | Environment call from VS-mode           |
+|    11 | Read-only 0 | Environment call from M-mode            |
+|    12 | Writable    | Instruction page fault                  |
+|    13 | Writable    | Load page fault                         |
+|    15 | Writable    | Store/AMO page fault                    |
+|    16 | Read-only 0 | Double trap                             |
+|    18 | Writable    | Software check                          |
+|    19 | Writable    | Hardware error                          |
+|    20 | Read-only 0 | Instruction guest-page fault            |
+|    21 | Read-only 0 | Load guest-page fault                   |
+|    22 | Read-only 0 | Virtual instruction                     |
+|    23 | Read-only 0 | Store/AMO guest-page fault              |
+
+## 22.2.3. Hypervisor Interrupt ( hvip , hip , and hie ) Registers
+
+Register hvip is  an  HSXLEN-bit  read/write  register  that  a  hypervisor  can  write  to  indicate  virtual interrupts intended for VS-mode. Bits of hvip that are not writable are read-only zeros.
+
+<image>
+
+HSXLEN
+
+Figure 83. Hypervisor virtual-interrupt-pending register( hvip ).
+
+The standard portion (bits 15:0) of hvip is formatted as shown in Figure 84. Bits VSEIP, VSTIP, and VSSIP of hvip are writable. Setting VSEIP=1 in hvip asserts a VS-level external interrupt; setting VSTIP asserts a VS-level timer interrupt; and setting VSSIP asserts a VS-level software interrupt.
+
+Figure 84. Standard portion (bits 15:0) of hvip .
+
+<image>
+
+Registers hip and hie are  HSXLEN-bit  read/write  registers  that  supplement  HS-level's sip and sie respectively.  The hip register  indicates  pending  VS-level  and  hypervisor-specific  interrupts,  while hie contains enable bits for the same interrupts.
+
+| HSXLEN-1                                                  | 0                                                         |
+|-----------------------------------------------------------|-----------------------------------------------------------|
+| Interrupts (WARL)                                         | Interrupts (WARL)                                         |
+| HSXLEN                                                    | HSXLEN                                                    |
+| Figure 85. Hypervisor interrupt-pending register ( hip ). | Figure 85. Hypervisor interrupt-pending register ( hip ). |
+| HSXLEN-1                                                  | 0                                                         |
+| Interrupts (WARL)                                         | Interrupts (WARL)                                         |
+
+HSXLEN
+
+Figure 86. Hypervisor interrupt-enable register ( hie ).
+
+For each writable bit in sie , the corresponding bit shall be read-only zero in both hip and hie . Hence, the nonzero bits in sie and hie are always mutually exclusive, and likewise for sip and hip .
+
+<image>
+
+The active bits of hip and hie cannot be placed in HS-level's sip and sie because doing so would make it impossible for software to emulate the hypervisor extension on platforms that do not implement it in hardware.
+
+An interrupt i will trap to HS-mode whenever all of the following are true: (a) either the current operating mode is HS-mode and the SIE bit in the sstatus register  is  set,  or  the  current  operating  mode  has  less privilege than HS-mode; (b) bit i is set in both sip and sie , or in both hip and hie ; and (c) bit i is not set in hideleg .
+
+If bit i of sie is read-only zero, the same bit in register hip may be writable or may be read-only. When bit i in hip is  writable, a pending interrupt i can be cleared by writing 0 to this bit. If interrupt i can become pending in hip but bit i in hip is read-only, then either the interrupt can be cleared by clearing bit i of hvip , or  the  implementation  must  provide  some  other  mechanism  for  clearing  the  pending  interrupt  (which may involve a call to the execution environment).
+
+A bit in hie shall be writable if the corresponding interrupt can ever become pending in hip .  Bits of hie that are not writable shall be read-only zero.
+
+The standard portions (bits 15:0) of registers hip and hie are formatted as shown in Figure 87 and Figure 88 respectively.
+
+Figure 88. Standard portion (bits 15:0) of hie .
+
+<image>
+
+Bits hip .SGEIP  and hie .SGEIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  guest  external interrupts at supervisor level (HS-level). SGEIP is read-only in hip , and is 1 if and only if the bitwise logicalAND of CSRs hgeip and hgeie is nonzero in any bit. (See Section 22.2.4.)
+
+Bits hip .VSEIP  and hie .VSEIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  VS-level  external interrupts. VSEIP is read-only in hip , and is the logical-OR of these interrupt sources:
+
+- ⚫ bit VSEIP of hvip ;
+- ⚫ the bit of hgeip selected by hstatus .VGEIN; and
+
+- ⚫ any other platform-specific external interrupt signal directed to VS-level.
+
+Bits hip .VSTIP  and hie .VSTIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  VS-level  timer interrupts. VSTIP is read-only in hip , and is the logical-OR of hvip .VSTIP and, when the Sstc extension is implemented, the timer interrupt signal resulting from vstimecmp . The hip .VSTIP bit, in response to timer interrupts generated by vstimecmp , is set by writing vstimecmp with a value that is less than or equal to the sum of time and htimedelta ,  truncated to 64 bits; it is cleared by writing vstimecmp with a greater value. The hip .VSTIP bit remains defined while V=0 as well as V=1.
+
+Bits hip .VSSIP  and hie .VSSIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  VS-level  software interrupts. VSSIP in hip is an alias (writable) of the same bit in hvip .
+
+Multiple simultaneous interrupts destined for HS-mode are handled in the following decreasing priority order: SEI, SSI, STI, SGEI, VSEI, VSSI, VSTI, LCOFI.
+
+## 22.2.4. Hypervisor Guest External Interrupt Registers ( hgeip and hgeie )
+
+The hgeip register is an HSXLEN-bit read-only register, formatted as shown in Figure 89, that indicates pending guest external interrupts for this hart. The hgeie register  is  an  HSXLEN-bit read/write register, formatted as shown in Figure 90, that contains enable bits for the guest external interrupts at this hart. Guest external interrupt number i corresponds with bit i in both hgeip and hgeie .
+
+Figure 90. Hypervisor guest external interrupt-enable register ( hgeie ).
+
+| HSXLEN-1                                                                   | 1 0   |
+|----------------------------------------------------------------------------|-------|
+| Guest External Interrupts                                                  | 0     |
+| HSXLEN                                                                     | 1     |
+| Figure 89. Hypervisor guest external interrupt-pending register ( hgeip ). |       |
+| HSXLEN-1                                                                   | 1 0   |
+| Guest External Interrupts (WARL)                                           | 0     |
+| HSXLEN                                                                     | 1     |
+
+Guest  external  interrupts  represent  interrupts  directed  to  individual  virtual  machines  at  VS-level.  If  a RISC-V platform supports placing a physical device under the direct control of a guest OS with minimal hypervisor intervention (known as pass-through or direct  assignment between a virtual machine and the physical device), then, in such circumstance, interrupts from the device are intended for a specific virtual machine. Each bit of hgeip summarizes all pending interrupts directed to one virtual hart, as collected and reported  by  an  interrupt  controller.  To  distinguish  specific  pending  interrupts  from  multiple  devices, software must query the interrupt controller.
+
+<image>
+
+Support for guest external interrupts requires an interrupt controller that can collect virtualmachine-directed interrupts separately from other interrupts.
+
+The number of bits implemented in hgeip and hgeie for  guest external interrupts is UNSPECIFIED and may be zero. This number is known as GEILEN . The least-significant bits are implemented first, apart from bit  0.  Hence,  if  GEILEN is nonzero, bits GEILEN:1 shall be writable in hgeie ,  and  all  other  bit  positions shall be read-only zeros in both hgeip and hgeie .
+
+<image>
+
+The set of guest external interrupts received and handled at one physical hart may differ from those  received  at  other  harts.  Guest  external  interrupt  number  i  at  one  physical  hart  is typically expected not to be the same as guest external interrupt i at any other hart. For any one  physical  hart,  the  maximum  number  of  virtual  harts  that  may  directly  receive  guest external  interrupts  is  limited  by  GEILEN.  The  maximum  this  number  can  be  for  any implementation is 31 for RV32 and 63 for RV64, per physical hart.
+
+A hypervisor is always free to emulate devices for any number of virtual harts without being limited by GEILEN. Only direct pass-through (direct assignment) of interrupts is affected by the GEILEN limit, and the limit is on the number of virtual harts receiving such interrupts, not the number of distinct interrupts received. The number of distinct interrupts a single virtual hart may receive is determined by the interrupt controller.
+
+Register hgeie selects the subset of guest external interrupts that cause a supervisor-level (HS-level) guest external  interrupt.  The  enable  bits  in hgeie do  not  affect  the  VS-level  external  interrupt  signal  selected from hgeip by hstatus .VGEIN.
+
+## 22.2.5. Hypervisor Environment Configuration Register ( henvcfg )
+
+The henvcfg CSR  is  a  64-bit  read/write  register,  formatted  as  shown  in  Figure  91,  that  controls  certain characteristics of the execution environment when virtualization mode V=1.
+
+Figure 91. Hypervisor environment configuration register ( henvcfg ).
+
+<image>
+
+If  bit  FIOM (Fence of I/O implies Memory) is set to one in henvcfg ,  FENCE instructions executed when V=1 are modified so the requirement to order accesses to device I/O implies also the requirement to order main memory accesses. Table 46 details the modified interpretation of FENCE instruction bits PI, PO, SI, and SO when FIOM=1 and V=1.
+
+Similarly, when FIOM=1 and V=1, if an atomic instruction that accesses a region ordered as device I/O has its aq and/or rl bit set, then that instruction is ordered as though it accesses both device I/O and memory.
+
+Table 46. Modified interpretation of FENCE predecessor and successor sets when FIOM=1 and virtualization mode V=1.
+
+| Instruction bit   | Meaning when set                                         |
+|-------------------|----------------------------------------------------------|
+| PI                | Predecessor device input and memory reads (PR implied)   |
+| PO                | Predecessor device output and memory writes (PW implied) |
+| SI                | Successor device input and memory reads (SR implied)     |
+| SO                | Successor device output and memory writes (SW implied)   |
+
+The PBMTE bit controls whether the Svpbmt extension is available for use in VS-stage address translation. When PBMTE=1, Svpbmt is available for VS-stage address translation. When PBMTE=0, the implementation  behaves  as  though  Svpbmt  were  not  implemented  for  VS-stage  address  translation.  If Svpbmt is not implemented, PBMTE is read-only zero.
+
+If the Svadu extension is implemented, the ADUE bit controls whether hardware updating of PTE A/D bits is enabled for VS-stage address translation. When ADUE=1, hardware updating of PTE A/D bits is enabled during VS-stage address translation, and the implementation behaves as though the Svade extension were not implemented for VS-mode address translation. When ADUE=0, the implementation behaves as though Svade were implemented for VS-stage address translation. If Svadu is not implemented, ADUE is read-only zero.
+
+The Sstc extension adds the STCE (STimecmp Enable) bit to henvcfg CSR. When the Sstc extension is not
+
+implemented, STCE is read-only zero. The STCE bit enables vstimecmp for VS-mode when set to one. When STCE bit  is henvcfg is  zero,  an  attempt  to  access stimecmp (really vstimecmp )  when  V=1  raises  a  virtualinstruction  exception,  and VSTIP in hip reverts  to  its  defined  behavior  as  if  this  extension  is  not implemented.
+
+The Zicboz extension adds the CBZE (Cache Block Zero instruction enable) field to henvcfg . The CBZE field applies to execution of the cache block zero instruction ( CBO.ZERO ) in privilege modes VS and VU, and only when the instruction is HS-qualified. If the instruction is not HS-qualified, it raises an illegal-instruction exception.  If  the  instruction  is  HS-qualified  and  the CBZE field  is  set  to  1,  the  instruction  is  enabled  for execution; otherwise, if the CBZE field is set to 0, it raises a virtual-instruction exception. When the Zicboz extension is not implemented, CBZE is read-only zero.
+
+The Zicbom extension adds the CBCFE (Cache Block Clean and Flush instruction Enable) field to henvcfg . When  V=1,  if  the CBO.CLEAN and CBO.FLUSH instructions  are  not  HS-qualified,  they  raise  an  illegalinstruction exception. If the instructions are HS-qualified and the CBCFE field is set to 1, the instructions are enabled for execution; otherwise, if the CBCFE field  is  set  to  0,  they  raise  a  virtual-instruction  exception. When the Zicbom extension is not implemented, CBCFE is read-only zero.
+
+The Zicbom extension adds the CBIE (Cache Block Invalidate instruction Enable) WARL field to henvcfg . The CBIE field controls execution of the cache block invalidate instruction ( CBO.INVAL ) in privilege modes VS and VU. The encoding 10b is  reserved. When the Zicbom extension is not implemented, CBIE is  readonly zero.
+
+When V=1, if the CBO.INVAL instruction is not HS-qualified, it raises an illegal-instruction exception. If the instruction is HS-qualified and the CBIE field is set to 01b or 11b , the instruction is enabled for execution; otherwise, it raises a virtual-instruction exception.
+
+If CBO.INVAL is enabled in HS-mode to perform a flush operation, then when the instruction is enabled in VS- or VU-mode it performs a flush operation, even if CBIE is set to 11b . Otherwise, when the instruction is enabled for execution, its behavior depends on the CBIE encoding, as follows:
+
+- ⚫ 01b -The instruction is executed and performs a flush operation, even if configured by VS-mode to perform an invalidate operation.
+- ⚫ 11b -The instruction is executed and performs an invalidate operation, unless configured by VS-mode to perform a flush operation.
+
+If the Ssnpm extension is implemented, the PMM field enables or disables pointer masking (see Chapter 25) for VS-mode, according to the values in Table 47. When the Ssnpm extension is not implemented, the PMM field is read-only zero. The PMM field is read-only zero for RV32.
+
+Table 47. Legal values of PMM WARL field
+
+|   Value | Description                                                            |
+|---------|------------------------------------------------------------------------|
+|      00 | Pointer masking is disabled (PMLEN = 0)                                |
+|      01 | Reserved                                                               |
+|      10 | Pointer masking is enabled with PMLEN = XLEN - 57 (PMLEN = 7 on RV64)  |
+|      11 | Pointer masking is enabled with PMLEN = XLEN - 48 (PMLEN = 16 on RV64) |
+
+The Zicfilp extension adds the LPE field in henvcfg . When the LPE field is set to 1, the Zicfilp extension is enabled in VS-mode. When the LPE field  is  0,  the  Zicfilp  extension  is  not  enabled  in  VS-mode  and  the following rules apply to VS-mode:
+
+- ⚫ The hart does not update the ELP state; it remains as NO\_LP\_EXPECTED .
+
+- ⚫ The LPAD instruction operates as a no-op.
+
+The  Zicfiss  extension  adds  the SSE field  in henvcfg .  If  the SSE field  is  set  to  1,  the  Zicfiss  extension  is activated in VS-mode. When the SSE field is 0, the Zicfiss extension remains inactive in VS-mode, and the following rules apply when V=1 :
+
+- ⚫ 32-bit Zicfiss instructions will revert to their behavior as defined by Zimop.
+- ⚫ 16-bit Zicfiss instructions will revert to their behavior as defined by Zcmop.
+- ⚫ The pte.xwr=010b encoding in VS-stage page tables becomes reserved.
+- ⚫ The senvcfg.SSE field will read as zero and is read-only.
+- ⚫ When menvcfg.SSE is one, SSAMOSWAP.W/D raises a virtual-instruction exception.
+
+The Ssdbltrp extension adds the double-trap-enable ( DTE ) field in henvcfg . When henvcfg.DTE is zero, the implementation behaves as though Ssdbltrp is not implemented for VS-mode and the vsstatus.SDT bit is read-only zero.
+
+When  XLEN=32, henvcfgh is  a  32-bit  read/write  register  that  aliases  bits  63:32  of henvcfg .  Register henvcfgh does not exist when XLEN=64.
+
+## 22.2.6. Hypervisor Counter-Enable ( hcounteren ) Register
+
+The counter-enable register hcounteren is  a  32-bit  register  that  controls the availability of the hardware performance monitoring counters to the guest virtual machine.
+
+Figure 92. Hypervisor counter-enable register ( hcounteren ).
+
+<image>
+
+| 31                  | 30 29 28            | 6 5 4 3 2 1            |
+|---------------------|---------------------|------------------------|
+| HPM31HPM30HPM29 ... | HPM31HPM30HPM29 ... | HPM5 HPM4 HPM3 IR TMCY |
+| 1                   | 1 1 23              | 1 1 1 1 1              |
+
+When the CY, TM, IR, or HPM n bit  in  the hcounteren register is clear, attempts to read the cycle , time , instret ,  or hpmcounter n register  while  V=1  will  cause  a  virtual-instruction  exception  if  the  same  bit  in mcounteren is 1. When one of these bits is set, access to the corresponding register is permitted when V=1, unless prevented for some other reason. In VU-mode, a counter is not readable unless the applicable bits are set in both hcounteren and scounteren .
+
+In addition, when the TM bit in the hcounteren register is clear, attempts to access the vstimecmp register (via stimecmp )  while  executing  in  VS-mode  will  cause  a  virtual-instruction  exception  if  the  same  bit  in mcounteren is  set.  When  this  bit  and  the  same  bit  in mcounteren are  both  set,  access  to  the vstimecmp register (if implemented) is permitted in VS-mode.
+
+hcounteren must be implemented. However, any of the bits may be read-only zero, indicating reads to the corresponding counter will cause an exception when V=1. Hence, they are effectively WARL fields.
+
+## 22.2.7. Hypervisor Time Delta ( htimedelta ) Register
+
+The htimedelta CSR is a 64-bit read/write register that contains the delta between the value of the time CSR and the value returned in VS-mode or VU-mode. That is, reading the time CSR in VS or VU mode returns the sum of the contents of htimedelta and the actual value of time .
+
+<image>
+
+Because overflow is ignored when summing htimedelta and time , large values of htimedelta may be used to represent negative time offsets.
+
+| 63         | 0   |
+|------------|-----|
+| htimedelta |     |
+
+64
+
+Figure 93. Hypervisor time delta register.
+
+When XLEN=32, htimedeltah is a 32-bit read/write register that aliases bits 63:32 of htimedelta . Register htimedeltah does not exist when XLEN=64.
+
+If the time CSR is implemented, htimedelta (and htimedeltah for XLEN=32) must be implemented.
+
+## 22.2.8. Hypervisor Trap Value ( htval ) Register
+
+The htval register is an HSXLEN-bit read/write register formatted as shown in Figure 94. When a trap is taken into HS-mode, htval is  written with additional exception-specific information, alongside stval ,  to assist software in handling the trap.
+
+Figure 94. Hypervisor trap value register ( htval ).
+
+<image>
+
+When a guest-page-fault trap is taken into HS-mode, htval is written with either zero or the guest physical address that faulted, shifted right by 2 bits. For other traps, htval is  set  to  zero,  but a future standard or extension may redefine htval's setting for other traps.
+
+A  guest-page  fault  may  arise  due  to  an  implicit  memory  access  during  first-stage  (VS-stage)  address translation, in which case a guest physical address written to htval is that of the implicit memory access that  faulted-for  example,  the  address  of  a  VS-level  page  table  entry  that  could  not  be  read.  (The  guest physical address corresponding to the original virtual address is unknown when VS-stage translation fails to complete.) Additional information is provided in CSR htinst to disambiguate such situations.
+
+Otherwise, for misaligned loads and stores that cause guest-page faults, a nonzero guest physical address in htval corresponds to the faulting portion of the access as indicated by the virtual address in stval .  For instruction guest-page faults on systems with variable-length instructions, a nonzero htval corresponds to the faulting portion of the instruction as indicated by the virtual address in stval .
+
+<image>
+
+A guest physical address written to htval is shifted right by 2 bits to accommodate addresses wider  than  the  current  XLEN.  For  RV32,  the  hypervisor  extension  permits  guest  physical addresses  as  wide  as  34  bits,  and htval reports  bits  33:2  of  the  address.  This  shift-by-2 encoding  of  guest  physical  addresses  matches  the  encoding  of  physical  addresses  in  PMP address registers (Section 3.7) and in page table entries (Section 12.3, Section 12.4, Section 12.5, and Section 12.6).
+
+If the least-significant two bits of a faulting guest physical address are needed, these bits are ordinarily the same as the least-significant two bits of the faulting virtual address in stval . For  faults  due  to  implicit  memory  accesses  for  VS-stage  address  translation,  the  leastsignificant  two  bits  are  instead  zeros.  These  cases  can  be  distinguished  using  the  value provided in register htinst .
+
+htval is a WARL register that must be able to hold zero and may be capable of holding only an arbitrary subset of other 2-bit-shifted guest physical addresses, if any.
+
+<image>
+
+Unless it has reason to assume otherwise (such as a platform standard), software that writes a value to htval should read back from htval to confirm the stored value.
+
+## 22.2.9. Hypervisor Trap Instruction ( htinst ) Register
+
+The htinst register is an HSXLEN-bit read/write register formatted as shown in Figure 95. When a trap is taken  into  HS-mode, htinst is  written  with  a  value  that,  if  nonzero,  provides  information  about  the instruction that trapped, to assist software in handling the trap. The values that may be written to htinst on a trap are documented in Section 22.6.3.
+
+<image>
+
+HSXLEN
+
+Figure 95. Hypervisor trap instruction ( htinst ) register.
+
+htinst is  a WARL register  that  need  only  be  able  to  hold  the  values  that  the  implementation  may automatically write to it on a trap.
+
+## 22.2.10. Hypervisor Guest Address Translation and Protection ( hgatp ) Register
+
+The hgatp register is an HSXLEN-bit read/write register, formatted as shown in Figure 96 for HSXLEN=32 and Figure 97 for HSXLEN=64, which controls G-stage address translation and protection, the second stage of  two-stage  translation  for  guest  virtual  addresses  (see  Section  22.5).  Similar  to  CSR satp ,  this  register holds the physical page number (PPN) of the guest-physical root page table; a virtual machine identifier (VMID), which facilitates address-translation fences on a per-virtual-machine basis; and the MODE field, which selects the address-translation scheme for guest physical addresses. When mstatus .TVM=1, attempts to read or write hgatp while executing in HS-mode will raise an illegal-instruction exception.
+
+Figure 96. Hypervisor guest address translation and protection register hgatp when HSXLEN=32.
+
+<image>
+
+Figure 97. Hypervisor guest address translation and protection register hgatp when HSXLEN=64 for MODE values Bare, Sv39x4, Sv48x4, and Sv57x4.
+
+<image>
+
+| 63          | 60 59    | 58 57   | 44 43   |            |
+|-------------|----------|---------|---------|------------|
+| MODE (WARL) | 0 (WARL) | VMID    | (WARL)  | PPN (WARL) |
+| 4           | 2        |         | 14      | 44         |
+
+Table 48 shows the encodings of the MODE field when HSXLEN=32 and HSXLEN=64. When MODE=Bare, guest  physical  addresses  are  equal  to  supervisor  physical  addresses,  and  there  is  no  further  memory protection  for  a  guest  virtual  machine  beyond  the  physical  memory  protection  scheme  described  in Section 3.7. In this case, software must write zero to the remaining fields in hgatp .  Attempting to select MODE=Bare with a nonzero pattern in the remaining fields has an UNSPECIFIED effect on the value that the remaining fields assume and an UNSPECIFIED effect on G-stage address translation and protection behavior.
+
+When HSXLEN=32, the only other valid setting for MODE is Sv32x4, which is a modification of the usual Sv32  paged  virtual-memory  scheme,  extended  to  support  34-bit guest  physical  addresses.  When HSXLEN=64, modes Sv39x4, Sv48x4, and Sv57x4 are defined as modifications of the Sv39, Sv48, and Sv57 paged virtual-memory schemes. All of these paged virtual-memory schemes are described in Section 22.5.1.
+
+The remaining MODE settings when HSXLEN=64 are reserved for future use and may define different interpretations of the other fields in hgatp .
+
+<formula>
+
+| HSXLEN=32   | HSXLEN=32   | HSXLEN=32                                                                                     |
+|-------------|-------------|-----------------------------------------------------------------------------------------------|
+| Value       | Name        | Description                                                                                   |
+| 0 1         | Bare Sv32x4 | No translation or protection. Page-based 34-bit virtual addressing (2-bit extension of Sv32). |
+| HSXLEN=64   | HSXLEN=64   | HSXLEN=64                                                                                     |
+| Value       | Name        | Description                                                                                   |
+| 0           | Bare        | No translation or protection.                                                                 |
+| 1-7         | -           | Reserved                                                                                      |
+| 8           | Sv39x4      | Page-based 41-bit virtual addressing (2-bit extension of Sv39).                               |
+| 9           | Sv48x4      | Page-based 50-bit virtual addressing (2-bit extension of Sv48).                               |
+| 10          | Sv57x4      | Page-based 59-bit virtual addressing (2-bit extension of Sv57).                               |
+| 11-15       | -           | Reserved                                                                                      |
+
+Implementations are not required to support all defined MODE settings when HSXLEN=64.
+
+A write to hgatp with an unsupported MODE value is not ignored as it is for satp .  Instead, the fields of hgatp are WARL in the normal way, when so indicated.
+
+As  explained  in  Section  22.5.1,  for  the  paged  virtual-memory  schemes  (Sv32x4,  Sv39x4,  Sv48x4,  and Sv57x4), the root page table is 16 KiB and must be aligned to a 16-KiB boundary. In these modes, the lowest two  bits  of  the  physical  page  number  (PPN)  in hgatp always  read  as  zeros.  An  implementation  that supports only the defined paged virtual-memory schemes and/or Bare may make PPN[1:0] read-only zero.
+
+The number of VMID bits is UNSPECIFIED and may be zero. The number of implemented VMID bits, termed VMIDLEN , may be determined by writing one to every bit position in the VMID field, then reading back the value in hgatp to see which bit positions in the VMID field hold a one. The least-significant bits of VMID are  implemented  first:  that  is,  if  VMIDLEN  >  0,  VMID[VMIDLEN-1:0]  is  writable.  The  maximal value of VMIDLEN, termed VMIDMAX, is 7 for Sv32x4 or 14 for Sv39x4, Sv48x4, and Sv57x4.
+
+The hgatp register  is  considered active for  the  purposes  of  the  address-translation  algorithm unless the effective privilege mode is U and hstatus .HU=0.
+
+<image>
+
+This definition simplifies the implementation of speculative execution of HLV, HLVX, and HSV instructions.
+
+Note  that  writing hgatp does  not  imply  any  ordering  constraints  between  page-table  updates  and subsequent G-stage address translations. If the new virtual machine's guest physical page tables have been modified, or if a VMID is reused, it may be necessary to execute an HFENCE.GVMA instruction (see Section 22.3.2) before or after writing hgatp .
+
+## 22.2.11. Virtual Supervisor Status ( vsstatus ) Register
+
+The vsstatus register is a VSXLEN-bit read/write register that is VS-mode's version of supervisor register sstatus , formatted as shown in Figure 98 when VSXLEN=32 and Figure 99 when VSXLEN=64. When V=1, vsstatus substitutes for the usual sstatus , so instructions that normally read or modify sstatus actually access vsstatus instead.
+
+Figure 98. Virtual supervisor status ( vsstatus ) register when VSXLEN=32.
+
+| 31      | 30      |         |      |      | 25          | 24          | 23    | 22       | 20   | 19   | 18   | 17   | 16      |
+|---------|---------|---------|------|------|-------------|-------------|-------|----------|------|------|------|------|---------|
+| SD      | WPRI    | WPRI    | WPRI | WPRI |             | SDT         | SPELP | WPRI     |      | MXR  | SUM  | WPRI | XS[1:0] |
+| 15      | 14      | 12      | 11   | 10   | 9           | 8           | 7     | 5 6      | 4    |      | 2    | 1    | 0       |
+| XS[1:0] | FS[1:0] | FS[1:0] | WPRI | WPRI | SPP VS[1:0] | SPP VS[1:0] | WPRI  | SPIE UBE |      | WPRI |      | SIE  | WPRI    |
+
+Figure 99. Virtual supervisor status ( vsstatus ) register when VSXLEN=64.
+
+<image>
+
+The UXL field controls the effective XLEN for VU-mode, which may differ from the XLEN for VS-mode (VSXLEN). When VSXLEN=32, the UXL field does not exist, and VU-mode XLEN=32. When VSXLEN=64, UXL is a WARL field that is encoded the same as the MXL field of misa , shown in Table 11. In particular, an implementation  may  make  UXL  be  a  read-only  copy  of  field  VSXL  of hstatus ,  forcing  VU-mode XLEN=VSXLEN.
+
+If VSXLEN is changed from 32 to a wider width, and if field UXL is not restricted to a single value, it gets the value corresponding to the widest supported width not wider than the new VSXLEN.
+
+When V=1, both vsstatus .FS and the HS-level sstatus .FS are in effect. Attempts to execute a floating-point instruction when either field is 0 (Off) raise an illegal-instruction exception. Modifying the floating-point state when V=1 causes both fields to be set to 3 (Dirty).
+
+<image>
+
+For a hypervisor to benefit from the extension context status, it must have its own copy in the HS-level sstatus ,  maintained  independently  of  a  guest  OS  running  in  VS-mode.  While  a version  of  the  extension  context  status  obviously  must  exist  in vsstatus for  VS-mode,  a hypervisor cannot rely on this version being maintained correctly, given that VS-level software can change vsstatus .FS arbitrarily. If the HS-level sstatus .FS were not independently active and maintained by the hardware in parallel with vsstatus .FS  while  V=1,  hypervisors  would always  be  forced  to  conservatively  swap  all  floating-point  state  when  context-switching between virtual machines.
+
+Similarly, when V=1, both vsstatus .VS and the HS-level sstatus .VS are in effect. Attempts to execute a vector instruction when either field is 0 (Off) raise an illegal-instruction exception. Modifying the vector state when V=1 causes both fields to be set to 3 (Dirty).
+
+Read-only fields SD and XS summarize the extension context status as it is visible to VS-mode only. For example, the value of the HS-level sstatus .FS does not affect vsstatus .SD.
+
+An implementation may make field UBE be a read-only copy of hstatus .VSBE.
+
+When  V=0, vsstatus does  not  directly  affect  the  behavior  of  the  machine,  unless  a  virtual-machine load/store (HLV, HLVX, or HSV) or the MPRV feature in the mstatus register is used to execute a load or store as though V=1.
+
+The  Zicfilp  extension  adds  the SPELP field  that  holds  the  previous ELP ,  and  is  updated  as  specified  in Section 23.1.2. The SPELP field is encoded as follows:
+
+- ⚫ 0 -NO\_LP\_EXPECTED - no landing pad instruction expected.
+- ⚫ 1 -LP\_EXPECTED - a landing pad instruction is expected.
+
+The Ssdbltrp adds an S-mode-disable-trap ( SDT ) field extension to address double trap (See Section 12.1.1.5) in VS-mode.
+
+## 22.2.12. Virtual Supervisor Interrupt ( vsip and vsie ) Registers
+
+The vsip and vsie registers are VSXLEN-bit read/write registers that are VS-mode's versions of supervisor CSRs sip and sie , formatted as shown in Figure 100 and Figure 101 respectively. When V=1, vsip and vsie substitute for the usual sip and sie , so instructions that normally read or modify sip / sie actually access vsip / vsie instead. However, interrupts directed to HS-level continue to be indicated in the HS-level sip register, not in vsip , when V=1.
+
+| VSXLEN-1                                                            | 0                                                                   |
+|---------------------------------------------------------------------|---------------------------------------------------------------------|
+| Interrupts (WARL)                                                   | Interrupts (WARL)                                                   |
+| VSXLEN                                                              | VSXLEN                                                              |
+| Figure 100. Virtual supervisor interrupt-pending register ( vsip ). | Figure 100. Virtual supervisor interrupt-pending register ( vsip ). |
+| VSXLEN-1                                                            | 0                                                                   |
+| Interrupts (WARL)                                                   | Interrupts (WARL)                                                   |
+
+Figure 103. Standard portion (bits 15:0) of vsie .
+
+<image>
+
+Extension Shlcofideleg supports delegating LCOFI interrupts to VS-mode. If the Shlcofideleg extension is implemented, hideleg bit  13  is  writable;  otherwise,  it  is  read-only  zero.  When  bit  13  of hideleg is  zero, vsip .LCOFIP  and vsie .LCOFIE  are  read-only  zeros.  Else, vsip .LCOFIP  and vsie .LCOFIE  are  aliases  of sip .LCOFIP and sie .LCOFIE.
+
+When bit 10 of hideleg is zero, vsip .SEIP and vsie .SEIE are read-only zeros. Else, vsip .SEIP and vsie .SEIE are aliases of hip .VSEIP and hie .VSEIE.
+
+When bit 6 of hideleg is zero, vsip .STIP and vsie .STIE are read-only zeros. Else, vsip .STIP and vsie .STIE are aliases of hip .VSTIP and hie .VSTIE.
+
+When bit 2 of hideleg is zero, vsip .SSIP and vsie .SSIE are read-only zeros. Else, vsip .SSIP and vsie .SSIE are aliases of hip .VSSIP and hie .VSSIE.
+
+## 22.2.13. Virtual Supervisor Trap Vector Base Address ( vstvec ) Register
+
+The vstvec register  is  a  VSXLEN-bit  read/write  register  that  is  VS-mode's  version  of  supervisor  register stvec , formatted as shown in Figure 104. When V=1, vstvec substitutes for the usual stvec , so instructions that normally read or modify stvec actually access vstvec instead. When V=0, vstvec does not directly affect the behavior of the machine.
+
+Figure 104. Virtual supervisor trap vector base address register vstvec .
+
+<image>
+
+| VSXLEN-1                | 2 1         | 0   |
+|-------------------------|-------------|-----|
+| BASE[VSXLEN-1:2] (WARL) | MODE (WARL) |     |
+| VSXLEN-2                | 2           |     |
+
+## 22.2.14. Virtual Supervisor Scratch ( vsscratch ) Register
+
+The vsscratch register is a VSXLEN-bit read/write register that is VS-mode's version of supervisor register sscratch ,  formatted as shown in Figure 105. When V=1, vsscratch substitutes for the usual sscratch ,  so instructions  that  normally  read  or  modify sscratch actually  access vsscratch instead.  The  contents  of vsscratch never directly affect the behavior of the machine.
+
+<image>
+
+## 22.2.15. Virtual Supervisor Exception Program Counter ( vsepc ) Register
+
+The vsepc register  is  a  VSXLEN-bit  read/write  register  that  is  VS-mode's  version  of  supervisor  register sepc ,  formatted as shown in Figure 106. When V=1, vsepc substitutes for the usual sepc ,  so  instructions that normally read or modify sepc actually access vsepc instead. When V=0, vsepc does not directly affect the behavior of the machine.
+
+vsepc is a WARL register that must be able to hold the same set of values that sepc can hold.
+
+<image>
+
+## 22.2.16. Virtual Supervisor Cause ( vscause ) Register
+
+The vscause register is a VSXLEN-bit read/write register that is VS-mode's version of supervisor register scause ,  formatted  as  shown  in  Figure  107.  When  V=1, vscause substitutes  for  the  usual scause ,  so instructions  that  normally  read  or  modify scause actually  access vscause instead.  When  V=0, vscause does not directly affect the behavior of the machine.
+
+vscause is a WLRL register that must be able to hold the same set of values that scause can hold.
+
+| VSXLEN-1   | VSXLEN-2              |
+|------------|-----------------------|
+| Interrupt  | Exception Code (WLRL) |
+
+<image>
+
+## 22.2.17. Virtual Supervisor Trap Value ( vstval ) Register
+
+
+
+Final instruction for mseccfg: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

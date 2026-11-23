@@ -1,0 +1,29 @@
+## 6.2. Smepmp Physical Memory Protection Rules
+
+To address the threat model outlined in Section Section 6.1, this extension introduces the RLB , MMWP ,  and MML fields  in  the mseccfg CSR  and  their  associated  rules.  See  Figure  26  for  the  detailed  specification  of these fields and the corresponding rules.
+
+The  physical  memory  protection  rules  when mseccfg.MML is  set  to  1  are  summarized  in  the  truth  table below.
+
+| Bits on pmpcfg   | Bits on pmpcfg   | Bits on pmpcfg   | Bits on pmpcfg   | Result                                                                        | Result                                                                        |
+|------------------|------------------|------------------|------------------|-------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| L                | R                | register W       | X                | M Mode                                                                        | S/U Mode                                                                      |
+| 0                | 0                | 0                | 0                | Inaccessible region (Access Exception)                                        | Inaccessible region (Access Exception)                                        |
+| 0                | 0                | 0                | 1                | Access Exception                                                              | Execute-only region                                                           |
+| 0                | 0                | 1                | 0                | Shared data region: Read/write on M mode, read-only on S/U mode               | Shared data region: Read/write on M mode, read-only on S/U mode               |
+| 0                | 0                | 1                | 1                | Shared data region: Read/write for both M and S/U mode                        | Shared data region: Read/write for both M and S/U mode                        |
+| 0                | 1                | 0                | 0                | Access Exception                                                              | Read-only region                                                              |
+| 0                | 1                | 0                | 1                | Access Exception                                                              | Read/Execute region                                                           |
+| 0                | 1                | 1                | 0                | Access Exception                                                              | Read/Write region                                                             |
+| 0                | 1                | 1                | 1                | Access Exception                                                              | Read/Write/Execute region                                                     |
+| 1                | 0                | 0                | 0                | Locked inaccessible region* (Access Exception)                                | Locked inaccessible region* (Access Exception)                                |
+| 1                | 0                | 0                | 1                | Locked Execute-only region*                                                   | Access Exception                                                              |
+| 1                | 0                | 1                | 0                | Locked Shared code region: Execute only on both M and S/U mode.*              | Locked Shared code region: Execute only on both M and S/U mode.*              |
+| 1                | 0                | 1                | 1                | Locked Shared code region: Execute only on S/U mode, read/execute on M mode.* | Locked Shared code region: Execute only on S/U mode, read/execute on M mode.* |
+| 1                | 1                | 0                | 0                | Locked Read-only region*                                                      | Access Exception                                                              |
+| 1                | 1                | 0                | 1                | Locked Read/Execute region*                                                   | Access Exception                                                              |
+| 1                | 1                | 1                | 0                | Locked Read/Write region*                                                     | Access Exception                                                              |
+| 1                | 1                | 1                | 1                | Locked Shared data region: Read only on both M and S/U mode.*                 | Locked Shared data region: Read only on both M and S/U mode.*                 |
+
+A visual representation of these rules is as follows:
+
+<image>

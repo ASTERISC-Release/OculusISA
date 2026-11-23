@@ -1,0 +1,47 @@
+## 5.7. Trigger Module Registers
+
+These registers are CSRs, accessible using the RISC-V csr opcodes and optionally also using abstract debug commands. They are the only mechanism to access the triggers.
+
+Almost all trigger functionality is optional. All tdata registers follow write-any-read-legal semantics. If a debugger writes an unsupported configuration, the register will read back a value that is supported (which may simply be a disabled trigger). This means that a debugger must always read back values it writes to tdata registers, unless it already knows what is supported. Writes to one tdata register must not modify the contents of other tdata registers, nor the configuration of any trigger besides the one that is currently selected.
+
+The combination of these rules means that a debugger cannot simply set a trigger by writing tdata1, then tdata2, etc. The current value of tdata2 might not be legal with the new value of tdata1. To help with this situation, it is guaranteed that writing 0 to tdata1 disables the trigger, and leaves it in a state where tdata2 and tdata3 can be written with any value that makes sense for any trigger type supported by this trigger.
+
+As a result, a debugger can write any supported trigger as follows:
+
+1. Write  0  to  tdata1.  (This  will  result  in  tdata1  containing  a  non-zero  value,  since  the  register  is WARL .)
+2. Write desired values to tdata2 and tdata3.
+3. Write desired value to tdata1.
+
+Code that restores CSR context of triggers that might be configured to fire in the current privilege mode  must  use  this  same  sequence  to  restore  the  triggers.  This  avoids  the  problem  of  a  partially written trigger firing at a different time than is expected.
+
+Attempts to access an unimplemented Trigger Module Register raise an illegal instruction exception.
+
+The  Trigger  Module  registers,  except  mscontext,  scontext,  and  hcontext,  are  only  accessible  in machine  and  Debug  Mode  to  prevent  untrusted  user  code  from  causing  entry  into  Debug  Mode without the OS's permission.
+
+In this section XLEN refers to the effective XLEN in the current execution mode. On systems where XLEN values can differ between modes, this is handled as follows. Fields retain their values regardless of XLEN, which only affects where in the register these fields appear (e.g. type). Some fields are wider when XLEN is 64 than when it is 32 (e.g. svalue). The high bits in such fields retain their value but are not readable when XLEN is 32. A modification of a register when XLEN is 32 clears any inaccessible bits in that register.
+
+Table 14. Trigger Module Registers
+
+| Address   | Name                          | Section       |
+|-----------|-------------------------------|---------------|
+| 0x5a8     | Supervisor Context (scontext) | Section 5.7.8 |
+| 0x6a8     | Hypervisor Context (hcontext) | Section 5.7.7 |
+| 0x7a0     | Trigger Select (tselect)      | Section 5.7.1 |
+
+| Address   | Name                                   | Section        |
+|-----------|----------------------------------------|----------------|
+| 0x7a1     | Trigger Data 1 (tdata1)                | Section 5.7.2  |
+| 0x7a1     | Match Control (mcontrol)               | Section 5.7.11 |
+| 0x7a1     | Match Control Type 6 (mcontrol6)       | Section 5.7.12 |
+| 0x7a1     | Instruction Count (icount)             | Section 5.7.13 |
+| 0x7a1     | Interrupt Trigger (itrigger)           | Section 5.7.14 |
+| 0x7a1     | Exception Trigger (etrigger)           | Section 5.7.15 |
+| 0x7a1     | External Trigger (tmexttrigger)        | Section 5.7.16 |
+| 0x7a2     | Trigger Data 2 (tdata2)                | Section 5.7.3  |
+| 0x7a3     | Trigger Data 3 (tdata3)                | Section 5.7.4  |
+| 0x7a3     | Trigger Extra (RV32) (textra32)        | Section 5.7.17 |
+| 0x7a3     | Trigger Extra (RV64) (textra64)        | Section 5.7.18 |
+| 0x7a4     | Trigger Info (tinfo)                   | Section 5.7.5  |
+| 0x7a5     | Trigger Control (tcontrol)             | Section 5.7.6  |
+| 0x7a8     | Machine Context (mcontext)             | Section 5.7.9  |
+| 0x7aa     | Machine Supervisor Context (mscontext) | Section 5.7.10 |

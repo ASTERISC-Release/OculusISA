@@ -1,0 +1,42 @@
+# 4 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: If the destination register rd is x0, the CSRRWI instruction shall not read the CSR and shall not cause any side effects that might occur on a CSR read.
+##### ASSEMBLY #####
+csrrw x0, mstatus, x0
+csrrwi x0, mstatus, 0
+csrr a1, mstatus
+srli a0, a1, 0
+andi a0, a0, 1
+# Result: a0 = 0
+
+# 14 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: An SFENCE.VMA instruction executed in S-mode while TVM=1 must raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mstatus, t0
+li t0, 0x80000000
+csrw mstatus, t0
+csrs mstatus, 0x20
+li t0, 0x1
+csrw satp, t0
+csrs mstatus, 0x10
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 15 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: If an SFENCE.VMA instruction is executed in S-mode while TVM=0, then it must execute without raising an exception.
+##### ASSEMBLY #####
+csrw mstatus, 0x1800 # Set MPP to 1 (S-mode)
+csrw satp, 0 # Set TVM=0
+csrw mepc, 0x0 # Setup for mret
+sfence.vma 0, 0
+li x1, 1
+# Result: x1 = 1

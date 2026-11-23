@@ -1,0 +1,11 @@
+## 5.5. WFI (Wait for Interrupt) instruction
+
+The RISC-V Privileged Architecture specifies that instruction WFI (Wait for Interrupt) may suspend execution at a hart until an interrupt is pending for the hart. The Advanced Interrupt Architecture (AIA) redefines when execution must resume following a WFI.
+
+According to the base RISC-V Privileged Architecture, instruction execution must resume from a WFI whenever any interrupt is both pending and enabled in CSRs mip and mie ,  ignoring any delegation indicated by mideleg . With the AIA, this succinct rule is no longer appropriate, due to the mechanisms the AIA adds for virtual interrupts. Instead, execution must resume from a WFI whenever an interrupt is pending at any privilege level (regardless of whether the interrupt privilege level is higher or lower than the hart's current privilege mode).
+
+An interrupt is pending at machine level if register mtopi is  not zero. If S-mode is implemented, an interrupt is pending at supervisor level if stopi is not zero. And if the H extension is implemented, an interrupt is pending at VS level if vstopi (Section 6.3.3) is not zero.
+
+<image>
+
+The AIA's rule for WFI gives the same behavior as the base Privileged Architecture's rule when mvien = 0 and, if the H extension is implemented, also hvien = 0 and hvictl .VTI = 0, thus disabling all virtual interrupts not visible in mip .  (The  AIA's  hypervisor registers are covered in the next chapter, "Interrupts for Virtual Machines (VS Level)".)

@@ -1,0 +1,149 @@
+You are given multiple execution paths for one RISC-V architectural target.
+
+Task:
+Convert each given path into exactly one atomic architectural rule.
+
+Input format:
+Each path may contain fields such as:
+
+* Path number
+* Target
+* Source entry or semantic entry
+* Path condition
+* Source behavior or semantic behavior
+* Architectural outcome
+* Observable oracle
+* Feasibility
+* Natural language path summary
+
+Important:
+Use ONLY the given paths and path summaries.
+Do NOT use external knowledge.
+Do NOT use the RISC-V specification unless it is explicitly included in the given path.
+Do NOT use known bugs.
+Do NOT infer unrelated behavior.
+Do NOT merge paths.
+Do NOT skip paths.
+Do NOT deduplicate paths.
+Do NOT collapse multiple similar paths into one rule.
+If the input contains N paths, the output must contain exactly N rules.
+Each path must produce exactly one rule.
+Preserve the path number from the input.
+Base each rule only on the explicit condition and outcome stated in the corresponding path.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, encoding, syntax, formatting, source-code structure, or implementation commentary.
+Each rule must describe architectural cause -> effect semantics, meaning condition/event -> architectural outcome.
+Each rule must include the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap cause, CSR state, register state, memory state, address-translation behavior, or trap versus no trap behavior.
+Each rule must begin with the word `RULE`.
+Each rule must preserve the path number from the input.
+Each rule must be clear and detailed.
+Do not mention source file names, function names, helper names, or model-internal names unless they are necessary to express the architectural condition or outcome.
+Do not include implementation details unless they directly determine an architecturally visible outcome.
+If a path contains both source/model behavior and architectural outcome, write the rule using the architectural outcome.
+If a path contains feasibility information, do not output the feasibility field; use it only to avoid inventing unsupported behavior.
+If a path is marked source-incomplete, produce a rule only from the explicit behavior that is present in the path and do not invent the missing behavior.
+If a path is marked infeasible, still output one rule for that path, but phrase it only as the explicit condition -> outcome relationship stated by the path.
+
+Output format:
+Output only the rules.
+Do not give any introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <path number>: <one atomic testable architectural rule>
+
+Example output:
+RULE 1: When a CY, IR, or HPMn bit in the mcountinhibit register is clear, the corresponding mcycle, minstret, or mhpmcountern register increments as usual.
+RULE 2: When a CY, IR, or HPMn bit in the mcountinhibit register is set, the corresponding mcycle, minstret, or mhpmcountern register does not increment.
+
+Now convert the following paths into rule form:
+
+PATH 1:
+Target: scounteren
+Source entry: riscv/csr_init.cc scounteren initialization via add_supervisor_csr(CSR_SCOUNTEREN, scounteren = std::make_shared<masked_csr_t>(proc, CSR_SCOUNTEREN, counteren_mask, 0))
+Path condition: Supervisor CSR registration is performed; counteren_mask is computed as ((EXT_ZICNTR enabled ? 0x7 : 0) | (EXT_ZIHPM enabled ? 0xfffffff8 : 0))
+Source behavior: scounteren is created as a masked_csr_t with address CSR_SCOUNTEREN, mask counteren_mask, and initial value 0.
+Architectural outcome: Initial scounteren architectural state is 0. Only bits selected by counteren_mask are writable by later writes.
+Observable oracle: After reset/initialization, read scounteren from a privilege mode allowed to access it; the returned value is 0.
+Feasibility: feasible
+PATH 2:
+Target: scounteren
+Source entry: masked_csr_t::unlogged_write
+Path condition: A write to scounteren is permitted by generic CSR permission checks; EXT_ZICNTR is disabled and EXT_ZIHPM is disabled, so counteren_mask == 0
+Source behavior: masked_csr_t writes (read() & ~0) | (val & 0), preserving the previous scounteren value.
+Architectural outcome: No bits of scounteren are writable; the CSR value remains unchanged. Since initial value is 0, scounteren remains 0 unless another source-visible mechanism changed it.
+Observable oracle: Write any value to scounteren, then read scounteren; the read value is unchanged from the pre-write value.
+Feasibility: feasible
+PATH 3:
+Target: scounteren
+Source entry: masked_csr_t::unlogged_write
+Path condition: A write to scounteren is permitted by generic CSR permission checks; EXT_ZICNTR is enabled and EXT_ZIHPM is disabled, so counteren_mask == 0x7
+Source behavior: masked_csr_t writes (old_scounteren & ~0x7) | (write_value & 0x7).
+Architectural outcome: Only scounteren bits 0, 1, and 2 are updated from the written value; all other bits preserve their previous values. From reset, only bits 0..2 can become nonzero.
+Observable oracle: Write a value with multiple bits set to scounteren, then read scounteren; only bits 0, 1, and 2 match the write value, and unsupported bits remain unchanged.
+Feasibility: feasible
+PATH 4:
+Target: scounteren
+Source entry: masked_csr_t::unlogged_write
+Path condition: A write to scounteren is permitted by generic CSR permission checks; EXT_ZICNTR is disabled and EXT_ZIHPM is enabled, so counteren_mask == 0xfffffff8
+Source behavior: masked_csr_t writes (old_scounteren & ~0xfffffff8) | (write_value & 0xfffffff8).
+Architectural outcome: Only scounteren bits 3 through 31 are updated from the written value; bits 0, 1, and 2 preserve their previous values. From reset, only bits 3..31 can become nonzero.
+Observable oracle: Write a value with bits 0..31 set to scounteren, then read scounteren; bits 3..31 match the write value, while bits 0..2 remain unchanged.
+Feasibility: feasible
+PATH 5:
+Target: scounteren
+Source entry: masked_csr_t::unlogged_write
+Path condition: A write to scounteren is permitted by generic CSR permission checks; EXT_ZICNTR is enabled and EXT_ZIHPM is enabled, so counteren_mask == 0xffffffff
+Source behavior: masked_csr_t writes (old_scounteren & ~0xffffffff) | (write_value & 0xffffffff).
+Architectural outcome: scounteren bits 0 through 31 are updated from the written value; bits above 31 preserve their previous values.
+Observable oracle: Write a value to scounteren, then read scounteren; bits 0..31 match the write value, while bits above 31 remain unchanged from their previous value.
+Feasibility: feasible
+PATH 6:
+Target: scounteren
+Source entry: basic_csr_t::read
+Path condition: A read of scounteren is permitted by generic CSR permission checks.
+Source behavior: basic_csr_t::read returns the stored scounteren value.
+Architectural outcome: The CSR read returns the current masked scounteren state.
+Observable oracle: Write a permitted value to scounteren, then read scounteren; the destination register receives the current masked CSR value.
+Feasibility: feasible
+PATH 7:
+Target: scounteren
+Source entry: csr_t::verify_permissions
+Path condition: An attempted access to scounteren fails the generic CSR permission checks because the required privilege level is not met, the required extension for the CSR is absent, or virtualized execution causes the generic check to reject the access.
+Source behavior: Generic CSR permission checking rejects the scounteren access before the CSR read or write behavior completes.
+Architectural outcome: The scounteren access does not complete architecturally; no scounteren state update is performed for a rejected write.
+Observable oracle: Attempt to access scounteren under a disallowed generic CSR-permission condition; observe that the access traps or is rejected rather than returning a CSR value or committing a CSR write.
+Feasibility: source-incomplete
+PATH 8:
+Target: scounteren
+Source entry: counter_proxy_csr_t::verify_permissions
+Path condition: A counter CSR access reaches counter_proxy_csr_t::verify_permissions; proc->extension_enabled('S') is true; current privilege state satisfies state->prv < PRV_S; the relevant scounteren bit selected by (counter CSR address & 31) is 0; all other counter gating conditions are either true or irrelevant to the scounteren-specific outcome.
+Source behavior: sctr_ok is computed as myenable(state->scounteren), which reads scounteren and tests bit (counter address & 31); because that bit is 0, sctr_ok is false and trap_illegal_instruction(insn.bits()) is thrown.
+Architectural outcome: The counter CSR access traps with illegal-instruction behavior due to scounteren denying access. The counter CSR read or write does not complete.
+Observable oracle: Enable S extension, execute below S privilege, clear the corresponding scounteren bit, and attempt to read the matching counter CSR; observe an illegal-instruction trap rather than a counter value.
+Feasibility: feasible
+PATH 9:
+Target: scounteren
+Source entry: counter_proxy_csr_t::verify_permissions
+Path condition: A counter CSR access reaches counter_proxy_csr_t::verify_permissions; proc->extension_enabled('S') is true; current privilege state satisfies state->prv < PRV_S; the relevant scounteren bit selected by (counter CSR address & 31) is 1; mcounteren and hcounteren checks also pass.
+Source behavior: sctr_ok is computed as myenable(state->scounteren), which reads scounteren and tests bit (counter address & 31); because that bit is 1, sctr_ok is true and scounteren does not cause a trap. Control proceeds to proxy_csr_t::verify_permissions.
+Architectural outcome: scounteren permits the counter CSR access to continue. Final completion of the counter CSR access depends on the remaining proxy/generic CSR permission behavior.
+Observable oracle: Enable S extension, execute below S privilege, set the corresponding scounteren bit, ensure other counter-enable checks pass, and attempt to read the matching counter CSR; observe that scounteren itself does not cause the illegal-instruction trap.
+Feasibility: feasible
+PATH 10:
+Target: scounteren
+Source entry: counter_proxy_csr_t::verify_permissions
+Path condition: A counter CSR access reaches counter_proxy_csr_t::verify_permissions; either proc->extension_enabled('S') is false or current privilege state does not satisfy state->prv < PRV_S.
+Source behavior: sctr_ok is set to true without reading or testing scounteren.
+Architectural outcome: scounteren has no gating effect on the counter CSR access. Any trap or successful access is determined by other checks, not by scounteren.
+Observable oracle: Access a counter CSR in a condition where S extension is disabled or privilege is S/M-or-higher for this check; changing scounteren bits does not change the counter CSR trap-versus-no-trap result through the scounteren path.
+Feasibility: feasible

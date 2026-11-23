@@ -1,0 +1,33 @@
+## 3.14.27. System Bus Data 31:0 (sbdata0, at 0x3c)
+
+If all of the sbaccess bits in sbcs are 0, then this register is not present.
+
+Any successful system bus read updates sbdata . If the width of the read access is less than the width of sbdata , the contents of the remaining high bits may take on any value.
+
+If either sberror or sbbusyerror isn't 0 then accesses do nothing.
+
+If the bus manager is busy then accesses set sbbusyerror, and don't do anything else.
+
+Writes to this register start the following:
+
+1. Set sbbusy.
+2. Perform a bus write of the new value of sbdata to sbaddress .
+3. If the write succeeded and sbautoincrement is set, increment sbaddress .
+4. Clear sbbusy.
+
+Reads from this register start the following:
+
+1. "Return" the data.
+2. Set sbbusy.
+3. If sbreadondata is set:
+- a. Perform  a  system  bus  read  from  the  address  contained  in sbaddress ,  placing  the  result  in sbdata .
+- b. If sbautoincrement is set and the read was successful, increment sbaddress .
+4. Clear sbbusy.
+
+Only sbdata0 has this behavior. The other sbdata registers have no side effects. On systems that have buses wider than 32 bits, a debugger should access sbdata0 after accessing the other sbdata registers.
+
+<image>
+
+| Field   | Description                    | Access   |   Reset |
+|---------|--------------------------------|----------|---------|
+| data    | Accesses bits 31:0 of sbdata . | R/W      |       0 |

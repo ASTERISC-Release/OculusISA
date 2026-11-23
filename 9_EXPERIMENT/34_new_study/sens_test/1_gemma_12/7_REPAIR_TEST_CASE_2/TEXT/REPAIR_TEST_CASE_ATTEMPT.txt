@@ -1,0 +1,90 @@
+# 2 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that could occur on a CSR read.
+##### ASSEMBLY #####
+li t0, 0
+csrw mstatus, t0
+csrrwi x0, mstatus, 1
+csrr a1, mstatus
+andi a0, a1, 1
+# Result: a0 = 0
+
+# 9 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: When TVM=0, attempting to execute an SFENCE.VMA instruction is permitted in S-mode.
+##### ASSEMBLY #####
+sfence.vma x0, x0, x0, 0
+# Result: x0 = 0
+
+# 11 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+##### ASSEMBLY #####
+li x1, 0
+csrw satp, x1
+li x1, 0x80000008
+csrw satp, x1
+csrr x2, satp
+# Result: x2 = 0x80000008
+
+# 20 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 14: If an SFENCE.VMA instruction raises multiple synchronous exceptions, a virtual-instruction exception has a lower priority than an illegal instruction exception but a higher priority than an instruction address misaligned exception for determining which exception is taken and reported in mcause or scause.
+##### ASSEMBLY #####
+# To test RULE 14: Virtual-instruction exception priority > Instruction address misaligned exception.
+# In U-mode, SFENCE.VMA is a virtual-instruction exception.
+# We attempt to execute SFENCE.VMA at a misaligned address.
+# The result should be the higher priority exception: Virtual-instruction (cause 15).
+li t0, 1
+la t1, target
+add t0, t1, 1
+jr t0
+sfence.vma x0, x0
+# Result: mcause = 15
+
+# 24 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+li x5, 0x1000
+vsetvli x0, x0, 32, e32, m1, ta, ma
+vle32.v v1, (x5)
+# Result: v1 = 0
+
+# 25 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: If vstart = 0 and vl > 0 for VLE32FF.V, then at least one element MUST be processed.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw vl, t0
+csrw vstart, x0
+la t1, data
+vle32.v v1, (t1)
+srli t2, v1, 0
+# Result: t2 != 0
+.data
+data: .word 0x12345678
+
+# 28 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 4: The mseccfg CSR is readable and writable in Machine mode (MRW privilege).
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+csrr a1, mseccfg
+andi a0, a1, 1
+# Result: a0 = 1

@@ -1,0 +1,2025 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: CSRRWI
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for CSRRWI instruction, rewrite the following description as a list of rules. Each rule must explain about CSRRWI instruction. Essentially, for each rule, it is about CSRRWI instruction, not other things.
+
+Do not lose any information about CSRRWI instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is CSRRWI."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word CSRRWI.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- CSRRWI atomically read-modify-writes a single CSR, whose CSR specifier is encoded in the 12bit csr field of the instruction held in bits 31-20.
+
+- CSRRWI uses an XLEN-bit value obtained by zero-extending a 5-bit unsigned immediate (uimm[4:0]) field encoded in the rs1 field.
+
+- CSRRWI reads the old value of the CSR, zero-extends the value to XLEN bits, then writes it to integer register rd. The XLEN-bit value obtained by zero-extending uimm[4:0] is written to the CSR.
+
+- If rd = x0, then CSRRWI shall not read the CSR and shall not cause any of the side effects that might occur on a CSR read.
+
+- CSRRWI writes the CSR regardless of whether rd is x0 and regardless of whether uimm[4:0] is zero.
+
+| Instruction | rd is x0 | uimm = 0 | Reads CSR | Writes CSR |
+|-------------|----------|----------|-----------|------------|
+| CSRRWI      | Yes      | -        | No        | Yes        |
+| CSRRWI      | No       | -        | Yes       | Yes        |
+
+- CSRRWI actions side effects for all fields within the written CSR that have side effects when written.
+
+- For any event or consequence that occurs due to a CSR having a particular value, if a CSRRWI write to the CSR gives it that value, the resulting event or consequence is an indirect effect of the write. Indirect effects of a CSR write are not considered by the RISC-V ISA to be side effects of that write.
+
+- If CSRRWI reads a CSR that may be modified as a side effect of instruction execution, it reads the value prior to the execution of the instruction. If CSRRWI writes such a CSR, the explicit write is done instead of the update from the side effect.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: CSRRWI performs its CSR read when rd is not x0 and its unconditional write to the same single CSR as one atomic operation.
+
+RULE 2: CSRRWI forms its XLEN-bit CSR write value by zero-extending the 5-bit unsigned immediate uimm[4:0].
+
+RULE 3: When rd is not x0, CSRRWI reads the old value of the selected CSR, zero-extends that value to XLEN bits, and writes the result to rd.
+
+RULE 4: CSRRWI writes the XLEN-bit zero-extended value of uimm[4:0] to the selected CSR.
+
+RULE 5: When rd is x0, CSRRWI MUST NOT read the selected CSR.
+
+RULE 6: When rd is x0, CSRRWI MUST NOT cause any side effect that could result from reading the selected CSR.
+
+RULE 7: When rd is x0, CSRRWI still writes the XLEN-bit zero-extended value of uimm[4:0] to the selected CSR.
+
+RULE 8: When uimm[4:0] is zero, CSRRWI still writes zero to the selected CSR regardless of whether rd is x0.
+
+RULE 9: A CSRRWI write causes the write side effects associated with every field in the selected CSR that has side effects when written.
+
+RULE 10: If a CSRRWI write gives a CSR a value that causes an event or consequence, that event or consequence is an indirect effect of the CSRRWI write.
+
+RULE 11: An event or consequence that occurs because a CSRRWI write gives a CSR a particular value is not considered a side effect of the CSRRWI write.
+
+RULE 12: If CSRRWI reads a CSR that may be modified as a side effect of instruction execution, CSRRWI reads the CSR value that existed before execution of the instruction began.
+
+RULE 13: If CSRRWI writes a CSR that may otherwise be updated as a side effect of instruction execution, the explicit CSRRWI write replaces the update that would have resulted from that side effect.
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 2
+NAME: CSRRWI
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for CSRRWI instruction, rewrite the following description as a list of rules. Each rule must explain about CSRRWI instruction. Essentially, for each rule, it is about CSRRWI instruction, not other things.
+
+Do not lose any information about CSRRWI instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is CSRRWI."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word CSRRWI.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- For a CSRRWI instruction i, a register r other than x0 is a source register if, in the opcode of i, csr is set to r, unless rd is set to x0.
+
+- A register r other than x0 is a source register for a CSRRWI instruction if r is a CSR that aliases with another source register for the instruction.
+
+- For a CSRRWI instruction i, a register r other than x0 is a destination register if, in the opcode of i, rd is set to r.
+
+- For a CSRRWI instruction i, a register r other than x0 is a destination register if, in the opcode of i, csr is set to r.
+
+- A register r other than x0 is a destination register for a CSRRWI instruction if r is a CSR that aliases with another destination register for the instruction.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: For a CSRRWI instruction with the csr field set to a register r other than x0, register r is a source register if the rd field is not set to x0.
+
+RULE 2: For a CSRRWI instruction with the csr field set to a register r other than x0, register r is not a source register on the basis of the csr field if the rd field is set to x0.
+
+RULE 3: For a CSRRWI instruction, a register r other than x0 is a source register if r is a CSR that aliases another source register of the CSRRWI instruction.
+
+RULE 4: For a CSRRWI instruction with the rd field set to a register r other than x0, register r is a destination register.
+
+RULE 5: For a CSRRWI instruction with the csr field set to a register r other than x0, register r is a destination register.
+
+RULE 6: For a CSRRWI instruction, a register r other than x0 is a destination register if r is a CSR that aliases another destination register of the CSRRWI instruction.
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: FCVT.W.D
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for FCVT.W.D instruction, rewrite the following description as a list of rules. Each rule must explain about FCVT.W.D instruction. Essentially, for each rule, it is about FCVT.W.D instruction, not other things.
+
+Do not lose any information about FCVT.W.D instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is FCVT.W.D."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word FCVT.W.D.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- FCVT.W.D is encoded in the OP-FP major opcode space.
+
+- FCVT.W.D converts a double-precision floating-point number in floating-point register rs1 to a signed 32-bit integer in integer register rd.
+
+- For RV64, FCVT.W.D sign-extends the 32-bit result.
+
+- The range of valid inputs for FCVT.W.D and the behavior for invalid inputs are the same as for FCVT.W.S.
+
+- FCVT.W.D rounds according to the rm field.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: FCVT.W.D converts the double-precision floating-point value in floating-point register rs1 to a signed 32-bit integer and writes the result to integer register rd.
+
+RULE 2: On RV64, FCVT.W.D sign-extends the 32-bit integer result before writing it to integer register rd.
+
+RULE 3: FCVT.W.D has the same valid input range as FCVT.W.S.
+
+RULE 4: FCVT.W.D produces the same architectural behavior for invalid inputs as FCVT.W.S.
+
+RULE 5: FCVT.W.D rounds the conversion according to the rounding mode specified by the rm field.
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 2
+NAME: FCVT.W.D
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for FCVT.W.D instruction, rewrite the following description as a list of rules. Each rule must explain about FCVT.W.D instruction. Essentially, for each rule, it is about FCVT.W.D instruction, not other things.
+
+Do not lose any information about FCVT.W.D instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is FCVT.W.D."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word FCVT.W.D.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Floating-point exception flags are raised the same for FCVT.W.D and FCVTMOD.W.D with the same input operand.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: For the same input operand, FCVT.W.D raises the same floating-point exception flags as FCVTMOD.W.D.
+======================================================= END - 4 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 5 =======================================================
+GLOBAL NUMBER: 5
+LOCAL NUMBER: 1
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+SFENCE.VMA does not order invalidate, clean, and flush operations.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: SFENCE.VMA does not order invalidate, clean, or flush operations.
+======================================================= END - 5 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 6 =======================================================
+GLOBAL NUMBER: 6
+LOCAL NUMBER: 2
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- If any supervisor-level memory-management data structures remain in use across a change to SBE, M-mode software must follow such a change to SBE by executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0.
+
+- If SBE is changed at runtime on a world switch and neither the old nor new memory-management data structure is reinterpreted in a different endianness, no additional SFENCE.VMA is necessary beyond what would ordinarily be required for a world switch.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: If any supervisor-level memory-management data structures remain in use across a change to SBE, M-mode software must execute SFENCE.VMA with rs1 = x0 and rs2 = x0 after changing SBE.
+
+RULE 2: If SBE is changed at runtime during a world switch and neither the old nor the new memory-management data structure is reinterpreted using a different endianness, no SFENCE.VMA is necessary beyond the SFENCE.VMA operations ordinarily required for the world switch.
+======================================================= END - 6 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 7 =======================================================
+GLOBAL NUMBER: 7
+LOCAL NUMBER: 3
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- When TVM=1, attempts to execute an SFENCE.VMA instruction while executing in S-mode will raise an illegal-instruction exception.
+
+- When TVM=0, execution of an SFENCE.VMA instruction is permitted in S-mode.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: When TVM=1, attempting to execute SFENCE.VMA in S-mode raises an illegal-instruction exception.
+
+RULE 2: When TVM=0, executing SFENCE.VMA in S-mode is permitted.
+======================================================= END - 7 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 8 =======================================================
+GLOBAL NUMBER: 8
+LOCAL NUMBER: 4
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+After changing menvcfg.PBMTE, executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with respect to the altered interpretation of page-table entries' PBMT fields. See Section 22.5.3 for additional synchronization requirements when the hypervisor extension is implemented.
+
+After changing menvcfg.ADUE, executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with respect to the altered interpretation of page-table entries' A/D bits. See Section 22.5.3 for additional synchronization requirements when the hypervisor extension is implemented.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: After menvcfg.PBMTE changes, executing SFENCE.VMA with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with the altered interpretation of page-table entries' PBMT fields.
+
+RULE 2: When the hypervisor extension is implemented, executing SFENCE.VMA after menvcfg.PBMTE changes is subject to additional synchronization requirements beyond synchronizing address-translation caches with the altered interpretation of page-table entries' PBMT fields.
+
+RULE 3: After menvcfg.ADUE changes, executing SFENCE.VMA with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with the altered interpretation of page-table entries' A/D bits.
+
+RULE 4: When the hypervisor extension is implemented, executing SFENCE.VMA after menvcfg.ADUE changes is subject to additional synchronization requirements beyond synchronizing address-translation caches with the altered interpretation of page-table entries' A/D bits.
+======================================================= END - 8 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 9 =======================================================
+GLOBAL NUMBER: 9
+LOCAL NUMBER: 5
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+When the PMP settings are modified, M-mode software must synchronize the PMP settings with the virtual memory system and any PMP or address-translation caches. This is accomplished by executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0, after the PMP CSRs are written.
+
+If page-based virtual memory is not implemented, memory accesses check the PMP settings synchronously, so no SFENCE.VMA is needed.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: When M-mode software modifies PMP settings by writing the PMP CSRs on a system with page-based virtual memory, it MUST subsequently execute SFENCE.VMA with rs1 = x0 and rs2 = x0 to synchronize the PMP settings with the virtual memory system and any PMP or address-translation caches.
+
+RULE 2: When page-based virtual memory is not implemented, SFENCE.VMA is not required after PMP settings are modified because memory accesses check the PMP settings synchronously.
+======================================================= END - 9 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 10 ======================================================
+GLOBAL NUMBER: 10
+LOCAL NUMBER: 6
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Translations that began while satp was active are not required to complete or terminate when satp is no longer active, unless an SFENCE.VMA instruction matching the address and ASID is executed.
+
+The SFENCE.VMA instruction must be used to ensure that updates to the address-translation data structures are observed by subsequent implicit reads to those structures by a hart.
+
+If the new address space's page tables have been modified, or if an ASID is reused, it may be necessary to execute an SFENCE.VMA instruction after, or in some cases before, writing satp.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: An SFENCE.VMA instruction matching the address and ASID is required to make translations that began while satp was active complete or terminate after satp is no longer active.
+
+RULE 2: Software MUST execute an SFENCE.VMA instruction to ensure that updates to address-translation data structures are observed by subsequent implicit reads of those structures by the hart.
+
+RULE 3: If the page tables of a new address space have been modified, it may be necessary to execute an SFENCE.VMA instruction after writing satp or, in some cases, before writing satp.
+
+RULE 4: If an ASID is reused, it may be necessary to execute an SFENCE.VMA instruction after writing satp or, in some cases, before writing satp.
+======================================================= END - 10 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 11 ======================================================
+GLOBAL NUMBER: 11
+LOCAL NUMBER: 7
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- The supervisor memory-management fence instruction SFENCE.VMA is used to synchronize updates to in-memory memory-management data structures with current execution.
+
+- Executing an SFENCE.VMA instruction guarantees that any previous stores already visible to the current RISC-V hart are ordered before certain implicit references by subsequent instructions in that hart to the memory-management data structures.
+
+- The specific set of operations ordered by SFENCE.VMA is determined by rs1 and rs2.
+
+- SFENCE.VMA is used to invalidate entries in the address-translation cache associated with a hart.
+
+- SFENCE.VMA is used to flush any local hardware caches related to address translation.
+
+- SFENCE.VMA is used by higher privilege levels to synchronize page table writes and the address translation hardware.
+
+- SFENCE.VMA orders only the local hart's implicit references to the memory-management data structures. Other harts must be notified separately when the memory-management data structures have been modified.
+
+- For the case that the translation data structures have only been modified for a single address mapping, rs1 can specify a virtual address within that mapping to effect a translation fence for that mapping only.
+
+- For the case that the translation data structures have only been modified for a single address-space identifier, rs2 can specify the address space.
+
+- The behavior of SFENCE.VMA depends on rs1 and rs2 as follows:
+
+  - If rs1 = x0 and rs2 = x0, the fence orders all reads and writes made to any level of the page tables, for all address spaces. The fence also invalidates all address-translation cache entries, for all address spaces.
+
+  - If rs1 = x0 and rs2 != x0, the fence orders all reads and writes made to any level of the page tables, but only for the address space identified by integer register rs2. Accesses to global mappings are not ordered. The fence also invalidates all address-translation cache entries matching the address space identified by integer register rs2, except for entries containing global mappings.
+
+  - If rs1 != x0 and rs2 = x0, the fence orders only reads and writes made to leaf page table entries corresponding to the virtual address in rs1, for all address spaces. The fence also invalidates all address-translation cache entries that contain leaf page table entries corresponding to the virtual address in rs1, for all address spaces.
+
+  - If rs1 != x0 and rs2 != x0, the fence orders only reads and writes made to leaf page table entries corresponding to the virtual address in rs1, for the address space identified by integer register rs2. Accesses to global mappings are not ordered. The fence also invalidates all address-translation cache entries that contain leaf page table entries corresponding to the virtual address in rs1 and that match the address space identified by integer register rs2, except for entries containing global mappings.
+
+- If the value held in rs1 is not a valid virtual address, then the SFENCE.VMA instruction has no effect. No exception is raised in this case.
+
+- It is always legal to over-fence, e.g., by fencing only based on a subset of the bits in rs1 and/or rs2, and/or by simply treating all SFENCE.VMA instructions as having rs1 = x0 and/or rs2 = x0. Implementations can ignore the virtual address in rs1 and the ASID value in rs2 and always perform a global fence.
+
+- When rs2 != x0, bits SXLEN-1:ASIDMAX of the value held in rs2 are reserved for future standard use. Until their use is defined by a standard extension, they should be zeroed by software and ignored by current implementations. Furthermore, if ASIDLEN < ASIDMAX, the implementation shall ignore bits ASIDMAX-1:ASIDLEN of the value held in rs2.
+
+- An implicit read of the memory-management data structures may return any translation for an address that was valid at any time since the most recent SFENCE.VMA that subsumes that address.
+
+- The ordering implied by SFENCE.VMA does not place implicit reads and writes to the memory-management data structures into the global memory order in a way that interacts cleanly with the standard RVWMO ordering rules.
+
+- Even though an SFENCE.VMA orders prior explicit accesses before subsequent implicit accesses, and those implicit accesses are ordered before their associated explicit accesses, SFENCE.VMA does not necessarily place prior explicit accesses before subsequent explicit accesses in the global memory order.
+
+- These implicit loads need not otherwise obey normal program order semantics with respect to prior loads or stores to the same address.
+
+- An implementation may use any translation for an address that was valid at any time since the most recent SFENCE.VMA that subsumes that address.
+
+- If a leaf PTE is modified and the corresponding virtual address is accessed without a subsuming SFENCE.VMA having been executed in between, then either the new translation or any older translation since the last subsuming SFENCE.VMA was executed will be used. It is unpredictable which translation will be chosen from that set, and subsequent accesses to the same virtual address might use different translations from that set. The behavior of such accesses is otherwise well defined.
+
+- This property applies even if the virtual-address width for that translation differs from the width currently specified by satp.MODE. For a given virtual address and ASID, any translation since the last subsuming SFENCE.VMA might be used, even if that translation used a virtual address of a different width. For a given virtual address, any global translation since the last subsuming SFENCE.VMA might be used, regardless of both ASID and virtual-address width.
+
+- In a conventional TLB design, it is possible for multiple entries to match a single address if, for example, a page is upgraded to a superpage without first clearing the original non-leaf PTE's valid bit and executing an SFENCE.VMA with rs1 = x0. In this case, it is unpredictable whether the old non-leaf PTE or the new leaf PTE is used, but the behavior is otherwise well defined.
+
+- Changes to the sstatus fields SUM and MXR take effect immediately, without the need to execute an SFENCE.VMA instruction.
+
+- Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+
+- Changes to satp.ASID take effect immediately.
+
+- When software recycles an ASID, it should first change satp to point to the new page table using the recycled ASID, then execute SFENCE.VMA with rs1 = x0 and rs2 set to the recycled ASID. Alternatively, software can execute the same SFENCE.VMA instruction while a different ASID is loaded into satp, provided the next time satp is loaded with the recycled ASID, it is simultaneously loaded with the new page table.
+
+- If the implementation does not provide ASIDs, or software chooses to always use ASID 0, then after every satp write, software should execute SFENCE.VMA with rs1 = x0. In the case that no global translations have been modified, rs2 should be set to a register other than x0 but which contains the value zero, so that global translations are not flushed.
+
+- If software modifies a non-leaf PTE, it should execute SFENCE.VMA with rs1 = x0. If any PTE along the traversal path had its G bit set, rs2 must be x0; otherwise, rs2 should be set to the ASID for which the translation is being modified.
+
+- If software modifies a leaf PTE, it should execute SFENCE.VMA with rs1 set to a virtual address within the page. If any PTE along the traversal path had its G bit set, rs2 must be x0; otherwise, rs2 should be set to the ASID for which the translation is being modified.
+
+- For the special cases of increasing the permissions on a leaf PTE and changing an invalid PTE to a valid leaf, software may choose to execute the SFENCE.VMA lazily. After modifying the PTE but before executing SFENCE.VMA, either the new or old permissions will be used. In the latter case, a page-fault exception might occur, at which point software should execute SFENCE.VMA with rs1 set to a virtual address within the page. If any PTE along the traversal path had its G bit set, rs2 must be x0; otherwise, rs2 should be set to the ASID for which the translation is being modified.
+
+- If a hart employs an address-translation cache, that cache must appear to be private to that hart. The meaning of an ASID is local to a hart; software may choose to use the same ASID to refer to different address spaces on different harts.
+
+- For implementations that make satp.MODE read-only zero (always Bare), attempts to execute an SFENCE.VMA instruction might raise an illegal-instruction exception.
+
+- No SFENCE.VMA is required after enabling or disabling pointer masking, as pointer masking applies to the effective address only and does not affect any memory-management data structures.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: Executing SFENCE.VMA synchronizes updates to in-memory memory-management data structures with current execution.
+
+RULE 2: Executing SFENCE.VMA orders previous stores already visible to the current hart before the operand-selected implicit references made by subsequent instructions on that hart to memory-management data structures.
+
+RULE 3: The rs1 and rs2 operands of SFENCE.VMA determine the set of memory-management operations and address-translation cache entries affected by the instruction.
+
+RULE 4: Executing SFENCE.VMA invalidates operand-selected entries in the address-translation cache associated with the executing hart.
+
+RULE 5: Executing SFENCE.VMA flushes local hardware caches related to address translation to the extent required by its operand-selected scope.
+
+RULE 6: When higher-privilege software writes page tables, executing SFENCE.VMA synchronizes those writes with the address-translation hardware.
+
+RULE 7: Executing SFENCE.VMA orders only the executing hart's implicit references to memory-management data structures.
+
+RULE 8: When memory-management data structures are modified, executing SFENCE.VMA on one hart does not notify other harts, so those other harts must be notified separately.
+
+RULE 9: When translation data structures have been modified for only one address mapping, SFENCE.VMA can use rs1 to specify a virtual address within that mapping and fence only that mapping.
+
+RULE 10: When translation data structures have been modified for only one address-space identifier, SFENCE.VMA can use rs2 to specify that address space.
+
+RULE 11: If SFENCE.VMA uses rs1 = x0 and rs2 = x0, it orders all reads and writes made to every level of the page tables for all address spaces.
+
+RULE 12: If SFENCE.VMA uses rs1 = x0 and rs2 = x0, it invalidates all address-translation cache entries for all address spaces.
+
+RULE 13: If SFENCE.VMA uses rs1 = x0 and rs2 != x0, it orders all reads and writes made to every level of the page tables only for the address space identified by rs2.
+
+RULE 14: If SFENCE.VMA uses rs1 = x0 and rs2 != x0, it does not order accesses to global mappings.
+
+RULE 15: If SFENCE.VMA uses rs1 = x0 and rs2 != x0, it invalidates all address-translation cache entries matching the address space identified by rs2 except entries containing global mappings.
+
+RULE 16: If SFENCE.VMA uses rs1 != x0 and rs2 = x0, it orders only reads and writes made to leaf page-table entries corresponding to the virtual address in rs1 for all address spaces.
+
+RULE 17: If SFENCE.VMA uses rs1 != x0 and rs2 = x0, it invalidates all address-translation cache entries containing leaf page-table entries corresponding to the virtual address in rs1 for all address spaces.
+
+RULE 18: If SFENCE.VMA uses rs1 != x0 and rs2 != x0, it orders only reads and writes made to leaf page-table entries corresponding to the virtual address in rs1 for the address space identified by rs2.
+
+RULE 19: If SFENCE.VMA uses rs1 != x0 and rs2 != x0, it does not order accesses to global mappings.
+
+RULE 20: If SFENCE.VMA uses rs1 != x0 and rs2 != x0, it invalidates address-translation cache entries that contain leaf page-table entries corresponding to the virtual address in rs1 and match the address space identified by rs2, except entries containing global mappings.
+
+RULE 21: If rs1 holds an invalid virtual address, SFENCE.VMA has no effect and raises no exception.
+
+RULE 22: An implementation MAY legally over-fence an SFENCE.VMA by using only a subset of the bits in rs1 or rs2 to determine the affected scope.
+
+RULE 23: An implementation MAY legally over-fence every SFENCE.VMA by treating rs1 as x0.
+
+RULE 24: An implementation MAY legally over-fence every SFENCE.VMA by treating rs2 as x0.
+
+RULE 25: An implementation MAY ignore both the virtual address in rs1 and the ASID value in rs2 and perform every SFENCE.VMA as a global fence.
+
+RULE 26: When SFENCE.VMA uses rs2 != x0, bits SXLEN-1:ASIDMAX of the value held in rs2 are reserved for future standard use.
+
+RULE 27: Until a standard extension defines their use, software SHOULD zero bits SXLEN-1:ASIDMAX of a nonzero-rs2 SFENCE.VMA operand and current implementations SHOULD ignore those bits.
+
+RULE 28: If ASIDLEN is less than ASIDMAX, an implementation MUST ignore bits ASIDMAX-1:ASIDLEN of the value held in rs2 when executing SFENCE.VMA.
+
+RULE 29: An implicit read of memory-management data structures may return any translation for an address that was valid at any time since the most recent SFENCE.VMA whose scope subsumes that address.
+
+RULE 30: The ordering performed by SFENCE.VMA does not place implicit reads and writes to memory-management data structures into the global memory order in a way that interacts cleanly with the standard RVWMO ordering rules.
+
+RULE 31: SFENCE.VMA orders prior explicit accesses before subsequent implicit accesses affected by the fence.
+
+RULE 32: An implicit access following SFENCE.VMA is ordered before the explicit access associated with that implicit access.
+
+RULE 33: SFENCE.VMA does not necessarily place prior explicit accesses before subsequent explicit accesses in the global memory order.
+
+RULE 34: Implicit address-translation loads following SFENCE.VMA need not otherwise obey normal program-order semantics with respect to prior loads or stores to the same address.
+
+RULE 35: If a leaf PTE is modified and its corresponding virtual address is accessed without an intervening subsuming SFENCE.VMA, the access may use either the new translation or any older translation that was valid since the last subsuming SFENCE.VMA.
+
+RULE 36: If a leaf PTE is modified and its corresponding virtual address is accessed without an intervening subsuming SFENCE.VMA, the choice among permitted new and older translations is unpredictable.
+
+RULE 37: If a leaf PTE is modified without an intervening subsuming SFENCE.VMA, successive accesses to its corresponding virtual address may use different translations from the permitted set.
+
+RULE 38: If a leaf PTE is modified without an intervening subsuming SFENCE.VMA, accesses using any permitted new or older translation are otherwise well defined.
+
+RULE 39: For a given virtual address and ASID, any translation valid since the last subsuming SFENCE.VMA may be used even if that translation used a virtual-address width different from the width currently specified by satp.MODE.
+
+RULE 40: For a given virtual address, any global translation valid since the last subsuming SFENCE.VMA may be used regardless of both its ASID and its virtual-address width.
+
+RULE 41: If a page is upgraded to a superpage without first clearing the valid bit of the original non-leaf PTE and executing SFENCE.VMA with rs1 = x0, multiple address-translation cache entries may match a single address.
+
+RULE 42: If a page is upgraded to a superpage without first clearing the valid bit of the original non-leaf PTE and executing SFENCE.VMA with rs1 = x0, it is unpredictable whether the old non-leaf PTE or the new leaf PTE is used, but the resulting behavior is otherwise well defined.
+
+RULE 43: A change to the sstatus.SUM field takes effect immediately without requiring SFENCE.VMA.
+
+RULE 44: A change to the sstatus.MXR field takes effect immediately without requiring SFENCE.VMA.
+
+RULE 45: Changing satp.MODE from Bare to another mode takes effect immediately without requiring SFENCE.VMA.
+
+RULE 46: Changing satp.MODE from a non-Bare mode to Bare takes effect immediately without requiring SFENCE.VMA.
+
+RULE 47: A change to satp.ASID takes effect immediately without waiting for SFENCE.VMA.
+
+RULE 48: When software recycles an ASID, it SHOULD first load satp with the new page table and the recycled ASID and then execute SFENCE.VMA with rs1 = x0 and rs2 set to the recycled ASID.
+
+RULE 49: Software MAY execute SFENCE.VMA with rs1 = x0 and rs2 set to a recycled ASID while satp contains a different ASID, provided that the next load of the recycled ASID into satp simultaneously loads the new page table.
+
+RULE 50: If an implementation provides no ASIDs, software SHOULD execute SFENCE.VMA with rs1 = x0 after every write to satp.
+
+RULE 51: If software always uses ASID 0, software SHOULD execute SFENCE.VMA with rs1 = x0 after every write to satp.
+
+RULE 52: If an implementation provides no ASIDs and no global translations were modified by a satp update, the subsequent SFENCE.VMA SHOULD use an rs2 source register other than x0 that contains zero so that global translations are not flushed.
+
+RULE 53: If software always uses ASID 0 and no global translations were modified by a satp update, the subsequent SFENCE.VMA SHOULD use an rs2 source register other than x0 that contains zero so that global translations are not flushed.
+
+RULE 54: If software modifies a non-leaf PTE, it SHOULD execute SFENCE.VMA with rs1 = x0.
+
+RULE 55: If software modifies a non-leaf PTE and any PTE along the affected traversal path had its G bit set, the corresponding SFENCE.VMA MUST use rs2 = x0.
+
+RULE 56: If software modifies a non-leaf PTE and no PTE along the affected traversal path had its G bit set, the corresponding SFENCE.VMA SHOULD set rs2 to the ASID whose translation was modified.
+
+RULE 57: If software modifies a leaf PTE, it SHOULD execute SFENCE.VMA with rs1 set to a virtual address within the affected page.
+
+RULE 58: If software modifies a leaf PTE and any PTE along the affected traversal path had its G bit set, the corresponding SFENCE.VMA MUST use rs2 = x0.
+
+RULE 59: If software modifies a leaf PTE and no PTE along the affected traversal path had its G bit set, the corresponding SFENCE.VMA SHOULD set rs2 to the ASID whose translation was modified.
+
+RULE 60: When software increases the permissions of a leaf PTE, it MAY defer execution of the corresponding SFENCE.VMA.
+
+RULE 61: When software changes an invalid PTE into a valid leaf PTE, it MAY defer execution of the corresponding SFENCE.VMA.
+
+RULE 62: After increasing the permissions of a leaf PTE but before executing a subsuming SFENCE.VMA, an access may use either the new permissions or the old permissions.
+
+RULE 63: After changing an invalid PTE into a valid leaf PTE but before executing a subsuming SFENCE.VMA, an access may use either the new permissions or the old invalid state.
+
+RULE 64: If an access uses the old permissions after a leaf PTE's permissions were increased but before a subsuming SFENCE.VMA, the access may raise a page-fault exception.
+
+RULE 65: If an access uses the old invalid state after an invalid PTE was changed into a valid leaf PTE but before a subsuming SFENCE.VMA, the access may raise a page-fault exception.
+
+RULE 66: If lazy execution of SFENCE.VMA after increasing leaf permissions or validating a leaf PTE results in a page-fault exception, software SHOULD execute SFENCE.VMA with rs1 set to a virtual address within the affected page.
+
+RULE 67: If software executes a deferred SFENCE.VMA after increasing leaf permissions or validating a leaf PTE and any PTE along the affected traversal path had its G bit set, rs2 MUST be x0.
+
+RULE 68: If software executes a deferred SFENCE.VMA after increasing leaf permissions or validating a leaf PTE and no PTE along the affected traversal path had its G bit set, rs2 SHOULD be set to the ASID whose translation was modified.
+
+RULE 69: Any address-translation cache affected by SFENCE.VMA MUST appear private to the hart that employs it.
+
+RULE 70: For address-space selection by SFENCE.VMA, the meaning of an ASID is local to the executing hart.
+
+RULE 71: Because SFENCE.VMA interprets an ASID locally to each hart, software MAY use the same ASID for different address spaces on different harts.
+
+RULE 72: An implementation whose satp.MODE field is read-only zero and therefore always Bare MAY raise an illegal-instruction exception when SFENCE.VMA is executed.
+
+RULE 73: Enabling pointer masking does not require SFENCE.VMA because pointer masking affects only the effective address and does not affect memory-management data structures.
+
+RULE 74: Disabling pointer masking does not require SFENCE.VMA because pointer masking affects only the effective address and does not affect memory-management data structures.
+======================================================= END - 11 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 12 ======================================================
+GLOBAL NUMBER: 12
+LOCAL NUMBER: 8
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Global mappings need not be flushed from local address-translation caches when an SFENCE.VMA instruction is executed with rs2 != x0.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: When SFENCE.VMA is executed with rs2 != x0, global mappings need not be flushed from local address-translation caches.
+======================================================= END - 12 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 13 ======================================================
+GLOBAL NUMBER: 13
+LOCAL NUMBER: 9
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- To ensure that implicit reads observe writes to the same memory locations, an SFENCE.VMA instruction must be executed after the writes to flush the relevant cached translations.
+
+- Multiple address-translation cache entries may co-exist for the same address if, for example, a page is upgraded to a superpage without first clearing the original non-leaf PTE's valid bit and executing an SFENCE.VMA with rs1=x0.
+
+- If an SFENCE.VMA is not executed between a write to the memory-management tables and a subsequent implicit read of the same address, it is unpredictable whether the old non-leaf PTE or the new leaf PTE is used, but the behavior is otherwise well defined.
+
+- Speculative executions of the address-translation algorithm must not create address-translation cache entries if those entries would have been invalidated by any SFENCE.VMA instruction executed by the hart since the speculative execution of the algorithm began.
+
+- It is illegal for both non-speculative and speculative executions of the translation algorithm to begin, read the level 2 page table, pause while the hart executes an SFENCE.VMA with rs1=rs2=x0, then resume using the now-stale level 2 PTE, as subsequent implicit reads could populate the address-translation cache with stale PTEs.
+
+- In many implementations, an SFENCE.VMA instruction with rs1=x0 will either terminate all previously-launched speculative executions of the address-translation algorithm, for the specified ASID if applicable, or wait for them to complete. If it waits for them to complete, any address-translation cache entries created will be invalidated by the SFENCE.VMA as appropriate.
+
+- An SFENCE.VMA instruction with rs1!=x0 generally must either ensure that previously-launched speculative executions of the address-translation algorithm, for the specified ASID if applicable, are prevented from creating new address-translation cache entries mapping leaf PTEs, or wait for them to complete.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: To ensure that implicit reads observe preceding writes to the same memory locations, SFENCE.VMA must be executed after those writes to flush the relevant cached address translations.
+
+RULE 2: If a page is upgraded to a superpage without first clearing the original non-leaf PTE's valid bit and executing SFENCE.VMA with rs1=x0, multiple address-translation cache entries may coexist for the same address.
+
+RULE 3: If SFENCE.VMA is not executed between a write to a memory-management table and a subsequent implicit read of the same address, either the old non-leaf PTE or the new leaf PTE may unpredictably be used, but the behavior is otherwise well defined.
+
+RULE 4: A speculative execution of the address-translation algorithm must not create an address-translation cache entry that would have been invalidated by any SFENCE.VMA executed by the hart after that speculative execution began.
+
+RULE 5: A non-speculative execution of the address-translation algorithm is illegal if it begins, reads the level-2 page table, pauses while the hart executes SFENCE.VMA with rs1=rs2=x0, and then resumes using the now-stale level-2 PTE.
+
+RULE 6: A speculative execution of the address-translation algorithm is illegal if it begins, reads the level-2 page table, pauses while the hart executes SFENCE.VMA with rs1=rs2=x0, and then resumes using the now-stale level-2 PTE.
+
+RULE 7: An implementation may handle SFENCE.VMA with rs1=x0 by either terminating all previously launched speculative executions of the address-translation algorithm for the specified ASID, if applicable, or waiting for all such executions to complete.
+
+RULE 8: If SFENCE.VMA with rs1=x0 waits for previously launched speculative executions of the address-translation algorithm to complete, SFENCE.VMA invalidates as appropriate any address-translation cache entries created by those executions.
+
+RULE 9: SFENCE.VMA with rs1!=x0 generally must either prevent previously launched speculative executions of the address-translation algorithm for the specified ASID, if applicable, from creating new address-translation cache entries mapping leaf PTEs, or wait for those executions to complete.
+======================================================= END - 13 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 14 ======================================================
+GLOBAL NUMBER: 14
+LOCAL NUMBER: 10
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- If an update needs to be made, the OS generally should first mark all of the PTEs invalid, then issue SFENCE.VMA instruction(s) covering all 4 KiB regions within the range (either via a single SFENCE.VMA with rs1=x0, or with multiple SFENCE.VMA instructions with rs1!=x0), then update the PTE(s), as described in Section 12.2.1, unless any inconsistencies are known to be benign.
+
+- If any inconsistencies do exist, then the effect is the same as when SFENCE.VMA is used incorrectly: one of the translations will be chosen, but the choice is unpredictable.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: If the OS needs to update PTEs and any resulting inconsistencies are not known to be benign, the OS generally should mark all PTEs involved in the update invalid before issuing the SFENCE.VMA instruction or instructions that cover the update range.
+
+RULE 2: If the OS needs to update PTEs and any resulting inconsistencies are not known to be benign, the OS generally should update the PTEs only after issuing the SFENCE.VMA instruction or instructions that cover the update range.
+
+RULE 3: If the OS needs to update PTEs and any resulting inconsistencies are not known to be benign, the SFENCE.VMA operation should cover every 4 KiB region in the update range, either through one SFENCE.VMA instruction with rs1=x0 or through multiple SFENCE.VMA instructions with rs1!=x0.
+
+RULE 4: If inconsistent translations exist because SFENCE.VMA was not used correctly during a PTE update, one of the translations will be chosen, but the choice is unpredictable.
+======================================================= END - 14 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 15 ======================================================
+GLOBAL NUMBER: 15
+LOCAL NUMBER: 11
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- The SINVAL.VMA instruction invalidates any address-translation cache entries that an SFENCE.VMA instruction with the same values of rs1 and rs2 would invalidate.
+
+- When executed in order (but not necessarily consecutively) by a single hart, the sequence SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR has the same effect as a hypothetical SFENCE.VMA instruction in which:
+  - the values of rs1 and rs2 for the SFENCE.VMA are the same as those used in the SINVAL.VMA;
+  - reads and writes prior to the SFENCE.W.INVAL are considered to be those prior to the SFENCE.VMA; and
+  - reads and writes following the SFENCE.INVAL.IR are considered to be those subsequent to the SFENCE.VMA.
+
+- SINVAL.VMA requires the same permissions and raises the same exceptions as SFENCE.VMA. Consequently:
+  - An attempt to execute SFENCE.VMA in U-mode always raises an illegal-instruction exception.
+  - An attempt to execute SFENCE.VMA in S-mode or HS-mode when mstatus.TVM=1 raises an illegal-instruction exception.
+  - An attempt to execute SFENCE.VMA in VU-mode raises a virtual-instruction exception.
+  - When hstatus.VTVM=1, an attempt to execute SFENCE.VMA in VS-mode raises a virtual-instruction exception.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: For the same rs1 and rs2 values, SFENCE.VMA invalidates exactly the address-translation cache entries that SINVAL.VMA invalidates.
+
+RULE 2: When a single hart executes SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR in that order but not necessarily consecutively, the sequence has the same address-translation invalidation effect as an SFENCE.VMA using the rs1 and rs2 values of the SINVAL.VMA.
+
+RULE 3: When a single hart executes SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR in that order but not necessarily consecutively, reads and writes before SFENCE.W.INVAL are treated as reads and writes before the equivalent SFENCE.VMA.
+
+RULE 4: When a single hart executes SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR in that order but not necessarily consecutively, reads and writes after SFENCE.INVAL.IR are treated as reads and writes after the equivalent SFENCE.VMA.
+
+RULE 5: SFENCE.VMA requires the same execution permissions as SINVAL.VMA.
+
+RULE 6: SFENCE.VMA raises the same exceptions under the same conditions as SINVAL.VMA.
+
+RULE 7: An attempt to execute SFENCE.VMA in U-mode always raises an illegal-instruction exception.
+
+RULE 8: An attempt to execute SFENCE.VMA in S-mode when mstatus.TVM=1 raises an illegal-instruction exception.
+
+RULE 9: An attempt to execute SFENCE.VMA in HS-mode when mstatus.TVM=1 raises an illegal-instruction exception.
+
+RULE 10: An attempt to execute SFENCE.VMA in VU-mode raises a virtual-instruction exception.
+
+RULE 11: An attempt to execute SFENCE.VMA in VS-mode when hstatus.VTVM=1 raises a virtual-instruction exception.
+======================================================= END - 15 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 16 ======================================================
+GLOBAL NUMBER: 16
+LOCAL NUMBER: 12
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- SFENCE.VMA is a memory-management instruction that would normally be used to synchronize the hart's address-translation caches when a memory-resident PTE is changed from Invalid to Valid.
+
+- When the Svvptc extension is implemented, explicit stores by a hart that update the Valid bit of leaf and/or non-leaf PTEs from 0 to 1 and are visible to a hart will eventually become visible within a bounded timeframe to subsequent implicit accesses by that hart to such PTEs. Svvptc thereby relieves an operating system from executing SFENCE.VMA for such updates, making the execution of SFENCE.VMA redundant.
+
+- Synchronizing the hart's address-translation caches with other forms of updates to a memory-resident PTE, including when a PTE is changed from Valid to Invalid, requires the use of suitable memory-management instructions.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: After a memory-resident PTE is changed from Invalid to Valid, SFENCE.VMA normally can be used to synchronize the hart's address-translation caches.
+
+RULE 2: When Svvptc is implemented and an explicit store changes the Valid bit of a leaf PTE from 0 to 1 and becomes visible to a hart, SFENCE.VMA is redundant for that update because the update eventually becomes visible within a bounded timeframe to subsequent implicit accesses by that hart.
+
+RULE 3: When Svvptc is implemented and an explicit store changes the Valid bit of a non-leaf PTE from 0 to 1 and becomes visible to a hart, SFENCE.VMA is redundant for that update because the update eventually becomes visible within a bounded timeframe to subsequent implicit accesses by that hart.
+
+RULE 4: For a memory-resident PTE update other than an Svvptc-covered change of the Valid bit from 0 to 1, synchronizing the hart's address-translation caches requires SFENCE.VMA or another suitable memory-management instruction.
+
+RULE 5: When a memory-resident PTE is changed from Valid to Invalid, synchronizing the hart's address-translation caches requires SFENCE.VMA or another suitable memory-management instruction.
+======================================================= END - 16 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 17 ======================================================
+GLOBAL NUMBER: 17
+LOCAL NUMBER: 13
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+The hstatus field VTVM affects execution only in VS-mode and causes virtual-instruction exceptions instead of illegal-instruction exceptions.
+
+When VTVM=1, an attempt in VS-mode to execute SFENCE.VMA raises a virtual-instruction exception.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: The hstatus.VTVM field affects execution of SFENCE.VMA only in VS-mode.
+
+RULE 2: When hstatus.VTVM=1, an attempt to execute SFENCE.VMA in VS-mode raises a virtual-instruction exception instead of an illegal-instruction exception.
+======================================================= END - 17 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 18 ======================================================
+GLOBAL NUMBER: 18
+LOCAL NUMBER: 14
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+SFENCE.VMA applies only to the memory-management data structures controlled by the current satp (either the HS-level satp when V=0 or vsatp when V=1).
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: SFENCE.VMA applies only to memory-management data structures controlled by the current satp, which is the HS-level satp when V=0 and vsatp when V=1.
+======================================================= END - 18 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 19 ======================================================
+GLOBAL NUMBER: 19
+LOCAL NUMBER: 15
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- When V=0, the virtual-address argument is an HS-level virtual address, and the ASID argument is an HS-level ASID. SFENCE.VMA orders stores only to HS-level address-translation structures with subsequent HS-level address translations.
+
+- When V=1, the virtual-address argument to SFENCE.VMA is a guest virtual address within the current virtual machine, and the ASID argument is a VS-level ASID within the current virtual machine. The current virtual machine is identified by the VMID field of CSR hgatp, and the effective ASID can be considered to be the combination of this VMID with the VS-level ASID.
+
+- When V=1, SFENCE.VMA orders stores only to the VS-level address-translation structures with subsequent VS-stage address translations for the same virtual machine, i.e., only when hgatp.VMID is the same as when the SFENCE.VMA executed.
+
+- When PMP settings are modified in a manner that affects either the physical memory that holds page tables or the physical memory to which page tables point, M-mode software must synchronize the PMP settings with the virtual memory system. For HS-level address translation, this is accomplished by executing in M-mode an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0, after the PMP CSRs are written.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: When V=0, SFENCE.VMA interprets its virtual-address argument as an HS-level virtual address.
+
+RULE 2: When V=0, SFENCE.VMA interprets its ASID argument as an HS-level ASID.
+
+RULE 3: When V=0, SFENCE.VMA orders only stores to HS-level address-translation structures with subsequent HS-level address translations.
+
+RULE 4: When V=1, SFENCE.VMA interprets its virtual-address argument as a guest virtual address within the current virtual machine.
+
+RULE 5: When V=1, SFENCE.VMA interprets its ASID argument as a VS-level ASID within the current virtual machine.
+
+RULE 6: When V=1, the value of hgatp.VMID when SFENCE.VMA executes identifies the current virtual machine.
+
+RULE 7: When V=1, the effective ASID used by SFENCE.VMA can be considered the combination of hgatp.VMID and the VS-level ASID.
+
+RULE 8: When V=1, SFENCE.VMA orders only stores to VS-level address-translation structures with subsequent VS-stage address translations for which hgatp.VMID equals the value of hgatp.VMID when SFENCE.VMA executed.
+
+RULE 9: When PMP settings are modified in a manner that affects physical memory holding page tables used for HS-level address translation, M-mode software MUST synchronize the PMP settings with the virtual memory system by executing SFENCE.VMA in M-mode with rs1=x0 and rs2=x0 after writing the PMP CSRs.
+
+RULE 10: When PMP settings are modified in a manner that affects physical memory to which page tables used for HS-level address translation point, M-mode software MUST synchronize the PMP settings with the virtual memory system by executing SFENCE.VMA in M-mode with rs1=x0 and rs2=x0 after writing the PMP CSRs.
+======================================================= END - 19 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 20 ======================================================
+GLOBAL NUMBER: 20
+LOCAL NUMBER: 16
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- In VU-mode, attempts to execute a supervisor instruction (SRET or SFENCE) raise a virtual-instruction exception.
+
+- In VS-mode, attempts to execute an SFENCE.VMA instruction when hstatus.VTVM=1 raise a virtual-instruction exception.
+
+- Because TSR and TVM in mstatus are intended to impact only S-mode (HS-mode), they are ignored for determining exceptions in VS-mode.
+
+- On a virtual-instruction trap caused by SFENCE.VMA, mtval or stval is written the same as for an illegal-instruction trap.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: An attempt to execute SFENCE.VMA in VU-mode raises a virtual-instruction exception.
+
+RULE 2: An attempt to execute SFENCE.VMA in VS-mode when hstatus.VTVM=1 raises a virtual-instruction exception.
+
+RULE 3: When determining whether SFENCE.VMA execution in VS-mode raises an exception, mstatus.TSR is ignored.
+
+RULE 4: When determining whether SFENCE.VMA execution in VS-mode raises an exception, mstatus.TVM is ignored.
+
+RULE 5: When SFENCE.VMA causes a virtual-instruction trap that writes mtval, mtval is written in the same manner as for an illegal-instruction trap.
+
+RULE 6: When SFENCE.VMA causes a virtual-instruction trap that writes stval, stval is written in the same manner as for an illegal-instruction trap.
+======================================================= END - 20 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 21 ======================================================
+GLOBAL NUMBER: 21
+LOCAL NUMBER: 17
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Changes to xSSE take effect immediately; address-translation caches need not be synchronized with SFENCE.VMA instructions.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: SFENCE.VMA need not synchronize address-translation caches after a change to xSSE because changes to xSSE take effect immediately.
+======================================================= END - 21 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 22 ======================================================
+GLOBAL NUMBER: 22
+LOCAL NUMBER: 18
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Pointer masking is not applied to SFENCE.VMA. When SFENCE.VMA is invoked, it is the responsibility of the software to provide the correct address.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: SFENCE.VMA does not apply pointer masking to the provided address.
+
+RULE 2: When invoking SFENCE.VMA, software is responsible for providing the correct address.
+======================================================= END - 22 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 23 ======================================================
+GLOBAL NUMBER: 23
+LOCAL NUMBER: 19
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for SFENCE.VMA instruction, rewrite the following description as a list of rules. Each rule must explain about SFENCE.VMA instruction. Essentially, for each rule, it is about SFENCE.VMA instruction, not other things.
+
+Do not lose any information about SFENCE.VMA instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is SFENCE.VMA."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word SFENCE.VMA.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+Supervisor Memory-Management Instructions
+
+| funct7 | rs2 | rs1 | funct3 | rd    | opcode  | Instruction |
+|--------|-----|-----|--------|-------|---------|-------------|
+| 0001001| rs2 | rs1 | 000    | 00000 | 1110011 | SFENCE.VMA  |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: The provided description specifies only the encoding of SFENCE.VMA and provides no explicit, testable architectural behavior from which a behavioral rule can be extracted.
+======================================================= END - 23 =======================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 24 ======================================================
+GLOBAL NUMBER: 24
+LOCAL NUMBER: 1
+NAME: VLE32FF.V
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, for VLE32FF.V instruction, rewrite the following description as a list of rules. Each rule must explain about VLE32FF.V instruction. Essentially, for each rule, it is about VLE32FF.V instruction, not other things.
+
+Do not lose any information about VLE32FF.V instruction from the description. Read the text or the description carefully. Understand the context and the sentences. Do not lose any important information.
+
+For each rule, do not use any internal references like "According to Table 7," or "see Figure 3." Each rule must be one sentence only. Each rule must stand fully on its own without cross-references. Do not quote or refer to other rules. Essentially, each rule is one idea. Avoid a rule like this: "The instruction being described is VLE32FF.V."
+
+Do NOT refer to other rules by number, name, or description. Phrases such as "described in RULE N", "in the previous rule", "the rule above", "as stated earlier", or "the same condition as RULE N" are FORBIDDEN. If two rules share context or conditions, restate the shared context fully in each rule rather than referencing the other rule. Each rule must be fully self-contained and understandable in isolation, even if read out of order or extracted individually.
+
+Each rule should become a single testable statement.
+
+Each rule should be a separate atomic rule that expresses one architectural behavior or one event -> outcome relationship.
+
+If a sentence contains multiple independent events or clearly different behaviors, split them into separate rules so that each rule expresses one case.
+
+However, if a sentence describes a single event that can legitimately produce multiple alternative outcomes (e.g., "A may cause X or Y"), do NOT split the rule. In such cases, keep the alternatives in a single rule, because the specification is describing implementation-dependent outcomes where either result is acceptable.
+
+Each rule needs to be clear and detailed. Extract ONLY explicit, testable, normative rules about architectural behavior. A rule MUST describe behavioral semantics, not naming, encoding, or syntax.
+
+Remember, rules must describe architectural cause -> effect semantics (event -> architectural outcome).
+
+Remember, if a sentence contains multiple distinct behaviors or enumerated cases, split them into multiple rules so each rule expresses only one case.
+
+Exclude purely structural or descriptive properties (such as register width, naming, or existence) unless they imply observable architectural behavior.
+
+Preserve the original normative strength as much as possible:
+- Use MUST/MUST NOT only when the source clearly expresses a strict architectural requirement.
+- For reserved encodings or unsupported cases, prefer describing them as "reserved" or "illegal" behavior instead of forcing "MUST NOT be implemented", unless the source explicitly mandates it.
+- Do not unnecessarily strengthen the wording beyond what is needed for architectural correctness.
+
+Special handling for specification terms:
+- If the specification uses the term "reserved", preserve it exactly as "reserved".
+- Do NOT reinterpret "reserved" as "illegal", "must trap", or "MUST NOT be implemented".
+- A "reserved" encoding means the behavior is not defined by the specification, and the rule must not assume any specific outcome (such as an exception) unless explicitly stated.
+- Only use "illegal instruction" or exception behavior if the specification explicitly states it.
+
+OUTPUT FORMAT:
++ Each rule must begin with the word "RULE", followed by its number (e.g., "RULE 1: ", "RULE 2: ", "RULE 3: ", ...).
++ Do not give me any introduction.
++ Each rule must contain the word VLE32FF.V.
+
+Remember, output must be ASCII-only text.
+
+The following description:
+
+- Syntax: `vle32ff.v vd, (rs1), vm`
+  - `vd` destination
+  - `rs1` base address
+  - `vm` is mask encoding (`v0.t` or `<missing>`)
+  - 32-bit unit-stride fault-only-first load
+
+- VLE32FF.V executes as a regular load except that it will only take a trap caused by a synchronous exception on element 0.
+
+- If element 0 raises an exception, `vl` is not modified, and the trap is taken.
+
+- If an element > 0 raises an exception, the corresponding trap is not taken, and the vector length `vl` is reduced to the index of the element that would have raised an exception.
+
+- VLE32FF.V may update active destination elements past the element that causes trimming of the vector length, but not past the original vector length. The values of these spurious updates do not have to correspond to the values in memory at the addressed memory locations.
+
+- Non-idempotent memory locations can only be accessed when it is known the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+
+- Even when an exception is not raised, implementations are permitted to process fewer than `vl` elements and reduce `vl` accordingly, but if `vstart = 0` and `vl > 0`, then at least one element must be processed.
+
+- When VLE32FF.V takes a trap due to an interrupt, implementations should not reduce `vl` and should instead set a `vstart` value.
+
+- When VLE32FF.V would trigger a debug data-watchpoint trap on an element after the first, implementations should not reduce `vl` but instead should trigger the debug trap.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+RULE 1: VLE32FF.V performs a unit-stride vector load in which each processed memory element is 32 bits wide.
+
+RULE 2: VLE32FF.V behaves as a regular vector load except that a synchronous exception causes a trap only when the exception occurs on element 0.
+
+RULE 3: If element 0 raises a synchronous exception during VLE32FF.V, VLE32FF.V takes the corresponding trap and leaves vl unmodified.
+
+RULE 4: If an element with an index greater than 0 raises a synchronous exception during VLE32FF.V, VLE32FF.V does not take the corresponding trap and reduces vl to the index of that element.
+
+RULE 5: When VLE32FF.V trims vl because an element with an index greater than 0 raises a synchronous exception, VLE32FF.V may update active destination elements after that element but before the original vl limit.
+
+RULE 6: Any active destination element that VLE32FF.V spuriously updates after an element that causes vl trimming may receive a value that does not correspond to the value at its addressed memory location.
+
+RULE 7: VLE32FF.V may access a non-idempotent memory location only when it is known that the corresponding element load will not be restarted because of a trap or vector-length trimming.
+
+RULE 8: If no exception is raised during VLE32FF.V, an implementation may process fewer elements than specified by the initial vl and reduce vl accordingly.
+
+RULE 9: If no exception is raised during VLE32FF.V and execution begins with vstart = 0 and vl > 0, VLE32FF.V MUST process at least one element.
+
+RULE 10: When VLE32FF.V takes a trap due to an interrupt, the implementation SHOULD NOT reduce vl and SHOULD instead set vstart.
+
+RULE 11: When VLE32FF.V would trigger a debug data-watchpoint trap on an element with an index greater than 0, the implementation SHOULD NOT reduce vl and SHOULD trigger the debug trap.
+======================================================= END - 24 =======================================================

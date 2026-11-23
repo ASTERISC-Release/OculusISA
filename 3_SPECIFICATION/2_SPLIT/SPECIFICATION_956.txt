@@ -1,0 +1,31 @@
+## 3.9. Top external interrupt CSRs ( mtopei , stopei , vstopei )
+
+CSR mtopei interacts  directly  with  an  IMSIC's  machine-level  interrupt  file.  If  supervisor  mode  is implemented,  CSR stopei interacts  directly  with  the  supervisor-level  interrupt  file.  And  if  the  H extension  is  implemented  and  field  VGEIN  of hstatus is  the  number  of  an  implemented  guest interrupt file, vstopei interacts with the chosen guest interrupt file.
+
+The value of a *topei CSR ( mtopei , stopei , or vstopei ) indicates the interrupt file's current highestpriority  pending-and-enabled  interrupt  that  also  exceeds  the  priority  threshold  specified  by  its eithreshold register if eithreshold is not zero. Interrupts with lower identity numbers have higher priorities.
+
+A read of a *topei CSR returns zero either if no interrupt is both pending in the interrupt file's eip array and enabled in its eie array, or if eithreshold is not zero and no pending-and-enabled interrupt has an identity number less than the value of eithreshold . Otherwise, the value returned from a read of *topei has this format:
+
+bits 26:16
+
+bits 10:0
+
+All other bit positions are zeros.
+
+The interrupt identity reported in a *topei CSR is the minor identity for an external interrupt at the hart.
+
+<image>
+
+The  redundancy  in  the  value  read  from  a *topei CSR  is  consistent  with  the  Advanced PLIC, which returns both an interrupt identity number and its priority in the same format as above, but with the two components being independent of one another.
+
+The value of a *topei CSR is not affected by an interrupt file's eidelivery register or by any of mie , sie , hie , hgeie , or vsie .
+
+A  write  to  a *topei CSR claims the  reported  interrupt  identity  by  clearing  its  pending  bit  in  the interrupt  file.  The  value  written  is  ignored;  rather,  the  current  readable  value  of  the  register determines which interrupt-pending bit is cleared. Specifically, when a *topei CSR is written, if the register value has interrupt identity in bits 26:16, then the interrupt file's pending bit for interrupt is cleared. When a *topei CSR's value is zero, a write to the register has no effect.
+
+If a read and write of a *topei CSR are done together by a single CSR instruction (CSRRW, CSRRS, or CSRRC), the value returned by the read indicates the pending bit that is cleared.
+
+<image>
+
+It  is  almost  always a mistake to write to a *topei CSR without a simultaneous read to learn which interrupt was claimed. Note especially, if a read of a *topei register and a subsequent write to the register are done by two separate CSR instructions, then a higherpriority interrupt may become newly pending-and-enabled in the interrupt file between the two instructions, causing the write to clear the pending bit of the new interrupt and not the one reported by the read. Once the pending bit of the new interrupt is cleared, the interrupt is lost.
+
+If it is necessary first to read a *topei CSR and then subsequently claim the interrupt as a separate step, the claim can be safely done by clearing the pending bit in the eip array via *siselect and *sireg , instead of writing to *topei .

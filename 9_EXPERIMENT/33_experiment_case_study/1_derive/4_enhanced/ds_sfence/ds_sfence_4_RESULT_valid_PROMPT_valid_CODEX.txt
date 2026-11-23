@@ -1,0 +1,58 @@
+VALIDATION SUMMARY
+Total rules: 16
+Correct rules: 15
+Wrong rules: 1
+Correct percentage: 15 / 16 = 93.75%
+Wrong percentage: 1 / 16 = 6.25%
+
+RULE VALIDATION
+RULE 1: CORRECT
+Reason: SFENCE.VMA is a supervisor memory-management instruction; U-mode execution raises an illegal-instruction exception.
+
+RULE 2: CORRECT
+Reason: In VU-mode, attempts to execute a supervisor instruction such as SFENCE raise a virtual-instruction exception.
+
+RULE 3: CORRECT
+Reason: mstatus.TVM=1 traps S/HS virtual-memory management operations including SFENCE.VMA; TVM affects HS-mode, not VS-mode.
+
+RULE 4: CORRECT
+Reason: In VS-mode, hstatus.VTVM=1 causes execution of SFENCE.VMA to raise a virtual-instruction exception.
+
+RULE 6: CORRECT
+Reason: If satp.MODE is read-only zero, an implementation may raise illegal-instruction on SFENCE.VMA.
+
+RULE 7: CORRECT
+Reason: For rs1=x0, rs2=x0, the fence orders all page-table reads/writes for all address spaces and invalidates all address-translation cache entries for all address spaces.
+
+RULE 8: CORRECT
+Reason: For rs1=x0, rs2!=x0, the fence is ASID-selective, excludes global mappings, and invalidates matching entries except those containing global mappings.
+
+RULE 9: CORRECT
+Reason: For rs1!=x0, rs2=x0, the fence orders leaf PTEs corresponding to the virtual address for all address spaces and invalidates matching leaf translation-cache entries.
+
+RULE 10: CORRECT
+Reason: For rs1!=x0, rs2!=x0, the fence orders matching leaf PTEs for the specified ASID, excludes global mappings, and invalidates matching non-global entries.
+
+RULE 11: CORRECT
+Reason: If rs1 is not a valid virtual address, SFENCE.VMA has no effect and raises no exception for that reason.
+
+RULE 13: CORRECT
+Reason: If ASIDLEN < ASIDMAX, bits ASIDMAX-1:ASIDLEN of rs2 are ignored.
+
+RULE 14: CORRECT
+Reason: After a subsuming SFENCE.VMA, implicit reads may return any translation valid since the most recent subsuming SFENCE.VMA.
+
+RULE 15: CORRECT
+Reason: SFENCE.VMA does not necessarily order prior explicit accesses before subsequent explicit accesses in the global memory order.
+
+RULE 16: CORRECT
+Reason: When V=1, rs1 is a guest virtual address and rs2 is a VS-level ASID.
+
+RULE 17: CORRECT
+Reason: When V=1, SFENCE.VMA orders stores only to VS-level translation structures with later VS-stage translations for the same VMID.
+
+RULE 20: WRONG
+Reason: The manual says SFENCE.VMA orders local hart implicit references to memory-management data structures, not only implicit reads; the rule is too narrow even though its “not other harts” part is correct.
+
+WRONG RULES ONLY
+RULE 20: Too narrow; SFENCE.VMA concerns local implicit references, including reads and writes, not only implicit reads.

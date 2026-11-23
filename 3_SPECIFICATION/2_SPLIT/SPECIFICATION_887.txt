@@ -1,0 +1,29 @@
+## 22.3. Hypervisor Instructions
+
+The  hypervisor  extension  adds  virtual-machine  load  and  store  instructions  and  two  privileged  fence instructions.
+
+22.3.1. Hypervisor Virtual-Machine Load and Store Instructions
+
+<image>
+
+The hypervisor virtual-machine load and store instructions are valid only in M-mode or HS-mode, or in Umode when hstatus .HU=1. Each instruction performs an explicit memory access with an effective privilege mode of VS or VU. The effective privilege mode of the explicit memory access is VU when hstatus .SPVP=0, and  VS  when hstatus .SPVP=1.  As  usual  for  VS-mode  and  VU-mode,  two-stage  address  translation  is applied,  and  the  HS-level sstatus .SUM  is  ignored.  HS-level sstatus .MXR  makes  execute-only  pages readable  by  explicit  loads  for  both  stages  of  address  translation  (VS-stage  and  G-stage),  whereas vsstatus .MXR affects only the first translation stage (VS-stage).
+
+For every RV32I or RV64I load instruction, LB, LBU, LH, LHU, LW, LWU, and LD, there is a corresponding virtual-machine  load  instruction:  HLV.B,  HLV.BU,  HLV.H,  HLV.HU,  HLV.W,  HLV.WU,  and  HLV.D.  For every RV32I or RV64I store instruction, SB, SH, SW, and SD, there is a corresponding virtual-machine store instruction: HSV.B, HSV.H, HSV.W, and HSV.D. Instructions HLV.WU, HLV.D, and HSV.D are not valid for RV32, of course.
+
+Instructions  HLVX.HU  and  HLVX.WU  are  the  same  as  HLV.HU  and  HLV.WU,  except  that execute permission takes the place of read permission during address translation. That is, the memory being read must  be  executable  in  both  stages  of  address  translation,  but  read  permission  is  not  required.  For  the supervisor  physical  address  that  results  from  address  translation,  the  supervisor  physical  memory attributes must grant both execute and read permissions. (The supervisor physical memory attributes are the machine's  physical  memory  attributes  as  modified  by  physical  memory  protection,  Section  3.7,  for supervisor level.)
+
+HLVX cannot override machine-level physical memory protection (PMP), so attempting to read memory that PMP designates as execute-only still results in an access-fault exception.
+
+<image>
+
+Although HLVX instructions' explicit memory accesses require execute permissions, they still raise  the  same  exceptions  as  other  load  instructions,  rather  than  raising  fetch  exceptions instead.
+
+HLVX.WU  is  valid  for  RV32,  even  though  LWU  and  HLV.WU  are  not.  (For  RV32,  HLVX.WU  can  be considered a variant of HLV.W, as sign extension is irrelevant for 32-bit values.)
+
+The  memory  accesses  performed  by  the HLVX.* instructions  are  not  subject  to  pointer  masking  (see Chapter 25).
+
+<image>
+
+HLVX.* instructions,  designed for emulating implicit access to fetch instructions from guest memory,  perform  memory  accesses  that  are  exempt  from  pointer  masking  to  facilitate  this emulation. For the same reason, pointer masking does not apply when MXR is set.
+
+Attempts  to  execute  a  virtual-machine  load/store  instruction  (HLV,  HLVX,  or  HSV)  when  V=1  cause  a virtual-instruction  exception.  Attempts  to  execute  one  of  these  same  instructions  from  U-mode  when hstatus .HU=0 cause an illegal-instruction exception.

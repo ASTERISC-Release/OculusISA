@@ -1,0 +1,168 @@
+# Test Case Rule: RULE 121: In harts without additional user extensions requiring new state, the XS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+li t0, 0x18000
+csrs mstatus, t0
+csrr a0, mstatus
+li t1, 0x18000
+and a0, a0, t1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 122: Changing the setting of the FS field in mstatus has no effect on the contents of the floating-point register state.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x1800
+csrs mstatus, t0
+li t1, 0x1c00
+csrs mstatus, t1
+fmv.x.w a0, f0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 123: Setting the FS field in mstatus to Off does not destroy the floating-point state, and setting the FS field to Initial does not clear the floating-point contents.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x1c00
+csrs mstatus, t0
+li t1, 0x1800
+csrs mstatus, t1
+fmv.x.w a0, f0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 124: Changing the setting of the VS field in mstatus has no effect on the contents of the vector register state.
+##### ASSEMBLY #####
+li a0, 0x12345678
+vfmv.v.x v0, a0
+fmv.x.v a0, v0
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x2000
+csrs mstatus, t1
+fmv.x.v a0, v0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 125: The FS field in mstatus is set directly by privileged code when resuming a user context, while the XS field in mstatus is set indirectly by writing to the status register of the individual extensions.
+##### ASSEMBLY #####
+nop # Skipped because the rule describes a mechanism of setting state rather than an observable state change.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 126: Machine mode and Supervisor mode share a single copy of the FS, VS, and XS bits in mstatus.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, mstatus
+li t1, 0x1800
+and a0, a0, t1
+# Result: a0 = 0x1800
+
+# Test Case Rule: RULE 127: The SD bit in mstatus is read-only and is set when either the FS, VS, or XS bits in mstatus encode a Dirty state (i.e., SD = (FS==0b11 OR VS==0b11 OR XS==0b11)).
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+csrr a0, mstatus
+li t1, 0x100
+and a0, a0, t1
+# Result: a0 = 0x100
+
+# Test Case Rule: RULE 128: In mstatus, the encoding 0 for FS and VS means Off, 1 means Initial, 2 means Clean, and 3 means Dirty.
+##### ASSEMBLY #####
+nop # Skipped because the rule defines the meaning of encoded values which is not directly observable without testing specific instructions like fld/vle.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 129: In mstatus, the encoding 0 for XS means All off, 1 means None dirty or clean with some on, 2 means None dirty with some clean, and 3 means Some dirty.
+##### ASSEMBLY #####
+nop # Skipped because the rule defines the meaning of encoded values which is not directly observable without testing specific instructions.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 130: When an extension's status field in mstatus is set to Off, any instruction that attempts to read or write the corresponding state causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x0000
+csrs mstatus, t0
+fmv.x.w a0, f0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 131: If the FS, VS, or XS field in mstatus is Off, executing an instruction that reads the corresponding state causes an exception.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x0000
+csrs mstatus, t0
+fmv.x.w a0, f0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 132: If the FS, VS, or XS field in mstatus is Off, executing an instruction that may modify the corresponding state causes an exception.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x0000
+csrs mstatus, t0
+li a1, 0x99999999
+fmv.x.w f0, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 133: If the FS, VS, or XS field in mstatus is Initial, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x1800
+csrs mstatus, t0
+li a1, 0x99999999
+fmv.x.w f0, a1
+csrr a0, mstatus
+li t1, 0x100
+and a0, a0, t1
+# Result: a0 = 0x100
+
+# Test Case Rule: RULE 134: If the FS, VS, or XS field in mstatus is Clean, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x1c00
+csrs mstatus, t0
+li a1, 0x99999999
+fmv.x.w f0, a1
+csrr a0, mstatus
+li t1, 0x100
+and a0, a0, t1
+# Result: a0 = 0x100
+
+# Test Case Rule: RULE 135: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction that may modify the corresponding state leaves the field in the Dirty state.
+##### ASSEMBLY #####
+li a0, 0x12345678
+fmv.x.w f0, a0
+li t0, 0x1800
+csrs mstatus, t0
+li a1, 0x99999999
+fmv.x.w f0, a1
+csrr a0, mstatus
+li t1, 0x100
+and a0, a0, t1
+# Result: a0 = 0x100
+
+# Test Case Rule: RULE 136: If the FS, VS, or XS field in mstatus is Off, executing an instruction to unconfigure the unit causes an exception.
+##### ASSEMBLY #####
+nop # Skipped because the specific "unconfigure" instruction for the extension is not specified in the architectural rule.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 137: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to unconfigure the unit leaves the field in the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because the specific "unconfigure" instruction for the extension is not specified in the architectural rule.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 138: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because the specific "unconfigure" instruction for the extension is not specified in the architectural rule.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 139: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because the specific "unconfigure" instruction for the extension is not specified in the architectural rule.
+# Result: x0 = 0
+
+# Test Case Rule: RULE 140: If the FS, VS, or XS field in mstatus is Off, executing an instruction to disable the unit leaves the field in the Off state.
+##### ASSEMBLY #####
+nop # Skipped because the specific "disable" instruction for the extension is not specified in the architectural rule.
+# Result: x0 = 0

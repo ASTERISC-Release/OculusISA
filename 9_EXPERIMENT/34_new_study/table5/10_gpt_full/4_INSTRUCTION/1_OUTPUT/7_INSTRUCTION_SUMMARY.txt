@@ -1,0 +1,11 @@
+INSTRUCTION: CSRRWI
+SUMMARY: CSRRWI writes the addressed CSR with the XLEN-bit zero-extended 5-bit unsigned immediate, including writing zero when the immediate is zero. If rd is not x0, it receives the zero-extended pre-instruction CSR value; if rd is x0, no CSR read or read side effects occur. CSR field write side effects still occur, the explicit write replaces any concurrent instruction-induced update, and architectural observation sees either all applicable read/write effects or none.
+
+INSTRUCTION: FCVT.W.D
+SUMMARY: FCVT.W.D converts the double-precision value in floating-point register rs1 to a signed 32-bit integer in integer register rd using the rounding mode specified by rm. Finite out-of-range values and infinities produce the corresponding signed endpoint, while NaNs produce 2^31-1; these cases set the invalid-operation flag. On RV64, the result is sign-extended to the full register width, and the instruction raises the same floating-point exception flags as FCVTMOD.W.D for the same input.
+
+INSTRUCTION: SFENCE.VMA
+SUMMARY: SFENCE.VMA uses rs1 as a virtual-address operand, and an invalid virtual address in rs1 does not itself cause an exception. Execution in U-mode is always illegal; in S-mode it is permitted when mstatus.TVM=0 and illegal when TVM=1, while HS-mode is also illegal when TVM=1. Under virtualization, execution in VU-mode or in VS-mode with hstatus.VTVM=1 raises virtual-instruction exception code 22, with VS-mode checks ignoring mstatus.TSR and mstatus.TVM. SINVAL.VMA has the same exception behavior under the same conditions, and virtual-instruction traps write mtval or stval as corresponding illegal-instruction traps would.
+
+INSTRUCTION: VLE32FF.V
+SUMMARY: VLE32FF.V loads 32-bit destination elements from consecutive addresses starting at x[rs1], with element i read from x[rs1] + 4*i. A synchronous exception on element 0 traps and leaves vl unchanged, while an exception on a later element is suppressed and reduces vl to that element's index. Trimming vl does not update destination elements beyond the original vector length. With vstart=0 and vl>0, at least one element is processed if no exception is raised.

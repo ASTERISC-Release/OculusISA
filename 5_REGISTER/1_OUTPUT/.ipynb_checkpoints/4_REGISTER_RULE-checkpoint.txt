@@ -1,0 +1,74 @@
+REGISTER: htval
+RULE 1: If the processor is executing in HS-mode, accesses to the CSR htval MUST be permitted.
+RULE 2: If the processor is executing in VS-mode, any attempt to access the CSR htval MUST cause an illegal-instruction trap.
+RULE 3: If a trap is taken into HS-mode, htval is written with exception-specific information to assist software in handling the trap.
+RULE 4: If a guest-page-fault trap is taken into HS-mode, htval is written with either zero or the guest physical address that faulted, right-shifted by two bits.
+RULE 5: If a trap other than a guest-page-fault is taken into HS-mode, htval is set to zero.
+RULE 6: If an implicit memory-access fault arises during VS-stage address translation, htval is written with the guest physical address of the implicit memory access that faulted.
+RULE 7: If a misaligned load or store causes a guest-page-fault, a nonzero value in htval corresponds to the fault-ing portion of the access as indicated by the virtual address in stval.
+RULE 8: If an instruction guest-page-fault occurs on a variable-length-instruction system, a nonzero value in htval corresponds to the fault-ing portion of the instruction as indicated by the virtual address in stval.
+RULE 9: Whenever a guest physical address is written to htval, the address is right-shifted by two bits before being stored.
+RULE 10: If the fault is due to an implicit memory access for VS-stage address translation, the least-significant two bits of the value written to htval are zeros.
+RULE 11: If the fault is not due to an implicit memory access for VS-stage address translation, the least-significant two bits of the value written to htval are ordinarily the same as the least-significant two bits of the faulting virtual address in stval.
+RULE 12: htval is a WARL register that MUST be able to hold zero and MAY be capable of holding only an arbitrary subset of other two-bit-shifted guest physical addresses.
+RULE 13: Software that writes a value to htval SHOULD read back from htval to confirm the stored value unless it has reason to assume otherwise.
+RULE 14: If a guest physical address is written to htval on a trap, htval becomes the address shifted right by 2 bits.
+RULE 15: If a guest physical address is supplied in rs1 for the operation that writes to htval, htval receives the rs1 address shifted right by 2 bits.
+RULE 16: If a guest-page-fault trap occurs, htval is written with either zero or with the faulting guest physical address shifted right by two bits.
+RULE 17: If a guest-page fault occurs and the fault is not caused by an implicit memory access for VS-stage address translation, htval MUST be written with a nonzero guest physical address.
+RULE 18: The nonzero guest physical address written to htval shall correspond exactly to the virtual address written to mtval (or stval).
+RULE 19: If a trap is taken into HS-mode, the architecture writes the htval CSR as part of the trap-entry actions.
+RULE 20: If a guest-page-fault exception is caused by an implicit VS-stage address-translation access, the implementation may write a nonzero value to htval.
+RULE 21: If htval is written because of a guest-page-fault exception caused by an implicit VS-stage address-translation access, the value written to htval must be the faulting guest physical address.
+RULE 22: If htval is nonzero and the fault is due to an implicit VS-stage address-translation access, then the trap-instruction CSR htinst must be written with a pseudoinstruction taken from Table 49, and zero is not allowed.
+
+
+REGISTER: seed
+RULE 1: The seed CSR is located at CSR address 0x015.
+RULE 2: When the seed CSR is read, it returns a value containing up to 16 physical entropy bits.
+RULE 3: The bits returned by the seed CSR may be used to seed cryptographic random bit generators.
+RULE 4: The seed CSR provides an interface to a physical entropy source that complies with NIST SP 800-90B or BSI AIS-31.
+RULE 5: The seed CSR is intended to be written with conditioned entropy, typically the output of the entropy source processed by SHA-2 or SHA-3, to seed a cryptographically secure deterministic random bit generator such as an AES-based CTR_DRBG.
+RULE 6: If a read-only CSR-access instruction (CSRRS or CSRRC with rs1 = x0, or CSRRSI or CSRRCI with uimm = 0) attempts to access seed, an illegal-instruction exception MUST be raised.
+RULE 7: Any CSR-access instruction other than the read-only forms listed MAY be used to access seed.
+RULE 8: When a CSR-access instruction writes to seed, the written value supplied in rs1 or uimm MUST be ignored.
+RULE 9: If a read or write access to seed is performed outside M mode without explicit permission, an illegal-instruction exception MUST be raised.
+RULE 10: When OPST (seed[31:30]) equals ES16 (binary 10), each read of seed MUST return an entropy value (seed[15:0]) that represents unique randomness, even if its numeric value repeats a previously returned value.
+RULE 11: If OPST (seed[31:30]) is not ES16, seed[15:0] MUST be zero.
+RULE 12: A read of seed MUST clear the entropy field (seed[15:0]) and set OPST (seed[31:30]) to WAIT (binary 01), unless entropy is immediately available, in which case OPST MAY be set to ES16.
+RULE 13: When OPST is BIST, WAIT, or DEAD, a read of seed MAY leave OPST unchanged.
+RULE 14: If a virtual source implements the seed CSR, then it may trap accesses to the seed CSR and emulate them without requiring direct access to a physical entropy source.
+RULE 15: When the seed CSR is read, the returned value must have at least 256-bit security, even if it is generated as cryptographically secure pseudorandomness instead of real entropy.
+RULE 16: If an implementation of the seed CSR limits the security strength, then it shall not reduce the security strength to less than 256 bits.
+RULE 17: If the security level provided by the seed CSR would be under 256 bits, then the seed CSR interface must not be available.
+RULE 18: If an instruction attempts to access the seed CSR from U, S, or HS mode and the corresponding access-control bit (useed for U, sseed for S/HS) is not set to 1, the processor MUST raise an illegal-instruction exception.
+RULE 19: Any attempted access to the seed CSR from a virtual mode (VS or VU) MUST raise an exception.
+RULE 20: If a read-only instruction accesses the seed CSR, the processor MUST raise an illegal-instruction exception.
+RULE 21: If a read-write instruction accesses the seed CSR in a virtual mode (VS or VU) and mseccfg.sseed=1, the processor MUST raise a virtual-instruction exception.
+RULE 22: If a read-write instruction accesses the seed CSR in a virtual mode (VS or VU) and mseccfg.sseed=0, the processor MUST raise an illegal-instruction exception.
+RULE 23: The value of mseccfg.useed MUST have no effect on the exception type for accesses to the seed CSR from virtual modes VS or VU.
+RULE 24: In machine mode, a read-write instruction can access the seed CSR without raising an exception.
+RULE 25: In machine mode, a read-only instruction that accesses the seed CSR MUST raise an illegal-instruction exception.
+RULE 26: In user mode, if mseccfg.useed=0, any instruction that accesses the seed CSR MUST raise an illegal-instruction exception.
+RULE 27: In user mode, if mseccfg.useed=1, a read-write instruction that accesses the seed CSR MUST NOT raise an exception.
+RULE 28: In supervisor or hypervisor mode, if mseccfg.sseed=0, any instruction that accesses the seed CSR MUST raise an illegal-instruction exception.
+RULE 29: In supervisor or hypervisor mode, if mseccfg.sseed=1, a read-write instruction that accesses the seed CSR MUST NOT raise an exception.
+RULE 30: If user mode is not implemented, the mseccfg.useed bit MUST be hardwired to zero.
+RULE 31: If supervisor or hypervisor mode is not implemented, the mseccfg.sseed bit MUST be hardwired to zero.
+RULE 32: The mseccfg.sseed and mseccfg.useed bits MUST have a defined reset value and MUST NOT be in an undefined state after reset.
+RULE 33: If the Zkr extension is not implemented, the mseccfg.sseed and mseccfg.useed bits MUST be hardwired to zero.
+RULE 34: If the seed CSR is accessed, its latency SHOULD be independent of the ES16 state output entropy bits.
+RULE 35: When software reads the seed CSR, the returned value is obtained from an Entropy Source interface rather than from a stateful random number generator.
+RULE 36: When software reads the seed CSR, the Entropy Source interface can support arbitrary security levels.
+RULE 37: If software reads the seed CSR, the implementation must flush the secret entropy bits.
+RULE 38: Software must perform a write operation to the seed CSR.
+RULE 39: If the two-bit fault field derived from seed[31:0] equals 11, then the seed CSR indicates a DEAD fault condition.
+RULE 40: If the two-bit fault field derived from seed[31:0] equals 00, then the seed CSR indicates a BIST fault condition.
+RULE 41: When software reads the seed CSR, the value returned is produced by the Entropy Source.
+RULE 42: The seed CSR’s Entropy Source includes a noise source (step 1).
+RULE 43: The seed CSR’s Entropy Source includes a sampling digitizer (step 2).
+RULE 44: The seed CSR’s Entropy Source includes continuous health tests (step 3).
+RULE 45: The seed CSR’s Entropy Source includes a non-cryptographic conditioner (step 4).
+RULE 46: If a cryptographic conditioner (step 5) is implemented, it is part of the seed CSR’s Entropy Source.
+RULE 47: If NOISE_TEST = 1 in mnoise, then the seed CSR must not return anything via ES16.
+RULE 48: If NOISE_TEST = 1 in mnoise and the source is not DEAD, then the seed CSR should be in BIST state.

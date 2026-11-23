@@ -1,0 +1,88 @@
+# Extension Must Be Active: NONE
+csrr a0, mseccfg
+# Result: mcause = 0
+
+# Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr a0, hstatus
+# Result: mcause = 0
+
+# Extension Must Be Active: NONE
+li a0, -1
+csrw scounteren, a0
+# Result: scounteren != -1 & scounteren != 0xffffffff
+
+# Extension Must Be Active: NONE
+li a0, -1
+csrw hcounteren, a0
+# Result: hcounteren != -1 & hcounteren != 0xffffffff
+
+# Extension Must Be Active: NONE
+li a0, 1 << 20
+csrs mstatus, a0
+call machine_to_supervisor
+csrr a1, satp
+# Result: mcause = 2
+
+# Extension Must Be Active: NONE
+li a0, 1 << 20
+csrs mstatus, a0
+call machine_to_supervisor
+csrr a1, hgatp
+# Result: mcause = 2
+
+# Extension Must Be Active: NONE
+call machine_to_user
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Extension Must Be Active: NONE
+li a0, 1 << 22
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x400000
+
+# Extension Must Be Active: NONE
+li a0, 1 << 21
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x200000
+
+# Extension Must Be Active: NONE
+li a0, 1 << 44
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0x100000000000
+
+# Extension Must Be Active: NONE
+li a0, 1 << 60
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0
+
+# Extension Must Be Active: NONE
+li a0, 2 << 0
+csrs vstvec, a0
+csrr a1, vstvec
+and a0, a0, a1
+# Result: a0 = 0
+
+# Extension Must Be Active: NONE
+call machine_to_supervisor
+li a0, -1
+csrw hgatp, a0
+# Result: hgatp != -1 & hgatp != 0xffffffff
+
+# Extension Must Be Active: NONE
+csrr a0, seed
+# Result: mcause = 2
+
+# Extension Must Be Active: V
+li a0, -1
+csrw vxrm, a0
+csrr a1, vxrm
+# Result: vxrm[63:2] = 0

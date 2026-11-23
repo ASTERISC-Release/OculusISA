@@ -1,0 +1,30 @@
+## 4.9.2. Debug PC (dpc, at 0x7b1)
+
+Upon  entry  to  debug  mode,  dpc  is  updated  with  the  virtual  address  of  the  next  instruction  to  be executed. The behavior is described in more detail in Table 9.
+
+Table 9. Virtual address in DPC.
+
+| Cause          | Virtual Address in DPC                                                                                                                                                                                                                                                    |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ebreak         | Address of the ebreak instruction                                                                                                                                                                                                                                         |
+| single step    | Address of the instruction that would be executed next if no debugging was going on. Ie. pc + 4 for 32-bit instructions that don't change program flow, the destination PC on taken jumps/branches, etc.                                                                  |
+| trigger module | The address of the next instruction to be executed at the time that debug mode was entered. If the trigger is mcontrol and timing is 0 or if the trigger is mcontrol6 and hit1 is 0, this corresponds to the address of the instruction which caused the trigger to fire. |
+| halt request   | Address of the next instruction to be executed at the time that debug mode was entered.                                                                                                                                                                                   |
+
+Executing the Program Buffer may cause the value of dpc to become UNSPECIFIED. If that is the case, it must be possible to read/write dpc using an abstract command with postexec not set. The debugger must attempt to save dpc between halting and executing a Program Buffer, and then restore dpc before leaving Debug Mode.
+
+<image>
+
+Allowing dpc to become UNSPECIFIED upon Program Buffer execution allows for direct implementations that don't have a separate PC register, and do need to use the PC when executing the Program Buffer.
+
+If  the  Access  Register  abstract  command  supports  reading  dpc  while  the  hart  is  running,  then  the value read should be the address of a recently executed instruction.
+
+If  the  Access  Register  abstract  command  supports  writing  dpc  while  the  hart  is  running,  then  the executing program should jump to the written address shortly after the write occurs.
+
+The writability of dpc follows the same rules as mepc as defined in the Privileged Spec. In particular, dpc  must  be  able  to  hold  all  valid  virtual  addresses  and  the  writability  of  the  low  bits  depends  on IALIGN.
+
+When resuming, the hart's PC is updated to the virtual address stored in dpc. A debugger may write dpc to change where the hart resumes.
+
+This CSR is read/write.
+
+<image>

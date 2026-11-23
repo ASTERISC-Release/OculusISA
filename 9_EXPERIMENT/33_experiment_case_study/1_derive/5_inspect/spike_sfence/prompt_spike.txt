@@ -1,0 +1,136 @@
+You are an expert RISC-V ISA conformance analyst and source-code path extractor.
+
+Task:
+Given Spike RISC-V source code, extract the architecturally relevant execution paths for the target.
+
+Target: SFENCE.VMA
+
+Source restriction:
+Use only the provided Spike source code and your pretrained knowledge of C/C++, RISC-V terminology, and source-code reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided source code.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Spike source code is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Spike source code, follow the provided Spike source code.
+
+Input:
+The input is the provided Spike source code below.
+
+BEGIN SPIKE SOURCE CODE
+
+// File: riscv/insns/sfence_vma.h
+
+require_extension('S');
+require(p->has_mmu());
+
+if (STATE.v) {
+if (STATE.prv == PRV_U || get_field(STATE.hstatus->read(), HSTATUS_VTVM))
+require_novirt();
+} else {
+require_privilege(get_field(STATE.mstatus->read(), MSTATUS_TVM) ? PRV_M : PRV_S);
+}
+
+MMU.flush_tlb();
+
+// File: riscv/insns/sinval_vma.h
+
+require_extension(EXT_SVINVAL);
+#include "sfence_vma.h"
+
+// File: riscv/mmu.cc
+
+void mmu_t::flush_tlb()
+{
+memset(tlb_insn, -1, sizeof(tlb_insn));
+memset(tlb_load, -1, sizeof(tlb_load));
+memset(tlb_store, -1, sizeof(tlb_store));
+memset(pte_cache, -1, sizeof(pte_cache));
+
+flush_icache();
+}
+
+// File: riscv/mmu.h
+
+void flush_tlb();
+void flush_icache();
+
+// File: riscv/encoding.h
+
+#define MATCH_SFENCE_VMA 0x12000073
+#define MASK_SFENCE_VMA 0xfe007fff
+
+DECLARE_INSN(sfence_vma, MATCH_SFENCE_VMA, MASK_SFENCE_VMA)
+
+// File: riscv/riscv.mk.in
+
+riscv_insn_priv = 
+sfence_vma
+
+// File: disasm/disasm.cc
+
+static void NOINLINE add_sfence_insn(...)
+{
+d->add_insn(new disasm_insn_t(name, match, mask, {&xrs1, &xrs2}));
+}
+
+#define DEFINE_SFENCE_TYPE(code) add_sfence_insn(...)
+
+if (ext_enabled('S')) {
+DEFINE_NOARG(sret);
+DEFINE_SFENCE_TYPE(sfence_vma);
+}
+
+END SPIKE SOURCE CODE
+
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the function, method, macro, or code region that implements the target.
+2. Identify the entry point and all relevant inputs, including instruction operands, privilege state, CSR state, extension state, memory state, and architectural mode state.
+3. Follow the control flow of the provided source code.
+4. Identify each architecturally distinct path through the source code.
+5. For each path, identify the path conditions.
+6. For each path, identify the source-code actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by implementation detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided source code.
+10. If the provided source code is incomplete for the target, extract only the paths supported by the provided source code.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct source-code behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on source-code behavior, not on the RISC-V specification unless the source code explicitly implements that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, logging-only, helper-only, debug-only, or performance-only paths.
+Do not include implementation details unless they affect an architecturally visible outcome.
+If multiple source-code branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one source-code branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct paths for the target that can be inferred from the provided Spike source code.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Source entry: <function, method, macro, or code region>
+Path condition: <explicit condition under which this path is taken>
+Source behavior: <concise source-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

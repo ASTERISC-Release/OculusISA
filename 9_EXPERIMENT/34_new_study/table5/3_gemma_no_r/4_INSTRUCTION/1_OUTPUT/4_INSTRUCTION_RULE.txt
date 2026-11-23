@@ -1,0 +1,121 @@
+INSTRUCTION: CSRRWI
+RULE 1: The CSRRWI instruction atomically reads-modifies-writes a single CSR specified by a 12-bit field in bits 31-20 of the instruction.
+RULE 2: The CSRRWI instruction updates the CSR using an XLEN-bit value obtained by zero-extending a 5-bit unsigned immediate (uimm[4:0]) encoded in the rs1 field.
+RULE 3: The CSRRWI instruction always writes to the CSR regardless of the rd or uimm values.
+RULE 4: If rd is not x0, the CSRRWI instruction reads the CSR, zero-extends the value to XLEN bits, and writes it to integer register rd.
+RULE 5: If rd = x0, the CSRRWI instruction shall not read the CSR and shall not cause any side effects that might occur on a CSR read.
+RULE 6: The CSRRWI instruction actions side effects for all fields within the written CSR.
+RULE 7: The assembler pseudoinstruction CSRWI csr, uimm is encoded as CSRRWI x0, csr, uimm.
+RULE 8: A register r (other than x0) is a source register for the CSRRWI instruction if the csr field in the opcode is set to r, unless the rd field is set to x0.
+RULE 9: A register r (other than x0) is a destination register for the CSRRWI instruction if the rd field in the opcode is set to r.
+RULE 10: A register r (other than x0) is a destination register for the CSRRWI instruction if the csr field in the opcode is set to r, provided that the uimm[4:0] field is not set to zero.
+RULE 11: The CSRRWI instruction may have a source register if r is a CSR and is an implicit source register for CSRRWI as defined in Section 18.3.
+RULE 12: The CSRRWI instruction may have a source register if r is a CSR that aliases with another source register for CSRRWI.
+RULE 13: The CSRRWI instruction may have a destination register if r is a CSR and is an implicit destination register for CSRRWI as defined in Section 18.3.
+RULE 14: The CSRRWI instruction may have a destination register if r is a CSR that aliases with another destination register for CSRRWI.
+
+INSTRUCTION: FCVT.W.D
+RULE 1: FCVT.W.D is encoded in the OP-FP major opcode space.
+RULE 2: FCVT.W.D converts a double-precision floating-point number in floating-point register rs1 to a signed 32-bit integer in integer register rd.
+RULE 3: For RV64, FCVT.W.D sign-extends the 32-bit result.
+RULE 4: FCVT.W.D rounds according to the rm field.
+RULE 5: The range of valid inputs and the behavior for invalid inputs for FCVT.W.D are the same as for FCVT.int.S.
+RULE 6: The FCVT.W.D instruction serves as the basis for the definition of the FCVTMOD.W.D instruction.
+RULE 7: Floating-point exception flags are raised by FCVTMOD.W.D in the same manner as they would be for FCVT.W.D with the same input operand.
+RULE 8: FCVTMOD.W.D is encoded like FCVT.W.D, except that the rs2 field is set to 8 and the rm field is set to 1 (RTZ).
+
+INSTRUCTION: SFENCE.VMA
+RULE 1: The interaction of the memory model with SFENCE.VMA is not yet formalized.
+RULE 2: The formalization of SFENCE.VMA may be included in a future revision of the specification.
+RULE 3: SFENCE.VMA is an instruction that orders stores.
+RULE 4: Invalidate, clean, and flush operations are not ordered by SFENCE.VMA.
+RULE 5: M-mode software must execute an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 if supervisor-level memory management data structures (such as page tables) remain in use across a change to the SBE bit.
+RULE 6: An additional SFENCE.VMA is not necessary when SBE is changed during world switches, provided that neither the old nor new memory-management data structures will be reinterpreted in a different endianness, beyond what is ordinarily required for a world switch.
+RULE 7: If the TVM bit is set to 1, executing an SFENCE.VMA instruction while in S-mode will raise an illegal-instruction exception.
+RULE 8: If the TVM bit is set to 0, the execution of an SFENCE.VMA instruction is permitted in S-mode.
+RULE 9: Trapping the SFENCE.VMA instruction provides the necessary hooks to lazily populate shadow page tables.
+RULE 10: Executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with respect to the altered interpretation of page-table entries' PBMT fields after changing menvcfg.PBMTE.
+RULE 11: Executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 suffices to synchronize address-translation caches with respect to the altered interpretation of page-table entries' A/D bits after changing menvcfg.ADUE.
+RULE 12: An SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 must be executed after PMP CSRs are written to synchronize PMP settings with the virtual memory system and any PMP or address-translation caches.
+RULE 13: No SFENCE.VMA is needed if page-based virtual memory is not implemented, as memory accesses check PMP settings synchronously.
+RULE 14: The SFENCE.VMA instruction must be used to ensure that updates to address-translation data structures are observed by subsequent implicit reads to those structures by a hart.
+RULE 15: Translations that began while satp was active are not required to complete or terminate when satp is no longer active, unless an SFENCE.VMA instruction matching the address and ASID is executed.
+RULE 16: Because writing to satp does not imply the invalidation of address-translation caches or ordering constraints between page-table updates and translations, it may be necessary to execute an SFENCE.VMA instruction before or after writing to satp if an ASID is reused or page tables have been modified.
+RULE 17: The SFENCE.VMA instruction is used to synchronize updates to in-memory memory-management data structures with current execution and to invalidate entries in the hart's address-translation cache.
+RULE 18: Executing an SFENCE.VMA guarantees that previous stores visible to the current RISC-V hart are ordered before certain implicit references to memory-management data structures by subsequent instructions in that hart.
+RULE 19: SFENCE.VMA orders only the local hart's implicit references to memory-management data structures; therefore, other harts must be notified separately when these structures are modified.
+RULE 20: If rs1 = x0 and rs2 = x0, SFENCE.VMA orders all reads and writes to any level of the page tables for all address spaces and invalidates all address-translation cache entries for all address spaces.
+RULE 21: If rs1 = x0 and rs2 ≠ x0, SFENCE.VMA orders all reads and writes to any level of the page tables and invalidates address-translation cache entries only for the address space identified by rs2, excluding global mappings.
+RULE 22: If rs1 ≠ x0 and rs2 = x0, SFENCE.VMA orders only reads and writes to leaf page table entries corresponding to the virtual address in rs1 for all address spaces and invalidates corresponding address-translation cache entries for all address spaces.
+RULE 23: If rs1 ≠ x0 and rs2 ≠ x0, SFENCE.VMA orders only reads and writes to leaf page table entries corresponding to the virtual address in rs1 for the address space identified by rs2 and invalidates corresponding cache entries, excluding global mappings.
+RULE 24: If the value in rs1 is not a valid virtual address, the SFENCE.VMA instruction has no effect and no exception is raised.
+RULE 25: Implementations may "over-fence" by treating SFENCE.VMA as having rs1 = x0 and/or rs2 = x0, such as performing a global fence regardless of the register values.
+RULE 26: For SFENCE.VMA, when rs2 ≠ x0, bits SXLEN-1:ASIDMAX are reserved and should be zeroed by software/ignored by implementations, and bits ASIDMAX+1:ASIDLEN shall be ignored if ASIDLEN < ASIDMAX.
+RULE 27: An implicit read of memory-management data structures may return any translation that was valid at any time since the most recent subsuming SFENCE.VMA.
+RULE 28: SFENCE.VMA does not necessarily place prior explicit accesses before subsequent explicit accesses in the global memory order, despite ordering prior explicit accesses before subsequent implicit accesses.
+RULE 29: Changes to sstatus fields SUM and MXR, changes to satp.ASID, and changing satp.MODE between Bare and other modes take effect immediately without needing an SFENCE.VMA instruction.
+RULE 30: No SFENCE.VMA is required after enabling or disabling pointer masking.
+RULE 31: In implementations where satp.MODE is read-only zero (always Bare), executing an SFENCE.VMA instruction might raise an illegal-instruction exception.
+RULE 32: When recycling an ASID, software should execute SFENCE.VMA with rs1 = x0 and rs2 set to the recycled ASID.
+RULE 33: If ASIDs are not provided or ASID 0 is always used, software should execute SFENCE.VMA with rs1 = x0 after every satp write.
+RULE 34: When modifying a non-leaf PTE, software should execute SFENCE.VMA with rs1 = x0; rs2 must be x0 if any PTE in the traversal path has the G bit set, otherwise rs2 should be the target ASID.
+RULE 35: When modifying a leaf PTE, software should execute SFENCE.VMA with rs1 set to a virtual address within the page; rs2 must be x0 if any PTE in the traversal path has the G bit set, otherwise rs2 should be the target ASID.
+RULE 36: For increasing permissions on a leaf PTE or changing an invalid PTE to a valid leaf, software may execute the SFENCE.VMA lazily.
+RULE 37: Global mappings do not need to be flushed from local address-translation caches when an SFENCE.VMA instruction is executed with rs2 ≠ x0.
+RULE 38: An SFENCE.VMA instruction must be executed after writes to memory locations to ensure that implicit address-translation reads observe those writes by flushing the relevant cached translations.
+RULE 39: If a page is upgraded to a superpage, executing an SFENCE.VMA with rs1= x0 is required to clear the original non-leaf PTE's valid bit and prevent multiple address-translation cache entries from co-existing for the same address.
+RULE 40: If an SFENCE.VMA is not executed between a write to the memory-management tables and a subsequent implicit read of the same address, it is unpredictable whether the old non-leaf PTE or the new leaf PTE is used.
+RULE 41: Speculative executions of the address-translation algorithm must not create address-translation cache entries if those entries would have been invalidated by any SFENCE.VMA instruction executed by the hart since the speculative execution began.
+RULE 42: It is illegal for a translation process to resume using a stale level 2 PTE if an SFENCE.VMA with rs1=rs2= x0 was executed after the process read the page table but before it finished.
+RULE 43: An SFENCE.VMA instruction with rs1= x0 may either terminate all previously-launched speculative executions of the address-translation algorithm (for the specified ASID, if applicable) or wait for them to complete and then invalidate the created cache entries.
+RULE 44: An SFENCE.VMA instruction with rs1≠ x0 must generally either wait for previously-launched speculative executions of the address-translation algorithm (for the specified ASID, if applicable) to complete or prevent them from creating new address-translation cache entries mapping leaf PTEs.
+RULE 45: When an update to PTEs is required, the OS generally should first mark all PTEs as invalid and then issue SFENCE.VMA instruction(s) covering all 4 KiB regions within the range.
+RULE 46: The SFENCE.VMA instructions mentioned in RULE 1 can be executed either as a single SFENCE.VMA with rs1= x0 or via multiple SFENCE.VMA instructions with rs1≠ x0.
+RULE 47: If inconsistencies exist between NAPOT PTEs and other PTEs overlapping the same address range, the effect is the same as when SFENCE.VMA is used incorrectly, resulting in an unpredictable choice of translation.
+RULE 48: The Svinval extension splits the SFENCE.VMA instruction (along with HFENCE.VVMA and HFENCE.GVMA) into finer-grained invalidation and ordering operations.
+RULE 49: The SINVAL.VMA instruction invalidates the same address-translation cache entries that an SFENCE.VMA instruction with the same rs1 and rs2 values would invalidate.
+RULE 50: Unlike the SFENCE.VMA instruction, SINVAL.VMA instructions are only ordered with respect to SFENCE.VMA, SFENCE.W.INVAL, and SFENCE.INVAL.IR.
+RULE 51: A sequence of SFENCE.W.INVAL, SINVAL.VMA, and SFENCE.INVAL.IR executed in order by a single hart has the same effect as a hypothetical SFENCE.VMA instruction where the rs1 and rs2 values match those used in SINVAL.VMA, reads/writes prior to SFENCE.W.INVAL are those prior to SFENCE.VMA, and reads/writes following SFENCE.INVAL.IR are those subsequent to SFENCE.VMA.
+RULE 52: SINVAL.VMA requires the same permissions and raises the same exceptions as the SFENCE.VMA instruction.
+RULE 53: High-performance implementations may defer pipeline stalls or memory ordering enforcement until an SFENCE.VMA (or SFENCE.W.INVAL, SFENCE.INVAL.IR, HFENCE.GVMA, or HFENCE.VVMA) instruction is executed.
+RULE 54: Simpler implementations may implement the SINVAL.VMA instruction identically to the SFENCE.VMA instruction.
+RULE 55: SFENCE.VMA is categorized as a memory-management instruction.
+RULE 56: SFENCE.VMA is normally used to synchronize a hart's address-translation caches when a memory-resident PTE is changed from Invalid to Valid.
+RULE 57: When the Svvptc extension is implemented, the execution of SFENCE.VMA becomes redundant when updating a PTE from Invalid to Valid.
+RULE 58: SFENCE.VMA or other suitable memory-management instructions are still required to synchronize address-translation caches for other forms of PTE updates, including when a PTE is changed from Valid to Invalid.
+RULE 59: When the VTVM field of the hstatus register is set to 1, any attempt to execute the SFENCE.VMA instruction in VS-mode will raise a virtual-instruction exception.
+RULE 60: SFENCE.VMA applies only to the memory-management data structures controlled by the current satp.
+RULE 61: The current satp controlled by SFENCE.VMA is the HS-level satp when V=0 or the vsatp when V=1.
+RULE 62: HFENCE.VVMA performs a function similar to SFENCE.VMA, but applies to VS-level memory-management data structures controlled by CSR vsatp.
+RULE 63: The effect of executing HFENCE.VVMA is similar to temporarily entering VS-mode and executing SFENCE.VMA.
+RULE 64: The behavior of the SFENCE.VMA instruction is affected by the current virtualization mode V.
+RULE 65: When V=0, the SFENCE.VMA virtual-address argument is an HS-level virtual address and the ASID argument is an HS-level ASID.
+RULE 66: When V=0, the SFENCE.VMA instruction orders stores only to HS-level address-translation structures with subsequent HS-level address translations.
+RULE 67: When V=1, the SFENCE.VMA virtual-address argument is a guest virtual address within the current virtual machine and the ASID argument is a VS-level ASID within the current virtual machine.
+RULE 68: When V=1, the effective ASID for the SFENCE.VMA instruction is the combination of the VS-level ASID and the VMID field of CSR hgatp.
+RULE 69: When V=1, the SFENCE.VMA instruction orders stores only to VS-level address-translation structures with subsequent VS-stage address translations for the same virtual machine (where hgatp.VMID remains the same as when SFENCE.VMA was executed).
+RULE 70: The SFENCE.VMA instruction is complemented by hypervisor instructions HFENCE.VVMA and HFENCE.GVMA.
+RULE 71: To synchronize HS-level address translation with PMP settings after PMP CSRs are written, M-mode software must execute an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0.
+RULE 72: In VS-mode, attempts to execute an SFENCE.VMA instruction when hstatus.VTVM=1 will raise a virtual-instruction exception.
+RULE 73: When changes to xSSE occur, they take effect immediately.
+RULE 74: Address-translation caches do not need to be synchronized with the SFENCE.VMA instruction following changes to xSSE.
+RULE 75: Pointer masking is not applied to the SFENCE.VMA instruction.
+RULE 76: When the SFENCE.VMA instruction is invoked, it is the responsibility of the software to provide the correct address.
+RULE 77: SFENCE.VMA is categorized as a Supervisor Memory-Management Instruction.
+RULE 78: The opcode for SFENCE.VMA is 1110011.
+RULE 79: The funct3 field for SFENCE.VMA is 000.
+RULE 80: The rd field for SFENCE.VMA is 00000.
+RULE 81: SFENCE.VMA utilizes rs1 and rs2 as source registers.
+RULE 82: The funct7 field for SFENCE.VMA is 0001001.
+
+INSTRUCTION: VLE32FF.V
+RULE 1: VLE32FF.V is a 32-bit unit-stride fault-only-first load instruction.
+RULE 2: VLE32FF.V is used to vectorize loops with data-dependent exit conditions, such as "while" loops.
+RULE 3: VLE32FF.V takes a trap if a synchronous exception occurs on element 0, in which case vl is not modified.
+RULE 4: If an exception occurs on an element index greater than 0 during the execution of VLE32FF.V, the trap is not taken and vl is reduced to the index of the element that would have raised the exception.
+RULE 5: VLE32FF.V may update active destination elements past the element that causes the trimming of the vector length, provided it does not go past the original vector length.
+RULE 6: The spurious updates made by VLE32FF.V past the trimming point do not have to correspond to the values in memory.
+RULE 7: The syntax for VLE32FF.V is `vle32ff.v vd, (rs1), vm`, where `vd` is the destination, `rs1` is the base address, and `vm` is the mask encoding.
+RULE 8: If vstart = 0 and vl > 0, VLE32FF.V must process at least one element, although implementations may process fewer than vl elements and reduce vl accordingly even if no exception is raised.
+RULE 9: When VLE32FF.V takes a trap due to an interrupt, implementations should set a vstart value instead of reducing vl.
+RULE 10: If VLE32FF.V triggers a debug data-watchpoint trap on any element after the first, the implementation should trigger the debug trap and not reduce vl.

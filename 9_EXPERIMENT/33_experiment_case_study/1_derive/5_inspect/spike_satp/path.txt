@@ -1,0 +1,320 @@
+PATH 1:
+Target: satp
+Source entry: virtualized_satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is true and HSTATUS_VTVM is set.
+Source behavior: The virtualized satp permission check throws trap_virtual_instruction(insn.bits()) before delegating to the underlying satp CSR.
+Architectural outcome: The satp CSR access traps as a virtual-instruction trap; no satp or vsatp state is changed by this path.
+Observable oracle: Execute a satp CSR access in virtualized execution with hstatus.VTVM set and observe a virtual-instruction trap rather than a CSR result or write effect.
+Feasibility: feasible
+PATH 2:
+Target: satp
+Source entry: virtualized_satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is true and HSTATUS_VTVM is clear.
+Source behavior: The virtualized satp permission check allows the access without calling original->verify_permissions.
+Architectural outcome: The satp CSR access is permitted by this source path and is directed to the virtual backing CSR, vsatp, for read or write behavior.
+Observable oracle: Execute a satp CSR access in virtualized execution with hstatus.VTVM clear and observe no permission trap from this path; reads return vsatp-backed state and writes target vsatp-backed state.
+Feasibility: feasible
+PATH 3:
+Target: satp
+Source entry: satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is false, mstatus.TVM is set, and current privilege is below PRV_M.
+Source behavior: The nonvirtual satp permission check requires PRV_M when mstatus.TVM is set.
+Architectural outcome: The satp CSR access traps due to insufficient privilege; no satp state is changed by this path.
+Observable oracle: Attempt a satp CSR access outside virtualized execution with mstatus.TVM set from less than machine privilege and observe a privilege trap rather than a CSR result or write effect.
+Feasibility: feasible
+PATH 4:
+Target: satp
+Source entry: satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is false, mstatus.TVM is set, and current privilege is PRV_M.
+Source behavior: The nonvirtual satp permission check requires PRV_M and the requirement is satisfied.
+Architectural outcome: The satp CSR access is permitted by this source path and proceeds to the nonvirtual satp CSR state.
+Observable oracle: Attempt a satp CSR access outside virtualized execution with mstatus.TVM set from machine privilege and observe no permission trap from this path.
+Feasibility: feasible
+PATH 5:
+Target: satp
+Source entry: satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is false, mstatus.TVM is clear, and current privilege is below PRV_S.
+Source behavior: The nonvirtual satp permission check requires PRV_S when mstatus.TVM is clear.
+Architectural outcome: The satp CSR access traps due to insufficient privilege; no satp state is changed by this path.
+Observable oracle: Attempt a satp CSR access outside virtualized execution with mstatus.TVM clear from below supervisor privilege and observe a privilege trap rather than a CSR result or write effect.
+Feasibility: feasible
+PATH 6:
+Target: satp
+Source entry: satp_csr_t::verify_permissions
+Path condition: CSR access to satp while proc->get_state()->v is false, mstatus.TVM is clear, and current privilege is PRV_S or higher.
+Source behavior: The nonvirtual satp permission check requires PRV_S and the requirement is satisfied.
+Architectural outcome: The satp CSR access is permitted by this source path and proceeds to the nonvirtual satp CSR state.
+Observable oracle: Attempt a satp CSR access outside virtualized execution with mstatus.TVM clear from supervisor or machine privilege and observe no permission trap from this path.
+Feasibility: feasible
+PATH 7:
+Target: satp
+Source entry: virtualized_csr_t::read / virtualized_csr_t::readvirt
+Path condition: satp is read through state->satp->read() while proc->get_state()->v is true, or satp is read through state->satp->readvirt(true).
+Source behavior: The virtualized CSR read selects virtual_csr->read().
+Architectural outcome: The read value is the vsatp-backed value, not the nonvirtual satp-backed value.
+Observable oracle: Set nonvirtual satp and vsatp to distinguishable readable values, read satp in virtualized execution or through readvirt(true), and observe the vsatp-backed value.
+Feasibility: feasible
+PATH 8:
+Target: satp
+Source entry: virtualized_csr_t::read / virtualized_csr_t::readvirt
+Path condition: satp is read through state->satp->read() while proc->get_state()->v is false, or satp is read through state->satp->readvirt(false).
+Source behavior: The virtualized CSR read selects original_csr->read().
+Architectural outcome: The read value is the nonvirtual satp-backed value, not the vsatp-backed value.
+Observable oracle: Set nonvirtual satp and vsatp to distinguishable readable values, read satp outside virtualized execution or through readvirt(false), and observe the nonvirtual satp-backed value.
+Feasibility: feasible
+PATH 9:
+Target: satp
+Source entry: virtualized_satp_csr_t::unlogged_write / virtualized_csr_t::unlogged_write
+Path condition: satp write reaches unlogged_write while proc->get_state()->v is true.
+Source behavior: The virtualized satp write dispatches to virt->unlogged_write(val), where virt is the vsatp backing CSR.
+Architectural outcome: The write affects vsatp-backed address-translation state, subject to base_atp_csr_t write filtering and validation; nonvirtual satp-backed state is not written by this dispatch path.
+Observable oracle: Write satp in virtualized execution, then compare satp reads through readvirt(true) and readvirt(false); only the virtual backing state is the write target.
+Feasibility: feasible
+PATH 10:
+Target: satp
+Source entry: virtualized_satp_csr_t::unlogged_write / virtualized_csr_t::unlogged_write
+Path condition: satp write reaches unlogged_write while proc->get_state()->v is false.
+Source behavior: The virtualized satp write dispatches to original->unlogged_write(val), where original is the nonvirtual satp backing CSR.
+Architectural outcome: The write affects nonvirtual satp-backed address-translation state, subject to base_atp_csr_t write filtering and validation; vsatp-backed state is not written by this dispatch path.
+Observable oracle: Write satp outside virtualized execution, then compare satp reads through readvirt(false) and readvirt(true); only the nonvirtual backing state is the write target.
+Feasibility: feasible
+PATH 11:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is false.
+Source behavior: newval is forced to 0; if the prior CSR value differs from 0, proc->get_mmu()->flush_tlb() is called; basic_csr_t::unlogged_write(0) stores the value.
+Architectural outcome: The targeted satp or vsatp backing CSR becomes 0; architecturally visible address-translation state represented by that CSR is cleared.
+Observable oracle: On a processor configuration without an MMU, write a nonzero satp value and read the targeted backing CSR; observe 0.
+Feasibility: feasible
+PATH 12:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 32, and the masked written value has SATP32_MODE equal to SATP_MODE_OFF.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts mode OFF; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked value with translation mode OFF; subsequent decode of this value treats translation as disabled for the corresponding virtual-selection context.
+Observable oracle: Write a 32-bit satp value whose masked mode is OFF, read back satp in the same backing context, and observe the masked value; address translation using that backing context behaves as disabled.
+Feasibility: feasible
+PATH 13:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 32, the masked written value has SATP32_MODE equal to SATP_MODE_SV32, and proc->get_max_vaddr_bits() is at least 32.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts SV32; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked SV32 value; subsequent decode of this value enables SV32-style page-table translation using the SATP32_PPN-derived base and SATP32_ASID field.
+Observable oracle: On a 32-bit configuration with max virtual address bits at least 32, write a satp value with mode SV32 and read it back; observe the masked SV32 value and page-table translation behavior using the written PPN and ASID fields.
+Feasibility: feasible
+PATH 14:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 32, and the masked written value has SATP32_MODE other than OFF and either not SV32 or SV32 with proc->get_max_vaddr_bits() less than 32.
+Source behavior: satp_valid rejects the masked value; compute_new_satp replaces the candidate value with read(), the current CSR value; basic_csr_t::unlogged_write writes back the unchanged value.
+Architectural outcome: The targeted backing CSR remains unchanged; unsupported or unavailable 32-bit satp translation modes are not committed.
+Observable oracle: Attempt to write an unsupported 32-bit satp mode, or SV32 when max virtual address bits are less than 32, and read back the targeted backing CSR; observe the prior value unchanged.
+Feasibility: feasible
+PATH 15:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 64, and the masked written value has SATP64_MODE equal to SATP_MODE_OFF.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts mode OFF; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked value with translation mode OFF; subsequent decode of this value treats translation as disabled for the corresponding virtual-selection context.
+Observable oracle: Write a 64-bit satp value whose masked mode is OFF, read back satp in the same backing context, and observe the masked value; address translation using that backing context behaves as disabled.
+Feasibility: feasible
+PATH 16:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 64, the masked written value has SATP64_MODE equal to SATP_MODE_SV39, and proc->get_max_vaddr_bits() is at least 39.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts SV39; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked SV39 value; subsequent decode of this value enables SV39-style page-table translation using the SATP64_PPN-derived base and SATP64_ASID field.
+Observable oracle: On a 64-bit configuration with max virtual address bits at least 39, write a satp value with mode SV39 and read it back; observe the masked SV39 value and page-table translation behavior using the written PPN and ASID fields.
+Feasibility: feasible
+PATH 17:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 64, the masked written value has SATP64_MODE equal to SATP_MODE_SV48, and proc->get_max_vaddr_bits() is at least 48.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts SV48; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked SV48 value; subsequent decode of this value enables SV48-style page-table translation using the SATP64_PPN-derived base and SATP64_ASID field.
+Observable oracle: On a 64-bit configuration with max virtual address bits at least 48, write a satp value with mode SV48 and read it back; observe the masked SV48 value and page-table translation behavior using the written PPN and ASID fields.
+Feasibility: feasible
+PATH 18:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 64, the masked written value has SATP64_MODE equal to SATP_MODE_SV57, and proc->get_max_vaddr_bits() is at least 57.
+Source behavior: compute_new_satp masks the input to implemented mode, ASID, and PPN fields; satp_valid accepts SV57; the masked value is written.
+Architectural outcome: The targeted backing CSR is updated to the masked SV57 value; subsequent decode of this value enables SV57-style page-table translation using the SATP64_PPN-derived base and SATP64_ASID field.
+Observable oracle: On a 64-bit configuration with max virtual address bits at least 57, write a satp value with mode SV57 and read it back; observe the masked SV57 value and page-table translation behavior using the written PPN and ASID fields.
+Feasibility: feasible
+PATH 19:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write / base_atp_csr_t::compute_new_satp / base_atp_csr_t::satp_valid
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true, proc->get_xlen() is 64, and the masked written value has SATP64_MODE other than OFF and either not SV39, SV48, or SV57, or has SV39 with max virtual address bits less than 39, or has SV48 with max virtual address bits less than 48, or has SV57 with max virtual address bits less than 57.
+Source behavior: satp_valid rejects the masked value; compute_new_satp replaces the candidate value with read(), the current CSR value; basic_csr_t::unlogged_write writes back the unchanged value.
+Architectural outcome: The targeted backing CSR remains unchanged; unsupported or unavailable 64-bit satp translation modes are not committed.
+Observable oracle: Attempt to write an unsupported 64-bit satp mode, or a supported mode whose required virtual-address width is unavailable, and read back the targeted backing CSR; observe the prior value unchanged.
+Feasibility: feasible
+PATH 20:
+Target: satp
+Source entry: base_atp_csr_t::compute_new_satp
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true and proc->extension_enabled_const(EXT_ZICBOM) is true.
+Source behavior: The ASID mask is set to 0 before constructing new_satp, so ASID bits from the written value are not retained in the stored CSR value.
+Architectural outcome: The targeted backing CSR is written with ASID bits cleared, subject to mode validity and the other write filters.
+Observable oracle: Enable EXT_ZICBOM, write a satp value with nonzero ASID bits and an otherwise valid mode, then read back the targeted backing CSR; observe that the ASID field is zeroed.
+Feasibility: feasible
+PATH 21:
+Target: satp
+Source entry: base_atp_csr_t::compute_new_satp
+Path condition: satp or vsatp backing CSR write occurs while proc->has_mmu() is true and proc->extension_enabled_const(EXT_ZICBOM) is false.
+Source behavior: The ASID mask is included when constructing new_satp, so implemented ASID bits from the written value are retained in the stored CSR value.
+Architectural outcome: The targeted backing CSR is written with the masked ASID field preserved, subject to mode validity and the other write filters.
+Observable oracle: Disable EXT_ZICBOM, write a satp value with nonzero ASID bits and an otherwise valid mode, then read back the targeted backing CSR; observe that the masked ASID field is retained.
+Feasibility: feasible
+PATH 22:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write
+Path condition: A satp or vsatp backing CSR write computes a new value different from the current read() value.
+Source behavior: proc->get_mmu()->flush_tlb() is called before basic_csr_t::unlogged_write(newval).
+Architectural outcome: The targeted backing CSR is updated and subsequent address translation cannot architecturally rely on stale TLB entries for the previous satp value.
+Observable oracle: Populate translation state under an old satp value, write a different valid satp value, and observe subsequent translations use behavior consistent with the new satp value rather than stale cached translations.
+Feasibility: feasible
+PATH 23:
+Target: satp
+Source entry: base_atp_csr_t::unlogged_write
+Path condition: A satp or vsatp backing CSR write computes a new value equal to the current read() value.
+Source behavior: proc->get_mmu()->flush_tlb() is not called; basic_csr_t::unlogged_write(newval) writes the same value.
+Architectural outcome: The targeted backing CSR remains architecturally unchanged.
+Observable oracle: Write the same satp value already present, then read back the targeted backing CSR; observe no CSR-state change.
+Feasibility: feasible
+PATH 24:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 32, and get_field(satp, SATP32_MODE) is SATP_MODE_OFF.
+Source behavior: decode_vm_info returns vm_info indicating translation disabled.
+Architectural outcome: Non-stage2 address translation using this satp value is disabled.
+Observable oracle: Use a 32-bit satp value with mode OFF for non-stage2 translation and observe direct disabled-translation behavior in the translation callers.
+Feasibility: feasible
+PATH 25:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 32, and get_field(satp, SATP32_MODE) is SATP_MODE_SV32.
+Source behavior: decode_vm_info returns vm_info for 2 page-table levels, 4-byte PTEs, and a base derived from SATP32_PPN.
+Architectural outcome: Non-stage2 address translation uses SV32 page-table-walk parameters derived from satp.
+Observable oracle: Use a 32-bit satp value with mode SV32 and observe page-table translation through a 2-level walk with 4-byte PTEs and root base from SATP32_PPN.
+Feasibility: feasible
+PATH 26:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 64, and get_field(satp, SATP64_MODE) is SATP_MODE_OFF.
+Source behavior: decode_vm_info returns vm_info indicating translation disabled.
+Architectural outcome: Non-stage2 address translation using this satp value is disabled.
+Observable oracle: Use a 64-bit satp value with mode OFF for non-stage2 translation and observe direct disabled-translation behavior in the translation callers.
+Feasibility: feasible
+PATH 27:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 64, and get_field(satp, SATP64_MODE) is SATP_MODE_SV39.
+Source behavior: decode_vm_info returns vm_info for 3 page-table levels, 8-byte PTEs, and a base derived from SATP64_PPN.
+Architectural outcome: Non-stage2 address translation uses SV39 page-table-walk parameters derived from satp.
+Observable oracle: Use a 64-bit satp value with mode SV39 and observe page-table translation through a 3-level walk with 8-byte PTEs and root base from SATP64_PPN.
+Feasibility: feasible
+PATH 28:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 64, and get_field(satp, SATP64_MODE) is SATP_MODE_SV48.
+Source behavior: decode_vm_info returns vm_info for 4 page-table levels, 8-byte PTEs, and a base derived from SATP64_PPN.
+Architectural outcome: Non-stage2 address translation uses SV48 page-table-walk parameters derived from satp.
+Observable oracle: Use a 64-bit satp value with mode SV48 and observe page-table translation through a 4-level walk with 8-byte PTEs and root base from SATP64_PPN.
+Feasibility: feasible
+PATH 29:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is false, xlen is 64, and get_field(satp, SATP64_MODE) is SATP_MODE_SV57.
+Source behavior: decode_vm_info returns vm_info for 5 page-table levels, 8-byte PTEs, and a base derived from SATP64_PPN.
+Architectural outcome: Non-stage2 address translation uses SV57 page-table-walk parameters derived from satp.
+Observable oracle: Use a 64-bit satp value with mode SV57 and observe page-table translation through a 5-level walk with 8-byte PTEs and root base from SATP64_PPN.
+Feasibility: feasible
+PATH 30:
+Target: satp
+Source entry: decode_vm_info
+Path condition: stage2 is true, or stage2 is false with xlen not 32 or 64, or stage2 is false with an xlen/mode combination not handled by the source switch.
+Source behavior: decode_vm_info falls through to return vm_info indicating invalid or unsupported translation mode.
+Architectural outcome: Address-translation mode is invalid or unsupported for the supplied satp value and context.
+Observable oracle: Supply a satp mode not handled by decode_vm_info for the current xlen, or call decode_vm_info with stage2 true, and observe downstream behavior for invalid or unsupported translation mode.
+Feasibility: source-incomplete
+PATH 31:
+Target: satp
+Source entry: mmu_t::transform_address
+Path condition: transform_address reads satp through proc->get_state()->satp->readvirt(virt), decode_vm_info returns vm.mode == SATP_MODE_OFF.
+Source behavior: transform_address selects physical_address_behavior(...).
+Architectural outcome: Address transformation follows the translation-disabled physical-address path for the selected satp backing context.
+Observable oracle: Set the selected satp backing CSR mode to OFF, perform an address translation through transform_address, and observe physical-address behavior rather than virtual page-table behavior.
+Feasibility: feasible
+PATH 32:
+Target: satp
+Source entry: mmu_t::transform_address
+Path condition: transform_address reads satp through proc->get_state()->satp->readvirt(virt), decode_vm_info returns vm.mode other than SATP_MODE_OFF.
+Source behavior: transform_address selects virtual_address_behavior(...).
+Architectural outcome: Address transformation follows the virtual-address translation path for the selected satp backing context.
+Observable oracle: Set the selected satp backing CSR mode to a supported non-OFF mode, perform an address translation through transform_address, and observe virtual-address translation behavior.
+Feasibility: feasible
+PATH 33:
+Target: satp
+Source entry: mmu_t::walk
+Path condition: walk reads satp through proc->get_state()->satp->readvirt(virt), decode_vm_info returns vm.mode == SATP_MODE_OFF.
+Source behavior: walk returns no_page_table_translation(...).
+Architectural outcome: No satp-rooted page-table walk is performed for the selected satp backing context.
+Observable oracle: Set the selected satp backing CSR mode to OFF, perform a memory access requiring walk, and observe no page-table translation based on satp PPN.
+Feasibility: feasible
+PATH 34:
+Target: satp
+Source entry: mmu_t::walk
+Path condition: walk reads satp through proc->get_state()->satp->readvirt(virt), decode_vm_info returns vm.mode other than SATP_MODE_OFF.
+Source behavior: walk returns page_table_walk_using_satp_ppn_asid_and_mode(...).
+Architectural outcome: A satp-rooted page-table walk is performed using satp PPN, ASID, and mode from the selected satp backing context.
+Observable oracle: Set the selected satp backing CSR mode to a supported non-OFF mode and configure page tables; observe memory access behavior determined by the satp PPN, ASID, and mode.
+Feasibility: feasible
+PATH 35:
+Target: satp
+Source entry: mmu_t::svukte_qualified
+Path condition: svukte_qualified reads satp through proc->get_state()->satp->readvirt(access_info.effective_virt), and decode_vm_info returns vm.mode == SATP_MODE_OFF.
+Source behavior: svukte_qualified returns false.
+Architectural outcome: The svukte qualification is false when selected satp translation mode is OFF.
+Observable oracle: Set the selected satp backing CSR mode to OFF and invoke an access whose behavior depends on svukte qualification; observe behavior corresponding to false qualification.
+Feasibility: feasible
+PATH 36:
+Target: satp
+Source entry: mmu_t::svukte_qualified
+Path condition: svukte_qualified reads satp through proc->get_state()->satp->readvirt(access_info.effective_virt), and decode_vm_info returns vm.mode other than SATP_MODE_OFF.
+Source behavior: svukte_qualified returns true.
+Architectural outcome: The svukte qualification is true when selected satp translation mode is not OFF.
+Observable oracle: Set the selected satp backing CSR mode to a supported non-OFF mode and invoke an access whose behavior depends on svukte qualification; observe behavior corresponding to true qualification.
+Feasibility: feasible
+PATH 37:
+Target: satp
+Source entry: mmu.cc satp decode region
+Path condition: MMU code reads reg_t satp = proc->get_state()->satp->readvirt(virt) with virt true.
+Source behavior: readvirt(true) supplies the vsatp-backed value to decode_vm_info(proc->get_xlen(), false, prv, satp).
+Architectural outcome: Non-stage2 translation behavior is determined by vsatp-backed state when the MMU caller requests virtualized satp selection.
+Observable oracle: Set nonvirtual satp and vsatp to produce distinguishable translation behavior, perform an MMU access with virt true, and observe behavior determined by vsatp.
+Feasibility: feasible
+PATH 38:
+Target: satp
+Source entry: mmu.cc satp decode region
+Path condition: MMU code reads reg_t satp = proc->get_state()->satp->readvirt(virt) with virt false.
+Source behavior: readvirt(false) supplies the nonvirtual satp-backed value to decode_vm_info(proc->get_xlen(), false, prv, satp).
+Architectural outcome: Non-stage2 translation behavior is determined by nonvirtual satp-backed state when the MMU caller requests nonvirtual satp selection.
+Observable oracle: Set nonvirtual satp and vsatp to produce distinguishable translation behavior, perform an MMU access with virt false, and observe behavior determined by nonvirtual satp.
+Feasibility: feasible
+PATH 39:
+Target: satp
+Source entry: triggers.cc SSELECT_ASID region
+Path condition: sselect == SSELECT_ASID and get_field(state->satp->read(), SATP_ASID(SXLEN)) equals trigger_value.
+Source behavior: The trigger code reads state->satp->read(), extracts the ASID field using SATP32_ASID when SXLEN is 32 or SATP64_ASID otherwise, compares it to trigger_value, and returns trigger_match(...).
+Architectural outcome: The ASID trigger condition matches based on the currently selected satp read value.
+Observable oracle: Program an ASID trigger value equal to the ASID field returned by satp read in the current virtualization context and observe trigger-match behavior.
+Feasibility: feasible
+PATH 40:
+Target: satp
+Source entry: triggers.cc SSELECT_ASID region
+Path condition: sselect == SSELECT_ASID and get_field(state->satp->read(), SATP_ASID(SXLEN)) does not equal trigger_value.
+Source behavior: The trigger code reads state->satp->read(), extracts the ASID field using SATP32_ASID when SXLEN is 32 or SATP64_ASID otherwise, compares it to trigger_value, and does not return trigger_match from this condition.
+Architectural outcome: The ASID trigger condition does not match based on the currently selected satp read value.
+Observable oracle: Program an ASID trigger value different from the ASID field returned by satp read in the current virtualization context and observe no trigger match from the ASID condition.
+Feasibility: feasible

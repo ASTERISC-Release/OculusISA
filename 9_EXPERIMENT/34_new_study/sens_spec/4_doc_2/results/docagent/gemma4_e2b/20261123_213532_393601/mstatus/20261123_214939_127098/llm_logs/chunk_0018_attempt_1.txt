@@ -1,0 +1,53 @@
+RULE 1: When executing in privilege mode x, interrupts are globally enabled if x IE=1 and globally disabled if x IE=0.
+RULE 2: Interrupts for lower-privilege modes w < x are globally disabled regardless of the setting of any global w IE bit.
+RULE 3: Interrupts for higher-privilege modes y > x are globally enabled regardless of the setting of the global y IE bit.
+RULE 4: When a trap is taken from privilege mode y into privilege mode x, x PIE is set to x IE, x IE is set to 0, and x PP is set to y.
+RULE 5: When an MRET instruction is executed in M-mode, x IE is set to x PIE, the privilege mode is changed to y, x PIE is set to 1, and x PP is set to the least-privileged supported mode (U if U-mode is implemented, else M).
+RULE 6: When executing in M-mode with mnstatus.NMIE set to 0 and the Smrnmi extension is not implemented or implemented with mnstatus.NMIE=0, the hart enters a critical-error state without updating any architectural state.
+RULE 7: When the Smrnmi extension is implemented and mnstatus.NMIE is 1, a trap caused by an RNMI causes the hart to trap to the RNMI handler, writing mnepc and mncause with the trap values, and setting the privilege mode information fields in mnstatus to M-mode and setting mnstatus.NMIE to 0.
+RULE 8: When the Smrnmi extension is not implemented, or if it is implemented and mnstatus.NMIE is 0, a trap caused by an RNMI causes the hart to enter a critical-error state without updating any architectural state.
+RULE 9: When an MRET or SRET instruction is executed in M-mode, the MDT bit is set to 0.
+RULE 10: When an MRET or SRET instruction is executed in M-mode and the new privilege mode is U, VS, or VU, the SSTATUS.SDT bit is set to 0, and if the new privilege mode is VU, the VSSTATUS.SDT bit is set to 0.
+RULE 11: If S-mode is implemented, the x PP fields are WARL fields that can hold only privilege mode x and any implemented privilege mode lower than x.
+RULE 12: When MXLEN=64 and S-mode is not supported, the SXL field is read-only zero.
+RULE 13: When MXLEN=64 and S-mode is supported, the SXL field is a WARL field that encodes the current value of SXLEN.
+RULE 14: When MXLEN=64 and U-mode is not supported, the UXL field is read-only zero.
+RULE 15: When MXLEN=64 and U-mode is supported, the UXL field is a WARL field that encodes the current value of UXLEN.
+RULE 16: When XLEN in any mode is set to a value less than the widest supported XLEN, all operations must ignore source operand register bits above the configured XLEN, and sign-extend results to fill the entire widest supported XLEN in the destination register.
+RULE 17: When MPRV=1, load and store memory addresses are translated and protected, and endianness is applied as though the current privilege mode were set to MPP, and load and store address-translation and protection are unaffected by the setting of MPRV.
+RULE 18: When MXR=1, loads from pages marked either readable or executable will succeed.
+RULE 19: When S-mode is not supported, the MXR bit is read-only 0.
+RULE 20: When SUM=0, S-mode memory accesses to pages that are accessible by Umode will fault.
+RULE 21: When S-mode is not supported or satp .MODE is read-only 0, the SUM bit is read-only 0.
+RULE 22: When MBE=1, non-instruction-fetch memory accesses made from M-mode (assuming mstatus .MPRV=0) are big-endian.
+RULE 23: When S-mode is not supported, the SBE bit is read-only 0.
+RULE 24: When U-mode is not supported, the UBE bit is read-only 0.
+RULE 25: If MBE, SBE, and UBE are all read-only 0, an implementation supports only little-endian memory accesses.
+RULE 26: If MBE is read-only 1 and SBE and UBE are each read-only 1 when S-mode and U-mode are supported, an implementation supports only big-endian memory accesses (aside from instruction fetches).
+RULE 27: When TVM=1, attempts to read or write the satp CSR or execute an SFENCE.VMA or SINVAL.VMA instruction while executing in S-mode will raise an illegal-instruction exception.
+RULE 28: When S-mode is not supported, the TVM bit is read-only 0.
+RULE 29: When TW=1, if WFI is executed in any less-privileged mode, and it does not complete within an implementation-specific, bounded time limit, the WFI instruction causes an illegal-instruction exception.
+RULE 30: Executing WFI in U-mode causes an illegal-instruction exception if it does not complete within an implementation-specific, bounded time limit.
+RULE 31: When TSR=1, attempts to execute SRET while executing in S-mode will raise an illegal-instruction exception.
+RULE 32: When S-mode is not supported, the TSR bit is read-only 0.
+RULE 33: The FS, VS, and XS fields are WARL fields that track the status of the floating-point unit, vector extension state, and additional user-mode extensions, respectively.
+RULE 34: The SD bit is a read-only bit that is set when either the FS, VS, or XS fields encode a Dirty state (i.e., SD=0 if FS, VS, and XS are all read-only zero).
+RULE 35: When performing a context save, privileged code needs only write out the corresponding state if its status is Dirty, and can then reset the extension's status to Clean.
+RULE 36: During a context restore, the context needs only be loaded from memory if the status is Clean.
+RULE 37: When the status is Initial, the context must be set to an initial constant value on context restore to avoid a security hole.
+RULE 38: An instruction that attempts to read or write a state field when its status is Off will cause an illegal-instruction exception.
+RULE 39: If an instruction explicitly or implicitly writes a floating-point register or the fcsr but does not alter its contents, and FS=Initial or FS=Clean, it is implementation-defined whether FS transitions to Dirty.
+RULE 40: If an instruction that possibly modifies state executes when FS=Initial or FS=Clean, it is implementation-defined whether FS transitions to Dirty.
+RULE 41: Executing an instruction to unconfigure a unit executes the instruction to unconfigure unit regardless of the current FS state.
+RULE 42: Executing an instruction to disable a unit executes the instruction to disable unit regardless of the current FS state.
+RULE 43: Executing an instruction to enable a unit executes the instruction to enable unit regardless of the current FS state.
+RULE 44: When an extension's status is set to Off, any instruction that attempts to read or write the corresponding state will cause an illegal-instruction exception.
+RULE 45: When the status is Dirty, the execution of an instruction to modify state executes the instruction to modify state regardless of the current Dirty state.
+RULE 46: When an instruction executes to unconfigure a unit, it executes the instruction to unconfigure unit regardless of the current status.
+RULE 47: When an instruction executes to disable a unit, it executes the instruction to disable unit regardless of the current status.
+RULE 48: When an instruction executes to enable a unit, it executes the instruction to enable unit regardless of the current status.
+RULE 49: If an instruction that writes a vector register or vector CSR but does not alter its contents executes when VS=Initial or VS=Clean, it is implementation-defined whether VS transitions to Dirty.
+RULE 50: If an instruction that writes a vector register or vector CSR but does not alter its contents executes when VS=Initial or VS=Clean, it is implementation-defined whether VS transitions to Dirty.
+RULE 51: An implementation may choose to track the dirtiness of the floating-point register state imprecisely by reporting the state to be dirty even when it has not been modified.
+RULE 52: An implementation may choose to track the dirtiness of the vector register state imprecisely by reporting the state to be dirty even when it has not been modified.
+RULE 53: If an instruction explicitly or implicitly writes a floating-point register or the fcsr and does not alter its contents, and FS=Initial or FS=Clean, it is implementation-defined whether FS transitions to Dirty.

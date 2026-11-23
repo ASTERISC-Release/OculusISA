@@ -1,0 +1,253 @@
+You are an expert RISC-V ISA conformance analyst and Sail semantic path extractor.
+
+Task:
+Given Sail RISC-V source code or model text, extract the architecturally relevant semantic paths for the target.
+
+Target: SFENCE.VMA
+
+Source restriction:
+Use only the provided Sail RISC-V source/model text and your pretrained knowledge of Sail syntax, RISC-V terminology, and semantic-model reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided Sail source/model text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Sail source/model text is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Sail source/model text, follow the provided Sail source/model text.
+
+Input:
+The input is the provided Sail RISC-V source/model text below.
+
+BEGIN SAIL SOURCE MODEL
+
+// File: model/extensions/I/base_insts.sail
+
+union clause instruction = SFENCE_VMA : (regidx, regidx)
+
+mapping clause encdec = SFENCE_VMA(rs1, rs2)
+<-> 0b0001001 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b000 @ 0b00000 @ 0b1110011
+when virtual_memory_supported() | not(config extensions.Svbare.sfence_vma_illegal_if_svbare_only : bool)
+
+function clause execute SFENCE_VMA(rs1, rs2) = {
+let addr = if rs1 != zreg then Some(X(rs1)) else None();
+
+// Note, the Sail model does not currently support Sv32 & SXLEN=32 on RV64.
+// In that case this asidlen would be incorrect because the maximum asidlen
+// is 9 but we always set it to 16 for RV64.
+let asid = if rs2 != zreg then Some(X(rs2)[asidlen - 1 .. 0]) else None();
+
+match cur_privilege {
+User =>
+Illegal_Instruction(),
+
+```
+Supervisor =>
+  match mstatus[TVM] {
+    0b1 => Illegal_Instruction(),
+    0b0 => {
+      flush_TLB(asid, addr);
+      RETIRE_SUCCESS
+    },
+  },
+
+Machine => {
+  flush_TLB(asid, addr);
+  RETIRE_SUCCESS
+},
+
+VirtualUser =>
+  Virtual_Instruction(),
+
+VirtualSupervisor =>
+  internal_error(__FILE__, __LINE__, "Hypervisor extension not supported"),
+```
+
+}
+}
+
+mapping clause assembly = SFENCE_VMA(rs1, rs2)
+<-> "sfence.vma" ^ spc() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
+
+// File: model/sys/vmem_tlb.sail
+
+private register tlb : vector(num_tlb_entries, option(TLB_Entry)) =
+vector_init(None())
+
+val tlb_add_callback =
+pure {cpp: "tlb_add_callback"} :
+(vector(num_tlb_entries, option(TLB_Entry)), range(0, num_tlb_entries)) -> unit
+
+function tlb_add_callback(_) = ()
+
+val tlb_flush_begin_callback =
+pure {cpp: "tlb_flush_begin_callback"} : unit -> unit
+
+function tlb_flush_begin_callback(_) = ()
+
+val tlb_flush_callback =
+pure {cpp: "tlb_flush_callback"} :
+(range(0, num_tlb_entries)) -> unit
+
+function tlb_flush_callback(_) = ()
+
+val tlb_flush_end_callback =
+pure {cpp: "tlb_flush_end_callback"} :
+(vector(num_tlb_entries, option(TLB_Entry))) -> unit
+
+function tlb_flush_end_callback(_) = ()
+
+// PUBLIC: invoked in reset_vmem() [vmem.sail]
+
+function reset_TLB() -> unit =
+tlb = vector_init(None())
+
+private function match_TLB_Entry(
+ent  : TLB_Entry,
+asid : asidbits,
+vpn  : bits(tlb_vpn_bits),
+) -> bool =
+(ent.global | (ent.asid == asid))
+& (ent.vpn == (vpn & ~(ent.levelMask)))
+
+private function flush_TLB_Entry(
+ent   : TLB_Entry,
+asid  : option(asidbits),
+vaddr : option(xlenbits),
+) -> bool = {
+let asid_matches : bool = match asid {
+Some(asid) => ent.asid == asid & not(ent.global),
+None()     => true,
+};
+
+let addr_matches : bool = match vaddr {
+Some(vaddr) => {
+let vaddr : bits(64) = sign_extend(vaddr);
+ent.vpn == (vaddr[56 .. pagesize_bits] & ~(ent.levelMask))
+},
+None() => true,
+};
+
+asid_matches & addr_matches
+}
+
+// Top-level TLB flush function.
+// PUBLIC: invoked from SFENCE_VMA [extensions/I/insts_base.sail]
+
+function flush_TLB(asid : option(asidbits), addr : option(xlenbits)) -> unit = {
+tlb_flush_begin_callback();
+
+foreach (i from 0 to (length(tlb) - 1)) {
+match tlb[i] {
+None() => (),
+
+```
+  Some(entry) =>
+    if flush_TLB_Entry(entry, asid, addr) then {
+      tlb[i] = None();
+      tlb_flush_callback(i)
+    },
+}
+```
+
+};
+
+tlb_flush_end_callback(tlb);
+}
+
+// File: model/sys/vmem.sail
+
+// TLB NOTE:
+// TLBs are not part of the RISC-V architecture specification.
+// However, we model a simple TLB so that
+// (1) we can meaningfully test SFENCE.VMA which is a no-op without TLBs;
+// (2) we can greatly speed up simulation speed
+//     (e.g., from 10s of minutes to few minutes for Linux boot)
+// The TLB implementation is in a separate file: vmem_tlb.sail.
+// The code in this file is structured and commented so you can easily
+// ignore TLB functionality at first reading.
+
+function reset_vmem() -> unit =
+reset_TLB()
+
+match lookup_TLB(sv_width, asid, vpn) {
+Some(index, ent) => translate_TLB_hit(...),
+None()           => translate_TLB_miss(...),
+}
+
+// File: model/extensions/Svinval/svinval_insts.sail
+
+function clause currentlyEnabled(Ext_Svinval) =
+hartSupports(Ext_Svinval)
+
+union clause instruction = SINVAL_VMA : (regidx, regidx)
+
+mapping clause encdec = SINVAL_VMA(rs1, rs2)
+<-> 0b0001011 @ encdec_reg(rs2) @ encdec_reg(rs1) @ 0b000 @ 0b00000 @ 0b1110011
+when currentlyEnabled(Ext_Svinval)
+
+function clause execute SINVAL_VMA(rs1, rs2) = {
+ExecuteAs(SFENCE_VMA(rs1, rs2))
+}
+
+mapping clause assembly = SINVAL_VMA(rs1, rs2)
+<-> "sinval.vma" ^ spc() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
+
+// File: config/config.json.in
+
+"Svbare": {
+"supported": true,
+"sfence_vma_illegal_if_svbare_only": true
+}
+
+END SAIL SOURCE MODEL
+
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the Sail function, clause, mapping, helper, or semantic rule that defines the target.
+2. Identify the semantic entry point and all relevant inputs, including instruction operands, CSR state, privilege state, extension state, memory state, translation state, and architectural mode state.
+3. Follow the Sail semantic control flow.
+4. Identify each architecturally distinct semantic path.
+5. For each path, identify the path conditions.
+6. For each path, identify the semantic actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by helper structure or model-internal detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided Sail source/model text.
+10. If the provided Sail source/model text is incomplete for the target, extract only the paths supported by the provided text.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct semantic behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on the provided Sail model behavior, not on the RISC-V specification unless the Sail model explicitly encodes that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, helper-only, type-only, proof-only, or performance-only paths.
+Do not include model-internal details unless they affect an architecturally visible outcome.
+If multiple Sail branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one Sail branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct semantic paths for the target that can be inferred from the provided Sail source/model text.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Semantic entry: <Sail function, clause, mapping, helper, or semantic rule>
+Path condition: <explicit condition under which this path is taken>
+Semantic behavior: <concise Sail-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

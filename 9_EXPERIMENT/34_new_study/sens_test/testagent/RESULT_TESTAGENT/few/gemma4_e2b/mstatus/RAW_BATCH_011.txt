@@ -1,0 +1,138 @@
+# Test Case Rule: RULE 201: When MPRV = 0 in mstatus, translation and protection behave as normal.
+##### ASSEMBLY #####
+csrs mstatus, 0
+li a0, 1
+lw t0, 0(a0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 202: When MPRV = 1 in mstatus, explicit memory accesses are translated and protected, and endianness is applied as though the current virtualization mode were MPV and the current nominal privilege mode were MPP.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 203: When MPRV = 1, MPV = 0, and MPP = 0 in mstatus, explicit memory accesses are treated as U-level accesses with HS-level translation and protection only.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 204: When MPRV = 1, MPV = 0, and MPP = 1 in mstatus, explicit memory accesses are treated as HS-level accesses with HS-level translation and protection only.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 205: When MPRV = 1 and MPP = 3 in mstatus (MPV value is ignored), explicit memory accesses are treated as M-level accesses with no translation.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 206: When MPRV = 1, MPV = 1, and MPP = 0 in mstatus, explicit memory accesses are treated as VU-level accesses with two-stage translation and protection; the HS-level MXR bit makes any executable page readable, and vsstatus.MXR makes readable those pages marked executable at the VS translation stage only if readable at the guest-physical translation stage.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 207: When MPRV = 1, MPV = 1, and MPP = 1 in mstatus, explicit memory accesses are treated as VS-level accesses with two-stage translation and protection; the HS-level MXR bit makes any executable page readable, vsstatus.MXR makes readable those pages marked executable at the VS translation stage only if readable at the guest-physical translation stage, and vsstatus.SUM applies instead of the HS-level SUM bit.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+lw t0, 0(t0)
+# Result: t0 = 1
+
+# Test Case Rule: RULE 208: MPRV in mstatus does not affect the virtual-machine load/store instructions HLV, HLVX, and HSV.
+##### ASSEMBLY #####
+lhv x0, 0(x0)
+# Result: x0 = 0
+
+# Test Case Rule: RULE 209: The explicit loads and stores of the HLV, HLVX, and HSV instructions always act as though V = 1 and the nominal privilege mode were hstatus.SPVP, overriding the effect of MPRV in mstatus.
+##### ASSEMBLY #####
+lhv x0, 0(x0)
+# Result: x0 = 0
+
+# Test Case Rule: RULE 210: When the V bit in mstatus is 1, a virtual-instruction exception with code 22 is raised instead of an illegal-instruction exception if the attempted instruction is HS-qualified and execution is prevented because of insufficient privilege or because the instruction is expressly disabled by a supervisor or hypervisor CSR such as scounteren or hcounteren.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+# Attempt an instruction that would typically trap (e.g., an instruction requiring high privilege)
+# Assuming a system instruction like an illegal instruction or privileged access attempt causes a trap.
+# We check the trap cause is 22 if V=1.
+call machine_to_supervisor
+# Result: mcause = 22
+
+# Test Case Rule: RULE 211: The TSR and TVM fields of mstatus are ignored when determining exceptions in VS-mode because they are intended to affect only S-mode (HS-mode).
+##### ASSEMBLY #####
+nop
+
+# Result: x0 = 0
+
+# Test Case Rule: RULE 212: When a trap is taken into M-mode, the virtualization mode bit V in mstatus is set to 0.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0
+
+# Test Case Rule: RULE 213: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was U-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0
+
+# Test Case Rule: RULE 214: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 0 if the previous privilege mode was U-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0
+
+# Test Case Rule: RULE 215: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was HS-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0
+
+# Test Case Rule: RULE 216: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 1 if the previous privilege mode was HS-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 1
+
+# Test Case Rule: RULE 217: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was M-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0
+
+# Test Case Rule: RULE 218: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 3 if the previous privilege mode was M-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 3
+
+# Test Case Rule: RULE 219: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VU-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 1
+
+# Test Case Rule: RULE 220: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 0 if the previous privilege mode was VU-mode.
+##### ASSEMBLY #####
+li a0, 0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: t0 = 0

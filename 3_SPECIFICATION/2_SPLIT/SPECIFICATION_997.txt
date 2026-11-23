@@ -1,0 +1,70 @@
+## 5.1. Defined major interrupts and default priorities
+
+Table 8 lists all the major interrupts currently defined for RISC-V harts that conform to this Advanced Interrupt  Architecture  (AIA).  Besides  the  major  interrupts  specified  by  the  RISC-V  Privileged Architecture, the AIA adds interrupt numbers 35 and 43 as local interrupts for low- and high-priority RAS events .
+
+Table 8. The standard major interrupt codes, listed in default priority order
+
+| Default priority order   | Major interrupt numbers   | Description                                                                                                                                            |
+|--------------------------|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Highest                  | 43 11, 3, 7 9, 1, 5       | Local interrupt: high-priority RAS event Machine interrupts: external, software, timer Supervisor interrupts: external, software,                      |
+| Lowest                   | 12 10, 2, 6 13 35         | Supervisor guest external interrupt VS interrupts: external, software, timer Local interrupt: counter overflow Local interrupt: low-priority RAS event |
+
+The default priority order in Table 8 is applicable only when multiple major interrupts would trap to the same privilege mode. Interrupt traps to a more-privileged mode always have priority over traps to a less-privileged mode.
+
+Table 9. Categorization of current and future major interrupts.
+
+| Major interrupt numbers   | Category                              |                         |
+|---------------------------|---------------------------------------|-------------------------|
+| 0-12                      | Not Local interrupts Local interrupts | Assigned by the         |
+| 13-15                     |                                       | Privileged Architecture |
+| 16-23                     | Local interrupts                      |                         |
+| 24-31                     | Designated for custom use             |                         |
+| 32-47                     | Local interrupts                      |                         |
+| ≥ 48                      | Designated for custom use             |                         |
+
+Of  the  major  interrupts  controlled  by  the  base  Privileged  Architecture  (numbers  0-15),  the  AIA categorizes the counter overflow interrupt (code 13) as a local interrupt . It is assumed furthermore that any future definitions for reserved interrupt numbers 14 and 15 will also be local interrupts. Besides the two RAS interrupts, the AIA additionally reserves major interrupt numbers in the ranges 16-23 and 32-47 for  standard  local  interrupts  that  other  RISC-V  extensions  may  define.  The  remaining  major interrupts  allocated  to  the  Privileged  Architecture,  numbers  0-12,  are  categorized  as  not  local interrupts.  Taken  altogether,  Table  9  summarizes  the  AIA's  categorization  of  all  major  interrupt identities.
+
+RAS is an abbreviation for Reliability, Availability, and Serviceability . Typically a RAS event corresponds to the detection of corrupted data (e.g. as a result of a soft or hard error) and/or the use of such data. The  high-priority  RAS  event  local  interrupt  may,  for  example,  signal  an  occurrence  of  an  urgent uncorrected error that needs action from a RAS error handler to contain the error and, if possible, to recover  from  it.  The  low-priority  RAS  event  local  interrupt  may,  for  example,  be  triggered  by  nonurgent deferred or corrected errors.
+
+The AIA does not itself require that detected RAS events trigger one of the two local interrupts defined for  this  purpose.  Systems  are  free  to  report  any  or  all  RAS  events  another  way,  such  as  by  external interrupts routed through an APLIC or IMSIC, or by custom interrupts.
+
+<image>
+
+<image>
+
+In all likelihood, the method for reporting a particular RAS event will depend on where in the system the event is detected. The AIA defines local interrupt numbers for RAS events so systems have a standard way to report such events when detected locally at a hart, without depending solely on external or custom interrupts.
+
+As always, platform standards may further constrain how a system reports events, whether RAS events or other.
+
+For the standard local interrupts not defined by the base RISC-V Privileged Architecture (numbers 16-23 and 32-47), the current plan is to assign default priorities in the order shown in this table:
+
+<image>
+
+<image>
+
+| Highest   | 47, 23, 46, 45, 22, 44, 43, 21, 42, 41, 20, 40   |                                                                                                                                                                                                        |
+|-----------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|           | 11, 3, 7 9, 1, 5 12 10, 2, 6 13                  | Machine interrupts: external, software, timer Supervisor interrupts: external, software, timer Supervisor guest external interrupt VS interrupts: external, software, timer Counter overflow interrupt |
+| Lowest    | 39, 19, 38, 37, 18, 36, 35, 17, 34, 33, 16, 32   |                                                                                                                                                                                                        |
+
+Among interrupts 16-23, a higher interrupt number conveys higher default priority, and likewise  for  interrupts  32-47.  These  two  groups  are  interleaved  together  in  the  complete order,  and  the  Privileged  Architecture's  standard  interrupts,  0-15,  are  inserted  into  the middle of the sequence. This proposed default priority order is arranged so that interrupts 0-31 can potentially be an adequate subset on their own for 32-bit RISC-V systems.
+
+In  actuality,  future  RISC-V  extensions  may  or  may  not  stick  to  this  plan  for  the  default priority order of interrupts they define.
+
+In addition to the existing major interrupts of Table 8, the following local interrupts are tentatively proposed, listed in order of decreasing default priority:
+
+- 23 Bus or system error
+- 45 Per-core high-power or over-temperature event
+- 17 Debug/trace interrupt
+
+These local interrupts are expected to be specified by other RISC-V extensions. Be aware, this list is not final and may change as the relevant extensions are developed and ratified.
+
+If a future version of the RISC-V Privileged Architecture defines interrupt 0, the Advanced Interrupt  Architecture  needs  it  to  have  a  default  priority  lower  than  certain  external interrupts. See Section 5.2.2 and Section 5.4.2 on CSRs mtopi and stopi .
+
+Interrupt numbers 24-31 and 48 and higher are all designated for custom use. If a hart implements any custom interrupts, their positions in the default priority order must be documented for the hart.
+
+<image>
+
+While many of the standard registers such as mip and mie have space for major interrupts only in the range 0-63, custom interrupts with numbers 64 and above are conceivable with added  custom  support.  CSRs mtopi (Section  5.2.2)  and stopi (Section  5.4.2)  allow  for major interrupt numbers potentially as large as 4095.
+
+When a hart supports the arbitrary configuration of interrupt priorities by software (described in later sections), the default priority order still remains relevant for breaking ties when two interrupt sources are assigned the same priority number.

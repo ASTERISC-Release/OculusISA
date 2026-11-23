@@ -1,0 +1,69 @@
+# RULE 51: In M-mode, accessing mseccfg register while Zkr extension is active must result in no exception (mcause = 0).
+# Start in M-mode
+# Extension: Zkr
+csrr a0, mseccfg
+# Result: mcause = 0
+
+# RULE 2: The CSRRWI instruction must not read the CSR and must not cause any side effects associated with a CSR read when the destination register rd is x0.
+# Start in M-mode
+csrrwi x0, 0x7c0, 0
+# Result: mcause = 0
+
+# RULE 51: In S-mode, writing -1 to the scounteren register must not set it to -1 or 0xffffffff (scounteren != -1 & scounteren != 0xffffffff).
+# Start in M-mode
+li a0, -1
+csrw scounteren, a0
+# Result: scounteren != -1 & scounteren != 0xffffffff
+
+# RULE 6: When the TVM bit is set to 1, an attempt to read the satp register while in S-mode will raise an illegal-instruction exception.
+# Start in M-mode
+li a0, 1 << 20
+csrs mstatus, a0
+call custom_code_machine
+csrr a1, satp
+# Result: mcause = 2
+
+# RULE 31: When mstatus.TVM=1, attempts to read or write the hgatp register while in HS-mode will raise an illegal instruction exception.
+# Start in M-mode
+li a0, 1 << 20
+csrs mstatus, a0
+call custom_code_machine
+csrr a1, hgatp
+# Result: mcause = 2
+
+# RULE 56: The SFENCE.VMA instruction, and its finer-grained counterparts, require specific permissions and raise illegal-instruction exceptions when executed in U-mode.
+# Start in U-mode
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# RULE 36: In M-mode, setting mstatus.TSR (bit 22) must be reflected on readback (readback = 0x400000) [li a0, 0x400000; csrs mstatus, a0; csrr a1, mstatus; and a0, a0, a1; # Result: a0 = 0x400000].
+# Start in M-mode
+li a0, 1 << 22
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x400000
+
+# RULE 37: In M-mode, setting mstatus.TW (bit 21) must be reflected on readback (readback = 0x200000) [li a0, 0x200000; csrs mstatus, a0; csrr a1, mstatus; and a0, a0, a1; # Result: a0 = 0x200000].
+# Start in M-mode
+li a0, 1 << 21
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x200000
+
+# RULE 109: In S-mode, setting satp.ASID (bit 44) must be reflected on readback (readback = 0x100000000000) [li a0, 0x100000000000; csrs satp, a0; csrr a1, satp; and a0, a0, a1; # Result: a0 = 0x100000000000].
+# Start in M-mode
+li a0, 1 << 44
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0x100000000000
+
+# RULE 108: In S-mode, setting satp.MODE (bit 60) must be reflected on readback (readback = 0x0) [li a0, 0x1000000000000000; csrs satp, a0; csrr a1, satp; and a0, a0, a1; # Result: a0 = 0x0].
+# Start in M-mode
+li a0, 1 << 60
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0

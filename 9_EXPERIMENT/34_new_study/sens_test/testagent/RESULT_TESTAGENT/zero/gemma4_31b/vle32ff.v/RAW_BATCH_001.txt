@@ -1,0 +1,36 @@
+# Test Case Rule: RULE 1: VLE32FF.V MUST execute as a regular load except that it will only take a trap caused by a synchronous exception on element 0.
+##### ASSEMBLY #####
+li a0, 0
+vsetvli x0, x0, 0
+vle32ff.v v0, (a0)
+# Result: mcause = 2
+
+# Test Case Rule: RULE 2: If element 0 raises an exception during VLE32FF.V, the trap is taken and vl MUST NOT be modified.
+##### ASSEMBLY #####
+li a0, 0
+li t0, 4
+vsetvli t1, t0, 0
+vle32ff.v v0, (a0)
+# Result: vl = 4
+
+# Test Case Rule: RULE 3: If any element greater than 0 raises an exception during VLE32FF.V, the trap MUST NOT be taken and vl MUST be reduced to the index of that element.
+##### ASSEMBLY #####
+li a0, 0x1000
+li t0, 4
+vsetvli t1, t0, 0
+vle32ff.v v0, (a0)
+# Result: vl != 4
+
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+nop # Skipped because non-idempotent memory access is not deterministically observable via GPR/CSR
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: If vstart = 0 and vl > 0 for VLE32FF.V, then at least one element MUST be processed.
+##### ASSEMBLY #####
+li a0, 0x2000
+li t0, 1
+vsetvli t1, t0, 0
+vssetvli x0, x0, 0
+vle32ff.v v0, (a0)
+# Result: vl = 1

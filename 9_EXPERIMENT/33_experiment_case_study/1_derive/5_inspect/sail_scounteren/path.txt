@@ -1,0 +1,240 @@
+PATH 1:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0x106, _, _)
+Path condition: currentlyEnabled(Ext_S) is true.
+Semantic behavior: The CSR address 0x106 is accepted as accessible.
+Architectural outcome: An attempted access to scounteren is permitted to proceed to the corresponding read_CSR or write_CSR behavior.
+Observable oracle: Execute a CSR read or write of CSR 0x106 while supervisor mode is currently enabled; the access is not rejected by this accessibility rule.
+Feasibility: feasible
+PATH 2:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0x106, _, _)
+Path condition: currentlyEnabled(Ext_S) is false.
+Semantic behavior: The CSR address 0x106 is not accepted as accessible.
+Architectural outcome: An attempted access to scounteren is rejected by this accessibility rule; the provided source does not define the enclosing CSR trap cause.
+Observable oracle: Execute a CSR read or write of CSR 0x106 while supervisor mode is not currently enabled; the access is rejected rather than producing a scounteren read result or write effect.
+Feasibility: feasible
+PATH 3:
+Target: scounteren
+Semantic entry: read_CSR(0x106)
+Path condition: scounteren is accessed with a CSR read after the CSR access has been accepted.
+Semantic behavior: The model returns zero_extend(scounteren.bits).
+Architectural outcome: The CSR read result is the current 32-bit scounteren value zero-extended to xlen; scounteren state is not modified.
+Observable oracle: Read CSR 0x106 and compare the destination register value with the current architectural scounteren bits zero-extended to xlen.
+Feasibility: feasible
+PATH 4:
+Target: scounteren
+Semantic entry: write_CSR(0x106, value)
+Path condition: scounteren is accessed with a CSR write after the CSR access has been accepted.
+Semantic behavior: scounteren is assigned legalize_scounteren(scounteren, value), where legalize_scounteren computes Mk_Counteren(value[31 .. 0] & sys_scounteren_writable_bits), and write_CSR returns Ok(zero_extend(scounteren.bits)).
+Architectural outcome: For each bit i in 0..31, scounteren[i] becomes value[i] when sys_scounteren_writable_bits[i] is 1, and becomes 0 when sys_scounteren_writable_bits[i] is 0. The write result is the new 32-bit scounteren value zero-extended to xlen. Bits outside 31..0 of value do not affect scounteren.
+Observable oracle: Write CSR 0x106 with a chosen value, then read CSR 0x106; writable bits equal the written low 32 bits and non-writable bits read back as zero.
+Feasibility: feasible
+PATH 5:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is Machine, for any index in 0..31.
+Semantic behavior: feature_enabled_for_priv_bool returns true because feature_enabled_for_priv returns FEATURE_ENABLED for Machine privilege without consulting mcounteren, scounteren, or hypervisor enable state.
+Architectural outcome: scounteren does not restrict counter access in Machine privilege through counter_enabled; counter_enabled returns true.
+Observable oracle: In Machine privilege, attempt access to a counter CSR whose accessibility rule depends on counter_enabled(index, Machine); the scounteren bit for that index has no effect on access permission.
+Feasibility: feasible
+PATH 6:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is Supervisor and mcounteren.bits[index] == 1.
+Semantic behavior: feature_enabled_for_priv_bool returns true because feature_enabled_for_priv returns FEATURE_ENABLED for Supervisor when the machine enable bit is set.
+Architectural outcome: scounteren.bits[index] does not restrict Supervisor counter access; counter_enabled returns true.
+Observable oracle: In Supervisor privilege, with mcounteren[index] set, access a counter CSR controlled by counter_enabled; changing scounteren[index] does not change the access result.
+Feasibility: feasible
+PATH 7:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is Supervisor and mcounteren.bits[index] == 0.
+Semantic behavior: feature_enabled_for_priv_bool returns false because feature_enabled_for_priv returns FEATURE_ILLEGAL for Supervisor when the machine enable bit is clear.
+Architectural outcome: Counter access controlled by counter_enabled is denied; scounteren.bits[index] cannot enable it when mcounteren.bits[index] is 0.
+Observable oracle: In Supervisor privilege, with mcounteren[index] clear, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 8:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is User, mcounteren.bits[index] == 1, and either currentlyEnabled(Ext_S) is false or scounteren.bits[index] == 1.
+Semantic behavior: feature_enabled_for_priv_bool returns true because User privilege is enabled when the machine enable bit is set and either supervisor mode is not currently enabled or the supervisor enable bit is set.
+Architectural outcome: Counter access controlled by counter_enabled is permitted for User privilege.
+Observable oracle: In User privilege, with mcounteren[index] set, access a counter CSR controlled by counter_enabled; access succeeds when supervisor mode is disabled, or when supervisor mode is enabled and scounteren[index] is set.
+Feasibility: feasible
+PATH 9:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is User, mcounteren.bits[index] == 1, currentlyEnabled(Ext_S) is true, and scounteren.bits[index] == 0.
+Semantic behavior: feature_enabled_for_priv_bool returns false because feature_enabled_for_priv returns FEATURE_ILLEGAL for User when supervisor mode is currently enabled and the supervisor enable bit is clear.
+Architectural outcome: Counter access controlled by counter_enabled is denied for User privilege due to scounteren[index] being clear.
+Observable oracle: In User privilege with supervisor mode enabled and mcounteren[index] set, clear scounteren[index] and attempt access to a counter CSR controlled by counter_enabled; the access is rejected.
+Feasibility: feasible
+PATH 10:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is User and mcounteren.bits[index] == 0.
+Semantic behavior: feature_enabled_for_priv_bool returns false because feature_enabled_for_priv returns FEATURE_ILLEGAL for User when the machine enable bit is clear.
+Architectural outcome: Counter access controlled by counter_enabled is denied; scounteren.bits[index] cannot enable it when mcounteren.bits[index] is 0.
+Observable oracle: In User privilege, with mcounteren[index] clear, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 11:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is VirtualSupervisor and mcounteren.bits[index] == 0.
+Semantic behavior: feature_enabled_for_priv_bool returns false because feature_enabled_for_priv returns FEATURE_ILLEGAL for VirtualSupervisor when the machine enable bit is clear.
+Architectural outcome: Counter access controlled by counter_enabled is denied; scounteren.bits[index] has no enabling effect.
+Observable oracle: In VirtualSupervisor privilege, with mcounteren[index] clear, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 12:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is VirtualSupervisor and mcounteren.bits[index] == 1.
+Semantic behavior: feature_enabled_for_priv_bool returns false because counter_enabled passes hypervisor_enable_bit as 0b0, causing feature_enabled_for_priv to return FEATURE_VIRTUAL for VirtualSupervisor.
+Architectural outcome: counter_enabled returns false for VirtualSupervisor even when mcounteren[index] is set; scounteren.bits[index] does not make the result enabled.
+Observable oracle: In VirtualSupervisor privilege, with mcounteren[index] set, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 13:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is VirtualUser and mcounteren.bits[index] == 0.
+Semantic behavior: feature_enabled_for_priv_bool returns false because feature_enabled_for_priv returns FEATURE_ILLEGAL for VirtualUser when the machine enable bit is clear.
+Architectural outcome: Counter access controlled by counter_enabled is denied; scounteren.bits[index] has no enabling effect.
+Observable oracle: In VirtualUser privilege, with mcounteren[index] clear, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 14:
+Target: scounteren
+Semantic entry: counter_enabled(index, priv)
+Path condition: priv is VirtualUser and mcounteren.bits[index] == 1.
+Semantic behavior: feature_enabled_for_priv_bool returns false because counter_enabled passes hypervisor_enable_bit as 0b0, causing feature_enabled_for_priv to return FEATURE_VIRTUAL for VirtualUser.
+Architectural outcome: counter_enabled returns false for VirtualUser even when mcounteren[index] is set; scounteren.bits[index] does not make the result enabled.
+Observable oracle: In VirtualUser privilege, with mcounteren[index] set, attempt access to a counter CSR controlled by counter_enabled; the access is rejected regardless of scounteren[index].
+Feasibility: feasible
+PATH 15:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC00, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true and counter_enabled(0, priv) returns true.
+Semantic behavior: The cycle CSR accessibility rule accepts access using scounteren-controlled counter index 0.
+Architectural outcome: Access to CSR 0xC00 cycle is permitted by this rule.
+Observable oracle: Configure privilege and enable bits so counter_enabled(0, priv) is true, then access cycle; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 16:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC00, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or counter_enabled(0, priv) returns false.
+Semantic behavior: The cycle CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC00 cycle is denied by this rule.
+Observable oracle: Disable Ext_Zicntr or configure privilege and enable bits so counter_enabled(0, priv) is false, then access cycle; the access is rejected.
+Feasibility: feasible
+PATH 17:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC01, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true and counter_enabled(1, priv) returns true.
+Semantic behavior: The time CSR accessibility rule accepts access using scounteren-controlled counter index 1.
+Architectural outcome: Access to CSR 0xC01 time is permitted by this rule.
+Observable oracle: Configure privilege and enable bits so counter_enabled(1, priv) is true, then access time; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 18:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC01, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or counter_enabled(1, priv) returns false.
+Semantic behavior: The time CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC01 time is denied by this rule.
+Observable oracle: Disable Ext_Zicntr or configure privilege and enable bits so counter_enabled(1, priv) is false, then access time; the access is rejected.
+Feasibility: feasible
+PATH 19:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC02, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true and counter_enabled(2, priv) returns true.
+Semantic behavior: The instret CSR accessibility rule accepts access using scounteren-controlled counter index 2.
+Architectural outcome: Access to CSR 0xC02 instret is permitted by this rule.
+Observable oracle: Configure privilege and enable bits so counter_enabled(2, priv) is true, then access instret; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 20:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC02, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or counter_enabled(2, priv) returns false.
+Semantic behavior: The instret CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC02 instret is denied by this rule.
+Observable oracle: Disable Ext_Zicntr or configure privilege and enable bits so counter_enabled(2, priv) is false, then access instret; the access is rejected.
+Feasibility: feasible
+PATH 21:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC80, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true, xlen == 32, and counter_enabled(0, priv) returns true.
+Semantic behavior: The cycleh CSR accessibility rule accepts access using scounteren-controlled counter index 0.
+Architectural outcome: Access to CSR 0xC80 cycleh is permitted by this rule.
+Observable oracle: In RV32, configure privilege and enable bits so counter_enabled(0, priv) is true, then access cycleh; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 22:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC80, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or xlen != 32, or counter_enabled(0, priv) returns false.
+Semantic behavior: The cycleh CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC80 cycleh is denied by this rule.
+Observable oracle: Disable Ext_Zicntr, run with xlen other than 32, or configure privilege and enable bits so counter_enabled(0, priv) is false, then access cycleh; the access is rejected.
+Feasibility: feasible
+PATH 23:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC81, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true, xlen == 32, and counter_enabled(1, priv) returns true.
+Semantic behavior: The timeh CSR accessibility rule accepts access using scounteren-controlled counter index 1.
+Architectural outcome: Access to CSR 0xC81 timeh is permitted by this rule.
+Observable oracle: In RV32, configure privilege and enable bits so counter_enabled(1, priv) is true, then access timeh; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 24:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC81, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or xlen != 32, or counter_enabled(1, priv) returns false.
+Semantic behavior: The timeh CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC81 timeh is denied by this rule.
+Observable oracle: Disable Ext_Zicntr, run with xlen other than 32, or configure privilege and enable bits so counter_enabled(1, priv) is false, then access timeh; the access is rejected.
+Feasibility: feasible
+PATH 25:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC82, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is true, xlen == 32, and counter_enabled(2, priv) returns true.
+Semantic behavior: The instreth CSR accessibility rule accepts access using scounteren-controlled counter index 2.
+Architectural outcome: Access to CSR 0xC82 instreth is permitted by this rule.
+Observable oracle: In RV32, configure privilege and enable bits so counter_enabled(2, priv) is true, then access instreth; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 26:
+Target: scounteren
+Semantic entry: is_CSR_accessible(0xC82, priv, _)
+Path condition: currentlyEnabled(Ext_Zicntr) is false, or xlen != 32, or counter_enabled(2, priv) returns false.
+Semantic behavior: The instreth CSR accessibility rule rejects access.
+Architectural outcome: Access to CSR 0xC82 instreth is denied by this rule.
+Observable oracle: Disable Ext_Zicntr, run with xlen other than 32, or configure privilege and enable bits so counter_enabled(2, priv) is false, then access instreth; the access is rejected.
+Feasibility: feasible
+PATH 27:
+Target: scounteren
+Semantic entry: is_CSR_accessible((0b1100000 @ index), priv, _) if unsigned(index) >= 3
+Path condition: unsigned(index) is in 3..31, currentlyEnabled(Ext_Zihpm) is true, and counter_enabled(unsigned(index), priv) returns true.
+Semantic behavior: The HPM counter CSR accessibility rule for 0xC03..0xC1F accepts access using the corresponding scounteren-controlled counter index.
+Architectural outcome: Access to the selected low HPM counter CSR is permitted by this rule.
+Observable oracle: Configure privilege and enable bits so counter_enabled(index, priv) is true, then access CSR 0xC00 + index for index 3..31; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 28:
+Target: scounteren
+Semantic entry: is_CSR_accessible((0b1100000 @ index), priv, _) if unsigned(index) >= 3
+Path condition: unsigned(index) is in 3..31, and either currentlyEnabled(Ext_Zihpm) is false or counter_enabled(unsigned(index), priv) returns false.
+Semantic behavior: The HPM counter CSR accessibility rule for 0xC03..0xC1F rejects access.
+Architectural outcome: Access to the selected low HPM counter CSR is denied by this rule.
+Observable oracle: Disable Ext_Zihpm or configure privilege and enable bits so counter_enabled(index, priv) is false, then access CSR 0xC00 + index for index 3..31; the access is rejected.
+Feasibility: feasible
+PATH 29:
+Target: scounteren
+Semantic entry: is_CSR_accessible((0b1100100 @ index), priv, _) if unsigned(index) >= 3
+Path condition: unsigned(index) is in 3..31, currentlyEnabled(Ext_Zihpm) is true, xlen == 32, and counter_enabled(unsigned(index), priv) returns true.
+Semantic behavior: The high HPM counter CSR accessibility rule for 0xC83..0xC9F accepts access using the corresponding scounteren-controlled counter index.
+Architectural outcome: Access to the selected high HPM counter CSR is permitted by this rule.
+Observable oracle: In RV32, configure privilege and enable bits so counter_enabled(index, priv) is true, then access CSR 0xC80 + index for index 3..31; the access is not rejected by this rule.
+Feasibility: feasible
+PATH 30:
+Target: scounteren
+Semantic entry: is_CSR_accessible((0b1100100 @ index), priv, _) if unsigned(index) >= 3
+Path condition: unsigned(index) is in 3..31, and either currentlyEnabled(Ext_Zihpm) is false, xlen != 32, or counter_enabled(unsigned(index), priv) returns false.
+Semantic behavior: The high HPM counter CSR accessibility rule for 0xC83..0xC9F rejects access.
+Architectural outcome: Access to the selected high HPM counter CSR is denied by this rule.
+Observable oracle: Disable Ext_Zihpm, run with xlen other than 32, or configure privilege and enable bits so counter_enabled(index, priv) is false, then access CSR 0xC80 + index for index 3..31; the access is rejected.
+Feasibility: feasible

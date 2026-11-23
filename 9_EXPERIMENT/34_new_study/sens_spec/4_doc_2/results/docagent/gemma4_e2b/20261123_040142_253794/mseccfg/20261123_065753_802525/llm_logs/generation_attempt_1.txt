@@ -1,0 +1,122 @@
+This document outlines significant portions of the RISC-V Privileged Architecture specification, focusing heavily on address translation, memory protection, virtualization extensions, and trap handling mechanisms.
+
+Here is a structured summary of the key concepts and features described:
+
+---
+
+## 1. Core Architectural Features
+
+### A. Address Translation (`satp` Register)
+The `satp` CSR controls supervisor-mode address translation and protection and is an SXLEN-bit read/write register.
+
+*   **Fields:** It contains the **PPN** (Physical Page Number of the root page table), an **ASID** (Address Space Identifier) for per-address-space fencing, and the **MODE** field, which selects the translation scheme.
+*   **Modes:**
+    *   **Bare:** Supervisor virtual addresses equal supervisor physical addresses (no translation/protection).
+    *   **Sv32:** Page-based 32-bit virtual memory (SXLEN=32).
+    *   **Sv39, Sv48, Sv57:** Paged virtual memory schemes for SXLEN=64, allowing for increasingly large address spaces (39, 48, 57 bits).
+*   **ASID Management:** The number of ASID bits (`ASIDLEN`) is determined dynamically. Swapping ASID and the page table base address atomically is encouraged for efficient context switching.
+*   **SFENCE.VMA:** Used to synchronize updates to in-memory memory-management data structures with execution. Its behavior depends on whether the execution is in Supervisor (V=0) or Virtual (V=1) mode, and which address space (VMID) is involved.
+
+### B. Supervisor Timer (`stimecmp`)
+The `stimecmp` register is a 64-bit register used for supervisor timer interrupts. It is used to compare the current time against a threshold (`stimecmp`) to determine when a timer interrupt becomes pending.
+
+### C. Supervisor Instructions
+The specification defines `SRET` for returning from traps taken into S-mode or VS-mode.
+
+---
+
+## 2. Memory Management and Protection Extensions
+
+### A. Page-Based Memory Types (`Svpbmt`)
+The **Svpbmt** extension (available in Sv39, Sv48, Sv57) allows marking memory pages with memory types that override the standard Physical Memory Attributes (PMA), such as Non-Cacheable (NC) or I/O (IO).
+
+*   **Ordering:** Accesses to memory pages with different attributes (e.g., NC and IO) require explicit ordering instructions (like `fence iorw`) to maintain memory ordering or coherence.
+*   **Two-Stage Translation:** Memory types are applied in two stages: G-stage overrides intermediate attributes, and VS-stage overrides intermediate attributes, leading to final attributes applied to accesses.
+
+### B. Contiguous Translations (`Svnapot`)
+The **Svnapot** extension (in Sv39, Sv48, Sv57) allows PTEs to represent contiguous regions of virtual-to-physical translations.
+
+*   **Benefit:** This allows the entire contiguous region to be cached in a single TLB entry, reducing TLB pressure.
+*   **Synchronization:** Updating contiguous mappings requires flushing relevant TLB entries, often via `SFENCE.VMA` instructions.
+
+### C. Caching Control Extensions (`Svinval`)
+The **Svinval** extension provides fine-grained invalidation and ordering operations:
+*   **Instructions:** `SINVAL.VMA`, `SFENCE.W.INVAL`, and `SFENCE.INVAL.IR`.
+*   **Functionality:** These allow batched invalidation of TLB entries. They rely on coordinating between store ordering fences (`SFENCE.W.INVAL`) and subsequent implicit reference fences (`SFENCE.INVAL.IR`).
+
+### D. Validity Obfuscation (`Svvptc`)
+The **Svvptc** extension ensures that changes from Invalid (0) to Valid (1) PTEs become visible to subsequent implicit accesses within a bounded timeframe, potentially obviating the need for synchronization instructions like `SFENCE.VMA` upon PTE modification.
+
+---
+
+## 3. Hypervisor Extension (`H`)
+
+The **H** extension virtualizes the supervisor-level architecture into **HS-mode** (Hypervisor-extended Supervisor mode) and supports **VS-mode** (Virtual Supervisor mode) hosting guest operating systems.
+
+### A. Privilege Modes (V)
+*   **V=0:** M-mode, HS-mode, or U-mode atop HS-mode.
+*   **V=1:** VS-mode (Virtual User mode) atop a guest OS running in VS-mode.
+*   **Two-Stage Translation:** Active when V=1, involving VS-stage translation (VSATP) and G-stage translation (HGATP).
+
+### B. CSRs and Status Registers
+*   **`hstatus`:** Analogous to `mstatus`, used to track exception behavior for the VS-mode guest. Contains fields like `VTVM` (enables HV access to VS-stage translation) and `SPV`/`SPP` (track previous privilege levels).
+*   **`hgatp`:** Controls G-stage address translation and protection for guests, containing the guest's root page table PPN, a **VMID** (Virtual Machine Identifier), and the mode selection.
+*   **`hvip`, `hip`, `hie`:** Registers for managing virtual interrupts (VS-level interrupts, timer interrupts, and software interrupts) for the guest.
+*   **`hcounteren` / `htimedelta`:** Control access to hardware performance monitoring counters and time delta tracking for the guest.
+
+### C. Hypervisor Instructions
+*   **Virtual Machine Instructions (`HLV.*`, `HSV.*`):** These instructions perform explicit memory accesses with an effective privilege mode of VS or VU.
+*   **Memory Management Fences (`HFENCE.VVMA`, `HFENCE.GVMA`):** These fence operations are specific to the two-stage translation hierarchy, ensuring ordering between VS-stage and G-stage data structures.
+
+---
+
+## 4. Trap Handling and Exception Management
+
+### A. Trap Causes
+The `mcause` and `scause` registers are augmented by the H extension to include specific codes for VS-level interrupts (code 10), supervisor guest external interrupts (code 12), and guest-page faults (exceptions 20, 21, 23).
+
+### B. Trap Registers
+*   **`mtval` / `stval`:** Contain the faulting guest virtual address (or faulting physical address, shifted right by 2 bits) to assist the handler.
+*   **`mtinst` / `htinst`:** Contain information about the trapping instruction, used for instruction emulation or generating special pseudoinstructions (especially for guest-page faults).
+
+### C. Trap Return (`MRET` / `SRET`)
+The return behavior depends heavily on the virtualization mode (V):
+*   **MRET (M-mode return):** Sets MPV=0, MPP=0, and restores the privilege mode based on `mstatus` values.
+*   **SRET (HS/VS-mode return):** Sets `SPP=0`, `SIE=SPIE`, and `SPIE=1` in `sstatus` or `vsstatus`, and restores the privilege mode based on `hstatus.SPV` and `sstatus.SPP`.
+
+### D. Virtual Instruction Exceptions (VIX)
+VIXs are raised in VS/VU-mode for specific operations (e.g., accessing CSRs, executing certain instructions like `SINVAL.VMA`, or certain `HLVX.*` instructions).
+
+---
+
+## 5. Pointer Masking Extensions
+
+Pointer Masking allows the CPU to ignore the upper bits of the effective address (Masked bits) during explicit memory accesses.
+
+*   **Mechanism:** Applied to all explicit memory accesses (loads, stores, atomics, FPU operations) unless explicitly excluded (like `SFENCE.*` or cache management operations).
+*   **Modes:** Pointer masking settings are configured per privilege mode (Ssnpm, Smnpm, Smmpm) and depend on the active privilege mode.
+*   **Security:** It aids tools like HWASAN by allowing tag checks in the upper address bits, reducing overhead compared to software tag checking.
+*   **PMLEN:** The number of masked bits (`PMLEN`) is tied to the supported address translation modes (e.g., 16 for Sv48x4).
+
+---
+
+## 6. Shadow Stack (Zicfiss)
+
+The Zicfiss extension provides backward-edge Control-Flow Integrity (CFI) via shadow stacks.
+
+*   **Mechanism:** Uses a specific PTE encoding (`R=0, W=1, X=0`) to designate a Shadow Stack (SS) page.
+*   **Protection:** Strict rules govern access: only `SSAMOSWAP.W/D`, `SSPUSH`, and `C.SSPUSH` can write to SS pages. Other writes trigger fatal **store/AMO access-fault exceptions**.
+*   **Read Access:** Shadow stack loads are always permitted for debugging/profiling.
+*   **Atomicity:** Updates to the A/D bits on SS pages are treated atomically.
+
+---
+
+## Summary of Key Differences
+
+| Feature | Supervisor (S-mode) | Hypervisor (HS-mode) | Virtual Machine (VS-mode) |
+| :--- | :--- | :--- | :--- |
+| **Address Translation** | Controlled by `satp` | N/A | Controlled by `vsatp` |
+| **Memory Access** | Standard rules apply | Standard rules apply | Two-stage translation (VS-stage $\rightarrow$ G-stage) |
+| **CFI** | Zicfiss/Zicfilp enabled by `menvcfg.SSE` | N/A | Zicfiss enabled by `henvcfg.SSE` |
+| **Interrupts** | Managed via `sstatus`/`sip`/`sie` | Delegated via `medeleg`/`mideleg` | Managed via `vsstatus`/`vsip`/`sie` |
+| **Key Registers**| `satp`, `stimecmp`, `vsatp`, `vstimecmp` | `hgatp`, `hcounteren`, `htval` | `vsatp`, `vstimecmp`, `vsip`/`sie` |

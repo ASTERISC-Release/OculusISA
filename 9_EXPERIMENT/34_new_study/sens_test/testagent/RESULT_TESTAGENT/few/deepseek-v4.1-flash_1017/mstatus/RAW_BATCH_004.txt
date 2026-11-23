@@ -1,0 +1,271 @@
+# Test Case Rule: RULE 61: If the XLEN for a privilege mode, as defined by the mstatus register, is less than the widest supported XLEN, then PC bits above XLEN are ignored and any write to the PC is sign-extended to fill the widest supported XLEN.
+##### ASSEMBLY #####
+nop # Skipped because narrower lower-privilege XLEN and PC high-bit sign extension are implementation-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 62: The architecture imposes no checks that lower-privilege XLEN settings, as specified by the mstatus fields, are less than or equal to the XLEN setting of the next-higher privilege mode.
+##### ASSEMBLY #####
+nop # Skipped because absence of XLEN ordering checks is not directly observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 63: When a HINT instruction executes while the current XLEN setting from the mstatus register is less than MXLEN and the bits MXLEN..XLEN of the destination register are not all equal to bit XLEN-1, it is implementation-defined whether those upper bits are left unchanged or overwritten with copies of bit XLEN-1.
+##### ASSEMBLY #####
+nop # Skipped because HINT upper-bit behavior is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 64: The implementation-defined behavior of upper-bit handling for a HINT instruction is observable only by privilege modes whose XLEN setting, as defined in the mstatus register, is greater than the current XLEN; it is invisible to the current privilege mode.
+##### ASSEMBLY #####
+nop # Skipped because cross-XLEN visibility of implementation-defined HINT behavior is not deterministically observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 65: When the MPRV bit in mstatus is 0, explicit memory accesses behave as normal, using the translation and protection mechanisms of the current privilege mode.
+##### ASSEMBLY #####
+li t0, 0x80100000
+li t1, 0x123
+csrr t2, mstatus
+li t3, 0x20000
+not t3, t3
+and t2, t2, t3
+csrw mstatus, t2
+sd t1, 0(t0)
+ld a0, 0(t0)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 66: When the MPRV bit in mstatus is 1, load and store memory addresses are translated and protected, and endianness is applied as though the current privilege mode were set to MPP.
+##### ASSEMBLY #####
+li t0, 0x80101000
+sd zero, 0(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: mcause = 13
+
+# Test Case Rule: RULE 67: Instruction address-translation and protection are unaffected by the setting of the MPRV bit in mstatus.
+##### ASSEMBLY #####
+li t0, 0x80101000
+auipc t1, 0
+srli t2, t1, 30
+li t3, 0x1ff
+and t2, t2, t3
+slli t2, t2, 3
+add t0, t0, t2
+sd zero, 0(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+nop
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 68: The MPRV bit in mstatus is read-only 0 if U-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because U-mode is supported
+# Result: x0 = 0
+
+# Test Case Rule: RULE 69: An MRET or SRET instruction that changes the privilege mode to a mode less privileged than M also sets the MPRV bit in mstatus to 0.
+##### ASSEMBLY #####
+nop # Skipped because MPRV clear after MRET or SRET is not observable without a custom trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 70: When the MPRV bit in mstatus is 1, load and store memory addresses are treated as though the current XLEN were set to MPP's XLEN, following the rules in Section 3.1.6.3.
+##### ASSEMBLY #####
+nop # Skipped because MPRV with narrower MPP XLEN requires implementation-specific XLEN support and address handling
+# Result: x0 = 0
+
+# Test Case Rule: RULE 71: When the MXR bit in mstatus is 0, only loads from pages marked readable (R=1) will succeed.
+##### ASSEMBLY #####
+li t0, 0x80101000
+li t1, 0x20040801
+sd t1, 0(t0)
+li t0, 0x80102000
+li t1, 0x20040c01
+sd t1, 0(t0)
+li t0, 0x80103000
+li t1, 0x20041049
+sd t1, 8(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x80000
+not t1, t1
+and t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: mcause = 13
+
+# Test Case Rule: RULE 72: When the MXR bit in mstatus is 1, loads from pages marked either readable or executable (R=1 or X=1) will succeed.
+##### ASSEMBLY #####
+li t0, 0x80104000
+li t1, 0x123
+sd t1, 0(t0)
+li t0, 0x80101000
+li t1, 0x20040801
+sd t1, 0(t0)
+li t0, 0x80102000
+li t1, 0x20040c01
+sd t1, 0(t0)
+li t0, 0x80103000
+li t1, 0x20041049
+sd t1, 8(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x80000
+or t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 73: MXR in mstatus has no effect when page-based virtual memory is not in effect.
+##### ASSEMBLY #####
+li t0, 0x80100000
+li t1, 0x123
+csrr t2, mstatus
+li t3, 0x20000
+not t3, t3
+and t2, t2, t3
+li t3, 0x80000
+or t2, t2, t3
+csrw mstatus, t2
+sd t1, 0(t0)
+ld a0, 0(t0)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 74: The MXR bit in mstatus is read-only 0 if S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because S-mode is supported
+# Result: x0 = 0
+
+# Test Case Rule: RULE 75: When the SUM bit in mstatus is 0, S-mode memory accesses to pages that are accessible by U-mode (U=1) will fault.
+##### ASSEMBLY #####
+li t0, 0x80101000
+li t1, 0x20040801
+sd t1, 0(t0)
+li t0, 0x80102000
+li t1, 0x20040c01
+sd t1, 0(t0)
+li t0, 0x80103000
+li t1, 0x20041053
+sd t1, 8(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x40000
+not t1, t1
+and t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: mcause = 13
+
+# Test Case Rule: RULE 76: When the SUM bit in mstatus is 1, S-mode memory accesses to pages that are accessible by U-mode are permitted.
+##### ASSEMBLY #####
+li t0, 0x80104000
+li t1, 0x123
+sd t1, 0(t0)
+li t0, 0x80101000
+li t1, 0x20040801
+sd t1, 0(t0)
+li t0, 0x80102000
+li t1, 0x20040c01
+sd t1, 0(t0)
+li t0, 0x80103000
+li t1, 0x20041053
+sd t1, 8(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x40000
+or t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 77: SUM in mstatus has no effect when page-based virtual memory is not in effect.
+##### ASSEMBLY #####
+li t0, 0x80100000
+li t1, 0x123
+csrr t2, mstatus
+li t3, 0x20000
+not t3, t3
+and t2, t2, t3
+li t3, 0x40000
+or t2, t2, t3
+csrw mstatus, t2
+sd t1, 0(t0)
+ld a0, 0(t0)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 78: SUM in mstatus is ordinarily ignored when not executing in S-mode, but it is in effect when MPRV=1 and MPP=S.
+##### ASSEMBLY #####
+li t0, 0x80101000
+li t1, 0x20040801
+sd t1, 0(t0)
+li t0, 0x80102000
+li t1, 0x20040c01
+sd t1, 0(t0)
+li t0, 0x80103000
+li t1, 0x20041053
+sd t1, 8(t0)
+li t0, 0x8000000000080101
+csrw satp, t0
+csrr t0, mstatus
+li t1, 0x1800
+not t1, t1
+and t0, t0, t1
+li t1, 0x40000
+not t1, t1
+and t0, t0, t1
+li t1, 0x20800
+or t0, t0, t1
+csrw mstatus, t0
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: mcause = 13
+
+# Test Case Rule: RULE 79: The SUM bit in mstatus is read-only 0 if S-mode is not supported or if satp.MODE is read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because the read-only-zero condition depends on unsupported S-mode or read-only satp.MODE
+# Result: x0 = 0
+
+# Test Case Rule: RULE 80: The MXR mechanisms encoded in mstatus have no impact on whether access-fault exceptions are raised due to PMAs.
+##### ASSEMBLY #####
+nop # Skipped because PMA access-fault behavior is platform-specific
+# Result: x0 = 0

@@ -1,0 +1,29 @@
+## 5.7.16. External Trigger (tmexttrigger, at 0x7a1)
+
+This  register  provides  access  to  the  trigger  selected  by  tselect.  The  reset  values  listed  here  apply  to every underlying trigger.
+
+This register is accessible as tdata1 when type is 7.
+
+This trigger fires when any selected TM external trigger input signals. Up to 16 TM external trigger inputs  coming  from  other  blocks  outside  the  TM,  (e.g.  signaling  an  hpmcounter  overflow)  can  be selected.  Hardware  may  support  none  or  just  a  few  TM  external  trigger  inputs  (starting  with  TM external  trigger  input  0  and  continuing  sequentially).  Unsupported  inputs  are  hardwired  to  be inactive.
+
+If  the  trigger  fires  with  action=0  then  zero  is  written  to  the tval CSR on the breakpoint trap. This trigger fires asynchronously but it is subject to delegation by medeleg[3] like the other triggers.
+
+The TM external trigger input can signal when the trigger is prevented from firing due to one of the mechanisms in Section 5.4. An implementation may either ignore the signal altogether when it cannot fire (dropping the trigger event) or it may hold the action as pending and fire the trigger once it is legal to do so.
+
+<image>
+
+intctl  is  intended  to  be  used  by  the clicinttrig mechanism  from  the  Core-Local
+
+## Interrupt Controller (CLIC) RISC-V Privileged Architecture Extensions.
+
+This CSR is read/write.
+
+| XLEN-1 XLEN-4 type 4   | XLEN-5 dmode 1   | XLEN-6 hit 1   | XLEN-7 0 XLEN   | 23 22 21 intctl 1   | 6 select 16   | 5 0 action 6   |
+|------------------------|------------------|----------------|-----------------|---------------------|---------------|----------------|
+
+| Field   | Description                                                                                                                                                                                                                                                   | Access   |   Reset |
+|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| hit     | If this bit is implemented, the hardware sets it when this trigger matches. The trigger's user can set or clear it at any time. It is used to determine which trigger(s) matched. If the bit is not implemented, it is always 0 and writing it has no effect. | WARL     |       0 |
+| intctl  | This optional bit, when set, causes this trigger to fire whenever an attached interrupt controller signals a trigger.                                                                                                                                         | WARL     |       0 |
+| select  | Selects any combination of up to 16 TM external trigger inputs that cause this trigger to fire.                                                                                                                                                               | WARL     |       0 |
+| action  | The action to take when the trigger fires. The values are explained in Table 12.                                                                                                                                                                              | WARL     |       0 |

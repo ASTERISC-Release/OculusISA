@@ -1,0 +1,26 @@
+# Test Case Rule: RULE 1: CSRRWI obtains the XLEN-bit value to write to the CSR by zero-extending the 5-bit unsigned immediate field (uimm[4:0]) encoded in the rs1 field.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 31
+csrr a0, mscratch
+# Result: a0 = 31
+
+# Test Case Rule: RULE 2: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that could occur on a CSR read.
+##### ASSEMBLY #####
+nop # Skipped because CSR-read side effects are not deterministically observable from the given rule
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: When rd of a CSRRWI instruction is x0, the instruction shall write the CSR with the zero-extended immediate value.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 13
+csrr a0, mscratch
+# Result: a0 = 13
+
+# Test Case Rule: RULE 4: When rd of a CSRRWI instruction is not x0, the instruction shall read the current value of the CSR, write the CSR with the zero-extended immediate value, and place the original CSR value into rd.
+##### ASSEMBLY #####
+li t0, 42
+csrw mscratch, t0
+csrrwi a0, mscratch, 7
+csrr a1, mscratch
+slli a0, a0, 8
+add a0, a0, a1
+# Result: a0 = 0x2a07

@@ -1,0 +1,30 @@
+VALIDATION SUMMARY
+Total rules: 5
+Correct rules: 1
+Wrong rules: 4
+Correct percentage: 1 / 5 = 20%
+Wrong percentage: 4 / 5 = 80%
+
+RULE VALIDATION
+
+RULE 1: WRONG
+Reason: The manual supports a virtual-instruction exception for VS-mode access to CSR satp when hstatus.VTVM=1, but the rule is too broad because “virtualized execution” can also include VU-mode; VTVM is specified to affect execution only in VS-mode. The “does not change satp or vsatp state” part is plausible for a trapping CSR write, but not stated as a specific satp/vsatp architectural rule here.
+
+RULE 2: WRONG
+Reason: The manual says that when V=1, vsatp substitutes for satp, so instructions that normally read or modify satp access vsatp; however, the rule is too broad because “virtualized execution with hstatus.VTVM clear” does not by itself make all satp CSR accesses permitted, e.g. VU-mode is still below the supervisor CSR privilege level.
+
+RULE 3: WRONG
+Reason: mstatus.TVM=1 specifically traps attempts to read/write satp while executing in S-mode; the rule says “from a privilege level below machine privilege,” which also includes U-mode, where access fails by CSR privilege rules rather than the TVM interception rule.
+
+RULE 6: CORRECT
+Reason: Outside virtualized execution, S-mode access to satp is permitted when mstatus.TVM=0, and M-mode can access lower-privilege CSRs; therefore the access proceeds to the nonvirtual satp CSR path, subject to the normal satp CSR semantics.
+
+RULE 31: WRONG
+Reason: The manual names the disabled translation mode Bare, not “OFF,” and states Bare means no translation or protection; the rule’s “selected satp backing context” and “translation-disabled physical-address path” are model-specific and not fully verifiable as written.
+
+WRONG RULES ONLY
+
+RULE 1: Too broad for all virtualized execution; hstatus.VTVM is specified for VS-mode, and the state-change claim is not directly specified.
+RULE 2: Too broad; V=1 routes satp to vsatp, but VU-mode privilege is not automatically permitted.
+RULE 3: Too broad; TVM traps S-mode satp access, not every below-M privilege case.
+RULE 31: Uses non-manual/model-specific terms “OFF,” “backing context,” and “translation-disabled physical-address path.”

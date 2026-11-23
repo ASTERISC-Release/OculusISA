@@ -1,0 +1,897 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `SFENCE.VMA`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+mop" Compressed May-Be-Operations Extension, Version 1.0
+
+This section defines the "Zcmop" extension, which defines eight 16-bit MOP instructions named C.MOP. n , where n is an odd integer between 1 and 15, inclusive. C.MOP. n is encoded in the reserved encoding space corresponding to C.LUI x n , 0, as shown in Table 10. Unlike the MOPs defined in the Zimop extension, the C.MOP. n instructions  are  defined  to not write  any  register.  Their  encoding  allows  future  extensions  to define them to read register x[ n ] .
+
+The Zcmop extension depends upon the Zca extension.
+
+<image>
+
+<image>
+
+Very few suitable 16-bit encoding spaces exist. This space was chosen because it already has unusual  behavior  with  respect  to  the rd / rs1 field-it  encodes c.addi16sp when  the  field contains x2 --and is therefore of lower value for most purposes.
+
+Table 10. C.MOP.n instruction encoding.
+
+| Mnemonic   |         Encoding | Redefinable to read register   |
+|------------|------------------|--------------------------------|
+| C.MOP.1    | 0110000010000001 | x1                             |
+| C.MOP.3    | 0110000110000001 | x3                             |
+| C.MOP.5    | 0110001010000001 | x5                             |
+| C.MOP.7    | 0110001110000001 | x7                             |
+| C.MOP.9    | 0110010010000001 | x9                             |
+| C.MOP.11   | 0110010110000001 | x11                            |
+| C.MOP.13   | 0110011010000001 | x13                            |
+| C.MOP.15   | 0110011110000001 | x15                            |
+
+<image>
+
+The recommended assembly syntax for C.MOP.n is simply the nullary C.MOP.n. The possibly accessed register is implicitly x n .
+
+<image>
+
+The expectation is that each Zcmop instruction is equivalent to some Zimop instruction, but the choice of expansion (if any) is left to the extension that redefines the MOP. Note, a Zcmop instruction that does not write a value can expand into a write to x0 .
+
+## Chapter 11. "Zicond" Extension for Integer Conditional Operations, Version 1.0.0
+
+The Zicond extension defines two R-type instructions that support branchless conditional operations.
+
+| RV32   | RV64   | Mnemonic                 | Instruction                                     |
+|--------|--------|--------------------------|-------------------------------------------------|
+| ✓      | ✓      | czero.eqz rd , rs1 , rs2 | Conditional zero, if condition is equal to zero |
+| ✓      | ✓      | czero.nez rd , rs1 , rs2 | Conditional zero, if condition is nonzero       |
+
+## 11.1. Instructions (in alphabetical order)
+
+## 11.1.1. czero.eqz
+
+Synopsis
+
+Moves zero to a register rd , if the condition rs2 is equal to zero, otherwise moves rs1 to rd .
+
+## Mnemonic
+
+czero.eqz rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+If rs2 contains the value zero, this instruction writes the value zero to rd . Otherwise, this instruction copies the contents of rs1 to rd .
+
+This instruction carries a syntactic dependency from both rs1 and rs2 to rd .
+
+Furthermore,  if  the  Zkt  extension  is  implemented,  this  instruction's  timing  is  independent  of  the  data values in rs1 and rs2 .
+
+## SAIL code
+
+```
+let condition = X(rs2); result : xlenbits = if (condition == zeros()) then zeros() else X(rs1); X(rd) = result;
+```
+
+## 11.1.2. czero.nez
+
+## Synopsis
+
+Moves zero to a register rd , if the condition rs2 is nonzero, otherwise moves rs1 to rd .
+
+## Mnemonic
+
+czero.nez rd , rs1 , rs2
+
+## Encoding
+
+<image>
+
+## Description
+
+If rs2 contains  a  nonzero  value,  this  instruction  writes  the  value  zero  to rd .  Otherwise,  this  instruction copies the contents of rs1 to rd .
+
+This instruction carries a syntactic dependency from both rs1 and rs2 to rd .
+
+Furthermore,  if  the  Zkt  extension  is  implemented,  this  instruction's  timing  is  independent  of  the  data values in rs1 and rs2 .
+
+## SAIL code
+
+```
+let condition = X(rs2); result : xlenbits = if (condition != zeros()) then zeros() else X(rs1); X(rd) = result;
+```
+
+## 11.2. Usage examples
+
+The  instructions  from  this  extension  can  be  used  to  construct  sequences  that  perform  conditionalarithmetic, conditional-bitwise-logical, and conditional-select operations.
+
+## 11.2.1. Instruction sequences
+
+| Operation                                                               | Instruction sequence    | Instruction sequence                    | Length                         |
+|-------------------------------------------------------------------------|-------------------------|-----------------------------------------|--------------------------------|
+| Conditional add, if zero rd = (rc == 0) ? (rs1 + rs2) :                 | czero.nez add           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional add, if non-zero rd = (rc != 0) ? (rs1 + rs2) :             | czero.eqz add           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional subtract, if zero rd = (rc == 0) ? (rs1 - rs2) :            | czero.nez sub           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional subtract, if non-zero rd = (rc != 0) ? (rs1 - rs2) :        | czero.eqz sub           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional bitwise-or, if zero rd = (rc == 0) ? (rs1 | rs2) :     | czero.nez or            | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional bitwise-or, if non-zero rd = (rc != 0) ? (rs1 | rs2) : | czero.eqz or            | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional bitwise-xor, if zero rd = (rc == 0) ? (rs1 ^ rs2) :         | czero.nez xor           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional bitwise-xor, if non-zero rd = (rc != 0) ? (rs1 ^ rs2) :     | czero.eqz xor           | rd, rs2, rc rd, rs1, rd                 | 2 insns                        |
+| Conditional bitwise-and, if zero rd = (rc == 0) ? (rs1 & rs2) :         | and czero.eqz or        | rd, rs1, rs2 rtmp, rs1, rc rd, rd, rtmp | 3 insns (requires 1 temporary) |
+| Conditional bitwise-and, if non-zero rd = (rc != 0) ? (rs1 & rs2) :     | and czero.nez or        | rd, rs1, rs2 rtmp, rs1, rc rd, rd, rtmp | 3 insns (requires 1 temporary) |
+| Conditional select, if zero rd = (rc == 0) ? rs1 : rs2                  | czero.nez czero.eqz add | rd, rs1, rc rtmp, rs2, rc rd, rd, rtmp  | 3 insns (requires 1 temporary) |
+| Conditional select, if non-zero rd = (rc != 0) ? rs1 : rs2              | czero.eqz czero.nez add | rd, rs1, rc rtmp, rs2, rc rd, rd, rtmp  | 3 insns (requires 1 temporary) |
+
+## Chapter 12. "M" Extension for Integer Multiplication and Division, Version 2.0
+
+This  chapter  describes  the  standard  integer  multiplication  and  division  instruction  extension,  which  is named M and contains instructions that multiply or divide values held in two integer registers.
+
+<image>
+
+We separate integer multiply and divide out from the base to simplify low-end implementations, or for applications where integer multiply and divide operations are either infrequent or better handled in attached accelerators.
+
+## 12.1. Multiplication Operations
+
+<image>
+
+MUL performs an XLEN-bit × XLEN-bit multiplication of rs1 by rs2 and places the lower XLEN bits in the destination register. MULH, MULHU, and MULHSU perform the same multiplication but return the upper XLEN bits of the full 2 × XLEN-bit product, for signed × signed, unsigned × unsigned, and rs1 × unsigned rs2 multiplication. If both the high and low bits of the same product are required, then the recommended code sequence is: MULH[[S]U] rdh, rs1, rs2; MUL rdl, rs1, rs2 (source register specifiers must be in same order  and rdh cannot  be  the  same  as rs1 or rs2 ).  Microarchitectures  can  then  fuse  these  into  a  single multiply operation instead of performing two separate multiplies.
+
+<image>
+
+MULHSU is used in multi-word signed multiplication to multiply the most-significant word of the multiplicand (which contains the sign bit) with the less-significant words of the multiplier (which are unsigned).
+
+MULW is an RV64 instruction that multiplies the lower 32 bits of the source registers, placing the sign extension of the lower 32 bits of the result into the destination register.
+
+<image>
+
+In  RV64,  MUL  can  be  used  to  obtain  the  upper  32  bits  of  the  64-bit  product,  but  signed arguments must be proper 32-bit signed values, whereas unsigned arguments must have their upper  32  bits  clear.  If  the  arguments  are  not  known  to  be  sign-  or  zero-extended,  an alternative is to shift both arguments left by 32 bits, then use MULH[[S]U].
+
+## 12.2. Division Operations
+
+<image>
+
+DIV and DIVU perform an XLEN bits by XLEN bits signed and unsigned integer division of rs1 by rs2 , rounding towards zero. REM and REMU provide the remainder of the corresponding division operation. For REM, the sign of a nonzero result equals the sign of the dividend.
+
+<image>
+
+For both signed and unsigned division, except in the case of overflow, it holds that dividend = divisor × quotient + remainder.
+
+If both the quotient and remainder are required from the same division, the recommended code sequence is: DIV[U]  rdq,  rs1,  rs2;  REM[U]  rdr, rs1,  rs2 ( rdq cannot  be  the  same  as rs1 or rs2 ). Microarchitectures can then fuse these into a single divide operation instead of performing two separate divides.
+
+DIVW and DIVUW are RV64 instructions that divide the lower 32 bits of rs1 by the lower 32 bits of rs2 , treating them as signed and unsigned integers, placing the 32-bit quotient in rd , sign-extended to 64 bits. REMW  and  REMUW  are  RV64  instructions  that  provide  the  corresponding  signed  and  unsigned remainder operations. Both REMW and REMUW always sign-extend the 32-bit result to 64 bits, including on a divide by zero.
+
+The  semantics  for  division  by  zero  and  division  overflow  are  summarized  in  Table  11.  The  quotient  of division by zero has all bits set, and the remainder of division by zero equals the dividend. Signed division overflow occurs only when the most-negative integer is divided by -1.  The  quotient of a signed division with overflow is equal to the dividend, and the remainder is zero. Unsigned division overflow cannot occur.
+
+Table 11. Semantics for division by zero and division overflow. L is the width of the operation in bits: XLEN for DIV[U] and REM[U], or 32 for DIV[U]W and REM[U]W.
+
+| Condition              | Dividend   | Divisor   | DIVU[W]   | REMU[W]   | DIV[W]   | REM[W]   |
+|------------------------|------------|-----------|-----------|-----------|----------|----------|
+| Division by zero       | x          | 0         | 2 L -1    | x         | - 1      | x        |
+| Overflow (signed only) | -2 L-1     | - 1       | -         | -         | -2 L-1   | 0        |
+
+<image>
+
+We considered raising exceptions on integer divide by zero, with these exceptions causing a trap in most execution environments. However, this would be the only arithmetic trap in the standard ISA (floating-point exceptions set flags and write default values, but do not cause traps) and would require language implementers to interact with the execution environment's trap handlers for this case. Further, where language standards mandate that a divide-by-zero exception  must  cause  an  immediate  control  flow  change,  only  a  single  branch  instruction needs to be added to each divide operation, and this branch instruction can be inserted after the divide and should normally be very predictably not taken, adding little runtime overhead.
+
+The value of all bits set is returned for both unsigned and signed divide by zero to simplify the divider  circuitry.  The  value  of  all  1s  is  both  the  natural  value  to  return  for  unsigned  divide, representing  the  largest  unsigned  number,  and  also  the  natural  result  for  simple  unsigned divider  implementations.  Signed  division  is  often  implemented  using  an  unsigned  division circuit and specifying the same overflow result simplifies the hardware.
+
+## 12.3. Zmmul Extension, Version 1.0
+
+The Zmmul extension  implements  the  multiplication  subset  of  the  M  extension.  It  adds  all  of  the instructions defined in Section 12.1, namely: MUL, MULH, MULHU, MULHSU, and (for RV64 only) MULW. The encodings are identical to those of the corresponding M-extension instructions. M implies Zmmul .
+
+<image>
+
+The Zmmul extension enables low-cost implementations that require multiplication operations but not division. For many microcontroller applications, division operations are too infrequent to  justify  the  cost  of  divider  hardware.  By  contrast,  multiplication  operations  are  more frequent,  making  the  cost  of  multiplier  hardware  more  justifiable.  Simple  FPGA  soft  cores particularly benefit from eliminating division but retaining multiplication, since many FPGAs provide hardwired multipliers but require dividers be implemented in soft logic.
+
+## Chapter 13. "A" Extension for Atomic Instructions, Version 2.1
+
+The  atomic-instruction  extension,  named  "A",  contains  instructions  that  atomically  read-modify-write memory to support synchronization between multiple RISC-V harts running in the same memory space. The two forms of atomic instruction provided are load-reserved/store-conditional instructions and atomic fetch-and-op memory instructions. Both types of atomic instruction support various memory consistency orderings including unordered, acquire, release, and sequentially consistent semantics. These instructions allow RISC-V to support the RCsc memory consistency model. (Gharachorloo et al., 1990)
+
+<image>
+
+After  much  debate,  the  language  community  and  architecture  community  appear  to  have finally  settled  on  release  consistency as the standard memory consistency model and so the RISC-V atomic support is built around this model.
+
+The A extension comprises instructions provided by the Zaamo and Zalrsc extensions.
+
+## 13.1. Specifying Ordering of Atomic Instructions
+
+The base RISC-V ISA has a relaxed memory model, with the FENCE instruction used to impose additional ordering constraints.  The  address  space  is  divided  by  the  execution  environment  into  memory  and  I/O domains, and the FENCE instruction provides options to order accesses to one or both of these two address domains.
+
+To  provide  more  efficient  support  for  release  consistency  (Gharachorloo  et  al.,  1990),  each  atomic instruction has two bits, aq and rl ,  used  to  specify  additional memory ordering constraints as viewed by other RISC-V harts. The bits order accesses to one of the two address domains, memory or I/O, depending on which address domain the atomic instruction is accessing. No ordering constraint is implied to accesses to the other domain, and a FENCE instruction should be used to order across both domains.
+
+If both bits are clear, no additional ordering constraints are imposed on the atomic memory operation. If only the aq bit is set, the atomic memory operation is treated as an acquire access, i.e., no following memory operations on this RISC-V hart can be observed to take place before the acquire memory operation. If only the rl bit  is  set,  the  atomic  memory  operation  is  treated  as  a release access,  i.e.,  the  release  memory operation cannot be observed to take place before any earlier memory operations on this RISC-V hart. If both  the aq and rl bits  are  set,  the  atomic  memory  operation  is sequentially  consistent and  cannot  be observed  to  happen  before  any  earlier  memory  operations  or  after  any  later  memory  operations  in  the same RISC-V hart and to the same address domain.
+
+## 13.2. "Zalrsc" Extension for Load-Reserved/Store-Conditional Instructions
+
+<image>
+
+| 31     | 24 25 26 27   | 24 25 26 27   | 19 20     | 19 20    | 11 12 14 15   | 11 12 14 15   | 6 7    | 6 7   | 0      |
+|--------|---------------|---------------|-----------|----------|---------------|---------------|--------|-------|--------|
+| funct5 | funct5        | rs2 rl aq     | rs2 rl aq | rs1      | rs1           | funct3        | funct3 | rd    | opcode |
+| 5      | 5             | 1 1           | 1 1       | 5 5      | 5 5           | 3             | 3      | 5     | 7      |
+| LR.W/D | LR.W/D        | ring orde     | ring orde | addr 0   | addr 0        | width         | width  | dest  | AMO    |
+| SC.W/D | SC.W/D        | ring orde     | ring orde | addr src | addr src      | width         | width  | dest  | AMO    |
+
+Complex atomic memory operations on a single memory word or doubleword are performed with the loadreserved (LR) and store-conditional (SC) instructions. LR.W loads a word from the address in rs1 , places the sign-extended  value  in rd ,  and  registers  a reservation  set -a set  of  bytes  that  subsumes  the  bytes  in  the addressed word. SC.W conditionally writes a word in rs2 to the address in rs1 : the SC.W succeeds only if the reservation is still valid and the reservation set contains the bytes being written. If the SC.W succeeds, the instruction writes the word in rs2 to memory, and it writes zero to rd . If the SC.W fails, the instruction does not write to memory, and it writes a nonzero value to rd . No SC.W instruction shall retire unless it passes
+
+memory permission checks, but it is UNSPECIFIED whether any side effects of implicit address translation and protection memory accesses (such as setting a page-table entry D bit) occur on a failed SC.W. For the purposes of memory protection, a failed SC.W may be treated like a store. Regardless of success or failure, executing an SC.W instruction invalidates any reservation held by this hart. LR.D and SC.D act analogously on doublewords and are only available on RV64. For RV64, LR.W and SC.W sign-extend the value placed in rd .
+
+Both  compare-and-swap  (CAS)  and  LR/SC  can  be  used  to  build  lock-free  data  structures. After  extensive  discussion,  we  opted  for  LR/SC  for  several  reasons:  1)  CAS  suffers  from  the ABA problem, which LR/SC avoids because it monitors all writes to the address rather than only  checking  for  changes  in  the  data  value;  2)  CAS  would  also  require  a  new  integer instruction format to support three source operands (address, compare value, swap value) as well as a different memory system message format, which would complicate microarchitectures; 3) Furthermore, to avoid the ABA problem, other systems provide a doublewide CAS (DW-CAS) to allow a counter to be tested and incremented along with a data word. This requires reading five registers and writing two in one instruction, and also a new larger memory  system  message  type,  further  complicating  implementations;  4)  LR/SC  provides  a more efficient implementation of many primitives as it only requires one load as opposed to two  with  CAS  (one  load  before  the  CAS  instruction  to  obtain  a  value  for  speculative computation, then a second load as part of the CAS instruction to check if value is unchanged before updating).
+
+The  main  disadvantage  of  LR/SC  over  CAS  is  livelock,  which  we  avoid,  under  certain circumstances,  with  an  architected  guarantee  of  eventual  forward  progress  as  described below. Another concern is whether the influence of the current x86 architecture, with its DWCAS,  will  complicate  porting  of  synchronization  libraries  and  other  software  that  assumes DW-CAS is the basic machine primitive. A possible mitigating factor is the recent addition of transactional memory instructions to x86, which might cause a move away from DW-CAS.
+
+More  generally,  a  multi-word  atomic  primitive  is  desirable,  but  there  is  still  considerable debate about what form this should take, and guaranteeing forward progress adds complexity to a system.
+
+The failure code with value 1 encodes an unspecified failure. Other failure codes are reserved at this time. Portable software should only assume the failure code will be non-zero.
+
+<image>
+
+We  reserve  a  failure  code  of  1  to  mean  ''unspecified''  so  that  simple  implementations  may return this value using the existing multiplexer required for the SLT/SLTU instructions. More specific failure codes might be defined in future versions or extensions to the ISA.
+
+For LR and SC, the Zalrsc extension requires that the address held in rs1 be naturally aligned to the size of the operand (i.e., eight-byte aligned for doublewords and four-byte aligned for words ). If the address is not naturally  aligned,  an  address-misaligned  exception  or  an  access-fault  exception  will  be  generated.  The access-fault  exception  can  be  generated  for  a  memory  access  that  would  otherwise  be  able  to  complete except for the misalignment, if the misaligned access should not be emulated.
+
+Emulating misaligned LR/SC sequences is impractical in most systems.
+
+Misaligned LR/SC sequences also raise the possibility of accessing multiple reservation sets at once, which present definitions do not provide for.
+
+<image>
+
+An implementation can register an arbitrarily large reservation set on each LR, provided the reservation set includes all bytes of the addressed data word or doubleword. An SC can only pair with the most recent LR in  program  order.  An  SC  may  succeed  only  if  no  store  from  another  hart  to  the  reservation  set  can  be observed to have occurred between the LR and the SC, and if there is no other SC between the LR and itself
+
+in program order. An SC may succeed only if no write from a device other than a hart to the bytes accessed by the LR instruction can be observed to have occurred between the LR and SC. Note this LR might have had a different effective address and data size, but reserved the SC's address as part of the reservation set.
+
+Following this model, in systems with memory translation, an SC is allowed to succeed if the earlier LR reserved the same location using an alias with a different virtual address, but is also allowed to fail if the virtual address is different.
+
+<image>
+
+To accommodate legacy devices and buses, writes from devices other than RISC-V harts are only required to invalidate reservations when they overlap the bytes accessed by the LR. These writes  are  not  required  to  invalidate  the  reservation  when  they  access  other  bytes  in  the reservation set.
+
+The SC must fail if the address is not within the reservation set of the most recent LR in program order. The SC must fail if a store to the reservation set from another hart can be observed to occur between the LR and SC. The SC must fail if a write from some other device to the bytes accessed by the LR can be observed to occur between the LR and SC. (If such a device writes the reservation set but does not write the bytes accessed by the LR, the SC may or may not fail.) An SC must fail if there is another SC (to any address) between the LR and the SC in program order. The precise statement of the atomicity requirements for successful LR/SC sequences is defined by the Atomicity Axiom in Section 18.1.
+
+The platform should provide a means to determine the size and shape of the reservation set.
+
+A platform specification may constrain the size and shape of the reservation set.
+
+A  store-conditional  instruction  to  a  scratch  word  of  memory  should  be  used  to  forcibly invalidate any existing load reservation:
+
+- ⚫ during a preemptive context switch, and
+- ⚫ if necessary when changing virtual to physical address mappings, such as when migrating pages that might contain an active reservation.
+
+<image>
+
+The invalidation of a hart's reservation when it executes an LR or SC imply that a hart can only hold one reservation at a time, and that an SC can only pair with the most recent LR, and LR with the next following SC, in program order. This is a restriction to the Atomicity Axiom in Section 18.1 that ensures software runs correctly on expected common implementations that operate in this manner.
+
+An SC instruction can never be observed by another RISC-V hart before the LR instruction that established the reservation.
+
+<image>
+
+The LR/SC sequence can be given acquire semantics by setting the aq bit on the LR instruction. The  LR/SC  sequence  can  be  given  release  semantics  by  by  setting  the  rl  bit  on  the  SC instruction. Assuming suitable mappings for other atomic operations, setting the aq bit on the LR  instruction,  and  setting  the  rl  bit  on  the  SC  instruction  makes  the  LR/SC  sequence sequentially consistent in the C++ memory\_order\_seq\_cst sense.  Such a sequence does not act as a fence for ordering ordinary load and store instructions before and after the sequence. Specific  instruction  mappings  for  other  C++  atomic  operations,  or  stronger  notions  of "sequential  consistency",  may  require  both  bits  to  be  set  on  either  or  both  of  the  LR  or  SC instruction.
+
+If neither bit is set on either LR or SC, the LR/SC sequence can be observed to occur before or after  surrounding  memory  operations  from  the  same  RISC-V  hart.  This  can  be  appropriate when the LR/SC sequence is used to implement a parallel reduction operation.
+
+Software should not set the rl bit on an LR instruction unless the aq bit is also set, nor should software set the aq bit on an SC instruction unless the rl bit is also set. LR. rl and SC. aq instructions are not guaranteed to provide any stronger ordering than those with both bits clear, but may result in lower performance.
+
+Listing 2. Sample code for compare-and-swap function using LR/SC.
+
+<image>
+
+```
+# a0 holds address of memory location # a1 holds expected value # a2 holds desired value # a0 holds return value, 0 if successful, !0 otherwise cas: lr.w t0, (a0)        # Load original value. bne t0, a1, fail     # Doesn't match, so fail. sc.w t0, a2, (a0)    # Try to update. bnez t0, cas         # Retry if store-conditional failed. li a0, 0             # Set return to success. jr ra                # Return. fail: li a0, 1             # Set return to failure. jr ra                # Return.
+```
+
+LR/SC  can  be  used  to  construct  lock-free  data  structures.  An  example  using  LR/SC  to implement a compare-and-swap function is shown in Listing 2. If inlined, compare-and-swap functionality need only take four instructions.
+
+## 13.3. Eventual Success of Store-Conditional Instructions
+
+The Zalrsc extension defines constrained LR/SC loops , which have the following properties:
+
+- ⚫ The loop comprises only an LR/SC sequence and code to retry the sequence in the case of failure, and must comprise at most 16 instructions placed sequentially in memory.
+- ⚫ An LR/SC sequence begins with an LR instruction and ends with an SC instruction. The dynamic code executed  between  the  LR  and  SC  instructions  can  only  contain  instructions  from  the  base  ''I'' instruction set, excluding loads, stores, backward jumps, taken backward branches, JALR, FENCE, and SYSTEM instructions. Compressed forms of the aforementioned ''I'' instructions in the C (hence Zca) and Zcb extensions are also permitted.
+- ⚫ The code to retry a failing LR/SC sequence can contain backwards jumps and/or branches to repeat the LR/SC sequence, but otherwise has the same constraint as the code between the LR and SC.
+- ⚫ The LR and SC addresses must lie within a memory region with the LR/SC eventuality property. The execution environment is responsible for communicating which regions have this property.
+- ⚫ The SC must be to the same effective address and of the same data size as the latest LR executed by the same hart.
+
+LR/SC sequences that do not lie within constrained LR/SC loops are unconstrained . Unconstrained LR/SC sequences might succeed on some attempts on some implementations, but might never succeed on other implementations.
+
+<image>
+
+We restricted the length of LR/SC loops to fit within 64 contiguous instruction bytes in the base  ISA  to  avoid  undue  restrictions  on  instruction  cache  and  TLB  size  and  associativity. Similarly, we disallowed other loads and stores within the loops to avoid restrictions on data-
+
+cache  associativity  in  simple  implementations  that  track  the  reservation  within  a  private cache.  The  restrictions  on  branches  and  jumps  limit  the  time  that  can  be  spent  in  the sequence.  Floating-point  operations  and  integer  multiply/divide  were  disallowed  to  simplify the operating system's emulation of these instructions on implementations lacking appropriate hardware support.
+
+Software is not forbidden from using unconstrained LR/SC sequences, but portable software must detect the case that the sequence repeatedly fails,  then  fall  back  to  an  alternate  code sequence  that  does  not  rely  on  an  unconstrained  LR/SC  sequence.  Implementations  are permitted to unconditionally fail any unconstrained LR/SC sequence.
+
+[#norm:constrained\_lrsc\_forward\_progress]#If a hart H enters  a  constrained LR/SC loop, the execution environment must guarantee that one of the following events eventually occurs:
+
+- ⚫ H or  some  other  hart  executes  a  successful  SC  to  the  reservation  set  of  the  LR  instruction  in H 's constrained LR/SC loops.
+- ⚫ Some other hart executes an unconditional store or AMO instruction to the reservation set of the LR instruction in H 's constrained LR/SC loop, or some other device in the system writes to that reservation set.
+- ⚫ H executes a branch or jump that exits the constrained LR/SC loop.
+- ⚫ H traps.#
+
+Note that these definitions permit an implementation to fail an SC instruction occasionally for any reason, provided the aforementioned guarantee is not violated.
+
+As a consequence of the eventuality guarantee, if some harts in an execution environment are executing constrained LR/SC  loops, and  no other harts or devices in the execution environment execute an unconditional store or AMO to that reservation set, then at least one hart  will  eventually  exit  its  constrained  LR/SC  loop.  By  contrast,  if  other  harts  or  devices continue to write to that reservation set, it is not guaranteed that any hart will exit its LR/SC loop.
+
+Loads and load-reserved instructions do not by themselves impede the progress of other harts' LR/SC sequences. We note this constraint implies, among other things, that loads and loadreserved instructions executed by other harts (possibly within the same core) cannot impede LR/SC progress indefinitely. For example, cache evictions caused by another hart sharing the cache  cannot  impede  LR/SC  progress  indefinitely.  Typically,  this  implies  reservations  are tracked independently of evictions from any shared cache. Similarly, cache misses caused by speculative execution within a hart cannot impede LR/SC progress indefinitely.
+
+These definitions admit the possibility that SC instructions may spuriously fail for implementation reasons, provided progress is eventually made.
+
+One  advantage  of  CAS  is  that  it  guarantees  that  some  hart  eventually  makes  progress, whereas an LR/SC atomic sequence could livelock indefinitely on some systems. To avoid this concern,  we  added  an  architectural  guarantee  of  livelock  freedom  for  certain  LR/SC sequences.
+
+Earlier  versions  of  this  specification  imposed  a  stronger  starvation-freedom  guarantee. However, the weaker livelock-freedom guarantee is sufficient to implement the C11 and C++11 languages, and is substantially easier to provide in some microarchitectural styles.
+
+## 13.4. "Zaamo" Extension for Atomic Memory Operations
+
+<image>
+
+| 31            | 26 27         | 24 25   | 19 20   | 14 15   | 11 12   | 6 7   | 0      |
+|---------------|---------------|---------|---------|---------|---------|-------|--------|
+| funct5        | funct5        | rl aq   | rs2     | rs1     | funct3  | rd    | opcode |
+| 5             | 1             | 1       | 5       | 5       | 3       | 5     | 7      |
+| AMOSWAP.W/D   | AMOSWAP.W/D   |         | src     | addr    | width   | dest  | AMO    |
+| AMOADD.W/D    | AMOADD.W/D    |         | src     | addr    | width   | dest  | AMO    |
+| AMOAND.W/D    | AMOAND.W/D    |         | src     | addr    | width   | dest  | AMO    |
+| AMOOR.W/D     | AMOOR.W/D     |         | src     | addr    | width   | dest  | AMO    |
+| AMOXOR.W/D    | AMOXOR.W/D    |         | src     | addr    | width   | dest  | AMO    |
+| AMOMAX[U].W/D | AMOMAX[U].W/D |         | src     | addr    | width   | dest  | AMO    |
+| AMOMIN[U].W/D | AMOMIN[U].W/D |         | src     | addr    | width   | dest  | AMO    |
+
+The atomic memory operation (AMO) instructions perform read-modify-write operations for multiprocessor  synchronization  and  are  encoded  with  an  R-type  instruction  format.  These  AMO instructions atomically load a data value from the address in rs1 ,  place the value into register rd ,  apply a binary operator to the loaded value and the original value in rs2 , then store the result back to the original address in rs1 . AMOs can either operate on doublewords (RV64 only) or words in memory. For RV64, 32-bit AMOs always sign-extend the value placed in rd , and ignore the upper 32 bits of the original value of rs2 .
+
+For AMOs, the Zaamo extension requires that the address held in rs1 be naturally aligned to the size of the operand  (i.e.,  eight-byte  aligned  for doublewords and  four-byte  aligned  for words ).  If  the  address  is  not naturally  aligned,  an  address-misaligned  exception  or  an  access-fault  exception  will  be  generated.  The access-fault  exception  can  be  generated  for  a  memory  access  that  would  otherwise  be  able  to  complete except for the misalignment, if the misaligned access should not be emulated.
+
+The  misaligned  atomicity  granule  PMA,  defined  in  Volume  II  of  this  manual,  optionally  relaxes  this alignment requirement. If present, the misaligned atomicity granule PMA specifies the size of a misaligned atomicity granule, a power-of-two number of bytes. The misaligned atomicity granule PMA applies only to AMOs, loads and stores defined in the base ISAs, and loads and stores of no more than XLEN bits defined in  the  F,  D,  and  Q  extensions,  and  compressed  encodings  thereof.  For  an  instruction  in  that  set,  if  all accessed bytes lie within the same misaligned atomicity granule, the instruction will not raise an exception for reasons of address alignment, and the instruction will give rise to only one memory operation for the purposes of RVWMO-i.e., it will execute atomically.
+
+The operations supported are swap, integer add, bitwise AND, bitwise OR, bitwise XOR, and signed and unsigned  integer  maximum  and  minimum.  Without  ordering  constraints,  these  AMOs  can  be  used  to implement parallel reduction operations, where typically the return value would be discarded by writing to x0 .
+
+We  provided  fetch-and-op  style  atomic  primitives  as  they  scale  to  highly  parallel  systems better than LR/SC or CAS. A simple microarchitecture can implement AMOs using the LR/SC primitives, provided the implementation can guarantee the AMO eventually completes. More complex  implementations  might  also  implement  AMOs  at  memory  controllers,  and  can optimize away fetching the original value when the destination is x0 .
+
+<image>
+
+The set of AMOs was chosen to support the C11/C++11 atomic memory operations efficiently, and also to support parallel reductions in memory. Another use of AMOs is to provide atomic updates to memory-mapped device registers (e.g., setting, clearing, or toggling bits) in the I/O space.
+
+The  Zaamo  extension  enables  microcontroller  class implementations  to  utilize  atomic primitives  from  the  AMO  subset  of  the  A  extension.  Typically  such  implementations  do  not have caches and thus may not be able to naturally support the LR/SC instructions provided by the Zalrsc extension.
+
+To  help  implement  multiprocessor  synchronization,  the  AMOs  optionally  provide  release  consistency
+
+semantics. If the aq bit is set, then no later memory operations in this RISC-V hart can be observed to take place before the AMO. Conversely, if the rl bit  is  set,  then  other  RISC-V harts will not observe the AMO before memory accesses preceding the AMO in this RISC-V hart. Setting both the aq and the rl bit on an AMO makes the sequence sequentially consistent, meaning that it cannot be reordered with earlier or later memory operations from the same hart.
+
+<image>
+
+
+
+<image>
+
+The AMOs were designed to implement the C11 and C++11 memory models efficiently. Although the FENCE R, RW instruction suffices to implement the acquire operation and FENCE RW, W suffices  to  implement  release,  both  imply  additional  unnecessary  ordering  as  compared  to AMOs with the corresponding aq or rl bit set.
+
+An example code sequence for a critical section guarded by a test-and-test-and-set spinlock is shown in Example Listing 3. Note the first AMO is marked aq to order the lock acquisition before the critical section, and the second AMO is marked rl to order the critical section before the lock relinquishment.
+
+```
+li           t0, 1        # Initialize swap value. again: lw           t1, (a0)     # Check if lock is held. bnez         t1, again    # Retry if held. amoswap.w.aq t1, t0, (a0) # Attempt to acquire lock. bnez         t1, again    # Retry if held. # ... # Critical section. # ... amoswap.w.rl x0, x0, (a0) # Release lock by storing 0.
+```
+
+Listing 3. Sample code for mutual exclusion. a0 contains the address of the lock.
+
+We recommend the use of the AMO Swap idiom shown in Listing 3 for both lock acquire and release to simplify the implementation of speculative lock elision. (Rajwar & Goodman, 2001)
+
+The instructions in the "A" extension can be used to provide sequentially consistent loads and stores, but this constrains hardware reordering of memory accesses more than necessary. A C++  sequentially  consistent  load  can  be  implemented  as  an  LR  with  aq  set.  However,  the LR/SC eventual success guarantee may slow down concurrent loads from the same effective address. A sequentially consistent store can be implemented as an AMOSWAP that writes the old value to x0 and has rl set. However the superfluous load may impose ordering constraints that are unnecessary for this use case. Specific compilation conventions may require both the aq and rl bits to be set in either or both the LR and AMOSWAP instructions.
+
+## Chapter 14. "Zawrs" Extension for Wait-on-Reservation-Set instructions, Version 1.01
+
+The Zawrs extension defines a pair of instructions to be used in polling loops that allows a core to enter a low-power state and wait on a store to a memory location. Waiting for a memory location to be updated is a common pattern in many use cases such as:
+
+1. Contenders for a lock waiting for the lock variable to be updated.
+2. Consumers waiting on the tail of an empty queue for the producer to queue work/data. The producer may be code executing on a RISC-V hart, an accelerator device, an external I/O agent.
+3. Code waiting on a flag to be set in memory indicative of an event occurring. For example, software on a RISC-V  hart  may  wait  on  a  "done"  flag  to  be  set  in  memory  by  an  accelerator  device  indicating completion of a job previously submitted to the device.
+
+Such use cases involve polling on memory locations, and such busy loops can be a wasteful expenditure of energy. To mitigate the wasteful looping in such usages, a WRS.NTO (WRS-with-no-timeout) instruction is provided. Instead of polling for a store to a specific memory location, software registers a reservation set that includes all the bytes of the memory location using the LR instruction.  Then a subsequent WRS.NTO instruction would cause the hart to temporarily stall execution in a low-power state until a store occurs to the reservation set or an interrupt is observed.
+
+Sometimes the program waiting on a memory update may also need to carry out a task at a future time or otherwise place an upper bound on the wait. To support such use cases a second instruction WRS.STO (WRSwith-short-timeout) is provided that works like WRS.NTO but bounds the stall duration to an implementation-define  short  timeout  such  that  the  stall  is  terminated  on  the  timeout  if  no  other conditions have occurred to terminate the stall. The program using this instruction may then determine if its deadline has been reached.
+
+<image>
+
+The instructions in the Zawrs extension are only useful in conjunction with the LR instruction, which is provided by the Zalrsc component of the A extension.
+
+## 14.1. Wait-on-Reservation-Set Instructions
+
+The WRS.NTO and WRS.STO instructions cause the hart to temporarily stall execution in a low-power state as long as the reservation set is valid and no pending interrupts, even if disabled, are observed. For WRS.STO the stall duration is bounded by an implementation defined short timeout. These instructions are available in all privilege modes.
+
+<image>
+
+Hart execution may be stalled while the following conditions are all satisfied:
+
+- a. The reservation set is valid
+- b. If WRS.STO , a "short" duration since start of stall has not elapsed
+- c. No pending interrupt is observed (see the rules below)
+
+While stalled, an implementation is permitted to occasionally terminate the stall and complete execution for any reason.
+
+WRS.NTO and WRS.STO instructions  follow  the  rules  of  the WFI instruction  for  resuming  execution  on  a pending interrupt.
+
+When the TW (Timeout Wait) bit in mstatus is set and WRS.NTO is executed in any privilege mode other than M mode, and it does not complete within an implementation-specific  bounded  time  limit,  the WRS.NTO instruction will cause an illegal-instruction exception.
+
+When executing in VS or VU mode, if the VTW bit is set in hstatus ,  the TW bit in mstatus is clear, and the WRS.NTO does not complete within an implementation-specific bounded time limit, the WRS.NTO instruction will cause a virtual-instruction exception.
+
+Since the WRS.STO and WRS.NTO instructions can complete execution for reasons other than stores  to  the  reservation  set,  software  will  likely  need  a  means  of  looping  until  the  required stores have occurred.
+
+<image>
+
+The  duration  of  a WRS.STO instruction's  timeout  may  vary  significantly  within  and  among implementations. In typical implementations this duration should be roughly in the range of 10 to 100 times an on-chip cache miss latency or a cacheless access to main memory.
+
+WRS.NTO , unlike WFI , is not specified to cause an illegal-instruction exception if executed in Umode when the governing TW bit is 0. WFI is typically not expected to be used in U-mode and on many systems may promptly cause an illegal-instruction exception if used at U-mode. Unlike WFI , WRS.NTO is  expected  to  be  used  by  software  in  U-mode  when  waiting  on  memory  but without a deadline for that wait.
+
+## Chapter 15. "Zacas" Extension for Atomic Compare-andSwap (CAS) Instructions, Version 1.0.0
+
+Compare-and-Swap (CAS) provides an easy and typically faster way to perform thread synchronization operations  when  supported  as  a  hardware  instruction.  CAS  is  typically  used  by  lock-free  and  wait-free algorithms. This extension defines CAS instructions to operate on 32-bit, 64-bit, and 128-bit (RV64 only) data values. The Zacas extension depends upon the Zaamo extension.
+
+## 15.1. Word/Doubleword/Quadword CAS (AMOCAS.W/D/Q) Instructions
+
+<image>
+
+For RV32, AMOCAS.W atomically loads a 32-bit data value from address in rs1 , compares the loaded value to the 32-bit value held in rd , and if the comparison is bitwise equal, then stores the 32-bit value held in rs2 to  the  original  address  in rs1 .  The  value  loaded  from  memory  is  placed  into  register rd .  The  operation performed by AMOCAS.W for RV32 is as follows:
+
+```
+temp = mem[X(rs1)] if ( temp == X(rd) ) mem[X(rs1)] = X(rs2) X(rd) = temp
+```
+
+AMOCAS.D is similar to AMOCAS.W but operates on 64-bit data values.
+
+For RV32, AMOCAS.D atomically loads 64-bits of a data value from address in rs1 , compares the loaded value to a 64-bit value held in a register pair consisting of rd and rd+1 ,  and if the comparison is bitwise equal, then stores the 64-bit value held in the register pair rs2 and rs2+1 to the original address in rs1 . The value loaded from memory is placed into the register pair rd and rd+1 . The instruction requires the first register in  the  pair  to  be  even  numbered;  encodings  with  odd  numbered  registers  specified  in rs2 and rd are reserved. When the first register of a source register pair is x0 ,  then both halves of the pair read as zero. When the first register of a destination register pair is x0 ,  then the entire register result is discarded and neither destination register is written. The operation performed by AMOCAS.D for RV32 is as follows:
+
+```
+temp0 = mem[X(rs1)+0] temp1 = mem[X(rs1)+4] comp0 = (rd == x0)  ? 0 : X(rd) comp1 = (rd == x0)  ? 0 : X(rd+1) swap0 = (rs2 == x0) ? 0 : X(rs2) swap1 = (rs2 == x0) ? 0 : X(rs2+1) if ( temp0 == comp0 ) && ( temp1 == comp1 ) mem[X(rs1)+0] = swap0 mem[X(rs1)+4] = swap1 endif if ( rd != x0 ) X(rd)   = temp0 X(rd+1) = temp1 endif
+```
+
+For RV64, AMOCAS.W atomically loads a 32-bit data value from address in rs1 , compares the loaded value to the lower 32 bits of the value held in rd ,  and if the comparison is bitwise equal, then stores the lower 32 bits of the value held in rs2 to the original address in rs1 . The 32-bit value loaded from memory is signextended and is placed into register rd . The operation performed by AMOCAS.W for RV64 is as follows:
+
+```
+temp[31:0] = mem[X(rs1)] if ( temp[31:0] == X(rd)[31:0] ) mem[X(rs1)] = X(rs2)[31:0] X(rd) = SignExtend(temp[31:0])
+```
+
+For RV64, AMOCAS.D atomically loads 64-bits of a data value from address in rs1 , compares the loaded value to a 64-bit value held in rd , and if the comparison is bitwise equal, then stores the 64-bit value held in rs2 to  the  original  address  in rs1 .  The  value  loaded  from  memory  is  placed  into  register rd .  The  operation performed by AMOCAS.D for RV64 is as follows:
+
+```
+temp = mem[X(rs1)] if ( temp == X(rd) ) mem[X(rs1)] = X(rs2) X(rd) = temp
+```
+
+AMOCAS.Q (RV64 only) atomically loads 128-bits of a data value from address in rs1 ,  compares the loaded value to a 128-bit value held in a register pair consisting of rd and rd+1 ,  and if the comparison is bitwise equal, then stores the 128-bit value held in the register pair rs2 and rs2+1 to the original address in rs1 . The value loaded from memory is placed into the register pair rd and rd+1 .  The instruction requires the first register in the pair to be even numbered; encodings with odd numbered registers specified in rs2 and rd are reserved. When the first register of a source register pair is x0 ,  then both halves of the pair read as zero. When the first register of a destination register pair is x0 , then the entire register result is discarded and neither destination register is written. The operation performed by AMOCAS.Q is as follows:
+
+```
+temp0 = mem[X(rs1)+0] temp1 = mem[X(rs1)+8] comp0 = (rd == x0)  ? 0 : X(rd) comp1 = (rd == x0)  ? 0 : X(rd+1) swap0 = (rs2 == x0) ? 0 : X(rs2) swap1 = (rs2 == x0) ? 0 : X(rs2+1) if ( temp0 == comp0 ) && ( temp1 == comp1 ) mem[X(rs1)+0] = swap0 mem[X(rs1)+8] = swap1 endif if ( rd != x0 ) X(rd)   = temp0 X(rd+1) = temp1 endif
+```
+
+Some algorithms may load the previous data value of a memory location into the register used as the compare data value source by a Zacas instruction. When using a Zacas instruction that uses a register pair to source the compare value, the two registers may be loaded using two individual loads. The two individual loads may read an inconsistent pair of values but that is not an issue since the AMOCAS operation itself uses an atomic load-pair from memory to obtain the data value for its comparison.
+
+The following example code sequence illustrates the use of AMOCAS.D in a  RV32 implementation to atomically increment a 64-bit counter.
+
+```
+# a0 - address of the counter. increment: lw   a2, (a0)      # Load current counter value using lw   a3, 4(a0)     # two individual loads. retry: mv   a6, a2        # Save the low 32 bits of the current value. mv   a7, a3        # Save the high 32 bits of the current value. addi a4, a2, 1     # Increment the low 32 bits. sltu a1, a4, a2    # Determine if there is a carry out. add  a5, a3, a1    # Add the carry if any to high 32 bits. amocas.d.aqrl a2, a4, (a0) bne  a2, a6, retry # If amocas.d failed then retry bne  a3, a7, retry # using current values loaded by amocas.d. ret
+```
+
+Just  as  for  AMOs  in  the  A  extension, AMOCAS.W/D/Q requires  that  the  address  held  in rs1 be  naturally aligned to the size of the operand (i.e., 16-byte aligned for quadwords ,  eight-byte aligned for doublewords , and  four-byte  aligned  for words ).  And  the  same  exception  options  apply  if  the  address  is  not  naturally aligned.
+
+Just as for AMOs in the A extension, the AMOCAS.W/D/Q optionally provide release consistency semantics, using  the aq and rl bits,  to  help  implement  multiprocessor  synchronization.  The  memory  operation performed  by  an AMOCAS.W/D/Q ,  when  successful,  has  acquire  semantics  if aq bit  is  1  and  has  release
+
+semantics if rl bit  is  1.  The  memory operation performed by an AMOCAS.W/D/Q ,  when not successful, has acquire semantics if aq bit is 1 but does not have release semantics, regardless of rl .
+
+A FENCE instruction may be used to order the memory read access and, if produced, the memory write access by an AMOCAS.W/D/Q instruction.
+
+<image>
+
+An unsuccessful AMOCAS.W/D/Q may either not perform a memory write or may write back the old  value  loaded  from  memory.  The  memory  write,  if  produced,  does  not  have  release semantics,  regardless  of rl .  Irrespective  of  whether  a  write  is  actually  performed,  the instruction is treated as an AMO for the purposes of the RVWMO PPO rules.
+
+An AMOCAS.W/D/Q instruction always requires write permissions.
+
+The  following  example  code  sequence  illustrates  the  use  of AMOCAS.Q to  implement  the enqueue  operation  for  a  non-blocking  concurrent  queue  using  the  algorithm  outlined  in (Michael  &  Scott,  1996).  The  algorithm  atomically  operates  on  a  pointer  and  its  associated modification counter using the AMOCAS.Q instruction to avoid the ABA problem.
+
+
+
+```
+# Enqueue operation of a non-blocking concurrent queue. # Data structures used by the queue: #   structure pointer_t {ptr:   node_t *, count: uint64_t} #   structure node_t    {next: pointer_t, value: data type} #   structure queue_t   {Head: pointer_t, Tail:  pointer_t} # Inputs to the procedure: #   a0 - address of Tail variable #   a4 - address of a new node to insert at tail enqueue: ld   a6, (a0)          # a6 = Tail.ptr ld   a7, 8(a0)         # a7 = Tail.count ld   a2, (a6)          # a2 = Tail.ptr->next.ptr ld   a3, 8(a6)         # a3 = Tail.ptr->next.count ld   t1, (a0) ld   t2, 8(a0) bne  a6, t1, enqueue   # Retry if Tail & next are not consistent bne  a7, t2, enqueue   # Retry if Tail & next are not consistent bne  a2, x0, move_tail # Was tail pointing to the last node? mv   t1, a2            # Save Tail.ptr->next.ptr mv   t2, a3            # Save Tail.ptr->next.count addi a5, a3, 1         # Link the node at the end of the list amocas.q.aqrl a2, a4, (a6) bne  a2, t1, enqueue   # Retry if CAS failed bne  a3, t2, enqueue   # Retry if CAS failed addi a5, a7, 1         # Update Tail to the inserted node amocas.q.aqrl a6, a4, (a0) ret                    # Enqueue done move_tail:               # Tail was not pointing to the last node addi a3, a7, 1         # Try to swing Tail to the next node amocas.q.aqrl a6, a2, (a0)
+```
+
+j    enqueue           # Retry
+
+## Chapter 16. "Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0
+
+The  A-extension  offers  atomic  memory  operation  (AMO)  instructions  for words , doublewords ,  and quadwords (only  for AMOCAS ).  The  absence  of  atomic  operations  for  subword  data  types  necessitates emulation strategies. For bitwise operations, this emulation can be performed via word-sized bitwise AMO* instructions. For non-bitwise operations, emulation is achievable using word-sized LR / SC instructions.
+
+Several limitations arise from this emulation approach:
+
+1. In systems with large-scale or Non-Uniform Memory Access (NUMA) configurations, emulation based on LR / SC introduces  issues  related  to  scalability  and  fairness,  particularly  under  conditions  of  high contention.
+2. Emulation  of  narrower  AMOs  through  wider  AMO*  instructions  on  non-idempotent  IO  memory regions may result in unintended side effects.
+3. Utilizing wider AMO*  instructions  for emulating  narrower  AMOs  risks  activating  extraneous breakpoints or watchpoints.
+4. In the absence of native support for subword atomics, compilers often resort to inlining code sequences to  provide  the  required  emulation.  This  practice  contributes  to  an  increase  in  code  size,  with consequent impacts on system performance and memory utilization.
+
+The Zabha extension addresses these limitations by adding support for byte and halfword atomic memory operations  to  the  RISC-V  Unprivileged  ISA.  The  Zabha  extension  depends  upon  the  Zaamo  standard extension.
+
+## 16.1. Byte and Halfword Atomic Memory Operation Instructions
+
+Zabha  extension  provides  the AMO[ADD|AND|OR|XOR|SWAP|MIN[U]|MAX[U]].[B|H] instructions.  If  Zacas extension is also implemented, Zabha further provides the AMOCAS.[B|H] instructions.
+
+<image>
+
+| 31            | 27       | 26       | 25       | 24   | 20   | 19   | 12 14     |      | 6   |        |
+|---------------|----------|----------|----------|------|------|------|-----------|------|-----|--------|
+| funct5        | funct5   | aq       | rl       | rs2  |      | rs1  | funct3    | rd   |     | opcode |
+| AMOSWAP.B/H   | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOADD.B/H    | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOAND.B/H    | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOOR.B/H     | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOXOR.B/H    | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOMAX[U].B/H | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOMIN[U].B/H | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+| AMOCAS.B/H    | ordering | ordering | ordering | src  |      | addr | width=0/1 | dest |     | AMO    |
+
+Byte and halfword AMOs always sign-extend the value placed in rd , and ignore the bits of the original value in rs2 . The AMOCAS.[B|H] instructions similarly ignore the bits of the original value in rd .
+
+Similar  to  the  AMOs  specified  in  the  A  extension,  the  Zabha  extension  mandates  that  the  address contained  in  the rs1 register  must  be  naturally  aligned  to  the  size  of  the  operand.  The  same  exception options as specified in the A extension are applicable in cases where the address is not naturally aligned.
+
+Similar to the AMOs specified in the A and Zacas extensions, the AMOs in the Zabha extension optionally provide  release  consistency  semantics,  using  the aq and rl bits,  to  help  implement  multiprocessor synchronization.
+
+ Zabha omits byte and halfword support for LR and SC due to low utility.
+
+<image>
+
+## Chapter 17. "Zalasr" Atomic Load-Acquire and StoreRelease Instructions, Version 1.0
+
+The Zalasr (Load-Acquire and Store-Release) extension provides load-acquire and store-release instructions in RISC-V. These can be important for high performance designs by enabling finer-grained synchronisation than is possible with fences alone, by providing a unidirectional fence. Load-acquire and store-release are widely used in language-level memory models: both the Java and C++ memory models make  use  of  acquire-release  semantics,  and  C++'s atomic provides  primitives  that  are  meant  to  map directly to load-acquire and store-release instructions.
+
+The Zalasr extension builds on the atomic support provided by the Zaamo (Atomic Memory Operations), Zalrsc (Load-Reserved and Store-Conditional), and Zabha (Byte and Halfword Atomic Memory Operations) extensions by providing additional atomic operations (although it can be implemented independently of them). All of the AMO operations in Zaamo (and Zabha) are read-modify-write operations that both load and  store.  The  Zalrsc  extension  provides  operations  that  are  only  loads  or  stores.  However,  since  it  is designed to perform an atomic operation on a single memory word or doubleword, the loads and stores are designed to  be  paired.  The  load-reserved  implies  that  a  future  store-conditional  will  follow  while  storeconditional  requires  that  there  was  a  previous  load-reserved  without  other  intervening  loads  or  stores. Therefore, the Zalrsc extension does not provide a general atomic and ordered load or store.
+
+Zalasr  fills  this  gap  by  offering  truly  standalone  atomic  and  ordered  loads  and  stores.  The  Zalasr instructions  are  atomic  loads  and  stores  that  support  ordering  annotations.  With  the  combination  of Zaamo, Zabha, and Zalasr all C++ atomic operations can be supported with single instructions.
+
+## 17.1. Load-Acquire and Store-Release Instructions
+
+The Zalasr instructions always sign-extend the value placed in rd and ignore the upper bits of the value of rs2 . The instructions in the Zalasr extension require that the address held in rs1 be naturally aligned to the size in bytes (2 width ) of the operand. If the address is not naturally aligned, an address-misaligned exception or an access-fault exception will be generated. The access-fault exception can be generated for a memory access  that  would  otherwise  be  able  to  complete  except  for  the  misalignment,  if  the  misaligned  access should not be emulated.
+
+The  misaligned  atomicity  granule  PMA,  defined  in  Volume  II  of  this  manual,  optionally  relaxes  this alignment  requirement.  If  all  accessed  bytes  lie  within  the  same  misaligned  atomicity  granule,  the instruction will not raise an exception for reasons of address alignment, and the instruction will give rise to only one memory operation for the purposes of RVWMO-i.e., it will execute atomically.
+
+## 17.2. Load Acquire
+
+## Synopsis
+
+The load-acquire instruction atomically loads a 2 width -byte value from the address in rs1 and places the sign-extended value into the register rd , subject to the ordering annotations specified in the instruction.
+
+## Mnemonic
+
+lb.{aq,aqrl} rd , ( rs1 )
+
+lh.{aq,aqrl} rd , ( rs1 )
+
+lw.{aq,aqrl} rd , ( rs1 )
+
+ld.{aq,aqrl} rd , ( rs1 )
+
+## Encoding
+
+<image>
+
+## Description
+
+This instruction loads 2 width bytes of memory from rs1 atomically and writes the result into rd. If the size (2 width+3 )  is  less  than XLEN, it is sign-extended to fill the destination register. This load must have the ordering annotation aq and may have ordering annotation rl encoded in the instruction. The instruction always  has  an  "acquire-RCsc"  annotation,  and  if  the  bit rl is  set  the  instruction  has  a  "release-RCsc" annotation.
+
+The versions without the aq bit set are RESERVED. LD.{AQ, AQRL} is RV64-only.
+
+<image>
+
+The aq bit is mandatory because the two encodings that would be produced are not seen as useful at this time. The version with neither the aq nor the rl bit set would correspond to a load with  no  ordering  annotations  that  was  guaranteed  to  be  performed  atomically.  This  can  be achieved with ordinary load instructions by suitably aligning pointers. The version with only the  rl  bit  would  correspond  to  load-release.  Load-release  has  theoretical  applications  in seqlocks, but is not supported in language-level memory models and so is not included.
+
+## 17.3. Store Release
+
+## Synopsis
+
+The store-release instruction atomically stores the 2 width -byte value from the low bits of register rs2 to the address in rs1 , subject to the ordering annotations specified in the instruction.
+
+## Mnemonic
+
+sb.{rl,aqrl} rs2 , ( rs1
+
+sh.{rl,aqrl} rs2 , ( rs1
+
+sw.{rl,aqrl} rs2 , ( rs1
+
+sd.{rl,aqrl} rs2 , ( rs1
+
+## Encoding
+
+<image>
+
+## Description
+
+This  instruction  stores  2 width bytes  of  memory  from  rs1  atomically.  This  store  must  have  ordering annotation rl and may have ordering annotation aq encoded in the instruction. The instruction always has an "release-RCsc" annotation, and if the bit aq is set the instruction has a "acquire-RCsc" annotation.
+
+The versions without the rl bit set are RESERVED. SD.{RL, AQRL} is RV64-only.
+
+<image>
+
+The rl  bit  is  mandatory  because  the  two  encodings  that  would  be  produced  are  not  seen  as useful at this time. The version with neither the aq nor the rl bit set would correspond to a store with  no  ordering  annotations  that  was  guaranteed  to  be  performed  atomically.  This  can  be achieved with ordinary store instructions by suitably aligned pointers. The version with only the  aq  bit  would  correspond  to  store-acquire.  Store-acquire  has  theoretical  applications  in seqlocks, but is not supported in language-level memory models and so is not included.
+
+<formula>
+
+## Chapter 18. RVWMO Memory Consistency Model, Version 2.0
+
+This chapter defines the RISC-V memory consistency model. A memory consistency model is a set of rules specifying  the  values  that  can  be  returned  by  loads  of  memory.  RISC-V  uses  a  memory  model  called "RVWMO" (RISC-V Weak Memory Ordering) which is designed to provide flexibility for architects to build high-performance scalable designs while simultaneously supporting a tractable programming model.
+
+Under RVWMO, code running on a single hart appears to execute in order from the perspective of other memory  instructions  in  the  same  hart,  but  memory  instructions  from  another  hart  may  observe  the memory instructions from the first hart being executed in a different order. Therefore, multithreaded code may require explicit synchronization to guarantee ordering between memory instructions from different harts. The base RISC-V ISA provides a FENCE instruction for this purpose, described in Section 2.7, while the  atomics  extension  "A"  additionally  defines  load-reserved/store-conditional  and  atomic  read-modifywrite instructions.
+
+The standard ISA extension for total store ordering "Ztso" (Chapter 19) augments RVWMO with additional rules specific to those extensions.
+
+The appendices to this specification provide both axiomatic and operational formalizations of the memory consistency model as well as additional explanatory material.
+
+<image>
+
+This chapter defines the memory model for regular main memory operations. The interaction of  the  memory model with I/O memory, instruction fetches, FENCE.I, page-table walks, and SFENCE.VMA is not (yet) formalized. Some or all of the above may be formalized in a future revision of this specification. Future ISA extensions such as the V vector and J JIT extensions will need to be incorporated into a future revision as well.
+
+Memory  consistency  models  supporting  overlapping  memory  accesses  of  different  widths simultaneously remain an active area of academic research and are not yet fully understood. The specifics of how memory accesses of different sizes interact under RVWMO are specified to  the  best  of  our  current  abilities,  but  they  are  subject  to  revision  should  new  issues  be uncovered.
+
+## 18.1. Definition of the RVWMO Memory Model
+
+The RVWMO memory model is defined in terms of the global memory order , a total ordering of the memory operations  produced  by  all  harts.  In  general,  a  multithreaded  program  has  many  different  possible executions, with each execution having its own corresponding global memory order.
+
+The global memory order is defined over the primitive load and store operations generated by memory instructions. It is then subject to the constraints defined in the rest of this chapter. Any execution satisfying all of the memory model constraints is a legal execution (as far as the memory model is concerned).
+
+## 18.1.1. Memory Model Primitives
+
+The program order over memory operations reflects the order in which the instructions that generate each load and store are logically laid out in that hart's dynamic instruction stream; i.e., the order in which a simple in-order processor would execute the instructions of that hart.
+
+Memory-accessing instructions give rise to memory operations .  A  memory operation can be either a load operation , a store operation , or both simultaneously. All memory operations are single-copy atomic: they can never be observed in a partially complete state.
+
+Each  aligned  memory  instruction  that  accesses  XLEN  or  fewer  bits  gives  rise  to  exactly  one  memory operation, unless specified otherwise. An aligned AMO gives rise to a single memory operation that is both a load operation and a store operation simultaneously.
+
+Among instructions in RV32GC and RV64GC, the following are exceptions to the rule that an aligned memory instruction gives rise to exactly one memory operation:
+
+- ⚫ An unsuccessful SC instruction does not give rise to any memory operations.
+- ⚫ Floating-point  load  and  store  instructions  that  access  more  than  XLEN  bits  (e.g., FLD/FSD in RV32) may each give rise to multiple memory operations.
+
+<image>
+
+ISA  extensions  such  as V (Vector)  and  the  upcoming P (SIMD)  may  give  rise  to  multiple memory  operations.  However,  the  memory  model  for  these  extensions  has  not  yet  been formalized.
+
+A misaligned load or store instruction may be decomposed into a set of component memory operations of any granularity. A floating-point load or store of more than XLEN bits may also be decomposed into a set of component memory operations of any granularity. The memory operations generated by such instructions are not ordered with respect to each other in program order, but they are ordered normally with respect to the  memory  operations  generated  by  preceding  and  subsequent  instructions  in  program  order.  The atomics extension "A" does not require execution environments to support misaligned atomic instructions at all. However, if misaligned atomics are supported via the misaligned atomicity granule PMA, then AMOs within an atomicity granule are not decomposed, nor are loads and stores defined in the base ISAs, nor are loads and stores of no more than XLEN bits defined in the F, D, and Q extensions.
+
+<image>
+
+The  decomposition  of  misaligned  memory  operations  down  to  byte  granularity  facilitates emulation  on  implementations  that  do  not  natively  support  misaligned  accesses.  Such implementations might, for example, simply iterate over the bytes of a misaligned access one by one.
+
+An LR instruction and an SC instruction are said to be paired if the LR precedes the SC in program order and if there are no other LR or SC instructions in between; the corresponding memory operations are said to be paired as well (except in case of a failed SC, where no store operation is generated). The complete list of conditions determining whether an SC must succeed, may succeed, or must fail is defined in Section 13.2.
+
+Load  and  store  operations  may  also  carry  one  or  more  ordering  annotations  from  the  following  set: "acquire-RCpc", "acquire-RCsc", "release-RCpc", and "release-RCsc". An AMO or LR instruction with aq set has an "acquire-RCsc" annotation. An AMO or SC instruction with rl set has a "release-RCsc" annotation. An AMO, LR, or SC instruction with both aq and rl set has both "acquire-RCsc" and "release-RCsc" annotations.
+
+For  convenience,  we  use  the  term  "acquire  annotation"  to  refer  to  an  acquire-RCpc  annotation  or  an acquire-RCsc annotation. Likewise, a "release annotation" refers to a release-RCpc annotation or a releaseRCsc annotation. An "RCpc annotation" refers to an acquire-RCpc annotation or a release-RCpc annotation. An RCsc annotation refers to an acquire-RCsc annotation or a release-RCsc annotation.
+
+In the memory model literature, the term "RCpc" stands for release consistency with processorconsistent synchronization operations, and the term "RCsc" stands for release consistency with sequentially consistent synchronization operations.
+
+<image>
+
+While there are many different definitions for acquire and release annotations in the literature, in  the  context  of  RVWMO  these  terms  are  concisely  and  completely  defined  by  Preserved Program Order rules 5-7.
+
+"RCpc" annotations are currently only used when implicitly assigned to every memory access
+
+per  the  standard  extension  "Ztso"  (Chapter  19).  Furthermore,  although  the  ISA  does  not currently contain native load-acquire or store-release instructions, nor RCpc variants thereof, the RVWMO model itself is designed to be forwards-compatible with the potential addition of any or all of the above into the ISA in a future extension.
+
+## 18.1.2. Syntactic Dependencies
+
+The definition of the RVWMO memory model depends in part on the notion of a syntactic dependency, defined as follows.
+
+In the context of defining dependencies, a register refers either to an entire general-purpose register, some portion of a CSR, or an entire CSR. The granularity at which dependencies are tracked through CSRs is specific to each CSR and is defined in Section 18.2.
+
+Syntactic  dependencies  are  defined  in  terms  of  instructions' source  registers ,  instructions' destination registers ,  and  the  way  instructions carry  a  dependency from  their  source  registers  to  their  destination registers. This section provides a general definition of all of these terms; however, Section 18.3 provides a complete listing of the specifics for each instruction.
+
+In general, a register r other than x0 is a source register for an instruction i if any of the following hold:
+
+- ⚫ In the opcode of i , rs1 , rs2 , or rs3 is set to r
+- ⚫ i is a CSR instruction, and in the opcode of i , csr is set to r , unless i is CSRRW or CSRRWI and rd is set to x0
+- ⚫ r is a CSR and an implicit source register for i , as defined in Section 18.3
+- ⚫ r is a CSR that aliases with another source register for i
+
+Memory instructions also further specify which source registers are address source registers and which are data source registers .
+
+In general, a register r other than x0 is a destination register for an instruction i if any of the following hold:
+
+- ⚫ In the opcode of i , rd is set to r
+- ⚫ i is a CSR instruction, and in the opcode of i , csr is set to r , unless i is CSRRS or CSRRC and rs1 is set to x0 or i is CSRRSI or CSRRCI and uimm[4:0] is set to zero.
+- ⚫ r is a CSR and an implicit destination register for i , as defined in Section 18.3
+- ⚫ r is a CSR that aliases with another destination register for i
+
+Most  non-memory  instructions carry  a  dependency from  each  of  their  source  registers  to  each  of  their destination registers. However, there are exceptions to this rule; see Section 18.3.
+
+Instruction j has a syntactic dependency on instruction i via destination register s of i and source register r of j if either of the following hold:
+
+- ⚫ s is the same as r , and no instruction program-ordered between i and j has r as a destination register
+- ⚫ There is an instruction m program-ordered between i and j such that all of the following hold:
+1. j has a syntactic dependency on m via destination register q and source register r
+2. m has a syntactic dependency on i via destination register s and source register p
+3. m carries a dependency from p to q
+
+Finally,  in  the  definitions  that  follow,  let a and b be  two  memory  operations,  and  let i and j be  the instructions that generate a and b , respectively.
+
+b has  a syntactic  address  dependency on a if r is  an  address  source  register  for j and j has  a  syntactic dependency on i via source register r b has a syntactic data dependency on a if b is  a store operation, r is  a data source register for j ,  and j has a syntactic dependency on i via source register r
+
+b has a syntactic control dependency on a if there is an instruction m program-ordered between i and j such that m is a branch or indirect jump and m has a syntactic dependency on i .
+
+<image>
+
+Generally  speaking,  non-AMO  load  instructions  do  not  have  data  source  registers,  and unconditional  non-AMO  store  instructions  do  not  have  destination  registers.  However,  a successful  SC  instruction  is  considered  to  have  the  register  specified  in  rd  as  a  destination register,  and  hence  it  is  possible  for  an  instruction  to  have  a  syntactic  dependency  on  a successful SC instruction that precedes it in program order.
+
+## 18.1.3. Preserved Program Order
+
+The global memory order for any given execution of a program respects some but not all of each hart's program order. The subset of program order that must be respected by the global memory order is known as preserved program order .
+
+The complete definition of preserved program order is as follows (and note that AMOs are simultaneously both loads and stores): memory operation a precedes memory operation b in preserved program order (and hence also in the global memory order) if a precedes b in program order, a and b both access regular main memory (rather than I/O regions), and any of the following hold:
+
+- ⚫ Overlapping-Address Orderings:
+1. b is a store, and a and b access overlapping memory addresses
+2. a and b are loads, x is a byte read by both a and b , there is no store to x between a and b in program order, and a and b return values for x written by different memory operations
+3. a is generated by an AMO or SC instruction, b is a load, and b returns a value written by a
+- ⚫ Explicit Synchronization
+4. There is a FENCE instruction that orders a before b
+5. a has an acquire annotation
+6. b has a release annotation
+7. a and b both have RCsc annotations
+8. a is paired with b
+- ⚫ Syntactic Dependencies
+9. b has a syntactic address dependency on a
+10. b has a syntactic data dependency on a
+11. b is a store, and b has a syntactic control dependency on a
+- ⚫ Pipeline Dependencies
+12. b is  a  load,  and  there  exists  some store m between a and b in  program order such that m has  an address or data dependency on a , and b returns a value written by m
+
+13. b is a store, and there exists some instruction m between a and b in program order such that m has an address dependency on a
+
+## 18.1.4. Memory Model Axioms
+
+An execution of a RISC-V program obeys the RVWMO memory consistency model only if there exists a global  memory  order  conforming  to  preserved  program  order  and  satisfying  the load  value  axiom ,  the atomicity axiom , and the progress axiom .
+
+## 18.1.4.1. Load Value Axiom
+
+Each  byte  of  each  load i returns  the  value  written  to  that  byte  by  the  store  that  is  the  latest  in  global memory order among the following stores:
+
+1. Stores that write that byte and that precede i in the global memory order
+2. Stores that write that byte and that precede i in program order
+
+## 18.1.4.2. Atomicity Axiom
+
+If r and w are paired load and store operations generated by aligned LR and SC instructions in a hart h , s is a store to byte x , and r returns a value written by s , then s must precede w in the global memory order, and there can be no store from a hart other than h to byte x following s and preceding w in the global memory order.
+
+<image>
+
+The Atomicity Axiom theoretically supports LR/SC pairs of different widths and to mismatched addresses,  since  implementations  are  permitted  to  allow  SC  operations  to  succeed  in  such cases. However, in practice, we expect such patterns to be rare, and their use is discouraged.
+
+## 18.1.4.3. Progress Axiom
+
+No  memory  operation  may  be  preceded  in  the  global  memory  order  by  an  infinite  sequence  of  other memory operations.
+
+## 18.2. CSR Dependency Tracking Granularity
+
+Table 12. Granularities at which syntactic dependencies are tracked through CSRs
+
+| Name   | Portions Tracked as Independent Units   | Aliases      |
+|--------|-----------------------------------------|--------------|
+| fflags | Bits 4, 3, 2, 1, 0                      | fcsr         |
+| frm    | entire CSR                              | fcsr         |
+| fcsr   | Bits 7-5, 4, 3, 2, 1, 0                 | fflags , frm |
+
+Note: read-only CSRs are not listed, as they do not participate in the definition of syntactic dependencies.
+
+## 18.3. Source and Destination Register Listings
+
+This section provides a concrete listing of the source and destination registers for each instruction. These listings are used in the definition of syntactic dependencies in Section 18.1.2.
+
+The term "accumulating CSR" is used to describe a CSR that is both a source and a destination register, but
+
+which carries a dependency only from itself to itself.
+
+Instructions  carry  a  dependency  from  each  source  register  in  the  "Source  Registers"  column  to  each destination  register  in  the  "Destination  Registers"  column,  from  each  source  register  in  the  "Source Registers"  column  to  each  CSR  in  the  "Accumulating  CSRs"  column,  and  from  each  CSR  in  the "Accumulating CSRs" column to itself, except where annotated otherwise.
+
+## Key:
+
+- ⚫ A Address source register
+- ⚫ D Data source register
+- ⚫ † The instruction does not carry a dependency from any source register to any destination register
+- ⚫ ‡ The instruction carries dependencies from source register(s) to destination register(s) as specified
+
+Table 13. RV32I Base Integer Instruction Set
+
+|       | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|-------|--------------------|-------------------------|---------------------|
+| LUI   |                    | rd                      |                     |
+| AUIPC |                    | rd                      |                     |
+| JAL   |                    | rd                      |                     |
+| JALR† | rs1                | rd                      |                     |
+| BEQ   | rs1 , rs2          |                         |                     |
+| BNE   | rs1 , rs2          |                         |                     |
+| BLT   | rs1 , rs2          |                         |                     |
+| BGE   | rs1 , rs2          |                         |                     |
+| BLTU  | rs1 , rs2          |                         |                     |
+| BGEU  | rs1 , rs2          |                         |                     |
+| LB †  | rs1 A              | rd                      |                     |
+| LH †  | rs1 A              | rd                      |                     |
+| LW†   | rs1 A              | rd                      |                     |
+| LBU † | rs1 A              | rd                      |                     |
+| LHU † | rs1 A              | rd                      |                     |
+
+
+Final instruction for SFENCE.VMA: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

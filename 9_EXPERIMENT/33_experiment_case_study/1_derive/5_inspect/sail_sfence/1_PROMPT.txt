@@ -1,0 +1,165 @@
+You are given multiple execution paths for one RISC-V architectural target.
+
+Task:
+Convert each given path into exactly one atomic architectural rule.
+
+Input format:
+Each path may contain fields such as:
+
+* Path number
+* Target
+* Source entry or semantic entry
+* Path condition
+* Source behavior or semantic behavior
+* Architectural outcome
+* Observable oracle
+* Feasibility
+* Natural language path summary
+
+Important:
+Use ONLY the given paths and path summaries.
+Do NOT use external knowledge.
+Do NOT use the RISC-V specification unless it is explicitly included in the given path.
+Do NOT use known bugs.
+Do NOT infer unrelated behavior.
+Do NOT merge paths.
+Do NOT skip paths.
+Do NOT deduplicate paths.
+Do NOT collapse multiple similar paths into one rule.
+If the input contains N paths, the output must contain exactly N rules.
+Each path must produce exactly one rule.
+Preserve the path number from the input.
+Base each rule only on the explicit condition and outcome stated in the corresponding path.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, encoding, syntax, formatting, source-code structure, or implementation commentary.
+Each rule must describe architectural cause -> effect semantics, meaning condition/event -> architectural outcome.
+Each rule must include the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap cause, CSR state, register state, memory state, address-translation behavior, or trap versus no trap behavior.
+Each rule must begin with the word `RULE`.
+Each rule must preserve the path number from the input.
+Each rule must be clear and detailed.
+Do not mention source file names, function names, helper names, or model-internal names unless they are necessary to express the architectural condition or outcome.
+Do not include implementation details unless they directly determine an architecturally visible outcome.
+If a path contains both source/model behavior and architectural outcome, write the rule using the architectural outcome.
+If a path contains feasibility information, do not output the feasibility field; use it only to avoid inventing unsupported behavior.
+If a path is marked source-incomplete, produce a rule only from the explicit behavior that is present in the path and do not invent the missing behavior.
+If a path is marked infeasible, still output one rule for that path, but phrase it only as the explicit condition -> outcome relationship stated by the path.
+
+Output format:
+Output only the rules.
+Do not give any introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <path number>: <one atomic testable architectural rule>
+
+Example output:
+RULE 1: When a CY, IR, or HPMn bit in the mcountinhibit register is clear, the corresponding mcycle, minstret, or mhpmcountern register increments as usual.
+RULE 2: When a CY, IR, or HPMn bit in the mcountinhibit register is set, the corresponding mcycle, minstret, or mhpmcountern register does not increment.
+
+Now convert the following paths into rule form:
+
+PATH 1:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = User
+Semantic behavior: Compute addr from rs1 and asid from rs2, then take the User privilege branch and invoke Illegal_Instruction()
+Architectural outcome: Illegal-instruction trap; no TLB flush retirement effect
+Observable oracle: Execute SFENCE.VMA in User mode and observe an illegal-instruction trap rather than successful retirement or address-translation invalidation
+Feasibility: feasible
+PATH 2:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = VirtualUser
+Semantic behavior: Compute addr from rs1 and asid from rs2, then take the VirtualUser privilege branch and invoke Virtual_Instruction()
+Architectural outcome: Virtual-instruction trap; no TLB flush retirement effect
+Observable oracle: Execute SFENCE.VMA in VirtualUser mode and observe a virtual-instruction trap rather than successful retirement or address-translation invalidation
+Feasibility: feasible
+PATH 3:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Supervisor; mstatus[TVM] = 0b1
+Semantic behavior: Compute addr from rs1 and asid from rs2, then take the Supervisor branch and invoke Illegal_Instruction() because TVM is set
+Architectural outcome: Illegal-instruction trap; no TLB flush retirement effect
+Observable oracle: Execute SFENCE.VMA in Supervisor mode with mstatus.TVM set and observe an illegal-instruction trap rather than successful retirement or address-translation invalidation
+Feasibility: feasible
+PATH 4:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Supervisor; mstatus[TVM] = 0b0; rs1 = zreg; rs2 = zreg
+Semantic behavior: Set addr = None(); set asid = None(); invoke flush_TLB(None(), None()); retire successfully
+Architectural outcome: Successful retirement; all modeled TLB entries are invalidated because both ASID and address match all entries
+Observable oracle: Populate address-translation state for multiple ASIDs and virtual addresses, execute sfence.vma x0, x0 in Supervisor mode with mstatus.TVM clear, then observe that subsequent translations do not reuse any prior modeled TLB entry
+Feasibility: feasible
+PATH 5:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Supervisor; mstatus[TVM] = 0b0; rs1 = zreg; rs2 != zreg
+Semantic behavior: Set addr = None(); set asid = Some(X(rs2)[asidlen - 1 .. 0]); invoke flush_TLB(asid, None()); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries whose ASID equals the selected ASID and whose global bit is not set are invalidated; entries with other ASIDs or global entries are not invalidated by this flush condition
+Observable oracle: Populate address-translation state with entries for the selected ASID, a different ASID, and a global entry; execute sfence.vma x0, rs2 in Supervisor mode with mstatus.TVM clear; observe that only non-global entries for the selected ASID stop being reused
+Feasibility: feasible
+PATH 6:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Supervisor; mstatus[TVM] = 0b0; rs1 != zreg; rs2 = zreg
+Semantic behavior: Set addr = Some(X(rs1)); set asid = None(); invoke flush_TLB(None(), addr); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries matching the virtual page derived from X(rs1), after sign extension and level-mask comparison, are invalidated for all ASIDs including global entries; nonmatching virtual pages are not invalidated by this flush condition
+Observable oracle: Populate address-translation state for the target virtual page and for a different virtual page, execute sfence.vma rs1, x0 in Supervisor mode with mstatus.TVM clear, then observe that only translations matching the target virtual page stop being reused
+Feasibility: feasible
+PATH 7:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Supervisor; mstatus[TVM] = 0b0; rs1 != zreg; rs2 != zreg
+Semantic behavior: Set addr = Some(X(rs1)); set asid = Some(X(rs2)[asidlen - 1 .. 0]); invoke flush_TLB(asid, addr); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries are invalidated only when they both match the virtual page derived from X(rs1) and have ASID equal to X(rs2)[asidlen - 1 .. 0] with global bit not set; other entries are not invalidated by this flush condition
+Observable oracle: Populate address-translation state with matching and nonmatching virtual pages, selected and nonselected ASIDs, and a global entry; execute sfence.vma rs1, rs2 in Supervisor mode with mstatus.TVM clear; observe that only non-global entries matching both selected ASID and selected virtual page stop being reused
+Feasibility: feasible
+PATH 8:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Machine; rs1 = zreg; rs2 = zreg
+Semantic behavior: Set addr = None(); set asid = None(); invoke flush_TLB(None(), None()); retire successfully
+Architectural outcome: Successful retirement; all modeled TLB entries are invalidated because both ASID and address match all entries
+Observable oracle: Populate address-translation state for multiple ASIDs and virtual addresses, execute sfence.vma x0, x0 in Machine mode, then observe that subsequent translations do not reuse any prior modeled TLB entry
+Feasibility: feasible
+PATH 9:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Machine; rs1 = zreg; rs2 != zreg
+Semantic behavior: Set addr = None(); set asid = Some(X(rs2)[asidlen - 1 .. 0]); invoke flush_TLB(asid, None()); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries whose ASID equals the selected ASID and whose global bit is not set are invalidated; entries with other ASIDs or global entries are not invalidated by this flush condition
+Observable oracle: Populate address-translation state with entries for the selected ASID, a different ASID, and a global entry; execute sfence.vma x0, rs2 in Machine mode; observe that only non-global entries for the selected ASID stop being reused
+Feasibility: feasible
+PATH 10:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Machine; rs1 != zreg; rs2 = zreg
+Semantic behavior: Set addr = Some(X(rs1)); set asid = None(); invoke flush_TLB(None(), addr); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries matching the virtual page derived from X(rs1), after sign extension and level-mask comparison, are invalidated for all ASIDs including global entries; nonmatching virtual pages are not invalidated by this flush condition
+Observable oracle: Populate address-translation state for the target virtual page and for a different virtual page, execute sfence.vma rs1, x0 in Machine mode, then observe that only translations matching the target virtual page stop being reused
+Feasibility: feasible
+PATH 11:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2) -> flush_TLB(asid, addr)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = Machine; rs1 != zreg; rs2 != zreg
+Semantic behavior: Set addr = Some(X(rs1)); set asid = Some(X(rs2)[asidlen - 1 .. 0]); invoke flush_TLB(asid, addr); retire successfully
+Architectural outcome: Successful retirement; modeled TLB entries are invalidated only when they both match the virtual page derived from X(rs1) and have ASID equal to X(rs2)[asidlen - 1 .. 0] with global bit not set; other entries are not invalidated by this flush condition
+Observable oracle: Populate address-translation state with matching and nonmatching virtual pages, selected and nonselected ASIDs, and a global entry; execute sfence.vma rs1, rs2 in Machine mode; observe that only non-global entries matching both selected ASID and selected virtual page stop being reused
+Feasibility: feasible
+PATH 12:
+Target: SFENCE.VMA
+Semantic entry: execute SFENCE_VMA(rs1, rs2)
+Path condition: SFENCE_VMA is decoded for execution; cur_privilege = VirtualSupervisor
+Semantic behavior: Compute addr from rs1 and asid from rs2, then take the VirtualSupervisor branch and invoke internal_error(FILE, LINE, "Hypervisor extension not supported")
+Architectural outcome: Source-incomplete architectural result; the provided text does not define an architectural trap, retirement, CSR effect, register effect, memory effect, or address-translation effect for this branch
+Observable oracle: Attempt execution in VirtualSupervisor mode and observe that the provided model enters the internal_error branch rather than defining an architectural SFENCE.VMA result
+Feasibility: source-incomplete

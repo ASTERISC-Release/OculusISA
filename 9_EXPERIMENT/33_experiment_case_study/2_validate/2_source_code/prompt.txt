@@ -1,0 +1,138 @@
+You are an expert RISC-V ISA conformance analyst and QEMU source-code bug finder.
+
+Task:
+Given QEMU RISC-V source code for one architectural target, determine whether the QEMU implementation appears to violate the RISC-V architecture.
+
+Target: <TARGET>
+
+Source restriction:
+Use only the provided QEMU source code and your pretrained knowledge of the RISC-V architecture specification.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided QEMU source code.
+Do not use known bug reports.
+Do not use prior QEMU issue knowledge.
+Do not cite sources.
+The provided QEMU source code is the authoritative source for QEMU behavior.
+Your pretrained RISC-V specification knowledge is the source for expected architectural behavior.
+If the provided source code is incomplete, do not invent missing QEMU behavior.
+
+Input:
+The input is the provided QEMU source code below.
+
+BEGIN QEMU SOURCE CODE
+<QEMU_SOURCE_CODE>
+END QEMU SOURCE CODE
+
+Internal analysis requirement:
+Before producing the final report, reason step by step internally.
+Internally perform the following steps:
+
+1. Identify the source-code entry point for the target.
+2. Identify the architectural state checked by the implementation, such as privilege mode, extension state, CSR fields, operands, memory state, translation state, and trap state.
+3. Identify the implementation behavior for each relevant branch.
+4. Recall the expected RISC-V architectural behavior for the target from pretrained specification knowledge.
+5. Compare the implementation behavior against the expected architectural behavior.
+6. Determine whether any mismatch is explicit, testable, and architecturally observable.
+7. Reject issues that are only performance differences, implementation choices, unspecified behavior, undefined behavior, permissive behavior, or source-incomplete behavior.
+8. If a mismatch is found, produce a concise bug report and a minimal test idea.
+9. If no mismatch is found, output only `NO BUG FOUND`.
+10. If the source code is insufficient to determine behavior, output only `SOURCE INCOMPLETE: <short reason>`.
+
+Do not output the internal reasoning.
+Do not output step-by-step analysis.
+Output only the final report.
+
+Bug criteria:
+Report a bug only when all of the following are true:
+
+1. The QEMU source code shows a concrete implementation behavior.
+2. Your pretrained RISC-V specification knowledge gives a concrete expected architectural behavior.
+3. The implementation behavior conflicts with the expected architectural behavior.
+4. The mismatch is architecturally observable through trap versus no trap behavior, trap cause, CSR state, register state, memory state, or address-translation behavior.
+5. A minimal RISC-V assembly test could expose the mismatch.
+
+Do not report a bug when:
+The source code is incomplete.
+The relevant helper function is missing.
+The behavior depends on code not included in the input.
+The behavior is implementation-defined.
+The behavior is unspecified.
+The behavior is only a performance issue.
+The behavior only affects internal QEMU state with no architectural observation.
+The source code is conservative but architecturally allowed.
+The expected behavior is not clear from your pretrained RISC-V knowledge.
+
+Report format when one or more bugs are found:
+BUG REPORT <number>
+Target: <target>
+Status: BUG FOUND
+QEMU behavior: <what the provided source code does>
+Expected RISC-V behavior: <what the architecture requires>
+Mismatch: <why the QEMU behavior violates the expected behavior>
+Architectural observation: <trap/no trap, mcause, CSR value, register value, memory value, or translation behavior>
+Minimal test idea: <minimal RISC-V assembly sketch>
+Expected result: <machine-checkable expected result>
+Confidence: <High or Medium>
+
+If multiple independent bugs are found, output multiple BUG REPORT blocks.
+Do not output LOW confidence bug reports. If confidence would be Low, output `SOURCE INCOMPLETE: <short reason>` instead.
+
+Minimal test idea requirements:
+The test idea must be concrete enough to implement.
+Assume execution starts in M-mode.
+Assume RV64.
+If a trap occurs, mcause records the trap cause.
+mcause = 2 means illegal-instruction exception.
+Use `call machine_to_supervisor` to enter S-mode.
+Use `call machine_to_user` to enter U-mode.
+Use `call machine_to_virtual` to enter VS-mode.
+Use `call machine_to_virtual_user` to enter VU-mode.
+Do not use mret or sret directly unless the target itself is mret or sret.
+Do not use ecall, ebreak, wfi, infinite loops, or custom trap handlers.
+If the behavior is not directly observable with a deterministic architectural test, do not report it as a bug.
+
+Few-shot example:
+
+Example input:
+Target:
+ADDI
+
+BEGIN QEMU SOURCE CODE
+// Toy illustrative source snippet, not necessarily real QEMU code.
+static void trans_addi(DisasContext *ctx, arg_addi *a)
+{
+TCGv src = get_gpr(ctx, a->rs1);
+TCGv dst = get_gpr(ctx, a->rd);
+
+```
+if (signed_add_overflows(src, a->imm)) {
+    gen_exception_illegal(ctx);
+    return;
+}
+
+tcg_gen_addi_tl(dst, src, a->imm);
+```
+
+}
+END QEMU SOURCE CODE
+
+Example output:
+BUG REPORT 1
+Target: ADDI
+Status: BUG FOUND
+QEMU behavior: The source code raises an illegal-instruction exception when signed addition overflows.
+Expected RISC-V behavior: ADDI adds the sign-extended immediate to rs1 and writes the low XLEN bits to rd without trapping on signed overflow.
+Mismatch: The implementation traps on an overflow case where the architecture requires normal wraparound arithmetic.
+Architectural observation: Executing ADDI with an overflowing signed input should complete without a trap and write the wrapped XLEN-bit result to rd.
+Minimal test idea:
+li t0, 0x7fffffffffffffff
+addi a0, t0, 1
+Expected result: a0 = 0x8000000000000000
+Confidence: High
+
+Now analyze the following QEMU source code:
+
+BEGIN QEMU SOURCE CODE
+<QEMU_SOURCE_CODE>
+END QEMU SOURCE CODE

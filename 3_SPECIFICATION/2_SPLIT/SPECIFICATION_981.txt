@@ -1,0 +1,23 @@
+## 4.5.16.2. Active source, MSI delivery mode
+
+For an active interrupt source  , if the domain is configured in MSI delivery mode ( domaincfg .DM = 1), then register target[ ] has this format:
+
+bits 31:18 Hart Index ( WLRL
+
+bits 17:12 Guest Index ( WLRL )
+
+bits 10:0 EIID ( WARL
+
+```
+) )
+```
+
+Bit 11 is reserved and reads as zero.
+
+The Hart Index field specifies the hart to which interrupts from this source will be forwarded.
+
+If the interrupt domain is at supervisor level and the domain's harts implement the H extension, then Guest  Index  is  a WLRL field  that  must  be  able  to  hold  all  integer  values  in  the  range  0  through GEILEN. (Parameter GEILEN is defined by the H extension.) Otherwise, field Guest Index is read-only zero. For a supervisor-level interrupt domain, a nonzero Guest Index is the number of the target hart's guest interrupt file to which MSIs will be sent. When Guest Index is zero, MSIs from a supervisor-level domain are forwarded to the target hart at supervisor level. For a machine-level domain, Guest Index is read-only zero, and MSIs are forwarded to a target hart always at machine level.
+
+Together,  fields  Hart  Index  and  Guest  Index  of  register target[ ] determine  the  address  for  MSIs forwarded for interrupt source .  The remaining field EIID (External Interrupt Identity) specifies the data  value  for  those  MSIs,  eventually  becoming  the  minor  identity  for  an  external  interrupt  at  the target hart.
+
+If  the  interrupt  domain's  harts  have  IMSIC  interrupt  files  that  implement distinct  interrupt identities (Section 3.1), then EIID is a -bit unsigned integer field, where . EIID is thus able to hold at least values 0 through .  A  write to a target register sets the implemented bits of EIID equal to the least-significant bits of the 32-bit value written.

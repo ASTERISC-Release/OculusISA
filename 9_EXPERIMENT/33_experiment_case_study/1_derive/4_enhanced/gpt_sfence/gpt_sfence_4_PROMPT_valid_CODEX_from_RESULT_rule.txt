@@ -1,0 +1,94 @@
+You are validating a generated RISC-V architectural rule set against the latest official RISC-V ISA manual from the riscv-isa-manual repository.
+
+Target name:
+SFENCE.VMA
+
+Generated rules:
+RULE 1: If SFENCE.VMA is executed in U-mode, the instruction raises an illegal-instruction exception instead of performing any SFENCE.VMA ordering or invalidation effect.
+RULE 2: If SFENCE.VMA is executed in VU-mode, the instruction raises a virtual-instruction exception instead of performing any SFENCE.VMA ordering or invalidation effect.
+RULE 3: If SFENCE.VMA is executed in S-mode or HS-mode while mstatus.TVM=1, the instruction raises an illegal-instruction exception instead of performing any SFENCE.VMA ordering or invalidation effect.
+RULE 4: If SFENCE.VMA is executed in S-mode or HS-mode while mstatus.TVM=0 and no other architectural trap condition applies, the instruction is permitted to execute in that mode.
+RULE 5: If SFENCE.VMA is executed in VS-mode while hstatus.VTVM=1, the instruction raises a virtual-instruction exception instead of performing any SFENCE.VMA ordering or invalidation effect.
+RULE 7: If SFENCE.VMA is executed in an otherwise permitted privilege mode on an implementation where satp.MODE is read-only zero, the implementation is architecturally permitted to raise an illegal-instruction exception instead of performing the SFENCE.VMA effects.
+RULE 8: If execution of SFENCE.VMA raises a virtual-instruction exception, mtval or stval is written as it would be for an illegal-instruction exception.
+RULE 11: If SFENCE.VMA executes when virtualization mode V=0, the instruction applies only to memory-management data structures controlled by the current HS-level satp.
+RULE 12: If SFENCE.VMA executes when virtualization mode V=0, the instruction orders stores only to HS-level address-translation structures with subsequent HS-level address translations.
+RULE 17: If SFENCE.VMA executes when virtualization mode V=1, the instruction applies only to VS-level memory-management data structures controlled by vsatp.
+RULE 18: If SFENCE.VMA executes when virtualization mode V=1, the instruction orders stores only to VS-level address-translation structures with subsequent VS-stage address translations for the same hgatp.VMID value that was active when SFENCE.VMA executed.
+RULE 20: If pointer masking is enabled when SFENCE.VMA executes, pointer masking is not applied to the virtual-address operand.
+RULE 21: If SFENCE.VMA executes with rs1 naming a register other than x0, the instruction uses the virtual-address value held in that register rather than treating the operation as applying to all virtual addresses.
+RULE 22: If SFENCE.VMA executes with rs2 naming a register other than x0, the instruction uses the ASID value held in that register rather than treating the operation as applying to all address spaces.
+RULE 24: If SFENCE.VMA executes with rs1 holding an invalid virtual address, no exception is raised because of the invalid virtual-address value.
+RULE 27: If SFENCE.VMA executes with rs2 naming a register other than x0 and ASIDLEN is less than ASIDMAX, bits ASIDMAX-1:ASIDLEN of the value held in rs2 are ignored.
+RULE 28: If SFENCE.VMA executes with rs1=x0 and rs2=x0, previous stores already visible to the current hart are ordered before all subsequent implicit reads and writes by that hart to any level of the page tables for all address spaces.
+RULE 29: If SFENCE.VMA executes with rs1=x0 and rs2=x0, all address-translation cache entries associated with the executing hart are invalidated for all address spaces.
+RULE 30: If SFENCE.VMA executes with rs1=x0 and rs2 naming a register other than x0, previous stores already visible to the current hart are ordered before subsequent implicit reads and writes by that hart to any level of the page tables for the address space identified by rs2.
+RULE 31: If SFENCE.VMA executes with rs1=x0 and rs2 naming a register other than x0, the instruction does not guarantee ordering for accesses to global mappings.
+RULE 32: If SFENCE.VMA executes with rs1=x0 and rs2 naming a register other than x0, address-translation cache entries matching the address space identified by rs2 are invalidated except for entries containing global mappings.
+RULE 34: If SFENCE.VMA executes with rs1 naming a register other than x0 and rs2=x0, previous stores already visible to the current hart are ordered before subsequent implicit reads and writes by that hart to leaf page-table entries corresponding to the virtual address in rs1 for all address spaces.
+RULE 35: If SFENCE.VMA executes with rs1 naming a register other than x0 and rs2=x0, all address-translation cache entries containing leaf page-table entries corresponding to the virtual address in rs1 are invalidated for all address spaces.
+RULE 36: If SFENCE.VMA executes with rs1 naming a register other than x0 and rs2 naming a register other than x0, previous stores already visible to the current hart are ordered before subsequent implicit reads and writes by that hart to leaf page-table entries corresponding to the virtual address in rs1 for the address space identified by rs2.
+RULE 37: If SFENCE.VMA executes with rs1 naming a register other than x0 and rs2 naming a register other than x0, the instruction does not guarantee ordering for accesses to global mappings.
+RULE 38: If SFENCE.VMA executes with rs1 naming a register other than x0 and rs2 naming a register other than x0, address-translation cache entries containing leaf page-table entries corresponding to the virtual address in rs1 and matching the address space identified by rs2 are invalidated except for entries containing global mappings.
+RULE 40: If an implementation executes SFENCE.VMA by fencing a superset of the architecturally required virtual-address or ASID set, that over-fencing is architecturally permitted.
+RULE 43: If SFENCE.VMA executes on one hart, the instruction orders only that hart's implicit references to memory-management data structures.
+RULE 45: If an implicit read of memory-management data structures is performed for an address after the most recent SFENCE.VMA that subsumes that address, the implicit read may return any translation for that address that was valid at any time since that SFENCE.VMA.
+RULE 46: If a leaf PTE is modified and a corresponding virtual address is accessed without an intervening SFENCE.VMA that subsumes that address, the implementation is permitted to use either the modified translation or an older translation that was valid since the last subsuming SFENCE.VMA.
+RULE 47: If multiple translations for the same virtual address are permitted because no subsuming SFENCE.VMA intervened, different subsequent accesses to that same virtual address are permitted to use different translations from that permitted set.
+RULE 48: If a translation for a given virtual address and ASID was valid since the last subsuming SFENCE.VMA, the implementation is permitted to use that translation even if it used a virtual-address width different from the width currently specified by satp.MODE.
+RULE 53: If SFENCE.VMA orders prior explicit accesses before subsequent implicit address-translation accesses, that ordering does not by itself place prior explicit accesses before subsequent explicit accesses in the global memory order.
+RULE 54: If SFENCE.VMA orders implicit address-translation loads, those implicit loads are not required to obey normal program-order semantics with respect to prior loads or stores to the same address.
+RULE 55: If an invalidate, clean, or flush operation from a cache-block management instruction precedes SFENCE.VMA, SFENCE.VMA does not order that invalidate, clean, or flush operation as a store.
+RULE 61: If menvcfg.PBMTE is changed, executing SFENCE.VMA with rs1=x0 and rs2=x0 synchronizes address-translation caches with respect to the altered interpretation of PBMT fields in page-table entries controlled by satp.
+RULE 62: If menvcfg.ADUE is changed, executing SFENCE.VMA with rs1=x0 and rs2=x0 synchronizes address-translation caches with respect to the altered interpretation of A/D bits in page-table entries controlled by satp.
+Task:
+Check whether each generated rule is architecturally correct according to the latest riscv-isa-manual.
+
+Important requirements:
+
+1. Use the latest official riscv-isa-manual as the source of truth.
+2. Do not use known bugs.
+3. Do not assume a rule is correct just because it sounds plausible.
+4. A rule is correct only if its condition and outcome are fully supported by the manual.
+5. If a rule is only partially correct, mark it as WRONG.
+6. If a rule is too vague, unsupported, or cannot be verified from the manual, mark it as WRONG.
+7. Check every rule independently.
+8. Use only the rule numbers provided in the input.
+9. Be conservative and precise.
+
+For each rule, decide one of:
+
+* CORRECT: the rule is fully supported by the manual.
+* WRONG: the rule contradicts the manual, is incomplete, is too vague, or is not supported by the manual.
+
+Output format:
+
+VALIDATION SUMMARY
+Total rules: X
+Correct rules: Y
+Wrong rules: Z
+Correct percentage: Y / X = P%
+Wrong percentage: Z / X = Q%
+
+RULE VALIDATION
+RULE 1: CORRECT
+Reason: short explanation.
+
+RULE 2: WRONG
+Reason: short explanation.
+
+RULE 3: WRONG
+Reason: short explanation.
+
+WRONG RULES ONLY
+RULE 2: short reason.
+RULE 3: short reason.
+
+Rules:
+
+* Do not skip any rule.
+* Do not merge rules.
+* Do not renumber rules.
+* Keep the original rule numbers.
+* Keep explanations short but specific.
+* If possible, mention the relevant ISA manual concept, section, register, instruction, privilege rule, or exception behavior.

@@ -1,0 +1,329 @@
+VALIDATION SUMMARY
+Total rules: 97
+Correct rules: 87
+Wrong rules: 10
+Correct percentage: 87 / 97 = 89.69%
+Wrong percentage: 10 / 97 = 10.31%
+
+RULE VALIDATION
+RULE 2: CORRECT
+Reason: sstatus is a restricted view of mstatus; the FS, VS, and XS bits are the same shared bits, not separate copies.
+
+RULE 5: CORRECT
+Reason: mstatus.MBE is either writable and resets to 0 when big-endian is supported, or read-only zero when only little-endian is supported.
+
+RULE 6: WRONG
+Reason: mstatus.MDT resets to 0, not 1.
+
+RULE 10: CORRECT
+Reason: The specification states lower-privilege interrupts are globally disabled regardless of the lower-privilege xIE setting.
+
+RULE 11: CORRECT
+Reason: The specification states higher-privilege interrupts are globally enabled regardless of the higher-privilege yIE setting.
+
+RULE 12: CORRECT
+Reason: If S-mode is not implemented, mstatus.SIE and mstatus.SPIE are read-only zero.
+
+RULE 14: WRONG
+Reason: Incomplete: it omits the highest-priority requirement and the fact that lower-privilege interrupts are globally disabled when current mode is M.
+
+RULE 15: WRONG
+Reason: Incomplete: it omits the highest-priority requirement and same-privilege global-enable conditions; not all pending/enabled/not-delegated interrupts trap to M regardless of MIE.
+
+RULE 20: WRONG
+Reason: An RNMI trap into M-mode does not modify mstatus.MPP; the rule lacks the RNMI exception.
+
+RULE 21: WRONG
+Reason: An RNMI trap into M-mode does not modify mstatus.MPV; the rule lacks the RNMI exception.
+
+RULE 22: CORRECT
+Reason: If a trap into M-mode writes a guest virtual address to mtval, mstatus.GVA is set to 1.
+
+RULE 23: WRONG
+Reason: An RNMI trap into M-mode does not set mstatus.GVA to 0; the rule lacks the RNMI exception.
+
+RULE 24: WRONG
+Reason: An RNMI trap does not set mstatus.MDT; the rule lacks the RNMI exception for traps into M-mode.
+
+RULE 28: CORRECT
+Reason: The Smrnmi extension specifies that an RNMI trap does not set mstatus.MDT.
+
+RULE 31: CORRECT
+Reason: On a trap into S-mode, mstatus.SPIE is set to mstatus.SIE.
+
+RULE 32: CORRECT
+Reason: On a trap into S-mode, mstatus.SIE is set to 0.
+
+RULE 33: CORRECT
+Reason: On a trap into S-mode, SPP is set to 0 for previous U/VU mode and 1 otherwise.
+
+RULE 40: CORRECT
+Reason: An xRET instruction sets xIE to xPIE.
+
+RULE 41: CORRECT
+Reason: An xRET instruction sets xPIE to 1.
+
+RULE 43: CORRECT
+Reason: If MRET or SRET changes privilege to less than M, mstatus.MPRV is set to 0.
+
+RULE 44: CORRECT
+Reason: The MRET new-privilege mapping from MPP and MPV is correct for the valid encodings.
+
+RULE 45: CORRECT
+Reason: MRET sets V from mstatus.MPV unless MPP=3, in which case V is 0.
+
+RULE 46: CORRECT
+Reason: MRET sets mstatus.MPV to 0.
+
+RULE 47: CORRECT
+Reason: With the hypervisor extension, U-mode is supported, so MRET sets MPP to the least-privileged supported mode, 0.
+
+RULE 48: CORRECT
+Reason: MRET and SRET, when executed in M-mode, set mstatus.MDT to 0.
+
+RULE 51: CORRECT
+Reason: Matches Smdbltrp/Smrnmi: MNRET clears MDT when returning to a non-M privilege mode.
+
+RULE 53: CORRECT
+Reason: Matches xRET behavior: returning to a mode less privileged than M clears MPRV.
+
+RULE 60: CORRECT
+Reason: Matches Zicfilp/H alias: with V=0, sstatus.SPELP aliases mstatus.SPELP.
+
+RULE 61: CORRECT
+Reason: Matches Smdbltrp: an explicit CSR write that sets MDT=1 clears MIE.
+
+RULE 62: CORRECT
+Reason: Matches RV64 Smdbltrp: MIE is cleared even if the same write attempts to set MIE=1.
+
+RULE 63: CORRECT
+Reason: Matches Smdbltrp: MIE may be set only when MDT is already 0 or is being cleared by the same write.
+
+RULE 67: CORRECT
+Reason: Matches Smrnmi: while mnstatus.NMIE=0, MPRV behaves as zero.
+
+RULE 68: CORRECT
+Reason: With MPRV=0, data accesses behave normally using the current privilege mode.
+
+RULE 69: CORRECT
+Reason: Matches H-extension MPRV rule: effective privilege is MPP and effective virtualization mode is MPV.
+
+RULE 70: CORRECT
+Reason: MPRV affects data accesses, not instruction-address translation or protection.
+
+RULE 71: CORRECT
+Reason: MPRV is read-only zero if U-mode is not implemented.
+
+RULE 72: WRONG
+Reason: MPRV does not change effective XLEN; address computation uses the current XLEN, not the XLEN associated with MPP.
+
+RULE 73: CORRECT
+Reason: HLV/HLVX/HSV ignore MPRV and explicitly access as V=1 with nominal privilege hstatus.SPVP.
+
+RULE 75: CORRECT
+Reason: With MPRV=1 and MPP=M, data accesses are M-level with no address translation.
+
+RULE 76: CORRECT
+Reason: Matches H-extension MPRV VU case: two-stage translation with HS-level MXR, vsstatus.MXR, and vsstatus.SUM.
+
+RULE 77: CORRECT
+Reason: Matches H-extension MPRV VS case: two-stage translation with HS-level MXR, vsstatus.MXR, and vsstatus.SUM.
+
+RULE 78: CORRECT
+Reason: With MXR=0, loads from non-readable pages fail when page-based VM is active.
+
+RULE 79: CORRECT
+Reason: With MXR=1, loads from readable or executable pages are permitted when page-based VM is active.
+
+RULE 80: CORRECT
+Reason: MXR has no effect when page-based virtual memory is not in effect.
+
+RULE 81: CORRECT
+Reason: MXR is read-only zero if S-mode is not supported.
+
+RULE 82: CORRECT
+Reason: With SUM=0, S-mode loads/stores to U-accessible pages fault when page-based VM is active.
+
+RULE 83: CORRECT
+Reason: With SUM=1, S-mode loads/stores to U-accessible pages are permitted when page-based VM is active.
+
+RULE 84: CORRECT
+Reason: SUM has no effect without page-based virtual memory or when executing in U-mode.
+
+RULE 86: CORRECT
+Reason: SUM is read-only zero if S-mode is unsupported or if satp.MODE is read-only zero.
+
+RULE 87: CORRECT
+Reason: MXR and SUM affect PTE-permission interpretation only, not PMA/PMP fault checks.
+
+RULE 91: CORRECT
+Reason: TVM=1 traps satp reads/writes in S-mode.
+
+RULE 92: CORRECT
+Reason: TVM=1 traps SFENCE.VMA and SINVAL.VMA execution in S-mode.
+
+RULE 93: CORRECT
+Reason: TVM=1 traps hgatp reads/writes in HS-mode.
+
+RULE 94: CORRECT
+Reason: TVM=1 traps HFENCE.GVMA and HINVAL.GVMA in HS-mode.
+
+RULE 95: CORRECT
+Reason: TVM has no effect on vsatp or HFENCE.VVMA/HINVAL.VVMA.
+
+RULE 96: CORRECT
+Reason: TVM applies in HS-mode and not in VS-mode.
+
+RULE 97: CORRECT
+Reason: TVM is read-only zero when S-mode is unsupported.
+
+RULE 98: CORRECT
+Reason: TSR=1 traps SRET execution in S-mode.
+
+RULE 99: CORRECT
+Reason: TSR applies in HS-mode and not in VS-mode.
+
+RULE 100: CORRECT
+Reason: TSR is read-only zero when S-mode is unsupported.
+
+RULE 101: CORRECT
+Reason: TW is read-only zero when no mode less privileged than M exists.
+
+RULE 102: CORRECT
+Reason: TW affects all modes except M-mode.
+
+RULE 106: CORRECT
+Reason: WFI is unaffected by MIE, SIE, and mideleg and wakes on locally enabled pending interrupts regardless of global enable.
+
+RULE 107: CORRECT
+Reason: TW=1 causes WRS.NTO timeout in non-M modes to raise illegal-instruction.
+
+RULE 108: CORRECT
+Reason: With VTW=1 and TW=0, WRS.NTO timeout in VS/VU raises virtual-instruction.
+
+RULE 113: CORRECT
+Reason: SBE=0 makes explicit S-mode data accesses little-endian.
+
+RULE 114: CORRECT
+Reason: SBE=1 makes explicit S-mode data accesses big-endian.
+
+RULE 115: CORRECT
+Reason: UBE=0 makes explicit U-mode data accesses little-endian.
+
+RULE 116: CORRECT
+Reason: UBE=1 makes explicit U-mode data accesses big-endian.
+
+RULE 117: CORRECT
+Reason: Instruction fetches are always little-endian.
+
+RULE 118: CORRECT
+Reason: SBE controls implicit accesses to supervisor-level memory-management structures.
+
+RULE 121: CORRECT
+Reason: SBE is read-only zero when S-mode is unsupported.
+
+RULE 122: CORRECT
+Reason: UBE is read-only zero when U-mode is unsupported.
+
+RULE 125: CORRECT
+Reason: With MXLEN=64 and S-mode supported, SXL is WARL and encodes SXLEN.
+
+RULE 126: CORRECT
+Reason: With MXLEN=64 and no S-mode, SXL is read-only zero.
+
+RULE 127: CORRECT
+Reason: RV64 with U-mode supported: UXL is a WARL field encoding UXLEN.
+
+RULE 128: CORRECT
+Reason: RV64 without U-mode: UXL is read-only zero.
+
+RULE 129: CORRECT
+Reason: Spec constrains UXLEN to be no greater than SXLEN when S-mode is implemented.
+
+RULE 131: CORRECT
+Reason: Matches spec rule for XLEN less than MXLEN: ignore high source bits and sign-extend results.
+
+RULE 132: CORRECT
+Reason: Matches spec rule for PC sign-extension and ignoring bits above configured XLEN.
+
+RULE 135: CORRECT
+Reason: If F is implemented, FS is not read-only zero.
+
+RULE 136: CORRECT
+Reason: If neither F nor S-mode is implemented, FS is read-only zero.
+
+RULE 138: CORRECT
+Reason: If vector registers are implemented, VS is not read-only zero.
+
+RULE 139: CORRECT
+Reason: If neither vector registers nor S-mode is implemented, VS is read-only zero.
+
+RULE 140: CORRECT
+Reason: XS is read-only zero without additional user state.
+
+RULE 142: CORRECT
+Reason: SD is a read-only summary dirty bit set by FS, VS, or XS Dirty.
+
+RULE 143: CORRECT
+Reason: If all dirty sources are read-only zero, SD is always zero.
+
+RULE 148: CORRECT
+Reason: Changing FS does not alter floating-point register contents.
+
+RULE 149: CORRECT
+Reason: Zfinx hardwires FS to zero.
+
+RULE 150: CORRECT
+Reason: With Zfinx, FS does not affect trapping of floating-point instructions or fcsr accesses.
+
+RULE 151: CORRECT
+Reason: VS=Off traps vector instructions and vector CSR accesses.
+
+RULE 152: CORRECT
+Reason: VS=Initial or Clean becomes Dirty when vector state changes.
+
+RULE 153: CORRECT
+Reason: Changing VS does not alter vector register contents.
+
+RULE 154: CORRECT
+Reason: With V=1, both vsstatus.FS and mstatus.FS affect the FP illegal-instruction condition.
+
+RULE 155: WRONG
+Reason: With V=1, modifying FP state sets vsstatus.FS Dirty but not mstatus.FS; mstatus.FS is not updated.
+
+RULE 156: CORRECT
+Reason: With V=1, both vsstatus.VS and mstatus.VS affect the vector illegal-instruction condition.
+
+RULE 157: WRONG
+Reason: With V=1, vector state changes set vsstatus.VS Dirty but not mstatus.VS; mstatus.VS is not updated.
+
+WRONG RULES ONLY
+RULE 6: mstatus.MDT resets to 0, not 1.
+RULE 14: Incomplete: it omits the highest-priority requirement and the fact that lower-privilege interrupts are globally disabled when current mode is M.
+RULE 15: Incomplete: it omits the highest-priority requirement and same-privilege global-enable conditions; not all pending/enabled/not-delegated interrupts trap to M regardless of MIE.
+RULE 20: An RNMI trap into M-mode does not modify mstatus.MPP; the rule lacks the RNMI exception.
+RULE 21: An RNMI trap into M-mode does not modify mstatus.MPV; the rule lacks the RNMI exception.
+RULE 23: An RNMI trap into M-mode does not set mstatus.GVA to 0; the rule lacks the RNMI exception.
+RULE 24: An RNMI trap does not set mstatus.MDT; the rule lacks the RNMI exception for traps into M-mode.
+RULE 72: MPRV does not change effective XLEN; address computation uses the current XLEN, not the XLEN associated with MPP.
+RULE 155: With V=1, modifying FP state sets vsstatus.FS Dirty but not mstatus.FS; mstatus.FS is not updated.
+RULE 157: With V=1, vector state changes set vsstatus.VS Dirty but not mstatus.VS; mstatus.VS is not updated.
+
+EVALUATION SUMMARY
+Target: mstatus
+Ground truth rules: 234
+Raw generated rules: 162
+Unique generated rules: 162
+Recovered rules: 97
+Valid matched rules: 87
+Invalid matched rules: 10
+Missed GT rules (GT - recovered): 137
+Unmatched ground truth rules: 137
+Ground truth rules not validly recovered: 147
+Raw coverage: 41.45%
+Precision among matched rules: 89.69%
+Recall (valid / GT): 37.18%
+Validation reference: LLM memory only
+Generation model: deepseek-v4.1-flash:1017
+Evaluation model: deepseek-v4.1-flash:1017
+Semantic matching and correctness are provisional until reviewed.

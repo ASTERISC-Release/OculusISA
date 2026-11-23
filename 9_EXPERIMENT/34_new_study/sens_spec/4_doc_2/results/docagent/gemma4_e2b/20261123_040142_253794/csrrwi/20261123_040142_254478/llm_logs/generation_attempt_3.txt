@@ -1,0 +1,63 @@
+This document excerpt is a detailed specification for a RISC-V Privileged Architecture, focusing heavily on **Supervisor-level features, Virtualization (Hypervisor extension), and advanced memory management techniques** such as two-stage address translation, page-based memory types, and Control-Flow Integrity (CFI) via shadow stacks.
+
+Here is a structured summary of the key topics covered:
+
+---
+
+## I. Core Address Translation and Protection (satp)
+
+The `satp` (Supervisor Address Translation and Protection) register is central to the system's memory management.
+
+*   **Address Translation Modes (`MODE`):** Defines the scheme:
+    *   **Bare:** Supervisor virtual addresses equal physical addresses (no translation/protection).
+    *   **Sv32:** 32-bit paged virtual memory (SXLEN=32).
+    *   **Sv39, Sv48, Sv57:** Paged virtual memory schemes for RV64 (SXLEN=64).
+*   **Address Space Identifiers (ASID):** Used to facilitate address-translation fences on a per-address-space basis. The number of implemented ASIDs (`ASIDLEN`) is dynamically determined.
+*   **Synchronization:** The `SFENCE.VMA` instruction is crucial for ensuring that updates to memory-management data structures are observed by subsequent address translations.
+*   **Page Table Entry (PTE) Details (Sv32/Sv39/Sv48/Sv57):** Specifies PTE format, permission bits (R, W, X), and the use of Accessed (A) and Dirty (D) bits, including the **Svade** extension.
+*   **PTE Extensions:**
+    *   **Svnapot (Chapter 13):** Allows contiguous translation ranges (NAPOT) to be cached efficiently in the TLB.
+    *   **Svpbmt (Chapter 14):** Supports Page-Based Memory Types (PMA: None, NC: Non-cacheable, IO: I/O). This dictates memory ordering rules.
+
+## II. Virtualization (H Extension)
+
+The Hypervisor extension transforms Supervisor mode into Hypervisor-extended Supervisor mode (HS-mode, or Hypervisor mode) to host guest operating systems (VS-mode).
+
+*   **Two-Stage Address Translation (VS-stage and G-stage):**
+    *   **VS-stage:** Translates Guest Virtual Address (GVA) to Guest Physical Address (GPA) using `vsatp`.
+    *   **G-stage:** Translates GPA to Supervisor Physical Address (SPA) using `hgatp`.
+    *   **GPA Handling:** Guest physical addresses are widened (e.g., by 2 bits for Sv32x4, Sv39x4, etc.), and the root page tables are expanded (e.g., to 16 KiB) for these modes.
+*   **CSRs:** A large set of CSRs manage the virtualization state, including `hstatus`, `vsstatus`, `hgatp`, and various trap/context registers (`mtval`, `htval`, `vscause`, etc.).
+*   **Hypervisor Instructions:** `HLV.*` and `HSV.*` instructions perform explicit memory accesses with an effective privilege mode of VS or VU, applying two-stage address translation and complex permission checks.
+*   **Memory Management Fences:** `HFENCE.VVMA` (for VS-stage structures) and `HFENCE.GVMA` (for G-stage structures) coordinate memory ordering across both translation stages.
+*   **Trap Handling:** Detailed mechanisms (`mtinst`, `htinst`, `vstvec`, `vsip`/`vsie`) are provided to capture trap context, including guest physical addresses (`mtval2`, `htval`) to aid fault handling.
+
+## III. Control-Flow Integrity (CFI) and Shadow Stacks
+
+The Zicfiss extension provides CFI capabilities, while the Shadow Stack (SS) extension introduces memory protection for the stack.
+
+*   **CFI (Zicfiss/Zicfilp):** Provides backward-edge and forward-edge CFI protection against ROP/JOP attacks.
+*   **Shadow Stack (SS):**
+    *   A new page type (PTE encoding `R=0, W=1, X=0`) is used for the shadow stack.
+    *   Accesses to SS pages are heavily restricted (only via `SSAMOSWAP.W/D`, `SSPUSH`, `C.SSPUSH`).
+    *   **Memory Safety:** Accessing SS pages without proper instructions triggers fatal store/AMO access-fault exceptions, distinguishing them from recoverable page faults.
+    *   **PMA/PMP Extension:** Pointer Masking (PM) is extended to require idempotency and read/write permissions for shadow stack accesses, enforcing stricter memory safety.
+
+## IV. Pointer Masking (PM) Extension
+
+Pointer Masking allows the CPU to ignore the upper bits of the effective address (NVBITS/VBITS) during explicit memory accesses.
+
+*   **Application:** Applies to most explicit memory accesses (Loads/Stores, Atomics, Floating Point).
+*   **Privilege Mode Dependence:** Pointer masking settings are configured per privilege mode, often controlled by configuration registers in the next-higher privilege level.
+*   **Extensions:** Includes extensions like `Ssnpm`, `Smnpm`, `Smmpm`, `Sspm`, and `Supm`, which define specific capabilities for applying PM across different privilege levels.
+*   **Implications:** It reduces overhead for software that uses address-dependent features (like kernel/user address separation), but software must be aware of the supported PMLEN values.
+
+---
+
+## Key Takeaways
+
+1.  **Hierarchical Memory Management:** The architecture supports complex, multi-level memory management, differentiating between VS-stage translation (GVA $\to$ GPA) and G-stage translation (GPA $\to$ SPA), heavily managed by the Hypervisor extension.
+2.  **Performance via TLB Optimization:** Features like `Svinval` allow for fine-grained TLB invalidation, and the `Svnapot` extension enables TLB compaction for large address regions.
+3.  **Security Hardening:** The specification integrates hardware support for Control-Flow Integrity (CFI) via Zicfiss and memory safety via Shadow Stacks, supported by Pointer Masking (PM) to mitigate memory safety risks.
+4.  **Exception Granularity:** The `mhpmevent` CSRs (Sscofpmf) allow for detailed control and monitoring of hardware counter overflows across all privilege modes.
+5.  **Privilege Interaction:** The mechanisms carefully define how privilege levels interact with virtualization (VS/VU modes) and how trap handling (using `htinst`/`mtinst`) must correctly report context information.

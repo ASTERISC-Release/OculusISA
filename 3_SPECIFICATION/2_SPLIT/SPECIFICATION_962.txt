@@ -1,0 +1,15 @@
+## 4.4. Overview of interrupt control for a single domain
+
+Each interrupt domain implemented by an APLIC has its own separate physical control interface that is  memory-mapped  in  the  machine's  address  space,  allowing  access  to  each  domain  to  be  easily regulated by both PMP (physical memory protection) and page-based address translation. The control interfaces of all interrupt domains have a common structure. In most respects, every domain appears to software as though it were a root domain, without visibility of the domains above it in the hierarchy.
+
+An individual interrupt domain has the following components for each interrupt source at the APLIC:
+
+- Source configuration. This determines whether the specific source is active in the domain and, if so,  how  the  incoming  wire  is  to  be  interpreted,  such  as  level-sensitive  or  edge-sensitive.  For  a source  that  is  inactive  in  the  domain,  source  configuration  controls  any  delegation  to  a  child domain.
+- Interrupt-pending and interrupt-enable bits. For an inactive source, these two bits are read-only zeros. Otherwise, the pending bit records an interrupt that arrived and has not yet been signaled or forwarded, while the enable bit determines whether interrupts from this source should currently be delivered, or should remain pending.
+- Target selection. For an active source, target selection determines the hart to receive the interrupt and either the interrupt's priority or the new interrupt identity when forwarding as an MSI.
+
+For  interrupt  domains  that  deliver  interrupts  directly  to  harts  rather  than  forwarding  by  MSIs,  the domain has a final set of components for controlling interrupt delivery to harts, one instance per hart in the domain.
+
+<image>
+
+Although  an  APLIC  with  multiple  interrupt  domains  may  appear  to  duplicate  the  persource state listed  above  (source  configuration,  etc.)  by  a  factor  equal  to  the  number  of domains,  in  fact,  APLIC  implementations  can  exploit  the  fact  that  each  source  is ultimately active in only one domain. In all domains to which a specific interrupt source has not been delegated, the state associated with the source appears as read-only zeros, requiring no physical register bits.

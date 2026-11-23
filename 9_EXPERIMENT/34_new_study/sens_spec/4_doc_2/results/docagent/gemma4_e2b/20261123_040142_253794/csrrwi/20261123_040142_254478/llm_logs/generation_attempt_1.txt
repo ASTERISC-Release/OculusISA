@@ -1,0 +1,90 @@
+This document excerpt details extensive aspects of the RISC-V Privileged Architecture, focusing heavily on **address translation, virtualization support (Hypervisor extension), trap handling, and advanced security features like Control-Flow Integrity (CFI) and Pointer Masking.**
+
+Here is a structured summary of the key topics covered:
+
+---
+
+## I. Address Translation and Protection
+
+The architecture supports sophisticated, multi-stage address translation, managed by registers like `satp` (Supervisor address translation and protection) and `hgatp` (Hypervisor Guest Address Translation and Protection).
+
+### 1. Supervisor Address Translation (`satp`)
+*   **Function:** Controls supervisor-mode address translation and protection. It holds the Physical Page Number (PPN) of the root page table, an Address Space Identifier (ASID), and a `MODE` field.
+*   **Modes:** Supports `Bare`, `Sv32` (32-bit paging), and multi-level schemes for RV64: `Sv39`, `Sv48`, and `Sv57`.
+*   **ASID Management:** ASIDs are local to a hart, allowing atomic swapping to reduce context switch cost.
+*   **Synchronization:** Writes to `satp` do not imply ordering constraints; `SFENCE.VMA` is required to ensure memory-management data structures are observed correctly.
+
+### 2. Two-Stage Address Translation (Virtualization)
+When virtualization mode $V=1$ (VS-mode or VU-mode), two stages occur:
+1.  **VS-stage Translation:** Virtual address $\rightarrow$ Guest Physical Address (controlled by `vsatp`).
+2.  **G-stage Translation:** Guest Physical Address $\rightarrow$ Supervisor Physical Address (controlled by `hgatp`).
+*   **Synchronization:** `HFENCE.VVMA` (for VS-stage structures) and `HFENCE.GVMA` (for G-stage structures) are used to order accesses across these stages, particularly when PMP or PTE attributes are modified.
+
+### 3. Guest Physical Address Translation (`hgatp`)
+*   **Function:** Controls the G-stage translation scheme for guest physical addresses.
+*   **Modes:** Supports extensions (`x4`) for `Sv32x4`, `Sv39x4`, `Sv48x4`, and `Sv57x4`, which widen the address space and require larger, 16 KiB aligned root page tables.
+
+---
+
+## II. Extensions and Memory Management Features
+
+The specification defines several extensions that enhance memory management, security, and performance.
+
+### 1. Zicfiss Extension (CFI)
+*   **Purpose:** Provides backward-edge Control-Flow Integrity (CFI) using **Landing Pads** via the `LPAD` instruction.
+*   **Shadow Stack (SS):** Defines a special PTE encoding (`R=0, W=1, X=0`) for Shadow Stack pages, restricting writes to specific instructions (`SSAMOSWAP.W/D`, `SSPUSH`, `C.SSPUSH`).
+*   **Fault Handling:** Shadow stack access faults are reported as specialized store/AMO exceptions (code 7, 15, 23) to distinguish fatal errors from recoverable faults.
+
+### 2. Svpbmt Extension (Memory Types)
+*   **Purpose:** Allows marking memory pages with **Page-Based Memory Types** (PMA: None, NC: Non-cacheable, IO: Non-cacheable, strongly-ordered I/O).
+*   **Behavior:** Overrides standard Physical Memory Attributes (PMA) based on the PTE's PBMT bits, affecting memory ordering rules (e.g., I/O ordering vs. RVWMO).
+
+### 3. Svnapot Extension (Translation Contiguity)
+*   **Purpose:** Allows PTEs to denote contiguous ranges (NAPOT) of translations, which can be cached as a single large entry in the TLB, reducing TLB pressure.
+
+### 4. Pointer Masking (PM)
+*   **Purpose:** Allows the CPU to ignore the upper bits of an effective address (NVBITS) during explicit memory accesses.
+*   **Application:** Applied to most explicit accesses (loads, stores, atomics, FP operations).
+*   **Privilege Dependency:** Pointer masking settings are determined by the currently active privilege mode, often controlled by configuration registers (e.g., `senvcfg.PMM`).
+
+---
+
+## III. Virtualization Support (Hypervisor Extension - H)
+
+The H extension transforms S-mode into **HS-mode** (Hypervisor-extended Supervisor mode) and introduces a second stage of address translation.
+
+*   **Privilege Modes:** The system operates across M-mode, HS-mode, VS-mode, and VU-mode, with defined rules for privilege transitions and state saving (via `sstatus`/`vsstatus`).
+*   **Control Registers:**
+    *   `hstatus`: Tracks VS-mode exception behavior.
+    *   `hgatp`: Controls G-stage address translation.
+    *   `henvcfg`: Controls virtualization behavior (e.g., I/O ordering via `FIOM`, enabling/disabling extension features like `Sstc`, `Zicboz`).
+    *   `hcounteren`, `htimedelta`: For monitoring hardware performance counters.
+    *   `htval`, `htinst`: Used to pass exception-specific data during traps.
+*   **Hypervisor Instructions:** Instructions like `HLV.*` and `HSV.*` allow explicit memory access with an effective privilege mode (VS or VU) determined by `hstatus.SPVP`.
+*   **Trap Handling:** Traps in M-mode set virtualization state (`MPV`/`MPP`), and traps in HS/VS modes manage delegation using `hedeleg`/`hideleg` and interrupt registers (`hip`/`hie`).
+
+---
+
+## IV. Trap and Exception Handling
+
+Trap handling is significantly augmented to support the virtualization layers.
+
+*   **Trap Cause Codes:** The `mcause` and `scause` registers are extended to include specific codes for VS-level interrupts (10, 6), guest external interrupts (12), and guest-page faults (20, 21, 23).
+*   **Trap Return (`SRET`/`MRET`):** The return path logic depends critically on the current virtualization mode $V$, using state saved in `sstatus` and `hstatus` (e.g., `SPP`, `SPV`).
+*   **Trap Instruction Registers (`mtinst`/`htinst`):** These registers are automatically populated on traps with information about the trapped instruction (transformed instruction, custom value, or pseudoinstruction) to aid the trap handler in emulation.
+
+---
+
+## V. Conclusion on Implementation Safety
+
+The specification emphasizes that:
+1.  **Atomicity is key:** PTE updates (especially A/D bits) must be atomic, and speculative execution must be carefully managed to prevent caching stale translations.
+2.  **Implications of PM:** Pointer masking applies to all explicit memory accesses generated by the CPU, and CMOs must respect it to prevent security issues.
+3.  **Delegation Hierarchy:** The mechanism for delegating traps (from M-mode $\rightarrow$ HS-mode $\rightarrow$ VS-mode) must be rigorously followed, with specific checks related to `hideleg` and `medeleg`.
+
+---
+
+**In essence, this section defines a complex hardware and software environment that supports:**
+1.  **Rich Virtualization:** Full virtualization support via the H extension.
+2.  **Granular Memory Control:** Fine-grained memory management through page sizes (`Sv32` through `Sv57`) and memory type attributes (`Svpbmt`).
+3.  **Advanced Security:** CFI via Landing Pads and memory safety via Pointer Masking.

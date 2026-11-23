@@ -1,0 +1,94 @@
+# Test Case Rule: RULE 1: VLE32FF.V MUST execute as a regular load except that it will only take a trap caused by a synchronous exception on element 0.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+li t1, 34
+sw t1, 4(s0)
+li t1, 51
+sw t1, 8(s0)
+addi t1, s0, 8
+srli t1, t1, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 3, e32, m8, ta, ma
+csrw vstart, x0
+li a0, 0
+vle32ff.v v0, (s0)
+vmv.x.s a0, v0
+# Result: a0 = 17
+
+# Test Case Rule: RULE 2: If element 0 raises an exception during VLE32FF.V, the trap is taken and vl MUST NOT be modified.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 2, e32, m8, ta, ma
+csrw vstart, x0
+vle32ff.v v0, (s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 3: If any element greater than 0 raises an exception during VLE32FF.V, the trap MUST NOT be taken and vl MUST be reduced to the index of that element.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+li t1, 34
+sw t1, 4(s0)
+li t1, 51
+sw t1, 8(s0)
+addi t1, s0, 8
+srli t1, t1, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 3, e32, m8, ta, ma
+csrw vstart, x0
+li a0, 0
+vle32ff.v v0, (s0)
+csrr a0, vl
+# Result: a0 = 2
+
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+nop # Skipped because non-idempotent memory access timing is not deterministically observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: If vstart = 0 and vl > 0 for VLE32FF.V, then at least one element MUST be processed.
+##### ASSEMBLY #####
+li t0, 1
+sw t0, 64(sp)
+vsetivli t1, 1, e32, m1, ta, ma
+csrw vstart, x0
+vmv.v.i v0, 0
+csrw vstart, x0
+addi t0, sp, 64
+vle32ff.v v0, (t0)
+vmv.x.s a0, v0
+# Result: a0 = 1

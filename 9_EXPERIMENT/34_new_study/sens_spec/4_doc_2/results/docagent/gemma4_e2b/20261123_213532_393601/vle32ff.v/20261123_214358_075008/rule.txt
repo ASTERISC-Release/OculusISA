@@ -1,0 +1,114 @@
+RULE 1: An illegal-instruction exception is raised when attempting to execute a vector instruction if the mstatus.VS field is set to Off.
+RULE 2: An illegal-instruction exception is raised when attempting to execute a vector instruction if the vtype.vill bit is set.
+RULE 3: Vector instructions begin execution with the element number specified in the vstart register.
+RULE 4: All vector instructions reset the vstart register to zero upon completion.
+RULE 5: The read-only CSR vlenb holds the value VLEN/8, where VLEN is the vector register length in bytes.
+RULE 6: Executing a vector instruction causes the mstatus.VS field to change to Dirty if mstatus.VS was set to Initial or Clean.
+RULE 7: If the hypervisor extension is present and V=1, executing any vector instruction or accessing vector CSRs causes both mstatus.VS and vsstatus.VS to change to Dirty if neither is set to Off.
+RULE 8: If the hypervisor extension is present and V=1, executing a state-changing vector instruction causes vsstatus.VS to change to Dirty if neither is set to Off.
+RULE 9: The vxrm register specifies the fixed-point rounding mode used for fixed-point operations.
+RULE 10: The vxsat register indicates if a fixed-point instruction had to saturate an output value.
+RULE 11: When executing VLE32FF.V, masked-off elements never generate exceptions.
+RULE 12: When executing VLE32FF.V, destination elements corresponding to masked-off elements are handled with either a mask-undisturbed or mask-agnostic policy depending on the setting of vtype.vma.
+RULE 13: When executing VLE32FF.V with unit-stride addressing, the effective vector length is evl = ceil(vl /8), and the destination register is always written with a tail-agnostic policy.
+RULE 14: When executing VLE32FF.V with unit-stride addressing and fault-only-first mode, the instruction only takes a trap caused by a synchronous exception on element 0.
+RULE 15: When executing VLE32FF.V with unit-stride addressing and fault-only-first mode, if an element greater than 0 raises an exception, the corresponding trap is not taken, and the vector length vl is reduced to the index of the element that would have raised an exception.
+RULE 16: When executing VLE32FF.V, the element width is 32 bits, and the memory access size is 32 bits.
+RULE 17: When an instruction is encoded as masked (vm=0), vector merge instructions combine the first operand to the destination element if the mask value is zero, otherwise they copy the second operand to the destination element.
+RULE 18: When an instruction is encoded as masked (vm=0), vector integer add/subtract instructions operate on and write back all body elements.
+RULE 19: When an instruction is encoded as masked (vm=0), vector integer multiply-add instructions operate on and write back all body elements.
+RULE 20: Vector integer move instructions are encoded as unmasked instructions (vm=1).
+RULE 21: Vector integer move instructions copy a source operand to a vector register group.
+RULE 22: Vector integer move instructions splat a scalar register or immediate to all active elements of the destination vector register group.
+RULE 23: Vector integer compare instructions write 1 to the destination mask register element if the comparison evaluates to true, and 0 otherwise.
+RULE 24: Vector floating-point compare instructions raise the invalid operation exception only on signaling NaN inputs.
+RULE 25: Vector floating-point compare instructions raise the invalid operation exception on both signaling and quiet NaN inputs.
+RULE 26: Vector floating-point instructions that modify any floating-point extension state must set mstatus.FS to Dirty.
+RULE 27: Vector single-width saturating add and subtract instructions set the vxsat bit if the result would overflow the destination.
+RULE 28: Vector averaging add and subtract instructions ignore overflow for subtraction and the result wraps around.
+RULE 29: Vector single-width fractional multiply instructions set the vxsat bit if the result causes saturation.
+RULE 30: Vector single-width scaling shift instructions round off the shifted out bits according to the vxrm CSR.
+RULE 31: Vector narrowing clip instructions use the rounding mode specified in the vxrm CSR.
+RULE 32: When performing a narrowing unsigned clip, the shifted rounded source value is treated as an unsigned integer and saturates if the result would overflow the destination viewed as an unsigned integer.
+RULE 33: When performing a narrowing signed clip, the shifted rounded source value is treated as a signed integer and saturates if the result would overflow the destination viewed as a signed integer.
+RULE 34: Vector ordered single-width floating-point sum reduction performs the computation: vd[0] = (((vs1[0] + vs2[0]) + vs2[1]) + ...) + vs2[vl-1].
+RULE 35: When performing a masked ordered floating-point sum reduction, masked-off elements do not affect the result or the exception flags.
+RULE 36: When performing an unordered single-width floating-point sum reduction, the implementation computes an exact sum using infinite precision before converting to a floating-point format.
+RULE 37: When performing an unordered single-width floating-point sum reduction, the reduction tree structure must be deterministic for a given value in vtype and vl.
+RULE 38: When performing an unordered single-width floating-point sum reduction, the additive identity is +0.0 when rounding down (towards -∞) or -0.0 for all other rounding modes.
+RULE 39: Vector widening integer reduction instructions perform overflows by wrapping around.
+RULE 40: Vector widening unsigned integer reduction instructions zero-extend the SEW-wide vector elements before summing them and add the 2*SEW-width scalar element, storing the result in a 2*SEW-width scalar element.
+RULE 41: Vector widening signed integer reduction instructions sign-extend the SEW-wide vector elements before summing them and add the 2*SEW-width scalar element, storing the result in a 2*SEW-width scalar element.
+RULE 42: Vector widening floating-point reduction instructions perform the SEW-width element reduction as in the single-width case, with elements in vs2 promoted to 2*SEW bits before adding to the 2*SEW-bit accumulator.
+RULE 43: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, an attempt to access sctrctl, vsctrctl, sctrdepth, or sctrstatus raises an illegal-instruction exception.
+RULE 44: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, an attempt to access sireg* when siselect is in the range 0x200 through 0x2FF raises an illegal-instruction exception.
+RULE 45: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, an attempt to access vsireg* when vsiselect is in the range 0x200 through 0x2FF raises an illegal-instruction exception.
+RULE 46: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, execution of the SCTRCLR instruction raises an illegal-instruction exception.
+RULE 47: When hstateen0 .CTR is 0, VS-mode accesses to supervisor CTR state (sctrctl, sctrstatus, sireg* (vsireg*)) raise a virtual-instruction exception.
+RULE 48: When mstateen0 .CTR is 1 and hstateen0 .CTR is 1, VS-mode accesses to supervisor CTR state behave as described in Section 7.2 and Section 11.2.
+RULE 49: When mstateen0 .CTR is 1 and hstateen0 .CTR is 0, VS-mode accesses to supervisor CTR state and VSmode execution of SCTRCLR raise a virtual-instruction exception.
+RULE 50: When siselect holds a value in the range 0x40-0x5F and menvcfg .CDE = 0, an attempt to access any sireg* raises an illegal-instruction exception.
+RULE 51: When siselect holds a value in the range 0x40-0x5F and menvcfg .CDE = 0, an attempt to access sireg3 or sireg6 raises an illegal-instruction exception.
+RULE 52: When siselect holds a value in the range 0x40-0x5F and menvcfg .CDE = 0, an attempt to access sireg4 or sireg5 when XLEN = 64 raises an illegal-instruction exception.
+RULE 53: When siselect holds a value in the range 0x40-0x5F and siselect = 0x41, an attempt to access sireg* raises an illegal-instruction exception.
+RULE 54: When siselect holds a value in the range 0x40-0x5F and the counter selected by siselect is not delegated to S-mode (the corresponding bit in mcounteren = 0), an attempt to access sireg* raises an illegal-instruction exception.
+RULE 55: If any extension upon which the underlying counter state depends for a given siselect and sireg* combination is not implemented, an attempt from M or S mode to access the given state through sireg* raises an illegal-instruction exception.
+RULE 56: If the H extension is implemented, attempts from VS-mode or VU-mode to directly access vsiselect or vsireg* raise a virtual-instruction exception.
+RULE 57: If the H extension is implemented, an attempt from VS-mode to access any sireg* (really vsireg*) raises a virtual-instruction exception if menvcfg .CDE = 0.
+RULE 58: If the H extension is implemented, an attempt from VS-mode to access any sireg* (really vsireg*) raises a virtual-instruction exception if menvcfg .CDE = 1.
+RULE 59: When attempted access to sctrdepth from VS-mode or VU-mode, a virtual-instruction exception is raised, unless CTR state enable access restrictions apply.
+RULE 60: When CTR is active (current privilege mode enabled for recording and not frozen), qualified control transfers update the Entry Registers at logical entry 0.
+RULE 61: When CTR is active, recorded transfers update the ctrsource .V bit to 1.
+RULE 62: When CTR is active, qualified control transfers push older entries down the stack; the record previously in logical entry 0 moves to logical entry 1, the record in logical entry 1 moves to logical entry 2, and so on.
+RULE 63: If the CTR buffer is full, the oldest recorded entry is lost.
+RULE 64: When an SCTRCLR instruction is executed, all CTR Entry Registers are zeroed, and the CTR cycle counter and CCV are zeroed.
+RULE 65: After SCTRCLR, any subsequent read of ctrsource, ctrtarget, or ctrdata that precedes the next qualified control transfer will return the value 0.
+RULE 66: The first recorded transfer following SCTRCLR will have ctrdata .CCV=0.
+RULE 67: When the optional x ctrctl .RASEMU bit is implemented and set to 1, indirect and direct calls are recorded as normal.
+RULE 68: When x ctrctl .RASEMU is set to 1, function returns pop the most recent call by decrementing the WRPTR then invalidating the WRPTR entry (by setting ctrsource.V=0).
+RULE 69: When x ctrctl .RASEMU is set to 1, co-routine swaps affect both a return and a call, overwriting logical entry 0 and not modifying WRPTR.
+RULE 70: When x ctrctl .RASEMU is set to 1, other transfer types are inhibited.
+RULE 71: When x ctrctl .RASEMU is set to 1, transfer type filtering bits and external trap enable bits are ignored.
+RULE 72: When a trap occurs between enabled privilege modes, it is recorded as normal.
+RULE 73: When a trap occurs from a disabled privilege mode to an enabled privilege mode, ctrsource .PC is 0.
+RULE 74: When a trap occurs from an enabled mode to a disabled mode (external trap), it is not recorded by default.
+RULE 75: When a trap return occurs between enabled privilege modes, it is recorded as normal, and ctrtarget .PC is 0.
+RULE 76: When a trap return occurs from a disabled mode to an enabled mode, it is not recorded.
+RULE 77: External trap recording depends on the external trap enable bits for the target mode and all intervening modes.
+RULE 78: For records of external traps, ctrtarget .PC is 0.
+RULE 79: If external trap recording is implemented, mctrctl .MTE and sctrctl .STE must be implemented, while vsctrctl .STE must be implemented if the H extension is implemented.
+RULE 80: When an interrupt i traps to S-mode, it occurs if either the current privilege mode is S and SIE is set, or the current privilege mode has less privilege than S-mode, and bit i is set in both sip and sie.
+RULE 81: Interrupts to S-mode take priority over any interrupts to lower privilege modes.
+RULE 82: When reading or writing any implemented field of sip/sie, or writing any writable field of sip/sie, effects a read or write of the homonymous field of mip/mie.
+RULE 83: When V=1, instructions that normally read or modify a supervisor CSR shall instead access the corresponding VS CSR.
+RULE 84: When V=1, an attempt to read or write a VS CSR directly by its own separate CSR address causes a virtual-instruction exception.
+RULE 85: When V=1, both vsstatus .FS and the HS-level sstatus .FS are in effect.
+RULE 86: When V=1, attempts to execute a floating-point instruction when either vsstatus .FS or sstatus .FS is 0 (Off) raise an illegal-instruction exception.
+RULE 87: When V=1, modifying the floating-point state causes both vsstatus .FS and sstatus .FS to be set to 3 (Dirty).
+RULE 88: When V=1, vsip and vsie substitute for sip and sie, so instructions that normally read or modify sip / sie actually access vsip / vsie instead.
+RULE 89: When V=1, interrupts directed to HS-level continue to be indicated in the HS-level sip register, not in vsip.
+RULE 90: When V=1, vstvec substitutes for the usual stvec, so instructions that normally read or modify stvec actually access vstvec instead.
+RULE 91: When V=1, vsip and vsie are VS-mode's versions of sip and sie.
+RULE 92: When V=1, vsip .LCOFIP and vsie .LCOFIE are aliases of sip .LCOFIP and sie .LCOFIE if the Shlcofideleg extension is implemented and hideleg bit 13 is writable.
+RULE 93: When V=1, vsip .SEIP and vsie .SEIE are aliases of hip .VSEIP and hie .VSEIE if hideleg bit 10 is zero.
+RULE 94: When V=1, vsip .STIP and vsie .STIE are aliases of hip .VSTIP and hie .VSTIE if hideleg bit 6 is zero.
+RULE 95: When V=1, vsip .SSIP and vsie .SSIE are aliases of hip .VSSIP and hie .VSSIE if hideleg bit 2 is zero.
+RULE 96: When V=1, reading the time CSR in VS or VU mode returns the sum of the contents of htimedelta and the actual value of time.
+RULE 97: When V=1, access to the vstimecmp register (via stimecmp) is permitted in VS-mode only if the TM bit in hcounteren and the TM bit in mcounteren are both set.
+RULE 98: When V=1, the hgatp register controls G-stage address translation and protection for guest virtual addresses.
+RULE 99: When V=1, a write to hgatp does not imply any ordering constraints between page-table updates and subsequent G-stage address translations.
+RULE 100: When V=1, the hgatp register is considered active for the purposes of the address-translation algorithm unless the effective privilege mode is U and hstatus .HU=0.
+RULE 101: When V=1, vsepc substitutes for the usual sepc, so instructions that normally read or modify sepc actually access vsepc instead.
+RULE 102: When V=1, vscause substitutes for the usual scause, so instructions that normally read or modify scause actually access vscause instead.
+RULE 103: When V=1, vscause is a WLRL register that must be able to hold the same set of values that scause can hold.
+RULE 104: When V=1, vsscratch substitutes for the usual sscratch, so instructions that normally read or modify sscratch actually access vsscratch instead.
+RULE 105: When a virtual-machine load/store instruction is executed, it is valid only in M-mode or HS-mode, or in Umode when hstatus.HU=1.
+RULE 106: When a virtual-machine load/store instruction is executed, the effective privilege mode is VU when hstatus.SPVP=0, and VS when hstatus.SPVP=1.
+RULE 107: When a virtual-machine load/store instruction is executed, two-stage address translation is applied, involving VS-stage and G-stage translation.
+RULE 108: When a virtual-machine load/store instruction is executed, the effective privilege mode is VU when hstatus.SPVP=0, and VS when hstatus.SPVP=1.
+RULE 109: When a virtual-machine load/store instruction is executed, the effective privilege mode is VU when hstatus.SPVP=0, and VS when hstatus.SPVP=1.
+RULE 110: When a virtual-machine load/store instruction is executed, execution requires the memory to be executable in both VS-stage and G-stage address translation.
+RULE 111: When a virtual-machine load/store instruction is executed, attempting to execute it when V=1 causes a virtual-instruction exception.
+RULE 112: When a virtual-machine load/store instruction is executed from U-mode when hstatus.HU=0, it causes an illegal-instruction exception.
+RULE 113: When a virtual-machine load/store instruction is executed, attempts to execute it cannot override machine-level physical memory protection (PMP).
+RULE 114: Memory accesses performed by virtual-machine load/store instructions are not subject to pointer masking.

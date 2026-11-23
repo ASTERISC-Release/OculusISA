@@ -1,0 +1,128 @@
+You are comparing generated RISC-V architectural rules against a ground truth rule set.
+
+    Target: satp
+
+    Generated rules:
+    RULE 1: When S-mode is implemented, an otherwise-valid M-mode CSR access to satp is permitted regardless of mstatus.TVM.
+RULE 2: When V=0, an S-mode or HS-mode attempt to read or write satp while mstatus.TVM=1 raises an illegal-instruction exception with cause 2.
+RULE 3: When V=0, an S-mode or HS-mode access to satp is permitted by mstatus.TVM when mstatus.TVM=0.
+RULE 4: When V=0, a U-mode attempt to access satp raises an illegal-instruction exception with cause 2.
+RULE 5: When V=1, a VS-mode attempt to access satp while hstatus.VTVM=1 raises a virtual-instruction exception with cause 22.
+RULE 6: When V=1 and hstatus.VTVM=0, a VS-mode CSR access addressed to satp accesses vsatp instead of satp.
+RULE 7: When V=1, a VU-mode attempt to access satp raises a virtual-instruction exception with cause 22.
+RULE 8: While V=1, the HS-level satp retains its value but does not control ordinary VS-mode or VU-mode address translation.
+RULE 9: When an otherwise-permitted CSRRW targets satp, it attempts to write the XLEN-bit value from rs1 to satp subject to satp WARL behavior.
+RULE 10: When an otherwise-permitted CSRRW targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 11: When an otherwise-permitted CSRRWI targets satp, it attempts to write the zero-extended five-bit immediate to satp subject to satp WARL behavior.
+RULE 12: When an otherwise-permitted CSRRWI targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 13: When an otherwise-permitted CSRRS targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 14: When CSRRS targets satp with rs1=x0, the instruction does not write satp.
+RULE 15: When CSRRS targets satp with rs1≠x0, it attempts to set the satp bits selected by x[rs1] subject to satp WARL behavior.
+RULE 16: When an otherwise-permitted CSRRC targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 17: When CSRRC targets satp with rs1=x0, the instruction does not write satp.
+RULE 18: When CSRRC targets satp with rs1≠x0, it attempts to clear the satp bits selected by x[rs1] subject to satp WARL behavior.
+RULE 19: When an otherwise-permitted CSRRSI targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 20: When CSRRSI targets satp with uimm=0, the instruction does not write satp.
+RULE 21: When CSRRSI targets satp with uimm≠0, it attempts to set the satp bits selected by the zero-extended immediate subject to satp WARL behavior.
+RULE 22: When an otherwise-permitted CSRRCI targeting satp has rd≠x0, rd receives the pre-write value of satp zero-extended to XLEN bits.
+RULE 23: When CSRRCI targets satp with uimm=0, the instruction does not write satp.
+RULE 24: When CSRRCI targets satp with uimm≠0, it attempts to clear the satp bits selected by the zero-extended immediate subject to satp WARL behavior.
+RULE 25: An otherwise-permitted explicit read of satp does not modify satp or cause any standard CSR read side effect.
+RULE 26: A CSR instruction that writes satp updates its MODE, ASID, and PPN fields as one atomic CSR operation.
+RULE 27: A read of satp returns legal values for its WARL MODE, ASID, and PPN fields.
+RULE 28: An otherwise-permitted write of an unsupported value to a satp WARL field does not raise an exception solely because the value is unsupported.
+RULE 29: When a supported MODE is written with an unsupported ASID or PPN value, a subsequent satp read returns an implementation-selected legal value determined by the written value and architectural state.
+RULE 30: When satp is written with an unsupported MODE value, the entire write has no effect and no satp field is modified.
+RULE 31: When software writes MODE=Bare with every remaining satp bit zero, satp selects Bare translation.
+RULE 32: When satp is active and MODE=Bare, supervisor virtual addresses equal supervisor physical addresses and satp adds no translation or protection beyond physical protection.
+RULE 33: When satp is active in a paged mode, the root page-table physical address is satp.PPN multiplied by 4096.
+RULE 34: When SXLEN=32 and active satp.MODE=Sv32, virtual addresses are translated through a two-level page table rooted at satp.PPN.
+RULE 35: When SXLEN=64 and active satp.MODE=Sv39, virtual addresses are translated through a three-level page table rooted at satp.PPN.
+RULE 36: When active satp.MODE=Sv39 and address bits 63:39 are not all equal to address bit 38, the access raises the page-fault exception corresponding to the original access type.
+RULE 37: When SXLEN=64 and active satp.MODE=Sv48, virtual addresses are translated through a four-level page table rooted at satp.PPN.
+RULE 38: When active satp.MODE=Sv48 and address bits 63:48 are not all equal to address bit 47, the access raises the page-fault exception corresponding to the original access type.
+RULE 39: When SXLEN=64 and active satp.MODE=Sv57, virtual addresses are translated through a five-level page table rooted at satp.PPN.
+RULE 40: When active satp.MODE=Sv57 and address bits 63:57 are not all equal to address bit 56, the access raises the page-fault exception corresponding to the original access type.
+RULE 41: If an implementation supports Sv48 in satp.MODE, it also supports Sv39 in satp.MODE.
+RULE 42: If an implementation supports Sv57 in satp.MODE, it also supports Sv48 and Sv39 in satp.MODE.
+RULE 43: When satp performs Sv32, Sv39, Sv48, or Sv57 translation, address bits 11:0 pass unchanged from the virtual address to the supervisor physical address.
+RULE 44: When satp translation succeeds, the resulting supervisor physical address remains subject to applicable PMP and PMA checks.
+RULE 45: When ASIDs are implemented, satp.ASID identifies the address space associated with non-global cached translations.
+RULE 46: When ASIDLEN=0, satp.ASID reads as zero and writes cannot select a nonzero ASID.
+RULE 47: When ASIDLEN>0, satp.ASID[ASIDLEN-1:0] are the implemented writable ASID bits.
+RULE 48: Writing ones to every satp.ASID bit and reading satp back reveals the implemented ASID bits as the contiguous least-significant one bits.
+RULE 49: ASIDLEN cannot exceed 9 for Sv32 or 16 for Sv39, Sv48, and Sv57.
+RULE 50: The meaning of a satp ASID is local to the hart, so equal ASID values on different harts may identify different address spaces.
+RULE 51: A translation derived from a global mapping may be used independently of the current satp.ASID.
+RULE 52: When SXLEN changes, satp writable state is derived by clearing old-width read-only bit positions, truncating or zero-extending the remaining old value to the new width, and assigning the new-width writable fields from the corresponding bit positions.
+RULE 53: When V=0, satp is active for an access whose effective privilege mode is S or U.
+RULE 54: When satp is inactive, a new execution of the address-translation algorithm cannot begin using its value.
+RULE 55: When V=0, mstatus.MPRV=1, and mstatus.MPP is S or U, explicit load and store addresses use satp translation and protection for the effective privilege mode.
+RULE 56: Changing mstatus.MPRV does not cause instruction fetches to use satp as though they occurred at mstatus.MPP.
+RULE 57: When mstatus.MPRV=1 and mstatus.MPV=1, explicit memory accesses use VS-stage and G-stage translation rather than the HS-level satp.
+RULE 58: A translation that began while satp was active may complete after satp becomes inactive unless an SFENCE.VMA matching its address and ASID requires otherwise.
+RULE 59: A hart observes its own explicit satp accesses in program order relative to instructions whose behavior is modified by satp.
+RULE 60: After a successful satp write, subsequent same-hart instructions whose behavior depends on satp use the new satp CSR value.
+RULE 61: Writing satp does not order prior page-table stores before subsequent implicit page-table accesses.
+RULE 62: Writing satp does not invalidate any address-translation cache entry.
+RULE 63: A change of satp.MODE between Bare and a paged mode takes effect immediately without requiring SFENCE.VMA.
+RULE 64: A change of satp.ASID takes effect immediately without requiring SFENCE.VMA.
+RULE 65: A change to mstatus.SUM or mstatus.MXR takes effect immediately without requiring SFENCE.VMA.
+RULE 66: If a page-table mapping is changed without a subsuming SFENCE.VMA, a later access may use any translation for that address and ASID that was valid at any time since the most recent subsuming SFENCE.VMA.
+RULE 67: When an SFENCE.VMA subsumes an address and ASID, prior page-table stores already visible to the hart are ordered before subsequent matching implicit page-table references by that hart.
+RULE 68: When an SFENCE.VMA subsumes an address and ASID, matching address-translation cache entries are invalidated according to the instruction’s address and ASID operands.
+RULE 69: When an ASID is reassociated with a different root page table without a matching SFENCE.VMA, later accesses using that ASID may use cached translations from the former address space.
+RULE 70: When active satp translation reaches a page with U=0 for an effective U-mode access, the access raises the page-fault exception corresponding to the original access type.
+RULE 71: When active satp translation is used for an effective S-mode data access to a page with U=1 and SUM=0, the access raises the page-fault exception corresponding to the original access type.
+RULE 72: When active satp translation is used for an effective S-mode data access to a page with U=1 and SUM=1, the U bit does not by itself prevent the access.
+RULE 73: When active satp translation is used for an effective S-mode instruction fetch from a page with U=1, the fetch raises an instruction page-fault exception regardless of SUM.
+RULE 74: When active satp translation is used for a load and MXR=0, the selected leaf PTE must have read permission or the load raises a load page-fault exception.
+RULE 75: When active satp translation is used for a load and MXR=1, either read or execute permission in the selected leaf PTE satisfies the page-table read-permission check.
+RULE 76: When active satp translation is used for an instruction fetch, the selected leaf PTE must have execute permission or the fetch raises an instruction page-fault exception with cause 12.
+RULE 77: When active satp translation is used for a store or AMO, the selected leaf PTE must have write permission or the access raises a store/AMO page-fault exception with cause 15.
+RULE 78: When a page-table memory access initiated by active satp translation violates a PMP or PMA check, the original instruction raises the access-fault exception corresponding to its original access type.
+RULE 79: When active satp translation encounters an invalid PTE, an R=0/W=1 PTE, or a reserved PTE encoding, the original instruction raises the page-fault exception corresponding to its original access type.
+RULE 80: When active satp translation encounters a leaf superpage PTE whose physical page number is insufficiently aligned for that superpage, the original instruction raises the page-fault exception corresponding to its original access type.
+RULE 81: If satp.MODE is read-only zero, the SUM field in mstatus and sstatus is read-only zero.
+RULE 82: When V=0, SFENCE.VMA applies to the address-translation structures controlled by the HS-level satp.
+RULE 83: When V=1, SFENCE.VMA applies to the address-translation structures controlled by vsatp rather than the retained HS-level satp.
+RULE 84: Implicit accesses to page tables selected through satp use the endianness controlled by SBE, regardless of UBE.
+RULE 85: If page-table structures remain in use across a change to SBE, an SFENCE.VMA with rs1=x0 and rs2=x0 is required before subsequent satp translations may rely on the new interpretation.
+RULE 86: If Svpbmt is not implemented, menvcfg.PBMTE is read-only zero and satp-controlled translation behaves as though Svpbmt is unavailable.
+RULE 87: When menvcfg.PBMTE=1, Svpbmt page-based memory types are available to page tables selected by satp.
+RULE 88: When menvcfg.PBMTE=0, page tables selected by satp are interpreted as though Svpbmt were not implemented.
+RULE 89: After menvcfg.PBMTE changes, an SFENCE.VMA with rs1=x0 and rs2=x0 suffices to synchronize satp address-translation caches with the changed PBMT interpretation.
+RULE 90: If Svadu is not implemented, menvcfg.ADUE is read-only zero.
+RULE 91: When menvcfg.ADUE=1, satp-controlled translation may update leaf PTE A/D bits in hardware and behaves as though Svade were not implemented.
+RULE 92: When menvcfg.ADUE=0, satp-controlled translation behaves as though Svade were implemented and raises a page-fault exception when a required PTE A or D bit is clear.
+RULE 93: After menvcfg.ADUE changes, an SFENCE.VMA with rs1=x0 and rs2=x0 suffices to synchronize satp address-translation caches with the changed A/D-bit interpretation.
+RULE 94: When pointer masking is enabled for the effective privilege mode of an explicit memory access, the pointer-masked effective address is the virtual or physical address presented to satp-controlled translation.
+RULE 95: Pointer masking is not applied to implicit page-table accesses performed through satp.
+RULE 96: Pointer masking is not applied to instruction-fetch addresses translated through satp.
+
+    Ground truth rules in this batch:
+    RULE 1: The satp register has the privilege SRW.
+RULE 2: Unless otherwise specified, the value returned by an implicit read of the satp CSR is the same value that would have been returned by an explicit read of the satp CSR, using a CSR-access instruction in a sufficient privilege mode.
+RULE 3: If S-mode is not supported or satp.MODE is read-only 0, the SUM (permit Supervisor User Memory access) bit is read-only 0.
+RULE 4: When TVM=1, attempts to read or write the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+RULE 5: When TVM=0, attempts to read or write the satp CSR are permitted in S-mode.
+RULE 6: When SXLEN is 64, the satp register is formatted with a 4-bit MODE field, a 16-bit ASID field, and a 44-bit PPN field.
+RULE 7: When SXLEN is 64, the MODE, ASID, and PPN fields in the satp register exhibit WARL behavior.
+RULE 8: When the MODE field in the satp register is set to Bare, supervisor virtual addresses are equal to supervisor physical addresses.
+RULE 9: When the MODE field in the satp register is set to Bare, there is no additional memory protection beyond the physical memory protection scheme.
+RULE 10: To select MODE=Bare in the satp register, software must write zero to bits 59 through 0 when SXLEN is 64.
+RULE 11: Attempting to select MODE=Bare in the satp register with a nonzero pattern in the remaining fields has an UNSPECIFIED effect on the value that the remaining fields assume.
+RULE 12: When SXLEN is 64, all satp encodings corresponding to MODE=Bare are reserved for future standard use.
+RULE 13: If the satp register is written with an unsupported MODE, the entire write has no effect and no fields in the satp register are modified.
+RULE 14: The least-significant bits of the ASID field in the satp register are implemented first, such that if ASIDLEN is greater than 0, ASID[ASIDLEN-1:0] is writable.
+RULE 15: When SXLEN is 64, the satp MODE field value of 0 is named Bare and means no translation or protection.
+RULE 16: When SXLEN is 64, the satp MODE field values from 1 to 7 are reserved for standard use.
+RULE 17: When SXLEN is 64, the satp MODE field value of 8 is named Sv39 and means page-based 39-bit virtual addressing.
+RULE 18: When SXLEN is 64, the satp MODE field value of 9 is named Sv48 and means page-based 48-bit virtual addressing.
+RULE 19: When SXLEN is 64, the satp MODE field value of 10 is named Sv57 and means page-based 57-bit virtual addressing.
+RULE 20: When SXLEN is 64, the satp MODE field value of 11 is named Sv64 and is reserved for page-based 64-bit virtual addressing.
+
+    Determine all semantically qualifying matches. A generated rule covers a ground truth rule only if it expresses the same architectural behavior or fully includes the ground truth rule's required condition and outcome. Do not count a partial match. Use only the given rule texts. Do not use external knowledge or infer behavior that is not explicitly stated. Return candidate pairs for each qualifying match, including alternative candidates when more than one pair qualifies. A separate deterministic algorithm will select one-to-one matches from these candidates. Omit unmatched rules. Use only IDs present in the inputs.
+
+    Return only JSON:
+    {"mapping": [{"generated_id": <generated rule ID>, "gt_id": <ground truth rule ID>}]}

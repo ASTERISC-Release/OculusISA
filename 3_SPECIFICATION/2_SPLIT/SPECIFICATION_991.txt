@@ -1,0 +1,15 @@
+## 4.8.2. Interrupt delivery and handling
+
+When an interrupt domain is configured so the APLIC delivers interrupts directly to harts (field DM of domaincfg is zero), the APLIC supplies the external interrupt signals, at the domain's privilege level, for all harts of the domain, so long as one of the following is true: (a) the harts do not have IMSICs, or (b) the eidelivery registers of the relevant IMSIC interrupt files are set to 0x40000000 (Section 3.8.1). For a machine-level domain, the interrupt signals from the APLIC appear as bit MEIP (Machine External Interrupt-Pending) in each hart's mip CSR. For a supervisor-level domain, the interrupt signals appear as bit SEIP (Supervisor External Interrupt-Pending) in each hart's mip and sip CSRs. Each interrupt signal may be arbitrarily delayed traveling from the APLIC to the proper hart.
+
+At the APLIC, each interrupt signal to a hart is derived from the IE field of register domaincfg and the current  state  of  the  hart's  IDC  structure  in  the  memory-mapped  control  region  for  the  domain.  If either domaincfg .IE  =  0  or  interrupt  delivery  to  the  hart  is  disabled  by  the idelivery register ( idelivery =  0),  the  interrupt  signal  is  held  de-asserted.  When domaincfg .IE  =  1  and  interrupt delivery is enabled ( idelivery = 1), the interrupt signal is asserted whenever either register iforce or topi is not zero.
+
+Due  to  likely  delay  in  the  communication  between  an  APLIC  and  a  hart,  it  may  happen  that  an external interrupt trap is taken, yet no interrupt is pending and enabled for the hart when a read of the hart's claimi register actually occurs. In such a circumstance, the interrupt identity reported by the claim will be zero, resulting in an apparent spurious interrupt from the APLIC. Portable software must be prepared for the possibility of spurious interrupts at the APLIC, which can safely be ignored and should be rare. For testing purposes, a spurious interrupt can be triggered for a hart by setting an IDC structure's iforce register to 1.
+
+A trap handler solely for external interrupts via an APLIC could be written roughly as follows:
+
+```
+save processor registers i = read register claimi from the hart's IDC structure at the APLIC i = i>>16 call the interrupt handler for external interrupt   (minor identity) restore processor registers return from trap
+```
+
+To account for spurious interrupts, this pseudocode assumes there is an interrupt handler for "external interrupt 0" which does nothing.

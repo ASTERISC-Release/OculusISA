@@ -1,0 +1,44 @@
+RULE 1: VLE32FF.V computes the unit-stride effective address of element i as the contents of integer register rs1 plus i multiplied by 4 bytes.
+RULE 2: For each active element i whose load completes without an exception, VLE32FF.V writes the 32-bit value read from the effective address of element i into element i of the destination vector register group.
+RULE 3: VLE32FF.V accesses memory and raises exceptions only for active elements.
+RULE 4: The body elements of VLE32FF.V are the element indices from the initial vstart value through the initial vl value minus one.
+RULE 5: VLE32FF.V does not raise exceptions for prestart elements whose index is less than the initial vstart value.
+RULE 6: VLE32FF.V does not update destination elements whose index is less than the initial vstart value.
+RULE 7: VLE32FF.V does not raise exceptions for inactive body elements whose mask bit is disabled.
+RULE 8: If vtype.vma is 0, VLE32FF.V leaves each inactive body destination element unchanged.
+RULE 9: If vtype.vma is 1, VLE32FF.V may leave an inactive body destination element unchanged or overwrite it with all 1s, in any combination and without a determinism requirement.
+RULE 10: VLE32FF.V does not raise exceptions for tail elements whose index is at or beyond the current vl value.
+RULE 11: If vtype.vta is 0, VLE32FF.V leaves each tail destination element unchanged.
+RULE 12: If vtype.vta is 1, VLE32FF.V may leave a tail destination element unchanged or overwrite it with all 1s, in any combination and without a determinism requirement.
+RULE 13: If the initial vstart value is greater than or equal to the initial vl value, including when the initial vl value is 0, VLE32FF.V updates no destination elements, including no tail-agnostic updates.
+RULE 14: When VLE32FF.V is masked, an element i is active only when the corresponding bit v0.mask[i] is 1.
+RULE 15: When VLE32FF.V is unmasked, all body elements are active.
+RULE 16: If active element 0 of VLE32FF.V raises a synchronous load exception, VLE32FF.V takes the trap.
+RULE 17: If VLE32FF.V takes the synchronous trap raised by active element 0, vl is not modified.
+RULE 18: If an active element of VLE32FF.V with index greater than 0 raises a synchronous load exception, VLE32FF.V does not take that trap.
+RULE 19: If an active element of VLE32FF.V with index greater than 0 raises a synchronous load exception that causes fault-only-first trimming, vl is reduced to the index of that element.
+RULE 20: VLE32FF.V may overwrite active destination elements with indices greater than the trimming element and less than the original vl value after an element with index greater than 0 causes vector-length trimming, and such overwritten values need not correspond to the memory values at their addressed locations.
+RULE 21: If VLE32FF.V reports a synchronous trap on element 0, VLE32FF.V may overwrite active destination elements with indices greater than 0 and less than the original vl value, and such overwritten values need not correspond to the memory values at their addressed locations.
+RULE 22: VLE32FF.V accesses a non-idempotent memory location for an element only when that element load is known not to be restarted due to a trap or vector-length trimming.
+RULE 23: Even when no exception is raised, VLE32FF.V may process fewer than vl elements and reduce vl accordingly.
+RULE 24: If VLE32FF.V starts with vstart equal to 0 and vl greater than 0, it processes at least one element.
+RULE 25: If an active element access by VLE32FF.V is not naturally aligned to 4 bytes, that element is either transferred successfully or raises an address-misaligned exception on that element.
+RULE 26: A naturally aligned 4-byte element access by VLE32FF.V does not raise an address-misaligned exception.
+RULE 27: If a misaligned element access by VLE32FF.V completes successfully, the access is not guaranteed to be atomic.
+RULE 28: Support for misaligned element accesses by VLE32FF.V is independent of support for misaligned scalar memory accesses.
+RULE 29: If an active element access by VLE32FF.V violates address translation, PMP, or PMA, the access raises a load page-fault or load access-fault exception corresponding to the original access type, subject to fault-only-first handling based on the element index.
+RULE 30: If mstatus.VS is Off,执行 VLE32FF.V raises an illegal-instruction exception.
+RULE 31: When virtualization mode V equals 1, execution of VLE32FF.V raises an illegal-instruction exception if either mstatus.VS or vsstatus.VS is Off.
+RULE 32: If vtype.vill is set, execution of VLE32FF.V raises an illegal-instruction exception.
+RULE 33: If VLE32FF.V changes vector state and mstatus.VS is Initial or Clean, mstatus.VS is set to Dirty.
+RULE 34: When virtualization mode V equals 1 and neither mstatus.VS nor vsstatus.VS is Off, if VLE32FF.V changes vector state, both mstatus.VS and vsstatus.VS are set to Dirty.
+RULE 35: If VLE32FF.V sets mstatus.VS to Dirty, mstatus.SD is set to 1.
+RULE 36: When virtualization mode V equals 1 and VLE32FF.V sets vsstatus.VS to Dirty, vsstatus.SD is set to 1.
+RULE 37: If VLE32FF.V raises an illegal-instruction exception, vstart is not modified.
+RULE 38: If VLE32FF.V completes without an illegal-instruction exception, vstart is reset to 0 at the end of execution.
+RULE 39: If VLE32FF.V takes a trap after execution has begun, whether by synchronous exception on an active element or by asynchronous interrupt, the applicable *epc CSR is written with the address of the VLE32FF.V instruction and vstart contains the element index at which the trap is taken.
+RULE 40: VLE32FF.V appears to execute in program order on the local hart.
+RULE 41: VLE32FF.V follows the RVWMO memory consistency model at the instruction level.
+RULE 42: If the Ztso extension is implemented, VLE32FF.V additionally follows RVTSO at the instruction level.
+RULE 43: Individual element memory operations of VLE32FF.V are unordered with respect to each other.
+RULE 44: For VLE32FF.V accesses to a strongly ordered I/O region, element accesses can be initiated in any order.

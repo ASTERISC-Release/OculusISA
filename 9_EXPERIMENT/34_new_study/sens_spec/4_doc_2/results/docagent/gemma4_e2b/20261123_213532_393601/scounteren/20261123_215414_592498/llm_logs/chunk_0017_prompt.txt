@@ -1,0 +1,617 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `scounteren`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+ 1100010                      | 1100010                      | 00000                        | rs1                          | rm                           | rd                           |                      1010011 | FCVT.W.H                     |
+| 1100010                      | 1100010                      | 00001                        | rs1                          | rm                           | rd                           |                      1010011 | FCVT.WU.H                    |
+| 1110010                      | 1110010                      | 00000                        | rs1                          | 000                          | rd                           |                      1010011 | FMV.X.H                      |
+| 1101010                      | 1101010                      | 00000                        | rs1                          | rm                           | rd                           |                      1010011 | FCVT.H.W                     |
+| 1101010                      | 1101010                      | 00001                        | rs1                          | rm                           | rd                           |                      1010011 | FCVT.H.WU                    |
+| 1111010                      | 1111010                      | 00000                        | rs1                          | 000                          | rd                           |                      1010011 | FMV.H.X                      |
+
+|   RV64Zfh Standard Extension (in addition to RV32Zfh) |   RV64Zfh Standard Extension (in addition to RV32Zfh) | RV64Zfh Standard Extension (in addition to RV32Zfh)   | RV64Zfh Standard Extension (in addition to RV32Zfh)   | RV64Zfh Standard Extension (in addition to RV32Zfh)   |   RV64Zfh Standard Extension (in addition to RV32Zfh) | RV64Zfh Standard Extension (in addition to RV32Zfh)   |
+|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|
+|                                               1100010 |                                                 00010 | rs1                                                   | rm                                                    | rd                                                    |                                               1010011 | FCVT.L.H                                              |
+|                                               1100010 |                                                 00011 | rs1                                                   | rm                                                    | rd                                                    |                                               1010011 | FCVT.LU.H                                             |
+|                                               1101010 |                                                 00010 | rs1                                                   | rm                                                    | rd                                                    |                                               1010011 | FCVT.H.L                                              |
+|                                               1101010 |                                                 00011 | rs1                                                   | rm                                                    | rd                                                    |                                               1010011 | FCVT.H.LU                                             |
+
+|   Zawrs Standard Extension |   Zawrs Standard Extension |   Zawrs Standard Extension |   Zawrs Standard Extension |   Zawrs Standard Extension | Zawrs Standard Extension   |
+|----------------------------|----------------------------|----------------------------|----------------------------|----------------------------|----------------------------|
+|               000000001101 |                      00000 |                        000 |                      00000 |                    1110011 | WRS.NTO                    |
+|               000000011101 |                      00000 |                        000 |                      00000 |                    1110011 | WRS.STO                    |
+
+Table  73  lists  the  CSRs  that  have  currently  been  allocated  CSR  addresses.  The  timers,  counters,  and floating-point CSRs are the only CSRs defined in this specification.
+
+Table 73. RISC-V control and status register (CSR) address map.
+
+| Number                                      | Privilege                                   | Name                                        | Description                                                  |
+|---------------------------------------------|---------------------------------------------|---------------------------------------------|--------------------------------------------------------------|
+| Floating-Point Control and Status Registers | Floating-Point Control and Status Registers | Floating-Point Control and Status Registers | Floating-Point Control and Status Registers                  |
+| 0x001                                       | Read write                                  | fflags                                      | Floating-Point Accrued Exceptions.                           |
+| 0x002                                       | Read write                                  | frm                                         | Floating-Point Dynamic Rounding Mode.                        |
+| 0x003                                       | Read write                                  | fcsr                                        | Floating-Point Control and Status Register ( frm + fflags ). |
+| Counters and Timers                         | Counters and Timers                         | Counters and Timers                         | Counters and Timers                                          |
+| 0xC00                                       | Read-only                                   | cycle                                       | Cycle counter for RDCYCLE instruction.                       |
+| 0xC01                                       | Read-only                                   | time                                        | Timer for RDTIME instruction.                                |
+| 0xC02                                       | Read-only                                   | instret                                     | Instructions-retired counter for RDINSTRET instruction.      |
+| 0xC80                                       | Read-only                                   | cycleh                                      | Upper 32 bits of cycle , RV32I only.                         |
+| 0xC81                                       | Read-only                                   | timeh                                       | Upper 32 bits of time , RV32I only.                          |
+| 0xC82                                       | Read-only                                   | instreth                                    | Upper 32 bits of instret , RV32I only.                       |
+
+## Chapter 1. Introduction
+
+This document describes the RISC-V privileged architecture, which covers all aspects of RISC-V systems beyond the unprivileged ISA, including privileged instructions as well as additional functionality required for running operating systems and attaching external devices.
+
+Commentary on our design decisions is formatted as in this paragraph, and can be skipped if the reader is only interested in the specification itself.
+
+<image>
+
+We  briefly  note  that  the  entire  privileged-level  design  described  in  this  document  could  be replaced with an entirely different privileged-level  design  without  changing  the  unprivileged ISA,  and  possibly  without  even  changing  the  ABI.  In  particular,  this  privileged  specification was designed to  run  existing  popular  operating  systems,  and  so  embodies  the  conventional level-based  protection  model.  Alternate  privileged  specifications  could  embody  other  more flexible protection-domain models. For simplicity of expression, the text is written as if this was the only possible privileged architecture.
+
+## 1.1. RISC-V Privileged Software Stack Terminology
+
+This  section  describes  the  terminology  we  use  to  describe  components  of  the  wide  range  of  possible privileged software stacks for RISC-V.
+
+Figure 1 shows some of the possible software stacks that can be supported by the RISC-V architecture. The left-hand side shows a simple system that supports only a single application running on an application execution  environment  (AEE).  The  application  is  coded  to  run  with  a  particular  application  binary interface (ABI). The ABI includes the supported user-level ISA plus a set of ABI calls to interact with the AEE. The ABI hides details of the AEE from the application to allow greater flexibility in implementing the AEE. The same ABI could be implemented natively on multiple different host OSs, or could be supported by a user-mode emulation environment running on a machine with a different native ISA.
+
+<image>
+
+Our graphical convention represents abstract interfaces using black boxes with white text, to separate them from concrete instances of components implementing the interfaces.
+
+Application
+
+ABI
+
+AEE
+
+Application
+
+ABI
+
+Application
+
+ABI
+
+OS
+
+SEE
+
+Figure 1. Different implementation stacks supporting various forms of privileged execution.
+
+<image>
+
+The middle configuration shows a conventional operating system (OS) that can support multiprogrammed execution  of  multiple  applications.  Each  application  communicates  over  an  ABI  with  the  OS,  which provides  the  AEE.  Just  as  applications  interface  with  an  AEE  via  an  ABI,  RISC-V  operating  systems interface with a supervisor execution environment (SEE) via a supervisor binary interface (SBI). An SBI comprises the user-level and supervisor-level ISA together with a set of SBI function calls. Using a single SBI across all SEE implementations allows a single OS binary image to run on any SEE. The SEE can be a simple boot loader and BIOS-style IO system in a low-end hardware platform, or a hypervisor-provided virtual  machine  in  a  high-end  server,  or  a  thin  translation  layer  over  a  host  operating  system  in  an
+
+architecture simulation environment.
+
+<image>
+
+Most supervisor-level ISA definitions do not separate the SBI from the execution environment and/or  the  hardware  platform,  complicating  virtualization  and  bring-up  of  new  hardware platforms.
+
+The rightmost configuration shows a virtual machine monitor configuration where multiple multiprogrammed OSs are supported by a single hypervisor. Each OS communicates via an SBI with the hypervisor,  which  provides  the  SEE.  The  hypervisor  communicates  with  the  hypervisor  execution environment (HEE) using a hypervisor binary interface (HBI), to isolate the hypervisor from details of the hardware platform.
+
+<image>
+
+The  ABI,  SBI,  and  HBI  are  still  a  work-in-progress,  but  we  are  now  prioritizing  support  for Type-2 hypervisors where the SBI is provided recursively by an S-mode OS.
+
+Hardware  implementations  of  the  RISC-V  ISA  will  generally  require  additional  features  beyond  the privileged ISA to support the various execution environments (AEE, SEE, or HEE).
+
+## 1.2. Privilege Levels
+
+At any time, a RISC-V hardware thread ( hart ) is running at some privilege level encoded as a mode in one or more CSRs (control and status registers). Three RISC-V privilege levels are currently defined as shown in Table 1.
+
+Table 1. RISC-V privilege levels.
+
+|   Level |   Encoding | Name             | Abbreviation   |
+|---------|------------|------------------|----------------|
+|       0 |         00 | User/Application | U              |
+|       1 |         01 | Supervisor       | S              |
+|       2 |         10 | Reserved         |                |
+|       3 |         11 | Machine          | M              |
+
+Privilege  levels  are  used  to  provide  protection  between  different  components  of  the  software  stack,  and attempts to perform operations not permitted by the current privilege mode will cause an exception to be raised. These exceptions will normally cause traps into an underlying execution environment.
+
+<image>
+
+In  the  description,  we  try  to  separate  the  privilege  level  for  which  code  is  written,  from  the privilege mode in which it runs, although the two are often tied. For example, a supervisor-level operating system can run in supervisor-mode on a system with three privilege modes, but can also run in user-mode under a classic virtual machine monitor on systems with two or more privilege modes. In both cases, the same supervisor-level operating system binary code can be used, coded to a supervisor-level SBI and hence expecting to be able to use supervisor-level privileged instructions and CSRs. When running a guest OS in user mode, all supervisor-level actions will be trapped and emulated by the SEE running in the higher-privilege level.
+
+The  machine  level  has  the  highest  privileges  and  is  the  only  mandatory  privilege  level  for  a  RISC-V hardware platform. Code run in machine-mode (M-mode) is usually inherently trusted, as it has low-level access to the machine implementation. M-mode can be used to manage secure execution environments on RISC-V.  User-mode  (U-mode)  and  supervisor-mode  (S-mode)  are  intended  for  conventional  application and operating system usage respectively.
+
+Each privilege level has a core set of privileged ISA extensions with optional extensions and variants. For example, machine-mode supports an optional standard extension for memory protection. Also, supervisor mode can be extended to support Type-2 hypervisor execution as described in Chapter 22.
+
+Implementations might provide anywhere from 1 to 3 privilege modes trading off reduced isolation for lower implementation cost, as shown in Table 2.
+
+Table 2. Supported combination of privilege modes.
+
+|   Number of levels | Supported Modes   | Intended Usage                              |
+|--------------------|-------------------|---------------------------------------------|
+|                  1 | M                 | Simple embedded systems                     |
+|                  2 | M,U               | Secure embedded systems                     |
+|                  3 | M, S,U            | Systems running Unix-like operating systems |
+
+All hardware implementations must provide M-mode, as this is the only mode that has unfettered access to the  whole  machine.  The  simplest  RISC-V  implementations  may  provide  only  M-mode,  though  this  will provide no protection against incorrect or malicious application code.
+
+<image>
+
+The lock feature of the optional PMP facility can provide some limited protection even with only M-mode implemented.
+
+Many RISC-V implementations will also support at least user mode (U-mode) to protect the rest of the system  from  application  code.  Supervisor  mode  (S-mode)  can  be  added  to  provide  isolation  between  a supervisor-level operating system and the SEE.
+
+A  hart  normally  runs  application  code  in  U-mode  until  some  trap  (e.g.,  a  supervisor  call  or  a  timer interrupt) forces a switch to a trap handler, which usually runs in a more privileged mode. The hart will then  execute  the  trap  handler,  which  will  eventually  resume  execution  at  or  after  the  original  trapped instruction in U-mode. Traps that increase privilege level are termed vertical traps, while traps that remain at the same privilege level are termed horizontal traps. The RISC-V privileged architecture provides flexible routing of traps to different privilege layers.
+
+<image>
+
+Horizontal traps can be implemented as vertical traps that return control to a horizontal trap handler in the less-privileged mode.
+
+## 1.3. Debug Mode
+
+Implementations  may  also  include  a  debug  mode  to  support  off-chip  debugging  and/or  manufacturing test. Debug mode (D-mode) can be considered an additional privilege mode, with even more access than M-mode. The separate debug specification  describes  operation  of  a  RISC-V  hart  in  debug  mode.  Debug mode reserves a few CSR addresses that are only accessible in D-mode, and may also reserve some portions of the physical address space on a platform.
+
+## Chapter 2. Control and Status Registers (CSRs)
+
+The SYSTEM major opcode is used to encode all privileged instructions in the RISC-V ISA. These can be divided into two main classes: those that atomically read-modify-write control and status registers (CSRs), which are defined in the Zicsr extension, and all other privileged instructions. The privileged architecture requires the Zicsr extension; which other privileged instructions are required depends on the privilegedarchitecture feature set.
+
+In addition to the unprivileged state described in Volume I of this manual, an implementation may contain additional CSRs, accessible by some subset of the privilege levels using the CSR instructions described in Volume I. In this chapter, we map out the CSR address space. The following chapters describe the function of  each  of  the  CSRs  according  to  privilege  level,  as  well  as  the  other  privileged  instructions  which  are generally closely associated with a particular privilege level. Note that although CSRs and instructions are associated with one privilege level, they are also accessible at all higher privilege levels.
+
+Standard CSRs do not have side effects on reads but may have side effects on writes.
+
+## 2.1. CSR Address Mapping Conventions
+
+The standard RISC-V ISA sets aside a 12-bit encoding space (csr[11:0]) for up to 4,096 CSRs. By convention, the upper 4 bits of the CSR address (csr[11:8]) are used to encode the read and write accessibility of the CSRs according to privilege level as shown in Table 3. The top two bits (csr[11:10]) indicate whether the register is read/write ( 00 , 01 , or 10 ) or read-only ( 11 ). The next two bits (csr[9:8]) encode the lowest privilege level that can access the CSR, with the pattern 10 representing hypervisor CSRs.
+
+<image>
+
+The CSR address convention uses the upper bits of the CSR address to encode default access privileges. This simplifies error checking in the hardware and provides a larger CSR space, but does constrain the mapping of CSRs into the address space.
+
+Implementations might allow a more-privileged level to trap otherwise permitted CSR accesses by  a  less-privileged  level  to  allow  these  accesses  to  be  intercepted.  This  change  should  be transparent to the less-privileged software.
+
+Instructions that access a non-existent CSR are reserved. Attempts to access a CSR without appropriate privilege  level  raise  illegal-instruction  exceptions  or,  as  described  in  Section  22.6.1,  virtual-instruction exceptions. Attempts to write a read-only register raise illegal-instruction exceptions. A read/write register might also contain some bits that are read-only, in which case writes to the read-only bits are ignored.
+
+Table 3 also indicates the convention to allocate CSR addresses between standard and custom uses. The CSR addresses designated for custom uses will not be redefined by future standard extensions.
+
+Machine-mode standard read-write CSRs 0x7A0 -0x7BF are reserved for use by the debug system. Of these CSRs, 0x7A0 -0x7AF are accessible to machine mode, whereas 0x7B0 -0x7BF are only visible to debug mode. Implementations should raise illegal-instruction exceptions on machine-mode access to the latter set of registers.
+
+<image>
+
+Effective  virtualization  requires  that  as  many  instructions  run  natively  as  possible  inside  a virtualized  environment,  while  any  privileged  accesses  trap  to  the  virtual  machine  monitor. (Goldberg,  1974)  CSRs  that  are  read-only  at  some  lower  privilege  level  are  shadowed  into separate  CSR  addresses  if  they  are  made  read-write  at  a  higher  privilege  level.  This  avoids trapping  permitted  lower-privilege  accesses  while  still  causing  traps  on  illegal  accesses. Currently, the counters are the only shadowed CSRs.
+
+Table 3. Allocation of RISC-V CSR address ranges.
+
+| CSR Address                      | CSR Address                      | CSR Address                      | Hex                              | Use and Accessibility            |
+|----------------------------------|----------------------------------|----------------------------------|----------------------------------|----------------------------------|
+| [11:10]                          | [9:8]                            | [7:4]                            | Hex                              | Use and Accessibility            |
+| Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs |
+| 00                               | 00                               | XXXX                             | 0x000-0x0FF                      | Standard read/write              |
+| 01                               | 00                               | XXXX                             | 0x400-0x4FF                      | Standard read/write              |
+| 10                               | 00                               | XXXX                             | 0x800-0x8FF                      | Custom read/write                |
+| 11                               | 00                               | 0XXX                             | 0xC00-0xC7F                      | Standard read-only               |
+| 11                               | 00                               | 10XX                             | 0xC80-0xCBF                      | Standard read-only               |
+| 11                               | 00                               | 11XX                             | 0xCC0-0xCFF                      | Custom read-only                 |
+| Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            |
+| 00                               | 01                               | XXXX                             | 0x100-0x1FF                      | Standard read/write              |
+| 01                               | 01                               | 0XXX                             | 0x500-0x57F                      | Standard read/write              |
+| 01                               | 01                               | 10XX                             | 0x580-0x5BF                      | Standard read/write              |
+| 01                               | 01                               | 11XX                             | 0x5C0-0x5FF                      | Custom read/write                |
+| 10                               | 01                               | 0XXX                             | 0x900-0x97F                      | Standard read/write              |
+| 10                               | 01                               | 10XX                             | 0x980-0x9BF                      | Standard read/write              |
+| 10                               | 01                               | 11XX                             | 0x9C0-0x9FF                      | Custom read/write                |
+| 11                               | 01                               | 0XXX                             | 0xD00-0xD7F                      | Standard read-only               |
+| 11                               | 01                               | 10XX                             | 0xD80-0xDBF                      | Standard read-only               |
+| 11                               | 01                               | 11XX                             | 0xDC0-0xDFF                      | Custom read-only                 |
+| Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           |
+| 00                               | 10                               | XXXX                             | 0x200-0x2FF                      | Standard read/write              |
+| 01                               | 10                               | 0XXX                             | 0x600-0x67F                      | Standard read/write              |
+| 01                               | 10                               | 10XX                             | 0x680-0x6BF                      | Standard read/write              |
+| 01                               | 10                               | 11XX                             | 0x6C0-0x6FF                      | Custom read/write                |
+| 10                               | 10                               | 0XXX                             | 0xA00-0xA7F                      | Standard read/write              |
+| 10                               | 10                               | 10XX                             | 0xA80-0xABF                      | Standard read/write              |
+| 10                               | 10                               | 11XX                             | 0xAC0-0xAFF                      | Custom read/write                |
+| 11                               | 10                               | 0XXX                             | 0xE00-0xE7F                      | Standard read-only               |
+| 11                               | 10                               | 10XX                             | 0xE80-0xEBF                      | Standard read-only               |
+| 11                               | 10                               | 11XX                             | 0xEC0-0xEFF                      | Custom read-only                 |
+| Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               |
+| 00                               | 11                               | XXXX                             | 0x300-0x3FF                      | Standard read/write              |
+| 01                               | 11                               | 0XXX                             | 0x700-0x77F                      | Standard read/write              |
+| 01                               | 11                               | 100X                             | 0x780-0x79F                      | Standard read/write              |
+| 01                               | 11                               | 1010                             | 0x7A0-0x7AF                      | Standard read/write debug CSRs   |
+| 01                               | 11                               | 1011                             | 0x7B0-0x7BF                      | Debug-mode-only CSRs             |
+| 01                               | 11                               | 11XX                             | 0x7C0-0x7FF                      | Custom read/write                |
+| 10                               | 11                               | 0XXX                             | 0xB00-0xB7F                      | Standard read/write              |
+
+|   10 |   11 | 10XX   | 0xB80-0xBBF   | Standard read/write   |
+|------|------|--------|---------------|-----------------------|
+|   10 |   11 | 11XX   | 0xBC0-0xBFF   | Custom read/write     |
+|   11 |   11 | 0XXX   | 0xF00-0xF7F   | Standard read-only    |
+|   11 |   11 | 10XX   | 0xF80-0xFBF   | Standard read-only    |
+|   11 |   11 | 11XX   | 0xFC0-0xFFF   | Custom read-only      |
+
+## 2.2. CSR Listing
+
+Table 4-Table 7 list the CSRs that have currently been allocated CSR addresses. The timers, counters, and floating-point  CSRs  are  standard  unprivileged  CSRs.  The  other  registers  are  used  by  privileged  code,  as described in the following chapters. Note that not all registers are required on all implementations.
+
+## 2.2.1. Currently allocated RISC-V unprivileged CSR addresses
+
+Table 4. Currently allocated RISC-V unprivileged CSR addresses.
+
+| Number                                    | Privilege                                 | Name                                      | Description                                                  |
+|-------------------------------------------|-------------------------------------------|-------------------------------------------|--------------------------------------------------------------|
+| Unprivileged Floating-Point CSRs          | Unprivileged Floating-Point CSRs          | Unprivileged Floating-Point CSRs          | Unprivileged Floating-Point CSRs                             |
+| 0x001                                     | URW                                       | fflags                                    | Floating-Point Accrued Exceptions.                           |
+| 0x002                                     | URW                                       | frm                                       | Floating-Point Dynamic Rounding Mode.                        |
+| 0x003                                     | URW                                       | fcsr                                      | Floating-Point Control and Status Register ( frm + fflags ). |
+| Unprivileged Vector CSRs                  | Unprivileged Vector CSRs                  | Unprivileged Vector CSRs                  | Unprivileged Vector CSRs                                     |
+| 0x008                                     | URW                                       | vstart                                    | Vector start position.                                       |
+| 0x009                                     | URW                                       | vxsat                                     | Fixed-point accrued saturation flag.                         |
+| 0x00A                                     | URW                                       | vxrm                                      | Fixed-point rounding mode.                                   |
+| 0x00F                                     | URW                                       | vcsr                                      | Vector control and status register.                          |
+| 0xC20                                     | URO                                       | vl                                        | Vector length.                                               |
+| 0xC21                                     | URO                                       | vtype                                     | Vector data type register.                                   |
+| 0xC22                                     | URO                                       | vlenb                                     | Vector register length in bytes.                             |
+| Unprivileged Zicfiss extension CSR        | Unprivileged Zicfiss extension CSR        | Unprivileged Zicfiss extension CSR        | Unprivileged Zicfiss extension CSR                           |
+| 0x011                                     | URW                                       | ssp                                       | Shadow Stack Pointer.                                        |
+| Unprivileged Entropy Source Extension CSR | Unprivileged Entropy Source Extension CSR | Unprivileged Entropy Source Extension CSR | Unprivileged Entropy Source Extension CSR                    |
+| 0x015                                     | URW                                       | seed                                      | Seed for cryptographic random bit generators.                |
+| Unprivileged Zcmt Extension CSR           | Unprivileged Zcmt Extension CSR           | Unprivileged Zcmt Extension CSR           | Unprivileged Zcmt Extension CSR                              |
+| 0x017                                     | URW                                       | jvt                                       | Table jump base vector and control register.                 |
+| Unprivileged Counter/Timers               | Unprivileged Counter/Timers               | Unprivileged Counter/Timers               | Unprivileged Counter/Timers                                  |
+| 0xC00                                     | URO                                       | cycle                                     | Cycle counter for RDCYCLE instruction.                       |
+| 0xC01                                     | URO                                       | time                                      | Timer for RDTIME instruction.                                |
+| 0xC02                                     | URO                                       | instret                                   | Instructions-retired counter for RDINSTRET instruction.      |
+| 0xC03                                     | URO                                       | hpmcounter3                               | Performance-monitoring counter.                              |
+| 0xC04                                     | URO                                       | hpmcounter4 ⋮                             | Performance-monitoring counter.                              |
+| 0xC1F                                     | URO                                       | hpmcounter31                              | Performance-monitoring counter.                              |
+| 0xC80                                     | URO                                       | cycleh                                    | Upper 32 bits of cycle , RV32 only.                          |
+| 0xC81                                     | URO                                       | timeh                                     | Upper 32 bits of time , RV32 only.                           |
+| 0xC82                                     | URO                                       | instreth                                  | Upper 32 bits of instret , RV32 only.                        |
+| 0xC83                                     | URO                                       | hpmcounter3h                              | Upper 32 bits of hpmcounter3 , RV32 only.                    |
+| 0xC84                                     | URO                                       | hpmcounter4h ⋮                            | Upper 32 bits of hpmcounter4 , RV32 only.                    |
+| 0xC9F                                     | URO                                       | hpmcounter31h                             | Upper 32 bits of hpmcounter31 , RV32 only.                   |
+
+## 2.2.2. Currently allocated RISC-V supervisor-level CSR addresses
+
+Table 5. Currently allocated RISC-V supervisor-level CSR addresses.
+
+| Number                                            | Privilege                                         | Name                                               | Description                                       |
+|---------------------------------------------------|---------------------------------------------------|----------------------------------------------------|---------------------------------------------------|
+| Supervisor Trap Setup                             | Supervisor Trap Setup                             | Supervisor Trap Setup                              | Supervisor Trap Setup                             |
+| 0x100                                             | SRW                                               | sstatus                                            | Supervisor status register.                       |
+| 0x104                                             | SRW                                               | sie                                                | Supervisor interrupt-enable register.             |
+| 0x105                                             | SRW                                               | stvec                                              | Supervisor trap handler base address.             |
+| 0x106                                             | SRW                                               | scounteren                                         | Supervisor counter enable.                        |
+| Supervisor Configuration                          | Supervisor Configuration                          | Supervisor Configuration                           | Supervisor Configuration                          |
+| 0x10A                                             | SRW                                               | senvcfg                                            | Supervisor environment configuration register.    |
+| Supervisor Counter Setup                          | Supervisor Counter Setup                          | Supervisor Counter Setup                           | Supervisor Counter Setup                          |
+| 0x120                                             | SRW                                               | scountinhibit Supervisor counter-inhibit register. |                                                   |
+| Supervisor Trap Handling                          | Supervisor Trap Handling                          | Supervisor Trap Handling                           | Supervisor Trap Handling                          |
+| 0x140                                             | SRW                                               | sscratch                                           | Supervisor scratch register.                      |
+| 0x141                                             | SRW                                               | sepc                                               | Supervisor exception program counter.             |
+| 0x142                                             | SRW                                               | scause                                             | Supervisor trap cause.                            |
+| 0x143                                             | SRW                                               | stval                                              | Supervisor trap value.                            |
+| 0x144                                             | SRW                                               | sip                                                | Supervisor interrupt pending.                     |
+| 0xDA0                                             | SRO                                               | scountovf                                          | Supervisor count overflow.                        |
+| Supervisor Indirect                               | Supervisor Indirect                               | Supervisor Indirect                                | Supervisor Indirect                               |
+| 0x150                                             | SRW                                               | siselect                                           | Supervisor indirect register select.              |
+| 0x151                                             | SRW                                               | sireg                                              | Supervisor indirect register alias.               |
+| 0x152                                             | SRW                                               | sireg2                                             | Supervisor indirect register alias 2.             |
+| 0x153                                             | SRW                                               | sireg3                                             | Supervisor indirect register alias 3.             |
+| 0x155                                             | SRW                                               | sireg4                                             | Supervisor indirect register alias 4.             |
+| 0x156                                             | SRW                                               | sireg5                                             | Supervisor indirect register alias 5.             |
+| 0x157                                             | SRW                                               | sireg6                                             | Supervisor indirect register alias 6.             |
+| Supervisor Protection and Translation             | Supervisor Protection and Translation             | Supervisor Protection and Translation              | Supervisor Protection and Translation             |
+| 0x180                                             | SRW                                               | satp                                               | Supervisor address translation and protection.    |
+| Supervisor Timer Compare                          | Supervisor Timer Compare                          | Supervisor Timer Compare                           | Supervisor Timer Compare                          |
+| 0x14D                                             | SRW                                               | stimecmp                                           | Supervisor timer compare.                         |
+| 0x15D                                             | SRW                                               | stimecmph                                          | Upper 32 bits of stimecmp , RV32 only.            |
+| Debug/Trace Registers                             | Debug/Trace Registers                             | Debug/Trace Registers                              | Debug/Trace Registers                             |
+| 0x5A8                                             | SRW                                               | scontext                                           | Supervisor-mode context register.                 |
+| Supervisor Resource Management Configuration      | Supervisor Resource Management Configuration      | Supervisor Resource Management Configuration       | Supervisor Resource Management Configuration      |
+| 0x181                                             | SRW                                               | srmcfg                                             | Supervisor Resource Management Configuration.     |
+| Supervisor State Enable Registers                 | Supervisor State Enable Registers                 | Supervisor State Enable Registers                  | Supervisor State Enable Registers                 |
+|                                                   | SRW                                               |                                                    | Supervisor State Enable 0 Register.               |
+| 0x10C                                             |                                                   | sstateen0                                          |                                                   |
+| 0x10D                                             | SRW                                               | sstateen1                                          | Supervisor State Enable 1 Register.               |
+| 0x10E                                             | SRW                                               | sstateen2                                          | Supervisor State Enable 2 Register.               |
+| 0x10F                                             | SRW                                               | sstateen3                                          | Supervisor State Enable 3 Register.               |
+| Supervisor Control Transfer Records Configuration | Supervisor Control Transfer Records Configuration | Supervisor Control Transfer Records Configuration  | Supervisor Control Transfer Records Configuration |
+
+| Number   | Privilege   | Name       | Description                                           |
+|----------|-------------|------------|-------------------------------------------------------|
+| 0x14E    | SRW         | sctrctl    | Supervisor Control Transfer Records Control Register. |
+| 0x14F    | SRW         | sctrstatus | Supervisor Control Transfer Records Status Register.  |
+| 0x15F    | SRW         | sctrdepth  | Supervisor Control Transfer Records Depth Register.   |
+
+## 2.2.3. Currently allocated RISC-V hypervisor and VS CSR addresses
+
+Table 6. Currently allocated RISC-V hypervisor and VS CSR addresses.
+
+| Number                                                          | Privilege                                            | Name                                                 | Description                                          |
+|-----------------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
+| Hypervisor Trap Setup                                           | Hypervisor Trap Setup                                | Hypervisor Trap Setup                                | Hypervisor Trap Setup                                |
+| HRW                                                             | hstatus                                              | Hypervisor status register.                          | 0x600 0x602                                          |
+| HRW                                                             | hedeleg                                              | Hypervisor exception delegation register.            | 0x603                                                |
+| HRW                                                             | hideleg                                              | Hypervisor interrupt delegation register.            | 0x604                                                |
+| HRW                                                             | hie                                                  | Hypervisor interrupt-enable register.                | 0x606                                                |
+| HRW                                                             | hcounteren                                           | Hypervisor counter enable.                           | 0x607                                                |
+| HRW                                                             | hgeie                                                | Hypervisor guest external interrupt-enable register. | 0x612                                                |
+| HRW                                                             | hedelegh                                             | Upper 32 bits of hedeleg , RV32 only.                | Hypervisor Trap Handling                             |
+| HRW                                                             | HRW                                                  | HRW                                                  | HRW                                                  |
+| htval                                                           | Hypervisor trap value.                               | 0x644                                                | 0x643 HRW                                            |
+| hip                                                             | Hypervisor interrupt pending.                        | 0x645                                                | HRW                                                  |
+| hvip                                                            | Hypervisor virtual interrupt pending.                | 0x64A                                                | HRW                                                  |
+| htinst                                                          | Hypervisor trap instruction (transformed).           | 0xE12                                                | HRO                                                  |
+| hgeip                                                           | Hypervisor guest external interrupt pending.         | Hypervisor Configuration                             | HRW                                                  |
+| henvcfg                                                         | henvcfg                                              | henvcfg                                              | henvcfg                                              |
+| Hypervisor environment configuration register.                  | 0x61A                                                | HRW                                                  | 0x60A henvcfgh                                       |
+| Upper 32 bits of henvcfg , RV32 only.                           | Hypervisor Protection and Translation                | HRW                                                  | 0x680 hgatp                                          |
+| Hypervisor guest address translation and protection.            | Hypervisor guest address translation and protection. | Hypervisor guest address translation and protection. | Hypervisor guest address translation and protection. |
+| Debug/Trace Registers                                           | HRW                                                  | hcontext                                             | 0x6A8 Hypervisor-mode context register.              |
+| Hypervisor Counter/Timer Virtualization Registers               | Hypervisor Counter/Timer Virtualization Registers    | Hypervisor Counter/Timer Virtualization Registers    | Hypervisor Counter/Timer Virtualization Registers    |
+| HRW                                                             | htimedelta                                           | Delta for VS/VU-mode timer.                          | 0x605 0x615                                          |
+| HRW                                                             | HRW                                                  | HRW                                                  | HRW                                                  |
+| htimedeltah                                                     | Upper 32 bits of htimedelta , RV32 only.             | Hypervisor State Enable Registers                    | HRW                                                  |
+| hstateen0                                                       | Hypervisor State Enable 0 Register.                  | 0x60D                                                | 0x60C HRW                                            |
+| hstateen1                                                       | hstateen1                                            | hstateen1                                            | hstateen1                                            |
+| Hypervisor State Enable 1 Register.                             | 0x60E                                                | HRW                                                  | hstateen2                                            |
+| Hypervisor State Enable 2 Register.                             | 0x60F                                                | HRW                                                  | hstateen3                                            |
+| Hypervisor State Enable 3 Register.                             | 0x61C                                                | HRW                                                  | hstateen0h                                           |
+| Upper 32 bits of Hypervisor State Enable 0 Register, RV32 only. | 0x61D                                                | HRW                                                  | hstateen1h                                           |
+| Upper 32 bits of Hypervisor State Enable 1 Register, RV32 only. | 0x61E                                                | HRW                                                  | hstateen2h                                           |
+| Upper 32 bits of Hypervisor State Enable 2 Register, RV32 only. | 0x61F                                                | HRW                                                  | hstateen3h                                           |
+| Upper 32 bits of Hypervisor State Enable 3 Register, RV32 only. | Virtual Supervisor Registers                         |                                                      |                                                      |
+
+| Number                                                    | Privilege                                                 | Name                                                      | Description                                                               |
+|-----------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------|---------------------------------------------------------------------------|
+| 0x200                                                     | HRW                                                       | vsstatus                                                  | Virtual supervisor status register.                                       |
+| 0x204                                                     | HRW                                                       | vsie                                                      | Virtual supervisor interrupt-enable register.                             |
+| 0x205                                                     | HRW                                                       | vstvec                                                    | Virtual supervisor trap handler base address.                             |
+| 0x240                                                     | HRW                                                       | vsscratch                                                 | Virtual supervisor scratch register.                                      |
+| 0x241                                                     | HRW                                                       | vsepc                                                     | Virtual supervisor exception program counter.                             |
+| 0x242                                                     | HRW                                                       | vscause                                                   | Virtual supervisor trap cause.                                            |
+| 0x243                                                     | HRW                                                       | vstval                                                    | Virtual supervisor trap value.                                            |
+| 0x244                                                     | HRW                                                       | vsip                                                      | Virtual supervisor interrupt pending.                                     |
+| 0x280                                                     | HRW                                                       | vsatp                                                     | Virtual supervisor address translation and protection.                    |
+| Virtual Supervisor Indirect                               | Virtual Supervisor Indirect                               | Virtual Supervisor Indirect                               | Virtual Supervisor Indirect                                               |
+| 0x250                                                     | HRW                                                       | vsiselect                                                 | Virtual supervisor indirect register select.                              |
+| 0x251                                                     | HRW                                                       | vsireg                                                    | Virtual supervisor indirect register alias.                               |
+| 0x252                                                     | HRW                                                       | vsireg2                                                   | Virtual supervisor indirect register alias 2.                             |
+| 0x253                                                     | HRW                                                       | vsireg3                                                   | Virtual supervisor indirect register alias 3.                             |
+| 0x255                                                     | HRW                                                       | vsireg4                                                   | Virtual supervisor indirect register alias 4.                             |
+| 0x256                                                     | HRW                                                       | vsireg5                                                   | Virtual supervisor indirect register alias 5.                             |
+| 0x257                                                     | HRW                                                       | vsireg6                                                   | Virtual supervisor indirect register alias 6.                             |
+| Virtual Supervisor Timer Compare                          | Virtual Supervisor Timer Compare                          | Virtual Supervisor Timer Compare                          | Virtual Supervisor Timer Compare                                          |
+| 0x24D 0x25D                                               | HRW HRW                                                   | vstimecmp vstimecmph                                      | Virtual supervisor timer compare. Upper 32 bits of vstimecmp , RV32 only. |
+| Virtual Supervisor Control Transfer Records Configuration | Virtual Supervisor Control Transfer Records Configuration | Virtual Supervisor Control Transfer Records Configuration | Virtual Supervisor Control Transfer Records Configuration                 |
+| 0x24E                                                     | HRW                                                       | vsctrctl                                                  | Virtual Supervisor Control Transfer Records Control Register.             |
+
+## 2.2.4. Currently allocated RISC-V machine-level CSR addresses
+
+Table 7. Currently allocated RISC-V machine-level CSR addresses.
+
+| Number                        | Privilege                     | Name                          | Description                                    |
+|-------------------------------|-------------------------------|-------------------------------|------------------------------------------------|
+| Machine Information Registers | Machine Information Registers | Machine Information Registers | Machine Information Registers                  |
+| 0xF11                         | MRO                           | mvendorid                     | Vendor ID.                                     |
+| 0xF12                         | MRO                           | marchid                       | Architecture ID.                               |
+| 0xF13                         | MRO                           | mimpid                        | Implementation ID.                             |
+| 0xF14                         | MRO                           | mhartid                       | Hardware thread ID.                            |
+| 0xF15                         | MRO                           | mconfigptr                    | Pointer to configuration data structure.       |
+| Machine Trap Setup            | Machine Trap Setup            | Machine Trap Setup            | Machine Trap Setup                             |
+| 0x300                         | MRW                           | mstatus                       | Machine status register.                       |
+| 0x301                         | MRW                           | misa                          | ISA and extensions                             |
+| 0x302                         | MRW                           | medeleg                       | Machine exception delegation register.         |
+| 0x303                         | MRW                           | mideleg                       | Machine interrupt delegation register.         |
+| 0x304                         | MRW                           | mie                           | Machine interrupt-enable register.             |
+| 0x305                         | MRW                           | mtvec                         | Machine trap-handler base address.             |
+| 0x306                         | MRW                           | mcounteren                    | Machine counter enable.                        |
+| 0x310                         | MRW                           | mstatush                      | Additional machine status register, RV32 only. |
+| 0x312                         | MRW                           | medelegh                      | Upper 32 bits of medeleg , RV32 only.          |
+| Machine Trap Handling         | Machine Trap Handling         | Machine Trap Handling         | Machine Trap Handling                          |
+| 0x340                         | MRW                           | mscratch                      | Machine scratch register.                      |
+| 0x341                         | MRW                           | mepc                          | Machine exception program counter.             |
+| 0x342                         | MRW                           | mcause                        | Machine trap cause.                            |
+| 0x343                         | MRW                           | mtval                         | Machine trap value.                            |
+| 0x344                         | MRW                           | mip                           | Machine interrupt pending.                     |
+| 0x34A                         | MRW                           | mtinst                        | Machine trap instruction (transformed).        |
+| 0x34B                         | MRW                           | mtval2                        | Machine second trap value.                     |
+| Machine Indirect              | Machine Indirect              | Machine Indirect              | Machine Indirect                               |
+| 0x350                         | MRW                           | miselect                      | Machine indirect register select.              |
+| 0x351                         | MRW                           | mireg                         | Machine indirect register alias.               |
+| 0x352                         | MRW                           | mireg2                        | Machine indirect register alias 2.             |
+| 0x353                         | MRW                           | mireg3                        | Machine indirect register alias 3.             |
+| 0x355                         | MRW                           | mireg4                        | Machine indirect register alias 4.             |
+| 0x356                         | MRW                           | mireg5                        | Machine indirect register alias 5.             |
+| 0x357                         | MRW                           | mireg6                        | Machine indirect register alias 6.             |
+| Machine Configuration         | Machine Configuration         | Machine Configuration         | Machine Configuration                          |
+| 0x30A                         | MRW                           | menvcfg                       | Machine environment configuration register.    |
+| 0x31A                         | MRW                           | menvcfgh                      | Upper 32 bits of menvcfg , RV32 only.          |
+| 0x747                         | MRW                           | mseccfg                       | Machine security configuration register.       |
+| 0x757                         | MRW                           | mseccfgh                      | Upper 32 bits of mseccfg , RV32 only.          |
+| Machine Memory Protection     | Machine Memory Protection     | Machine Memory Protection     | Machine Memory Protection                      |
+
+| Number                                  | Privilege                               | Name                                    | Description                                                  |
+|-----------------------------------------|-----------------------------------------|-----------------------------------------|--------------------------------------------------------------|
+| 0x3A0                                   | MRW                                     | pmpcfg0                                 | Physical memory protection configuration.                    |
+| 0x3A1                                   | MRW                                     | pmpcfg1                                 | Physical memory protection configuration, RV32 only.         |
+| 0x3A2                                   | MRW                                     | pmpcfg2                                 | Physical memory protection configuration.                    |
+| 0x3A3                                   | MRW                                     | pmpcfg3                                 | Physical memory protection configuration, RV32 only.         |
+| 0x3AE                                   | MRW                                     | pmpcfg14                                | Physical memory protection configuration.                    |
+| 0x3AF                                   | MRW                                     | pmpcfg15                                | Physical memory protection configuration, RV32 only.         |
+| 0x3B0                                   | MRW                                     | pmpaddr0                                | Physical memory protection address register.                 |
+| 0x3B1                                   | MRW                                     | pmpaddr1 ⋯                              | Physical memory protection address register.                 |
+| 0x3EF                                   | MRW                                     | pmpaddr63                               | Physical memory protection address register.                 |
+| Machine State Enable Registers          | Machine State Enable Registers          | Machine State Enable Registers          | Machine State Enable Registers                               |
+| 0x30C                                   | MRW                                     | mstateen0                               | Machine State Enable 0 Register.                             |
+| 0x30D                                   | MRW                                     | mstateen1                               | Machine State Enable 1 Register.                             |
+| 0x30E                                   | MRW                                     | mstateen2                               | Machine State Enable 2 Register.                             |
+| 0x30F                                   | MRW                                     | mstateen3                               | Machine State Enable 3 Register.                             |
+| 0x31C                                   | MRW                                     | mstateen0h                              | Upper 32 bits of Machine State Enable 0 Register, RV32 only. |
+| 0x31D                                   | MRW                                     | mstateen1h                              | Upper 32 bits of Machine State Enable 1 Register, RV32 only. |
+| 0x31E                                   | MRW                                     | mstateen2h                              | Upper 32 bits of Machine State Enable 2 Register, RV32 only. |
+| 0x31F                                   | MRW                                     | mstateen3h                              | Upper 32 bits of Machine State Enable 3 Register, RV32 only. |
+| Machine Non-Maskable Interrupt Handling | Machine Non-Maskable Interrupt Handling | Machine Non-Maskable Interrupt Handling | Machine Non-Maskable Interrupt Handling                      |
+| 0x740                                   | MRW                                     | mnscratch                               | Resumable NMI scratch register.                              |
+| 0x741                                   | MRW                                     | mnepc                                   | Resumable NMI program counter.                               |
+| 0x742                                   | MRW                                     | mncause                                 | Resumable NMI cause.                                         |
+| 0x744                                   | MRW                                     | mnstatus                                | Resumable NMI status.                                        |
+| Machine Counter/Timers                  | Machine Counter/Timers                  | Machine Counter/Timers                  | Machine Counter/Timers                                       |
+| 0xB00                                   | MRW                                     | mcycle                                  | Machine cycle counter.                                       |
+| 0xB02                                   | MRW                                     | minstret                                | Machine instructions-retired counter.                        |
+| 0xB03                                   | MRW                                     | mhpmcounter3                            | Machine performance-monitoring counter.                      |
+| 0xB04                                   | MRW                                     | mhpmcounter4 ⋮                          | Machine performance-monitoring counter.                      |
+| 0xB1F                                   | MRW                                     | mhpmcounter31                           | Machine performance-monitoring counter.                      |
+| 0xB80                                   | MRW                                     | mcycleh                                 | Upper 32 bits of mcycle , RV32 only.                         |
+| 0xB82                                   | MRW                                     | minstreth                               | Upper 32 bits of minstret , RV32 only.                       |
+| 0xB83                                   | MRW                                     | mhpmcounter3h                           | Upper 32 bits of mhpmcounter3 , RV32 only.                   |
+| 0xB84                                   | MRW                                     | mhpmcounter4h ⋮                         | Upper 32 bits of mhpmcounter4 , RV32 only.                   |
+| 0xB9F                                   | MRW                                     | mhpmcounter31h                          | Upper 32 bits of mhpmcounter31 , RV32 only.                  |
+| Machine Counter Setup                   | Machine Counter Setup                   | Machine Counter Setup                   | Machine Counter Setup                                        |
+
+| Number                                         | Privilege                                      | Name                                           | Description                                        |
+|------------------------------------------------|------------------------------------------------|------------------------------------------------|----------------------------------------------------|
+| 0x320                                          | MRW                                            | mcountinhibit                                  | Machine counter-inhibit register.                  |
+| 0x321                                          | MRW                                            | mcyclecfg                                      | Machine cycle counter configuration register.      |
+| 0x322                                          | MRW                                            | minstretcfg                                    | Machine instret counter configuration register.    |
+| 0x323                                          | MRW                                            | mhpmevent3                                     | Machine performance-monitoring event selector.     |
+| 0x324                                          | MRW                                            | mhpmevent4 ⋮                                   | Machine performance-monitoring event selector.     |
+| 0x33F                                          | MRW                                            | mhpmevent31                                    | Machine performance-monitoring event selector.     |
+| 0x721                                          | MRW                                            | mcyclecfgh                                     | Upper 32 bits of mcyclecfg , RV32 only.            |
+| 0x722                                          | MRW                                            | minstretcfgh                                   | Upper 32 bits of minstretcfg , RV32 only.          |
+| 0x723                                          | MRW                                            | mhpmevent3h                                    | Upper 32 bits of mhpmevent3 , RV32 only.           |
+| 0x724                                          | MRW                                            | mhpmevent4h ⋮                                  | Upper 32 bits of mhpmevent4 , RV32 only.           |
+| 0x73F                                          | MRW                                            | mhpmevent31h                                   | Upper 32 bits of mhpmevent31 , RV32 only.          |
+| Machine Control Transfer Records Configuration | Machine Control Transfer Records Configuration | Machine Control Transfer Records Configuration | Machine Control Transfer Records Configuration     |
+| 0x34E                                          | MRW                                            | mctrctl                                        | Machine Control Transfer Records Control Register. |
+| Debug/Trace Registers (shared with Debug Mode) | Debug/Trace Registers (shared with Debug Mode) | Debug/Trace Registers (shared with Debug Mode) | Debug/Trace Registers (shared with Debug Mode)     |
+| 0x7A0                                          | MRW                                            | tselect                                        | Debug/Trace trigger register select.               |
+| 0x7A1                                          | MRW                                            | tdata1                                         | First Debug/Trace trigger data register.           |
+| 0x7A2                                          | MRW                                            | tdata2                                         | Second Debug/Trace trigger data register.          |
+| 0x7A3                                          | MRW                                            | tdata3                                         | Third Debug/Trace trigger data register.           |
+| 0x7A8                                          | MRW                                            | mcontext                                       | Machine-mode context register.                     |
+| Debug Mode Registers                           | Debug Mode Registers                           | Debug Mode Registers                           | Debug Mode Registers                               |
+| 0x7B0                                          | DRW                                            | dcsr                                           | Debug control and status register.                 |
+| 0x7B1                                          | DRW                                            | dpc                                            | Debug program counter.                             |
+| 0x7B2                                          | DRW                                            | dscratch0                                      | Debug scratch register 0.                          |
+| 0x7B3                                          | DRW                                            | dscratch1                                      | Debug scratch register 1.                          |
+
+## 2.2.5. Currently allocated RISC-V indirect CSR (Smcsrind) mappings
+
+Table 8. Currently allocated RISC-V indirect CSR (Smcsrind) mappings - M-mode
+
+| miselect   | mireg       | mireg2   | mireg3   | mireg4   | mireg5   | mireg6   |
+|------------|-------------|----------|----------|----------|----------|----------|
+| 0x30       | iprio0      | none     | none     | none     | none     | none     |
+| …          | …           | …        | …        | …        | …        | …        |
+| 0x3F       | iprio15     | none     | none     | none     | none     | none     |
+| 0x70       | eidelivery  | none     | none     | none     | none     | none     |
+| 0x71       | 0           | none     | none     | none     | none     | none     |
+| 0x72       | eithreshold | none     | none     | none     | none     | none     |
+| 0x73       | 0           | none     | none     | none     | none     | none     |
+| …          | …           | …        | …        | …        | …        | …        |
+| 0x7F       | 0           | none     | none     | none     | none     | none     |
+| 0x80       | eip0        | none     | none     | none     | none     | none     |
+| …          | …           | …        | …        | …        | …        | …        |
+| 0xBF       | eip63       | none     | none     | none     | none     | none     |
+| 0xC0       | eie0        | none     | none     | none     | none     | none     |
+| …          | …           | …        | …        | …        | …        | …        |
+| 0xFF       | eie63       | none     | none     | none     | none     | none     |
+
+Table 9. Currently allocated RISC-V indirect CSR (Smcsrind/Sscsrind) mappings - S-mode
+
+| siselect   | sireg        | sireg2     | sireg3   | sireg4         | sireg5      | sireg6   |
+|------------|--------------|------------|----------|----------------|-------------|----------|
+| 0x30       | iprio0       | none       | none     | none           | none        | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0x3F       | iprio15      | none       | none     | none           | none        | none     |
+| 0x40       | cycle        | cyclecfg   | none     | cycleh         | cyclecfgh   | none     |
+| 0x41       | none         | none       | none     | none           | none        | none     |
+| 0x42       | instret      | instretcfg | none     | instreth       | instretcfgh | none     |
+| 0x43       | hpmcounter3  | hpmevent3  | none     | hpmcounter3h   | hpmevent3h  | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0x5F       | hpmcounter31 | hpmevent31 | none     | hpmcounter31 h | hpmevent31h | none     |
+| 0x70       | eidelivery   | none       | none     | none           | none        | none     |
+| 0x71       | 0            | none       | none     | none           | none        | none     |
+
+
+Final instruction for scounteren: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

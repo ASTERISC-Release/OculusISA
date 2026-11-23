@@ -1,0 +1,158 @@
+# Test Case Rule: RULE 1: If the TW bit in mstatus is set, the privilege mode is not M mode, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause an illegal-instruction exception.
+##### ASSEMBLY #####
+nop # Skipped because bounded-time noncompletion cannot be guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 2: In VS or VU mode, when the VTW bit in hstatus is set, the TW bit in mstatus is clear, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause a virtual-instruction exception.
+##### ASSEMBLY #####
+nop # Skipped because bounded-time noncompletion cannot be guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPRV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPP field in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 6: Whether a CMO instruction is permitted to access a cache block may depend on the state of the SUM bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 7: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MXR bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 8: When the Zfinx extension is implemented, the FS field in the mstatus register is hardwired to 0.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 9: When the Zfinx extension is implemented, the FS field in the mstatus register does not affect the trapping behavior of floating-point instructions or accesses to the fcsr register.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+csrw fcsr, x0
+csrr a0, fcsr
+# Result: a0 = 0
+
+# Test Case Rule: RULE 10: If mstatus.VS equals Off and an attempt is made to execute any vector instruction or to access any vector CSR, an illegal-instruction exception is raised.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrr a0, vstart
+# Result: mcause = 2
+
+# Test Case Rule: RULE 11: If mstatus.VS equals Initial or Clean and an instruction that changes vector state is executed (including accesses to vector CSRs), then mstatus.VS is changed to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+csrw vstart, x0
+csrr a0, mstatus
+li t0, 0x600
+and a0, a0, t0
+# Result: a0 = 0x600
+
+# Test Case Rule: RULE 12: When mstatus.VS equals Initial or Clean, an implementation may change mstatus.VS to Dirty at any time, even when there is no change in vector state.
+##### ASSEMBLY #####
+nop # Skipped because the state transition is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 13: If mstatus.VS equals Dirty, then mstatus.SD is set to 1.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 14: When V=1 and either vsstatus.VS or mstatus.VS is Off, attempts to execute any vector instruction or to access any vector CSR raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+csrr a0, vstart
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When V=1 and neither vsstatus.VS nor mstatus.VS is Off, execution of any instruction that changes vector state, including accesses to vector CSRs, changes both mstatus.VS and vsstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrc vsstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+csrw vstart, x0
+# Result: mstatus[10:9] = 3
+
+# Test Case Rule: RULE 16: If mstatus.VS is Dirty, then mstatus.SD is 1.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 17: If mstatus.VS is not Dirty, then mstatus.SD is set in accordance with existing specifications.
+##### ASSEMBLY #####
+nop # Skipped because SD behavior is unspecified by this rule
+# Result: x0 = 0
+
+# Test Case Rule: RULE 18: If the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+li t0, 0x6000
+csrc mstatus, t0
+vfadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: Any vector floating-point instruction that modifies any floating-point extension state must set the mstatus.FS field to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+vmv.v.i v0, 1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x1000
+csrs mstatus, t0
+vfmv.f.s f0, v0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 20: When the hypervisor extension is implemented and V=1, if the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrs vsstatus, t0
+li t0, 0x6000
+csrc mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+vfadd.vv v0, v0, v0
+# Result: mcause = 2

@@ -1,0 +1,9 @@
+## 4.9.2. Special consideration for level-sensitive interrupt sources
+
+As soon as a level-sensitive interrupt is forwarded by MSI, the APLIC clears the pending bit for the interrupt source and then ignores the source until its incoming signal has been de-asserted. Clearing the  pending bit when an MSI is sent is obviously necessary to avoid a constant stream of repeated MSIs from the APLIC to the target hart for the same interrupt. However, after an interrupt service routine  has  addressed  a  cause  found  for  the  interrupt,  the  incoming  interrupt  wire  might  remain asserted at the APLIC for another reason, despite that the interrupt's pending bit at the APLIC was cleared and will remain so without intervention from software. If the interrupt service routine then exits without further action, a continued interrupt from this source might never receive attention.
+
+To avoid dropping interrupts in this way, the interrupt service routine for a level-sensitive interrupt may do one of the following before exiting:
+
+The first option is to test whether the interrupt wire into the APLIC is still asserted, by reading the appropriate in\_clrip register at the APLIC. If the incoming interrupt is still asserted, the body of the interrupt service routine may be repeated to find and address an additional interrupt cause before the source  wire  is  tested  again.  Once  the  incoming  wire  is  observed  not  asserted,  the  interrupt  service routine may safely exit, as any new interrupt assertion will cause the pending bit to become set and a new MSI sent to the hart.
+
+A second option is for the interrupt service routine to write the APLIC's source identity number for the interrupt to the domain's setipnum register just before exiting. This will cause the interrupt's pending bit to be set to one again if the source is still asserting an interrupt, but not if the source is not asserting an interrupt.

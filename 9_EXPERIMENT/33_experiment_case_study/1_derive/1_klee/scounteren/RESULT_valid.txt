@@ -1,0 +1,53 @@
+VALIDATION SUMMARY
+Total rules: 12
+Correct rules: 4
+Wrong rules: 8
+Correct percentage: 4 / 12 = 33.33%
+Wrong percentage: 8 / 12 = 66.67%
+
+RULE VALIDATION
+RULE 118: CORRECT
+Reason: scounteren is an SRW supervisor CSR, so U-mode is below the CSR’s required privilege; a U-mode CSR read is illegal.
+
+RULE 119: CORRECT
+Reason: scounteren is an SRW supervisor CSR, so S-mode may read it; if the concrete CSR value is 0x00000000, reading returns that value.
+
+RULE 120: CORRECT
+Reason: M-mode is above the supervisor CSR privilege level, so it may read scounteren; if the concrete CSR value is 0x00000000, reading returns that value.
+
+RULE 123: CORRECT
+Reason: scounteren is a supervisor CSR, so U-mode write access is below the required privilege and raises an illegal-instruction exception; the CSR write is not performed.
+
+RULE 124: WRONG
+Reason: The manual does not define a counteren_mask derived from ext_zicntr=0 and ext_zihpm=0, nor the formula new_scounteren = (old & ~mask) | (write & mask); scounteren bits may be read-only zero and are effectively WARL.
+
+RULE 125: WRONG
+Reason: Same unsupported mask/update formula as RULE 124; M-mode privilege allows the CSR write attempt, but writable scounteren bits are implementation/WARL-dependent, not specified by that extension mask.
+
+RULE 126: WRONG
+Reason: The manual does not state that ext_zihpm=1 makes HPM3..HPM31 bits writable as mask 0xfffffff8; any scounteren bit may be read-only zero.
+
+RULE 127: WRONG
+Reason: Same unsupported ext_zihpm mask assumption as RULE 126; scounteren writability is WARL/implementation-dependent.
+
+RULE 128: WRONG
+Reason: The manual does not state that ext_zicntr=1 makes only CY, TM, and IR writable as mask 0x00000007; any bits may be read-only zero.
+
+RULE 129: WRONG
+Reason: Same unsupported ext_zicntr mask assumption as RULE 128; M-mode privilege does not make the mask/update rule architectural.
+
+RULE 130: WRONG
+Reason: The manual does not state that ext_zicntr=1 and ext_zihpm=1 make all scounteren bits writable as 0xffffffff; any bits may be read-only zero and are effectively WARL.
+
+RULE 131: WRONG
+Reason: Same unsupported all-bits-writable mask assumption as RULE 130; the architectural rule is WARL/read-only-zero permissiveness, not a fixed full mask.
+
+WRONG RULES ONLY
+RULE 124: Unsupported counteren_mask and fixed update formula; scounteren bits are WARL and may be read-only zero.
+RULE 125: Unsupported counteren_mask and fixed update formula; M-mode does not change WARL/read-only-zero behavior.
+RULE 126: Unsupported claim that ext_zihpm=1 makes HPM3..HPM31 writable.
+RULE 127: Unsupported claim that ext_zihpm=1 makes HPM3..HPM31 writable.
+RULE 128: Unsupported claim that ext_zicntr=1 makes CY, TM, and IR writable.
+RULE 129: Unsupported claim that ext_zicntr=1 makes CY, TM, and IR writable.
+RULE 130: Unsupported claim that ext_zicntr=1 and ext_zihpm=1 make all scounteren bits writable.
+RULE 131: Unsupported claim that ext_zicntr=1 and ext_zihpm=1 make all scounteren bits writable.

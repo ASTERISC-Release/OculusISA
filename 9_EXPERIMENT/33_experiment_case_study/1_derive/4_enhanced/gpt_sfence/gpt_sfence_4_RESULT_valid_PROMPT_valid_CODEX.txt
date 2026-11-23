@@ -1,0 +1,124 @@
+VALIDATION SUMMARY
+Total rules: 37
+Correct rules: 33
+Wrong rules: 4
+Correct percentage: 33 / 37 = 89.19%
+Wrong percentage: 4 / 37 = 10.81%
+
+RULE VALIDATION
+RULE 1: CORRECT
+Reason: U-mode cannot execute supervisor memory-management instruction SFENCE.VMA; it traps instead of executing the fence effects.
+
+RULE 2: CORRECT
+Reason: In VU-mode, execution of a supervisor instruction such as SFENCE raises a virtual-instruction exception.
+
+RULE 3: CORRECT
+Reason: mstatus.TVM=1 traps S/HS virtual-memory management operations including SFENCE.VMA; TVM affects HS-mode, not VS-mode.
+
+RULE 4: CORRECT
+Reason: With mstatus.TVM=0, S/HS execution is permitted when no other architectural trap condition applies.
+
+RULE 5: CORRECT
+Reason: In VS-mode, hstatus.VTVM=1 causes SFENCE.VMA to raise a virtual-instruction exception.
+
+RULE 7: CORRECT
+Reason: If satp.MODE is read-only zero, an implementation may raise illegal-instruction on SFENCE.VMA.
+
+RULE 8: CORRECT
+Reason: On a virtual-instruction trap, mtval or stval is written the same as for an illegal-instruction trap.
+
+RULE 11: CORRECT
+Reason: When V=0, SFENCE.VMA applies to memory-management structures controlled by HS-level satp.
+
+RULE 12: CORRECT
+Reason: When V=0, SFENCE.VMA orders stores only to HS-level translation structures with later HS-level translations.
+
+RULE 17: CORRECT
+Reason: When V=1, SFENCE.VMA applies to VS-level memory-management structures controlled by vsatp.
+
+RULE 18: CORRECT
+Reason: When V=1, SFENCE.VMA orders stores only to VS-level translation structures with later VS-stage translations for the same hgatp.VMID.
+
+RULE 20: CORRECT
+Reason: Pointer masking is not applied to SFENCE.*; software must provide the correct address.
+
+RULE 21: WRONG
+Reason: The manual permits over-fencing; implementations may ignore rs1 and treat the operation as applying to all virtual addresses.
+
+RULE 22: WRONG
+Reason: The manual permits over-fencing; implementations may ignore rs2 and perform a global fence instead of using the ASID selectively.
+
+RULE 24: CORRECT
+Reason: If rs1 is not a valid virtual address, no exception is raised for that reason.
+
+RULE 27: CORRECT
+Reason: If ASIDLEN < ASIDMAX, bits ASIDMAX-1:ASIDLEN of rs2 are ignored.
+
+RULE 28: CORRECT
+Reason: For rs1=x0, rs2=x0, all page-table levels and all address spaces are ordered for the executing hart.
+
+RULE 29: CORRECT
+Reason: For rs1=x0, rs2=x0, all address-translation cache entries are invalidated for all address spaces.
+
+RULE 30: WRONG
+Reason: For rs1=x0, rs2!=x0, accesses to global mappings are not ordered; the rule omits that exception.
+
+RULE 31: CORRECT
+Reason: For rs1=x0, rs2!=x0, global mappings are not ordered.
+
+RULE 32: CORRECT
+Reason: For rs1=x0, rs2!=x0, matching entries are invalidated except entries containing global mappings.
+
+RULE 34: CORRECT
+Reason: For rs1!=x0, rs2=x0, ordering is limited to leaf PTEs corresponding to the virtual address for all address spaces.
+
+RULE 35: CORRECT
+Reason: For rs1!=x0, rs2=x0, matching leaf translation-cache entries for that virtual address are invalidated for all address spaces.
+
+RULE 36: WRONG
+Reason: For rs1!=x0, rs2!=x0, accesses to global mappings are not ordered; the rule omits that exception.
+
+RULE 37: CORRECT
+Reason: For rs1!=x0, rs2!=x0, global mappings are not ordered.
+
+RULE 38: CORRECT
+Reason: For rs1!=x0, rs2!=x0, matching non-global leaf translation-cache entries are invalidated.
+
+RULE 40: CORRECT
+Reason: Over-fencing by fencing a superset of the required VA or ASID set is architecturally permitted.
+
+RULE 43: CORRECT
+Reason: SFENCE.VMA orders only the local hart’s implicit references to memory-management data structures.
+
+RULE 45: CORRECT
+Reason: An implicit read may return any translation valid since the most recent subsuming SFENCE.VMA.
+
+RULE 46: CORRECT
+Reason: Without an intervening subsuming SFENCE.VMA, either the modified translation or an older valid translation may be used.
+
+RULE 47: CORRECT
+Reason: Subsequent accesses may use different translations from the permitted set.
+
+RULE 48: CORRECT
+Reason: A translation valid since the last subsuming SFENCE.VMA may be used even if it used a different virtual-address width.
+
+RULE 53: CORRECT
+Reason: SFENCE.VMA ordering does not by itself place prior explicit accesses before subsequent explicit accesses in global memory order.
+
+RULE 54: CORRECT
+Reason: Implicit address-translation loads need not obey normal program-order semantics with respect to prior loads or stores to the same address.
+
+RULE 55: CORRECT
+Reason: CMO invalidate, clean, and flush operations are not ordered by other instructions that order stores, including SFENCE.VMA.
+
+RULE 61: CORRECT
+Reason: After changing menvcfg.PBMTE, SFENCE.VMA x0,x0 synchronizes address-translation caches with respect to altered PBMT interpretation.
+
+RULE 62: CORRECT
+Reason: After changing menvcfg.ADUE, SFENCE.VMA x0,x0 synchronizes address-translation caches with respect to altered A/D-bit interpretation.
+
+WRONG RULES ONLY
+RULE 21: Over-fencing may ignore rs1, so nonzero rs1 is not guaranteed to limit the operation to that VA.
+RULE 22: Over-fencing may ignore rs2, so nonzero rs2 is not guaranteed to avoid a global fence.
+RULE 30: Missing the global-mapping exclusion for rs1=x0, rs2!=x0.
+RULE 36: Missing the global-mapping exclusion for rs1!=x0, rs2!=x0.

@@ -1,0 +1,18 @@
+## 3.13. Version Detection
+
+To  detect  the  version  of  the  Debug  Module  with  a  minimum  of  side  effects,  use  the  following procedure:
+
+1. Read dmcontrol.
+2. If dmactive is 0 or ndmreset is 1:
+- a. Write dmcontrol, preserving hartreset, hasel, hartsello, and hartselhi from the value that was read, setting dmactive, and clearing all the other bits.
+- b. Read dmcontrol until dmactive is high.
+3. Read dmstatus, which contains version.
+
+If it was necessary to clear ndmreset, this might have the following side effects:
+
+1. haltreq is cleared, potentially preventing a halt request made by a previous debugger from taking effect.
+2. resumereq is cleared, potentially preventing a resume request made by a previous debugger from taking effect.
+3. ndmreset is deasserted, releasing the hardware platform from reset if a previous debugger had set it.
+4. dmactive is asserted, releasing the DM from reset. This in itself is not observable by any harts.
+
+This procedure is guaranteed to work in future versions of this spec. The meaning of the dmcontrol bits where hartreset, hasel, hartsello, and hartselhi currently reside might change, but preserving them will have no side effects. Clearing the bits of dmcontrol not explicitly mentioned here will have no side effects beyond the ones mentioned above.

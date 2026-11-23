@@ -1,0 +1,1882 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `scounteren`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+                                                                                                              |                                                                                                                                        |
+
+| Instruction                                                                            | Zca                                                                                    | Zcf                                                                                    | Zcd                                                                                    | Zcb                                                                                    | Zcmp                                                                                   | Zcmt                                                                                   |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| cm.popretz                                                                             |                                                                                        |                                                                                        |                                                                                        |                                                                                        | yes                                                                                    |                                                                                        |
+| cm.mva01s                                                                              |                                                                                        |                                                                                        |                                                                                        |                                                                                        | yes                                                                                    |                                                                                        |
+| cm.mvsa01                                                                              |                                                                                        |                                                                                        |                                                                                        |                                                                                        | yes                                                                                    |                                                                                        |
+| Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs | Table jump which overlaps with c.fsdsp . Complex operations intended for embedded CPUs |
+| cm.jt                                                                                  |                                                                                        |                                                                                        |                                                                                        |                                                                                        |                                                                                        | yes                                                                                    |
+| cm.jalt                                                                                |                                                                                        |                                                                                        |                                                                                        |                                                                                        |                                                                                        | yes                                                                                    |
+
+## 29.2. C
+
+The C extension is the superset of the following extensions:
+
+- ⚫ Zca
+- ⚫ Zcf if F is specified (RV32 only)
+- ⚫ Zcd if D is specified
+
+As C defines the same instructions as Zca, Zcf, and Zcd, the rule is that:
+
+- ⚫ C always implies Zca
+- ⚫ C+F implies Zcf (RV32 only)
+- ⚫ C+D implies Zcd
+
+## 29.3. Zce
+
+The Zce extension is intended to be used for microcontrollers, and includes all relevant Zc extensions.
+
+- ⚫ Specifying Zce on RV32 without F includes Zca, Zcb, Zcmp, Zcmt
+- ⚫ Specifying Zce on RV32 with F includes Zca, Zcb, Zcmp, Zcmt and Zcf
+- ⚫ Specifying Zce on RV64 always includes Zca, Zcb, Zcmp, Zcmt
+- ⚫ Zcf doesn't exist for RV64
+
+Therefore  common  ISA  strings  can  be  updated  as  follows  to  include  the  relevant  Zc  extensions,  for example:
+
+- ⚫ RV32IMC becomes RV32IM\_Zce
+- ⚫ RV32IMCF becomes RV32IMF\_Zce
+
+## 29.4. MISA.C
+
+MISA.C is set if the following extensions are selected:
+
+- ⚫ Zca and not F
+- ⚫ Zca, Zcf and F (but not D) is specified (RV32 only)
+- ⚫ Zca, Zcf and Zcd if D is specified (RV32 only)
+- ⚫ this configuration excludes Zcmp, Zcmt
+
+- ⚫ Zca, Zcd if D is specified (RV64 only)
+- ⚫ this configuration excludes Zcmp, Zcmt
+
+## 29.5. Zca
+
+The  Zca  extension  is  added  as  way  to  refer  to  instructions  in  the  C  extension  that  do  not  include  the floating-point loads and stores.
+
+Therefore it excluded all 16-bit floating point loads and stores: c.flw , c.flwsp , c.fsw , c.fswsp , c.fld , c.fldsp , c.fsd , c.fsdsp .
+
+<image>
+
+the C extension only includes F/D instructions when D and F are also specified
+
+## 29.6. Zcf (RV32 only)
+
+Zcf  is  the  existing  set  of  compressed  single  precision  floating  point  loads  and  stores: c.flw , c.flwsp , c.fsw , c.fswsp .
+
+Zcf is only relevant to RV32, it cannot be specified for RV64.
+
+The Zcf extension depends on the Zca and F extensions.
+
+## 29.7. Zcd
+
+Zcd is the existing set of compressed double precision floating point loads and stores: c.fld , c.fldsp , c.fsd , c.fsdsp .
+
+The Zcd extension depends on the Zca and D extensions.
+
+## 29.8. Zcb
+
+Zcb has simple code-size saving instructions which are easy to implement on all CPUs.
+
+All  encodings  are  currently  reserved  for  all  architectures,  and  have  no  conflicts  with  any  existing extensions.
+
+<image>
+
+Zcb can be implemented on any CPU as the instructions are 16-bit versions of existing 32-bit instructions from the application class profile.
+
+The Zcb extension depends on the Zca extension.
+
+As  shown  on  the  individual  instruction  pages,  many  of  the  instructions  in  Zcb  depend  upon  another extension being implemented. For example, c.mul is only implemented if M or Zmmul is implemented, and c.sext.b is only implemented if Zbb is implemented.
+
+The c.mul encoding uses the CA register format along with other instructions such as c.sub , c.xor etc.
+
+<image>
+
+c.sext.w is a pseudoinstruction for c.addiw rd, 0 (RV64)
+
+| RV32   | RV64   | Mnemonic                 | Instruction                         |
+|--------|--------|--------------------------|-------------------------------------|
+| yes    | yes    | c.lbu rd' , uimm( rs1' ) | Load unsigned byte, 16-bit encoding |
+
+| RV32   | RV64   | Mnemonic                 | Instruction                             |
+|--------|--------|--------------------------|-----------------------------------------|
+| yes    | yes    | c.lhu rd' , uimm( rs1' ) | Load unsigned halfword, 16-bit encoding |
+| yes    | yes    | c.lh rd' , uimm( rs1' )  | Load signed halfword, 16-bit encoding   |
+| yes    | yes    | c.sb rs2' , uimm( rs1' ) | Store byte, 16-bit encoding             |
+| yes    | yes    | c.sh rs2' , uimm( rs1' ) | Store halfword, 16-bit encoding         |
+| yes    | yes    | c.zext.b rsd'            | Zero extend byte, 16-bit encoding       |
+| yes    | yes    | c.sext.b rsd'            | Sign extend byte, 16-bit encoding       |
+| yes    | yes    | c.zext.h rsd'            | Zero extend halfword, 16-bit encoding   |
+| yes    | yes    | c.sext.h rsd'            | Sign extend halfword, 16-bit encoding   |
+|        | yes    | c.zext.w rsd'            | Zero extend word, 16-bit encoding       |
+| yes    | yes    | c.not rsd'               | Bitwise not, 16-bit encoding            |
+| yes    | yes    | c.mul rsd' , rs2'        | Multiply, 16-bit encoding               |
+
+## 29.9. Zcmp
+
+The Zcmp extension is a set of instructions which may be executed as a series of existing 32-bit RISC-V instructions.
+
+This extension reuses some encodings from c.fsdsp . Therefore it is incompatible with Zcd, which is included when C and D extensions are both present.
+
+<image>
+
+Zcmp  is  primarily  targeted  at  embedded  class  CPUs  due  to  implementation  complexity. Additionally, it is not compatible with application class profiles.
+
+The Zcmp extension depends on the Zca extension.
+
+The PUSH/POP assembly syntax uses several variables, the meaning of which are:
+
+- ⚫ reg\_list is a list containing 1 to 13 registers (ra and 0 to 12 s registers)
+- ⚫ valid values: {ra}, \{ra, s0}, \{ra, s0-s1}, \{ra, s0-s2}, …, \{ra, s0-s8}, \{ra, s0-s9}, \{ra, s0-s11}
+- ⚫ note that \{ra, s0-s10} is not valid, giving 12 lists not 13 for better encoding
+- ⚫ stack\_adj is the total size of the stack frame.
+- ⚫ valid values vary with register list length and the specific encoding, see the instruction pages for details.
+
+| RV32   | RV64   | Mnemonic                         | Instruction                                   |
+|--------|--------|----------------------------------|-----------------------------------------------|
+| yes    | yes    | cm.push {reg_list}, -stack_adj   | cm.push                                       |
+| yes    | yes    | cm.pop {reg_list}, stack_adj     | cm.pop                                        |
+| yes    | yes    | cm.popret {reg_list}, stack_adj  | cm.popret                                     |
+| yes    | yes    | cm.popretz {reg_list}, stack_adj | cm.popretz                                    |
+| yes    | yes    | cm.mva01s rs1', rs2'             | Move two s0-s7 registers into a0-a1           |
+| yes    | yes    | cm.mvsa01 r1s', r2s'             | Move a0-a1 into two different s0-s7 registers |
+
+## 29.10. Zcmt
+
+Zcmt adds the table jump instructions and also adds the jvt CSR. The jvt CSR requires a state enable if Smstateen is implemented. See jvt CSR, table jump base vector and control register for details.
+
+This extension reuses some encodings from c.fsdsp . Therefore it is incompatible with Zcd, which is included when C and D extensions are both present.
+
+<image>
+
+Zcmt  is  primarily  targeted  at  embedded  class  CPUs  due  to  implementation  complexity. Additionally, it is not compatible with RVA profiles.
+
+The Zcmt extension depends on the Zca and Zicsr extensions.
+
+| RV32   | RV64   | Mnemonic      | Instruction             |
+|--------|--------|---------------|-------------------------|
+| yes    | yes    | cm.jt index   | Jump via table          |
+| yes    | yes    | cm.jalt index | Jump and link via table |
+
+## 29.11. Zc instruction formats
+
+Several instructions in this specification use the following new instruction formats.
+
+| Format   | instructions        | 15:10   | 9        | 8   | 7      | 6       | 5     | 4     | 3   | 2   | 1   | 0   |
+|----------|---------------------|---------|----------|-----|--------|---------|-------|-------|-----|-----|-----|-----|
+| CLB      | c.lbu               | funct6  | rs1'     |     |        | uimm    |       | rd'   |     |     | op  |     |
+| CSB      | c.sb                | funct6  | rs1'     |     |        | uimm    |       | rs2'  |     |     | op  |     |
+| CLH      | c.lhu, c.lh         | funct6  | rs1'     |     |        | funct 1 | uim m | rd'   |     |     | op  |     |
+| CSH      | c.sh                | funct6  | rs1'     |     |        | funct 1 | uim m | rs2'  |     |     | op  |     |
+| CU       | c.[sz]ext.*, c.not  | funct6  | rd'/rs1' |     |        | funct5  |       |       |     |     | op  |     |
+| CMMV     | cm.mvsa01 cm.mva01s | funct6  | r1s'     |     |        | funct2  |       | r2s'  |     |     | op  |     |
+| CMJT     | cm.jt cm.jalt       | funct6  | index    |     |        |         |       |       |     |     | op  |     |
+| CMPP     | cm.push*, cm.pop*   | funct6  | funct2   |     | urlist |         |       | spimm |     |     | op  |     |
+
+<image>
+
+c.mul uses the existing CA format.
+
+## 29.12. Zcb instructions
+
+## 29.12.1. c.lbu
+
+## Synopsis
+
+Load unsigned byte, 16-bit encoding
+
+## Mnemonic
+
+c.lbu rd' , uimm ( rs1' )
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+The immediate offset is formed as follows:
+
+```
+uimm[ 31 : 2 ] = 0 ; uimm[ 1 ]    = encoding[ 5 ]; uimm[ 0 ]    = encoding[ 6 ];
+```
+
+## Description
+
+This  instruction  loads  a  byte  from  the  memory  address  formed  by  adding rs1' to  the  zero  extended immediate uimm . The resulting byte is zero extended to XLEN bits and is written to rd' .
+
+<image>
+
+## Prerequisites
+
+None
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. X(rdc) = EXTZ(mem[X(rs1c)+EXTZ(uimm)][ 7 .. 0 ]);
+```
+
+rd' and rs1' are from the standard 8-register set x8-x15.
+
+C0
+
+## 29.12.2. c.lhu
+
+## Synopsis
+
+Load unsigned halfword, 16-bit encoding
+
+## Mnemonic
+
+c.lhu rd' , uimm ( rs1' )
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+The immediate offset is formed as follows:
+
+```
+uimm[ 31 : 2 ] = 0 ; uimm[ 1 ]    = encoding[ 5 ]; uimm[ 0 ]    = 0 ;
+```
+
+## Description
+
+This instruction loads a halfword from the memory address formed by adding rs1' to the zero extended immediate uimm . The resulting halfword is zero extended to XLEN bits and is written to rd' .
+
+<image>
+
+## Prerequisites
+
+None
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. X(rdc) = EXTZ(load_mem[X(rs1c)+EXTZ(uimm)][ 15 .. 0 ]);
+```
+
+rd' and rs1' are from the standard 8-register set x8-x15.
+
+C0
+
+## 29.12.3. c.lh
+
+## Synopsis
+
+Load signed halfword, 16-bit encoding
+
+## Mnemonic
+
+c.lh rd' , uimm ( rs1' )
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+The immediate offset is formed as follows:
+
+```
+uimm[ 31 : 2 ] = 0 ; uimm[ 1 ]    = encoding[ 5 ]; uimm[ 0 ]    = 0 ;
+```
+
+## Description
+
+This instruction loads a halfword from the memory address formed by adding rs1' to the zero extended immediate uimm . The resulting halfword is sign extended to XLEN bits and is written to rd' .
+
+<image>
+
+## Prerequisites
+
+None
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. X(rdc) = EXTS(load_mem[X(rs1c)+EXTZ(uimm)][ 15 .. 0 ]);
+```
+
+rd' and rs1' are from the standard 8-register set x8-x15.
+
+C0
+
+## 29.12.4. c.sb
+
+## Synopsis
+
+Store byte, 16-bit encoding
+
+## Mnemonic
+
+c.sb rs2' , uimm ( rs1' )
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+The immediate offset is formed as follows:
+
+```
+uimm[ 31 : 2 ] = 0 ; uimm[ 1 ]    = encoding[ 5 ]; uimm[ 0 ]    = encoding[ 6 ];
+```
+
+## Description
+
+This instruction stores the least significant byte of rs2' to the memory address formed by adding rs1' to the zero extended immediate uimm .
+
+<image>
+
+## Prerequisites
+
+None
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. mem[X(rs1c)+EXTZ(uimm)][ 7 .. 0 ] = X(rs2c)
+```
+
+rs1' and rs2' are from the standard 8-register set x8-x15.
+
+C0
+
+## 29.12.5. c.sh
+
+## Synopsis
+
+Store halfword, 16-bit encoding
+
+## Mnemonic
+
+c.sh rs2' , uimm ( rs1' )
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+The immediate offset is formed as follows:
+
+```
+uimm[ 31 : 2 ] = 0 ; uimm[ 1 ]    = encoding[ 5 ]; uimm[ 0 ]    = 0 ;
+```
+
+## Description
+
+This instruction stores the least significant halfword of rs2' to the memory address formed by adding rs1' to the zero extended immediate uimm .
+
+<image>
+
+## Prerequisites
+
+None
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. mem[X(rs1c)+EXTZ(uimm)][ 15 .. 0 ] = X(rs2c)
+```
+
+rs1' and rs2' are from the standard 8-register set x8-x15.
+
+C0
+
+## 29.12.6. c.zext.b
+
+## Synopsis
+
+Zero extend byte, 16-bit encoding
+
+## Mnemonic
+
+c.zext.b rd'/rs1'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This instruction takes a single source/destination operand. It zero-extends the least-significant byte of the operand to XLEN bits by inserting zeros into all of the bits more significant than 7.
+
+<image>
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+andi rd'/rs1', rd'/rs1', 0xff
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+X(rsdc) = EXTZ(X(rsdc)[ 7 .. 0 ]);
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## 29.12.7. c.sext.b
+
+## Synopsis
+
+Sign extend byte, 16-bit encoding
+
+## Mnemonic
+
+c.sext.b rd'/rs1'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This instruction takes a single source/destination operand. It sign-extends the least-significant byte in the operand to XLEN bits by copying the most-significant bit in the byte (i.e., bit 7) to all of the moresignificant bits.
+
+<image>
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## Prerequisites
+
+Zbb is also required.
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+X(rsdc) = EXTS(X(rsdc)[ 7 .. 0 ]);
+
+## 29.12.8. c.zext.h
+
+## Synopsis
+
+Zero extend halfword, 16-bit encoding
+
+## Mnemonic
+
+c.zext.h rd'/rs1'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This  instruction  takes  a  single  source/destination  operand.  It  zero-extends  the  least-significant halfword of the operand to XLEN bits by inserting zeros into all of the bits more significant than 15.
+
+<image>
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## Prerequisites
+
+Zbb is also required.
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+X(rsdc) = EXTZ(X(rsdc)[ 15 .. 0 ]);
+
+## 29.12.9. c.sext.h
+
+## Synopsis
+
+Sign extend halfword, 16-bit encoding
+
+## Mnemonic
+
+c.sext.h rd'/rs1'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This  instruction  takes  a  single  source/destination  operand.  It  sign-extends  the  least-significant halfword in the operand to XLEN bits by copying the most-significant bit in the halfword (i.e., bit 15) to all of the more-significant bits.
+
+<image>
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## Prerequisites
+
+Zbb is also required.
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+X(rsdc) = EXTS(X(rsdc)[ 15 .. 0 ]);
+
+## 29.12.10. c.zext.w
+
+## Synopsis
+
+Zero extend word, 16-bit encoding
+
+## Mnemonic
+
+c.zext.w rd'/rs1'
+
+Encoding (RV64):
+
+<image>
+
+## Description
+
+This instruction takes a single source/destination operand. It zero-extends the least-significant word of the operand to XLEN bits by inserting zeros into all of the bits more significant than 31.
+
+<image>
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## Prerequisites
+
+Zba is also required.
+
+32-bit equivalent:
+
+add.uw rd'/rs1', rd'/rs1', zero
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+```
+X(rsdc) = EXTZ(X(rsdc)[ 31 .. 0 ]);
+```
+
+## 29.12.11. c.not
+
+## Synopsis
+
+Bitwise not, 16-bit encoding
+
+## Mnemonic
+
+c.not rd'/rs1'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This instruction takes the one's complement of rd'/rs1' and writes the result to the same register.
+
+<image>
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+xori rd'/rs1', rd'/rs1', -1
+
+<image>
+
+The SAIL module variable for rd'/rs1' is called rsdc.
+
+## Operation
+
+X(rsdc) = X(rsdc) XOR 1 ;
+
+rd'/rs1' is from the standard 8-register set x8-x15.
+
+## 29.12.12. c.mul
+
+## Synopsis
+
+Multiply, 16-bit encoding
+
+## Mnemonic
+
+c.mul rsd' , rs2'
+
+Encoding (RV32, RV64):
+
+<image>
+
+## Description
+
+This instruction multiplies XLEN bits of the source operands from rsd' and rs2' and writes the lowest XLEN bits of the result to rsd' .
+
+<image>
+
+## Prerequisites
+
+M or Zmmul must be configured.
+
+-  The SAIL module variable for rd'/rs1' is called rsdc, and for rs2' is called rs2c.
+
+<image>
+
+## Operation
+
+```
+let result_wide = to_bits( 2 * sizeof(xlen), signed(X(rsdc)) * signed(X(rs2c))); X(rsdc) = result_wide[(sizeof(xlen) 1 ) .. 0 ];
+```
+
+rd'/rs1' and rs2' are from the standard 8-register set x8-x15.
+
+## 29.13. PUSH/POP register instructions
+
+These instructions are collectively referred to as PUSH/POP:
+
+- ⚫ cm.push
+- ⚫ cm.pop
+- ⚫ cm.popret
+- ⚫ cm.popretz
+
+The term PUSH refers to cm.push .
+
+The term POP refers to cm.pop .
+
+The term POPRET refers to cm.popret and cm.popretz .
+
+Common details for these instructions are in this section.
+
+## 29.13.1. PUSH/POP functional overview
+
+PUSH, POP, POPRET are used to reduce the size of function prologues and epilogues.
+
+1. The PUSH instruction
+2. ⚫ adjusts the stack pointer to create the stack frame
+3. ⚫ pushes (stores) the registers specified in the register list to the stack frame
+2. The POP instruction
+5. ⚫ pops (loads) the registers in the register list from the stack frame
+6. ⚫ adjusts the stack pointer to destroy the stack frame
+3. The POPRET instructions
+8. ⚫ pop (load) the registers in the register list from the stack frame
+9. ⚫ cm.popretz also moves zero into a0 as the return value
+10. ⚫ adjust the stack pointer to destroy the stack frame
+11. ⚫ execute a ret instruction to return from the function
+
+## 29.13.2. Example usage
+
+This example gives an illustration of the use of PUSH and POPRET.
+
+The  function processMarkers in  the  EMBench  benchmark  picojpeg  in  the  following  file  on  github: libpicojpeg.c
+
+The prologue and epilogue compile with GCC10 to:
+
+| 0001098a <processMarkers>:   | 0001098a <processMarkers>:   | 0001098a <processMarkers>:   | 0001098a <processMarkers>:   |                            |
+|------------------------------|------------------------------|------------------------------|------------------------------|----------------------------|
+| 1098a:                       | 711d                         | addi                         | sp,sp,-96                    | ;#cm.push(1)               |
+| 1098c:                       | c8ca                         | sw                           | s2,80(sp)                    | ;#cm.push(2)               |
+| 1098e:                       | c6ce                         | sw                           | s3,76(sp)                    | ;#cm.push(3)               |
+| 10990:                       | c4d2                         | sw                           | s4,72(sp)                    | ;#cm.push(4)               |
+| 10992:                       | ce86                         | sw                           | ra,92(sp)                    | ;#cm.push(5)               |
+| 10994:                       | cca2                         | sw                           | s0,88(sp)                    | ;#cm.push(6)               |
+| 10996:                       | caa6                         | sw                           | s1,84(sp)                    | ;#cm.push(7)               |
+| 10998:                       | c2d6                         | sw                           | s5,68(sp)                    | ;#cm.push(8)               |
+| 1099a:                       | c0da                         | sw                           | s6,64(sp)                    | ;#cm.push(9)               |
+| 1099c:                       | de5e                         | sw                           | s7,60(sp)                    | ;#cm.push(10)              |
+| 1099e:                       | dc62                         | sw                           | s8,56(sp)                    | ;#cm.push(11)              |
+| 109a0:                       | da66                         | sw                           | s9,52(sp)                    | ;#cm.push(12)              |
+| 109a2:                       | d86a                         | sw                           | s10,48(sp);#cm.push(13)      | s10,48(sp);#cm.push(13)    |
+| 109a4:                       | d66e                         | sw                           | s11,44(sp);#cm.push(14)      | s11,44(sp);#cm.push(14)    |
+| ...                          | ...                          | ...                          | ...                          | ...                        |
+| 109f4:                       | 4501                         | li                           | a0,0                         | ;#cm.popretz(1)            |
+| 109f6:                       | 40f6                         | lw                           | ra,92(sp)                    | ;#cm.popretz(2)            |
+| 109f8:                       | 4466                         | lw                           | s0,88(sp)                    | ;#cm.popretz(3)            |
+| 109fa:                       | 44d6                         | lw                           | s1,84(sp)                    | ;#cm.popretz(4)            |
+| 109fc:                       | 4946                         | lw                           | s2,80(sp)                    | ;#cm.popretz(5)            |
+| 109fe:                       | 49b6                         | lw                           | s3,76(sp)                    | ;#cm.popretz(6)            |
+| 10a00:                       | 4a26                         | lw                           | s4,72(sp)                    | ;#cm.popretz(7)            |
+| 10a02:                       | 4a96                         | lw                           | s5,68(sp)                    | ;#cm.popretz(8)            |
+| 10a04:                       | 4b06                         | lw                           | s6,64(sp)                    | ;#cm.popretz(9)            |
+| 10a06:                       | 5bf2                         | lw                           | s7,60(sp)                    | ;#cm.popretz(10)           |
+| 10a08:                       | 5c62                         | lw                           | s8,56(sp)                    | ;#cm.popretz(11)           |
+| 10a0a:                       | 5cd2                         | lw                           | s9,52(sp)                    | ;#cm.popretz(12)           |
+| 10a0c:                       | 5d42                         | lw                           | s10,48(sp);#cm.popretz(13)   | s10,48(sp);#cm.popretz(13) |
+| 10a0e:                       | 5db2                         | lw                           | s11,44(sp);#cm.popretz(14)   | s11,44(sp);#cm.popretz(14) |
+| 10a10:                       | 6125                         | addi                         | sp,sp,96                     | ;#cm.popretz(15)           |
+| 10a12:                       | 8082                         | ret                          |                              | ;#cm.popretz(16)           |
+
+with the GCC option -msave-restore the output is the following:
+
+```
+0001080e <processMarkers>: 1080e:       73a012ef                jal     t0,11f48 <__riscv_save_12> 10812:       1101                    addi    sp,sp,-32 ... 10862:       4501                    li      a0,0 10864:       6105                    addi    sp,sp,32 10866:       71e0106f                j       11f84 <__riscv_restore_12>
+```
+
+with PUSH/POPRET this reduces to
+
+0001080e <processMarkers>:
+
+1080e:       b8fa                    cm.push    \{ra,s0-s11},-96
+
+...
+
+10866:       bcfa                    cm.popretz \{ra,s0-s11}, 96
+
+The prologue / epilogue reduce from 60-bytes in the original code, to 14-bytes with -msave-restore , and to 4-bytes  with  PUSH  and  POPRET.  As  well  as  reducing  the  code-size  PUSH  and  POPRET  eliminate  the branches from calling the millicode save/restore routines and so may also perform better.
+
+<image>
+
+The calls to <riscv\_save\_0>/<riscv\_restore\_0> become 64-bit when the target functions are out of the ±1 MB range, increasing the prologue/epilogue size to 22-bytes.
+
+<image>
+
+POP  is  typically  used  in  tail-calling  sequences  where  ret  is  not  used  to  return  to  ra  after destroying the stack frame.
+
+## 29.13.2.1. Stack pointer adjustment handling
+
+The instructions all automatically adjust the stack pointer by enough to cover the memory required for the registers being saved or restored. Additionally the spimm field in the encoding allows the stack pointer to be adjusted  in  additional  increments  of  16-bytes.  There  is  only  a  small  restricted  range  available  in  the encoding; if the range is insufficient then a separate c.addi16sp can be used to increase the range.
+
+## 29.13.2.2. Register list handling
+
+There is  no  support  for  the \{ra,  s0-s10} register  list  without  also  adding s11 .  Therefore  the \{ra,  s0-s11} register list must be used in this case.
+
+## 29.13.3. PUSH/POP Fault handling
+
+Correct  execution  requires  that sp refers  to  idempotent  memory  (also  see  Non-idempotent  memory handling),  because  the  core  must  be  able  to  handle  traps  detected  during  the  sequence.  The  entire PUSH/POP sequence is re-executed after returning from the trap handler, and multiple traps are possible during the sequence.
+
+If  a  trap  occurs  during  the  sequence then xEPC is  updated  with  the  PC  of  the  instruction, xTVAL (if  not read-only-zero) updated with the bad address if it was an access fault and xCAUSE updated with the type of trap.
+
+<image>
+
+It  is  implementation  defined  whether  interrupts  can  also  be  taken  during  the  sequence execution.
+
+## 29.13.4. Software view of execution
+
+## 29.13.4.1. Software view of the PUSH sequence
+
+From a software perspective the PUSH sequence appears as:
+
+- ⚫ A sequence of stores writing the bytes required by the pseudocode
+- ⚫ The bytes may be written in any order.
+- ⚫ The bytes may be grouped into larger accesses.
+- ⚫ Any of the bytes may be written multiple times.
+- ⚫ A stack pointer adjustment
+
+<image>
+
+If an implementation allows interrupts during the sequence, and the interrupt handler uses sp to  allocate  stack  memory,  then  any  stores  which  were  executed  before  the  interrupt  may  be overwritten by the handler. This is safe because the memory is idempotent and the stores will be re-executed when execution resumes.
+
+The  stack  pointer  adjustment  must  only  be  committed  only  when  it  is  certain  that  the  entire  PUSH instruction will commit.
+
+Stores may  also  return  imprecise  faults from  the  bus. It  is  platform  defined  whether  the  core implementation waits for the bus responses before continuing to the final stage of the sequence, or handles errors responses after completing the PUSH instruction.
+
+For example:
+
+```
+cm.push  \{ra, s0-s5}, -64
+```
+
+Appears to software as:
+
+```
+# any bytes from sp-1 to sp-28 may be written multiple times before # the instruction completes therefore these updates may be visible in # the interrupt/exception handler below the stack pointer sw  s5, -4(sp) sw  s4, -8(sp) sw  s3,-12(sp) sw  s2,-16(sp) sw  s1,-20(sp) sw  s0,-24(sp) sw  ra,-28(sp) # this must only execute once, and will only execute after all stores # completed without any precise faults, therefore this update is only # visible in the interrupt/exception handler if cm.push has completed addi sp, sp, -64
+```
+
+## 29.13.4.2. Software view of the POP/POPRET sequence
+
+From a software perspective the POP/POPRET sequence appears as:
+
+- ⚫ A sequence of loads reading the bytes required by the pseudocode.
+- ⚫ The bytes may be loaded in any order.
+- ⚫ The bytes may be grouped into larger accesses.
+- ⚫ Any of the bytes may be loaded multiple times.
+- ⚫ A stack pointer adjustment
+- ⚫ An optional li a0, 0
+- ⚫ An optional ret
+
+If  a  trap  occurs  during  the  sequence,  then  any  loads  which  were  executed  before  the  trap  may  update architectural  state.  The  loads  will  be  re-executed  once  the  trap  handler  completes,  so  the  values  will  be overwritten. Therefore it is permitted for an implementation to update some of the destination registers before taking a fault.
+
+The optional li a0, 0 , stack pointer adjustment and optional ret must only be committed only when it is certain that the entire POP/POPRET instruction will commit.
+
+For POPRET once the stack pointer adjustment has been committed the ret must execute.
+
+For example:
+
+```
+cm.popretz \{ra, s0-s3}, 32;
+```
+
+Appears to software as:
+
+```
+# any or all of these load instructions may execute multiple times # therefore these updates may be visible in the interrupt/exception handler lw   s3, 28(sp) lw   s2, 24(sp) lw   s1, 20(sp) lw   s0, 16(sp) lw   ra, 12(sp) # these must only execute once, will only execute after all loads # complete successfully all instructions must execute atomically # therefore these updates are not visible in the interrupt/exception handler li a0, 0 addi sp, sp, 32 ret
+```
+
+## 29.13.5. Non-idempotent memory handling
+
+An implementation may have a requirement to issue a PUSH/POP instruction to non-idempotent memory.
+
+If the core implementation does not support PUSH/POP to non-idempotent memories, the core may use an idempotency PMA to detect it and take a load (POP/POPRET) or store (PUSH) access-fault exception in order to avoid unpredictable results.
+
+Software  should  only  use  these  instructions  on  non-idempotent  memory  regions  when  software  can tolerate the required memory accesses being issued repeatedly in the case that they cause exceptions.
+
+## 29.13.6. Example RV32I PUSH/POP sequences
+
+The examples are included show the load/store series expansion and the stack adjustment. Examples of cm.popret and cm.popretz are  not  included,  as  the  difference  in  the  expanded  sequence  from cm.pop is trivial in all cases.
+
+## 29.13.6.1. cm.push  \{ra, s0-s2}, -64
+
+Encoding: rlist =7, spimm =3
+
+expands to:
+
+```
+sw  s2,  -4(sp); sw  s1,  -8(sp); sw  s0, -12(sp); sw  ra, -16(sp); addi sp, sp, -64;
+```
+
+## 29.13.6.2. cm.push \{ra, s0-s11}, -112
+
+Encoding: rlist =15, spimm =3
+
+expands to:
+
+```
+sw  s11,  -4(sp); sw  s10,  -8(sp); sw  s9,  -12(sp); sw  s8,  -16(sp); sw  s7,  -20(sp); sw  s6,  -24(sp); sw  s5,  -28(sp); sw  s4,  -32(sp); sw  s3,  -36(sp); sw  s2,  -40(sp); sw  s1,  -44(sp); sw  s0,  -48(sp); sw  ra,  -52(sp); addi sp, sp, -112;
+```
+
+## 29.13.6.3. cm.pop   {ra}, 16
+
+Encoding: rlist =4, spimm =0
+
+expands to:
+
+```
+lw   ra, 12(sp); addi sp, sp, 16;
+```
+
+## 29.13.6.4. cm.pop \{ra, s0-s3}, 48
+
+Encoding: rlist =8, spimm =1
+
+expands to:
+
+```
+lw   s3, 44(sp); lw   s2, 40(sp); lw   s1, 36(sp); lw   s0, 32(sp); lw   ra, 28(sp); addi sp, sp, 48;
+```
+
+## 29.13.6.5. cm.pop \{ra, s0-s4}, 64
+
+Encoding: rlist =9, spimm =2 expands to:
+
+```
+lw   s4, 60(sp); lw   s3, 56(sp); lw   s2, 52(sp); lw   s1, 48(sp); lw   s0, 44(sp); lw   ra, 40(sp); addi sp, sp, 64;
+```
+
+## 29.13.7. cm.push
+
+## Synopsis
+
+Create stack frame: store ra and 0 to 12 saved registers to the stack frame, optionally allocate additional stack space.
+
+## Mnemonic
+
+cm.push {reg\_list}, -stack\_adj
+
+Encoding (RV32, RV64):
+
+<image>
+
+<image>
+
+rlist values 0 to 3 are reserved for a future EABI variant called cm.push.e
+
+Assembly Syntax:
+
+```
+cm.push \{reg_list},  -stack_adj cm.push {xreg_list}, -stack_adj
+```
+
+The variables used in the assembly syntax are defined below.
+
+```
+RV32E: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32I, RV64: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} case 7 : \{reg_list="ra, s0-s2";  xreg_list="x1, x8-x9, x18";} case 8 : \{reg_list="ra, s0-s3";  xreg_list="x1, x8-x9, x18-x19";} case 9 : \{reg_list="ra, s0-s4";  xreg_list="x1, x8-x9, x18-x20";} case 10 : \{reg_list="ra, s0-s5";  xreg_list="x1, x8-x9, x18-x21";} case 11 : \{reg_list="ra, s0-s6";  xreg_list="x1, x8-x9, x18-x22";} case 12 : \{reg_list="ra, s0-s7";  xreg_list="x1, x8-x9, x18-x23";} case 13 : \{reg_list="ra, s0-s8";  xreg_list="x1, x8-x9, x18-x24";} case 14 : \{reg_list="ra, s0-s9";  xreg_list="x1, x8-x9, x18-x25";} //note - to include s10, s11 must also be included
+```
+
+```
+case 15 : \{reg_list="ra, s0-s11"; xreg_list="x1, x8-x9, x18-x27";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32E: stack_adj_base = 16 ; Valid values: stack_adj      = [ 16 | 32 | 48 | 64 ];
+```
+
+```
+RV32I: switch (rlist) { case 4 .. 7 : stack_adj_base = 16 ; case 8 .. 11 : stack_adj_base = 32 ; case 12 .. 14 : stack_adj_base = 48 ; case 15 : stack_adj_base = 64 ; } Valid values: switch (rlist) { case 4 .. 7 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 8 .. 11 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 12 .. 14 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 15 : stack_adj = [ 64 | 80 | 96 | 112 ]; }
+```
+
+```
+RV64: switch (rlist) { case 4 .. 5 : stack_adj_base = 16 ; case 6 .. 7 : stack_adj_base = 32 ; case 8 .. 9 : stack_adj_base = 48 ; case 10 .. 11 : stack_adj_base = 64 ; case 12 .. 13 : stack_adj_base = 80 ; case 14 : stack_adj_base = 96 ; case 15 : stack_adj_base = 112 ; } Valid values: switch (rlist) { case 4 .. 5 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 6 .. 7 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 8 .. 9 : stack_adj = [ 48 | 64 | 80 | 96 ];
+```
+
+```
+case 10 .. 11 : stack_adj = [ 64 | 80 | 96 | 112 ]; case 12 .. 13 : stack_adj = [ 80 | 96 | 112 | 128 ]; case 14 : stack_adj = [ 96 | 112 | 128 | 144 ]; case 15 : stack_adj = [ 112 | 128 | 144 | 160 ]; }
+```
+
+## Description
+
+This  instruction  pushes  (stores)  the  registers  in reg\_list to  the  memory  below  the  stack  pointer,  and then creates the stack frame by decrementing the stack pointer by stack\_adj , including any additional stack space requested by the value of spimm .
+
+<image>
+
+All  ABI  register  mappings  are  for  the  UABI.  An  EABI  version  is  planned  once  the  EABI  is frozen.
+
+For further information see PUSH/POP Register Instructions.
+
+Stack Adjustment Calculation:
+
+stack\_adj\_base is the minimum number of bytes, in multiples of 16-byte address increments, required to cover the registers in the list.
+
+spimm is the number of additional 16-byte address increments allocated for the stack frame.
+
+The total stack adjustment represents the total size of the stack frame, which is stack\_adj\_base added to spimm scaled by 16, as defined above.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists
+
+## Operation
+
+The  first  section  of  pseudocode  may  be  executed  multiple  times  before  the  instruction  successfully completes.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (XLEN== 32 ) bytes= 4 ; else bytes= 8 ; addr=sp-bytes; for(i in 27 , 26 , 25 , 24 , 23 , 22 , 21 , 20 , 19 , 18 , 9 , 8 , 1 )  { //if register i is in xreg_list if (xreg_list[i]) { switch(bytes) { 4 :  asm("sw x[i], 0(addr)"); 8 :  asm("sd x[i], 0(addr)"); } addr-=bytes; } }
+```
+
+The  final  section  of  pseudocode  executes  atomically,  and  only  executes  if  the  section  above  completes without any exceptions or interrupts.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet.
+```
+
+sp-=stack\_adj;
+
+## 29.13.8. cm.pop
+
+## Synopsis
+
+Destroy stack frame: load ra and 0 to 12 saved registers from the stack frame, deallocate the stack frame.
+
+## Mnemonic
+
+cm.pop {reg\_list}, stack\_adj
+
+Encoding (RV32, RV64):
+
+<image>
+
+<image>
+
+rlist values 0 to 3 are reserved for a future EABI variant called cm.pop.e
+
+Assembly Syntax:
+
+```
+cm.pop \{reg_list},  stack_adj cm.pop {xreg_list}, stack_adj
+```
+
+The variables used in the assembly syntax are defined below.
+
+```
+RV32E: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32I, RV64: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} case 7 : \{reg_list="ra, s0-s2";  xreg_list="x1, x8-x9, x18";} case 8 : \{reg_list="ra, s0-s3";  xreg_list="x1, x8-x9, x18-x19";} case 9 : \{reg_list="ra, s0-s4";  xreg_list="x1, x8-x9, x18-x20";} case 10 : \{reg_list="ra, s0-s5";  xreg_list="x1, x8-x9, x18-x21";} case 11 : \{reg_list="ra, s0-s6";  xreg_list="x1, x8-x9, x18-x22";} case 12 : \{reg_list="ra, s0-s7";  xreg_list="x1, x8-x9, x18-x23";} case 13 : \{reg_list="ra, s0-s8";  xreg_list="x1, x8-x9, x18-x24";} case 14 : \{reg_list="ra, s0-s9";  xreg_list="x1, x8-x9, x18-x25";} //note - to include s10, s11 must also be included case 15 : \{reg_list="ra, s0-s11"; xreg_list="x1, x8-x9, x18-x27";} default : reserved();
+```
+
+```
+} stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32E: stack_adj_base = 16 ; Valid values: stack_adj      = [ 16 | 32 | 48 | 64 ];
+```
+
+```
+RV32I: switch (rlist) { case 4 .. 7 : stack_adj_base = 16 ; case 8 .. 11 : stack_adj_base = 32 ; case 12 .. 14 : stack_adj_base = 48 ; case 15 : stack_adj_base = 64 ; } Valid values: switch (rlist) { case 4 .. 7 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 8 .. 11 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 12 .. 14 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 15 : stack_adj = [ 64 | 80 | 96 | 112 ]; }
+```
+
+```
+RV64: switch (rlist) { case 4 .. 5 : stack_adj_base = 16 ; case 6 .. 7 : stack_adj_base = 32 ; case 8 .. 9 : stack_adj_base = 48 ; case 10 .. 11 : stack_adj_base = 64 ; case 12 .. 13 : stack_adj_base = 80 ; case 14 : stack_adj_base = 96 ; case 15 : stack_adj_base = 112 ; } Valid values: switch (rlist) { case 4 .. 5 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 6 .. 7 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 8 .. 9 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 10 .. 11 : stack_adj = [ 64 | 80 | 96 | 112 ]; case 12 .. 13 : stack_adj = [ 80 | 96 | 112 | 128 ];
+```
+
+```
+case 14 : stack_adj = [ 96 | 112 | 128 | 144 ]; case 15 : stack_adj = [ 112 | 128 | 144 | 160 ]; }
+```
+
+## Description
+
+This instruction pops (loads) the registers in reg\_list from  stack  memory, and then adjusts the stack pointer by stack\_adj .
+
+<image>
+
+All  ABI  register  mappings  are  for  the  UABI.  An  EABI  version  is  planned  once  the  EABI  is frozen.
+
+For further information see PUSH/POP Register Instructions.
+
+Stack Adjustment Calculation:
+
+stack\_adj\_base is the minimum number of bytes, in multiples of 16-byte address increments, required to cover the registers in the list.
+
+spimm is the number of additional 16-byte address increments allocated for the stack frame.
+
+The total stack adjustment represents the total size of the stack frame, which is stack\_adj\_base added to spimm scaled by 16, as defined above.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists
+
+## Operation
+
+The  first  section  of  pseudocode  may  be  executed  multiple  times  before  the  instruction  successfully completes.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (XLEN== 32 ) bytes= 4 ; else bytes= 8 ; addr=sp+stack_adj-bytes; for(i in 27 , 26 , 25 , 24 , 23 , 22 , 21 , 20 , 19 , 18 , 9 , 8 , 1 )  { //if register i is in xreg_list if (xreg_list[i]) { switch(bytes) { 4 :  asm("lw x[i], 0(addr)"); 8 :  asm("ld x[i], 0(addr)"); } addr-=bytes; } }
+```
+
+The  final  section  of  pseudocode  executes  atomically,  and  only  executes  if  the  section  above  completes without any exceptions or interrupts.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet.
+```
+
+sp+=stack\_adj;
+
+## 29.13.9. cm.popretz
+
+## Synopsis
+
+Destroy stack frame: load ra and 0 to 12 saved registers from the stack frame, deallocate the stack frame, move zero into a0, return to ra.
+
+## Mnemonic
+
+cm.popretz {reg\_list}, stack\_adj
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+<image>
+
+rlist values 0 to 3 are reserved for a future EABI variant called cm.popretz.e
+
+Assembly Syntax:
+
+```
+cm.popretz \{reg_list},  stack_adj cm.popretz {xreg_list}, stack_adj
+```
+
+```
+RV32E: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32I, RV64: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} case 7 : \{reg_list="ra, s0-s2";  xreg_list="x1, x8-x9, x18";} case 8 : \{reg_list="ra, s0-s3";  xreg_list="x1, x8-x9, x18-x19";} case 9 : \{reg_list="ra, s0-s4";  xreg_list="x1, x8-x9, x18-x20";} case 10 : \{reg_list="ra, s0-s5";  xreg_list="x1, x8-x9, x18-x21";} case 11 : \{reg_list="ra, s0-s6";  xreg_list="x1, x8-x9, x18-x22";} case 12 : \{reg_list="ra, s0-s7";  xreg_list="x1, x8-x9, x18-x23";} case 13 : \{reg_list="ra, s0-s8";  xreg_list="x1, x8-x9, x18-x24";} case 14 : \{reg_list="ra, s0-s9";  xreg_list="x1, x8-x9, x18-x25";} //note - to include s10, s11 must also be included case 15 : \{reg_list="ra, s0-s11"; xreg_list="x1, x8-x9, x18-x27";} default : reserved();
+```
+
+C2
+
+```
+} stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32E: stack_adj_base = 16 ; Valid values: stack_adj      = [ 16 | 32 | 48 | 64 ];
+```
+
+```
+RV32I: switch (rlist) { case 4 .. 7 : stack_adj_base = 16 ; case 8 .. 11 : stack_adj_base = 32 ; case 12 .. 14 : stack_adj_base = 48 ; case 15 : stack_adj_base = 64 ; } Valid values: switch (rlist) { case 4 .. 7 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 8 .. 11 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 12 .. 14 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 15 : stack_adj = [ 64 | 80 | 96 | 112 ]; }
+```
+
+```
+RV64: switch (rlist) { case 4 .. 5 : stack_adj_base = 16 ; case 6 .. 7 : stack_adj_base = 32 ; case 8 .. 9 : stack_adj_base = 48 ; case 10 .. 11 : stack_adj_base = 64 ; case 12 .. 13 : stack_adj_base = 80 ; case 14 : stack_adj_base = 96 ; case 15 : stack_adj_base = 112 ; } Valid values: switch (rlist) { case 4 .. 5 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 6 .. 7 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 8 .. 9 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 10 .. 11 : stack_adj = [ 64 | 80 | 96 | 112 ]; case 12 .. 13 : stack_adj = [ 80 | 96 | 112 | 128 ];
+```
+
+```
+case 14 : stack_adj = [ 96 | 112 | 128 | 144 ]; case 15 : stack_adj = [ 112 | 128 | 144 | 160 ]; }
+```
+
+## Description
+
+This instruction pops (loads) the registers in reg\_list from stack memory, adjusts the stack pointer by stack\_adj , moves zero into a0 and then returns to ra .
+
+<image>
+
+All  ABI  register  mappings  are  for  the  UABI.  An  EABI  version  is  planned  once  the  EABI  is frozen.
+
+For further information see PUSH/POP Register Instructions.
+
+Stack Adjustment Calculation:
+
+stack\_adj\_base is the minimum number of bytes, in multiples of 16-byte address increments, required to cover the registers in the list.
+
+spimm is the number of additional 16-byte address increments allocated for the stack frame.
+
+The total stack adjustment represents the total size of the stack frame, which is stack\_adj\_base added to spimm scaled by 16, as defined above.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists
+
+## Operation
+
+The  first  section  of  pseudocode  may  be  executed  multiple  times  before  the  instruction  successfully completes.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (XLEN== 32 ) bytes= 4 ; else bytes= 8 ; addr=sp+stack_adj-bytes; for(i in 27 , 26 , 25 , 24 , 23 , 22 , 21 , 20 , 19 , 18 , 9 , 8 , 1 )  { //if register i is in xreg_list if (xreg_list[i]) { switch(bytes) { 4 :  asm("lw x[i], 0(addr)"); 8 :  asm("ld x[i], 0(addr)"); } addr-=bytes; } }
+```
+
+The  final  section  of  pseudocode  executes  atomically,  and  only  executes  if  the  section  above  completes without any exceptions or interrupts.
+
+<image>
+
+The  li  a0,  0 could be  executed  more  than  once,  but  is  included  in  the  atomic  section  for convenience.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. asm("li a0, 0"); sp+=stack_adj; asm("ret");
+```
+
+## 29.13.10. cm.popret
+
+## Synopsis
+
+Destroy stack frame: load ra and 0 to 12 saved registers from the stack frame, deallocate the stack frame, return to ra.
+
+## Mnemonic
+
+cm.popret {reg\_list}, stack\_adj
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+<image>
+
+rlist values 0 to 3 are reserved for a future EABI variant called cm.popret.e
+
+Assembly Syntax:
+
+```
+cm.popret \{reg_list},  stack_adj cm.popret {xreg_list}, stack_adj
+```
+
+The variables used in the assembly syntax are defined below.
+
+```
+RV32E: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32I, RV64: switch (rlist){ case 4 : \{reg_list="ra";         xreg_list="x1";} case 5 : \{reg_list="ra, s0";     xreg_list="x1, x8";} case 6 : \{reg_list="ra, s0-s1";  xreg_list="x1, x8-x9";} case 7 : \{reg_list="ra, s0-s2";  xreg_list="x1, x8-x9, x18";} case 8 : \{reg_list="ra, s0-s3";  xreg_list="x1, x8-x9, x18-x19";} case 9 : \{reg_list="ra, s0-s4";  xreg_list="x1, x8-x9, x18-x20";} case 10 : \{reg_list="ra, s0-s5";  xreg_list="x1, x8-x9, x18-x21";} case 11 : \{reg_list="ra, s0-s6";  xreg_list="x1, x8-x9, x18-x22";} case 12 : \{reg_list="ra, s0-s7";  xreg_list="x1, x8-x9, x18-x23";} case 13 : \{reg_list="ra, s0-s8";  xreg_list="x1, x8-x9, x18-x24";} case 14 : \{reg_list="ra, s0-s9";  xreg_list="x1, x8-x9, x18-x25";}
+```
+
+C2
+
+```
+//note - to include s10, s11 must also be included case 15 : \{reg_list="ra, s0-s11"; xreg_list="x1, x8-x9, x18-x27";} default : reserved(); } stack_adj      = stack_adj_base + spimm * 16 ;
+```
+
+```
+RV32E: stack_adj_base = 16 ; Valid values: stack_adj      = [ 16 | 32 | 48 | 64 ];
+```
+
+```
+RV32I: switch (rlist) { case 4 .. 7 : stack_adj_base = 16 ; case 8 .. 11 : stack_adj_base = 32 ; case 12 .. 14 : stack_adj_base = 48 ; case 15 : stack_adj_base = 64 ; } Valid values: switch (rlist) { case 4 .. 7 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 8 .. 11 : stack_adj = [ 32 | 48 | 64 | 80 ]; case 12 .. 14 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 15 : stack_adj = [ 64 | 80 | 96 | 112 ]; }
+```
+
+```
+RV64: switch (rlist) { case 4 .. 5 : stack_adj_base = 16 ; case 6 .. 7 : stack_adj_base = 32 ; case 8 .. 9 : stack_adj_base = 48 ; case 10 .. 11 : stack_adj_base = 64 ; case 12 .. 13 : stack_adj_base = 80 ; case 14 : stack_adj_base = 96 ; case 15 : stack_adj_base = 112 ; } Valid values: switch (rlist) { case 4 .. 5 : stack_adj = [ 16 | 32 | 48 | 64 ]; case 6 .. 7 : stack_adj = [ 32 | 48 | 64 | 80 ];
+```
+
+```
+case 8 .. 9 : stack_adj = [ 48 | 64 | 80 | 96 ]; case 10 .. 11 : stack_adj = [ 64 | 80 | 96 | 112 ]; case 12 .. 13 : stack_adj = [ 80 | 96 | 112 | 128 ]; case 14 : stack_adj = [ 96 | 112 | 128 | 144 ]; case 15 : stack_adj = [ 112 | 128 | 144 | 160 ]; }
+```
+
+## Description
+
+This instruction pops (loads) the registers in reg\_list from stack memory, adjusts the stack pointer by stack\_adj and then returns to ra .
+
+<image>
+
+All  ABI  register  mappings  are  for  the  UABI.  An  EABI  version  is  planned  once  the  EABI  is frozen.
+
+For further information see PUSH/POP Register Instructions.
+
+Stack Adjustment Calculation:
+
+stack\_adj\_base is the minimum number of bytes, in multiples of 16-byte address increments, required to cover the registers in the list.
+
+spimm is the number of additional 16-byte address increments allocated for the stack frame.
+
+The total stack adjustment represents the total size of the stack frame, which is stack\_adj\_base added to spimm scaled by 16, as defined above.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists
+
+## Operation
+
+The  first  section  of  pseudocode  may  be  executed  multiple  times  before  the  instruction  successfully completes.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (XLEN== 32 ) bytes= 4 ; else bytes= 8 ; addr=sp+stack_adj-bytes; for(i in 27 , 26 , 25 , 24 , 23 , 22 , 21 , 20 , 19 , 18 , 9 , 8 , 1 )  { //if register i is in xreg_list if (xreg_list[i]) { switch(bytes) { 4 :  asm("lw x[i], 0(addr)"); 8 :  asm("ld x[i], 0(addr)"); } addr-=bytes; } }
+```
+
+The  final  section  of  pseudocode  executes  atomically,  and  only  executes  if  the  section  above  completes without any exceptions or interrupts.
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet.
+```
+
+```
+sp+=stack_adj; asm("ret");
+```
+
+## 29.13.11. cm.mvsa01
+
+## Synopsis
+
+Move a0-a1 into two registers of s0-s7
+
+## Mnemonic
+
+cm.mvsa01 r1s' , r2s'
+
+Encoding (RV32, RV64):
+
+<image>
+
+<image>
+
+For the encoding to be legal r1s' != r2s'.
+
+Assembly Syntax:
+
+```
+cm.mvsa01 r1s', r2s'
+```
+
+## Description
+
+This  instruction  moves a0 into r1s' and a1 into r2s' . r1s' and r2s' must  be  different.  The  execution  is atomic, so it is not possible to observe state where only one of r1s' or r2s' has been updated.
+
+The encoding uses sreg number specifiers instead of xreg number specifiers to save encoding space. The mapping between them is specified in the pseudocode below.
+
+<image>
+
+The s register mapping is taken from the UABI, and may not match the currently unratified EABI. cm.mvsa01.e may be included in the future.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists.
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (RV32E && (r1sc> 1 || r2sc> 1 )) { reserved(); } xreg1 = {r1sc[ 2 : 1 ]> 0 ,r1sc[ 2 : 1 ]== 0 ,r1sc[ 2 : 0 ]}; xreg2 = {r2sc[ 2 : 1 ]> 0 ,r2sc[ 2 : 1 ]== 0 ,r2sc[ 2 : 0 ]}; X[xreg1] = X[ 10 ]; X[xreg2] = X[ 11 ];
+```
+
+## 29.13.12. cm.mva01s
+
+## Synopsis
+
+Move two s0-s7 registers into a0-a1
+
+## Mnemonic
+
+cm.mva01s r1s' , r2s'
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+Assembly Syntax:
+
+```
+cm.mva01s r1s', r2s'
+```
+
+## Description
+
+This  instruction  moves r1s' into a0 and r2s' into a1 .  The  execution  is  atomic,  so  it  is  not  possible  to observe state where only one of a0 or a1 have been updated.
+
+The encoding uses sreg number specifiers instead of xreg number specifiers to save encoding space. The mapping between them is specified in the pseudocode below.
+
+<image>
+
+The s register mapping is taken from the UABI, and may not match the currently unratified EABI. cm.mva01s.e may be included in the future.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists.
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. if (RV32E && (r1sc> 1 || r2sc> 1 )) { reserved(); } xreg1 = {r1sc[ 2 : 1 ]> 0 ,r1sc[ 2 : 1 ]== 0 ,r1sc[ 2 : 0 ]}; xreg2 = {r2sc[ 2 : 1 ]> 0 ,r2sc[ 2 : 1 ]== 0 ,r2sc[ 2 : 0 ]}; X[ 10 ] = X[xreg1]; X[ 11 ] = X[xreg2];
+```
+
+C2
+
+## 29.14. Table Jump Overview
+
+cm.jt (Jump via table) and cm.jalt (Jump and link via table) are referred to as table jump.
+
+Table jump uses a 256-entry XLEN wide table in instruction memory to contain function addresses. The table must be a minimum of 64-byte aligned.
+
+Table entries follow the current data endianness. This is different from normal instruction fetch which is always little-endian.
+
+cm.jt and cm.jalt encodings index the table, giving access to functions within the full XLEN wide address space.
+
+This is used as a form of dictionary compression to reduce the code size of jal / auipc+jalr / jr / auipc+jr instructions.
+
+Table jump allows the linker to replace the following instruction sequences with a cm.jt or cm.jalt encoding, and an entry in the table:
+
+- ⚫ 32-bit j calls
+- ⚫ 32-bit jal ra calls
+- ⚫ 64-bit auipc+jr calls to fixed locations
+- ⚫ 64-bit auipc+jalr ra calls to fixed locations
+- ⚫ The auipc+jr/jalr sequence is used because the offset from the PC is out of the ±1 MB range.
+
+If a return address stack is implemented, then as cm.jalt is equivalent to jal ra , it pushes to the stack.
+
+## 29.14.1. jvt
+
+The base of the table is in the jvt CSR (see jvt CSR, table jump base vector and control register), each table entry is XLEN bits.
+
+If the same function is called with and without linking then it must have two entries in the table. This is typically caused by the same function being called with and without tail calling.
+
+## 29.14.2. Table Jump Fault handling
+
+For a table jump instruction, the table entry that the instruction selects is considered an extension of the instruction itself. Hence, the execution of a table jump instruction involves two instruction fetches, the first to  read  the  instruction  ( cm.jt / cm.jalt )  and  the  second  to  read  from  the  jump  vector  table  (JVT).  Both instruction fetches are implicit reads, and both require execute permission; read permission is irrelevant. It is recommended that the second fetch be ignored for hardware triggers and breakpoints.
+
+Memory writes to the jump vector table require an instruction barrier ( fence.i )  to guarantee that they are visible to the instruction fetch.
+
+Multiple contexts may have different jump vector tables. JVT may be switched between them without an instruction barrier if the tables have not been updated in memory since the last fence.i .
+
+If  an  exception  occurs  on  either  instruction  fetch,  xEPC  is  set  to  the  PC  of  the  table  jump  instruction, xCAUSE is set as expected for the type of fault and xTVAL (if not set to zero) contains the fetch address which caused the fault.
+
+## 29.14.3. jvt CSR
+
+## Synopsis
+
+Table jump base vector and control register
+
+Address:
+
+0x017
+
+Permissions:
+
+URW
+
+Format (RV32):
+
+<image>
+
+Format (RV64):
+
+<image>
+
+## Description
+
+The jvt register  is  an  XLEN-bit WARL read/write  register  that  holds  the  jump  table  configuration, consisting of the jump table base address (BASE) and the jump table mode (MODE).
+
+If Section 29.10 is implemented then jvt must also be implemented, but can contain a read-only value. If jvt is writable, the set of values the register may hold can vary by implementation. The value in the BASE field must always be aligned on a 64-byte boundary. Note that the CSR contains only bits XLEN-1 through 6 of the address base .  When computing jump-table accesses, the lower six bits of base are filled with zeroes to obtain an XLEN-bit jump-table base address jvt.base that is always aligned on a 64-byte boundary.
+
+jvt.base is a virtual address, whenever virtual memory is enabled.
+
+The memory pointed to by jvt.base is  treated  as  instruction  memory  for  the  purpose  of  executing  table jump instructions, implying execute access permission.
+
+Table 41. jvt.mode definition
+
+| jvt.mode   | Comment                          |
+|------------|----------------------------------|
+| 000000     | Jump table mode                  |
+| others     | reserved for future standard use |
+
+jvt.mode is  a WARL field,  so  can  only  be  programmed  to  modes  which  are  implemented.  Therefore  the discovery mechanism is to attempt to program different modes and read back the values to see which are available. Jump table mode must be implemented.
+
+<image>
+
+in future the RISC-V Unified Discovery method will report the available modes.
+
+## Architectural State:
+
+jvt CSR adds architectural state to the system software context (such as an OS process), therefore must be
+
+saved/restored on context switches. <<<
+
+## 29.14.4. cm.jt
+
+## Synopsis
+
+jump via table
+
+## Mnemonic
+
+cm.jt index
+
+Encoding (RV32, RV64):
+
+<image>
+
+<image>
+
+For this encoding to decode as cm.jt, index<32, otherwise it decodes as cm.jalt, see Jump and link via table.
+
+<image>
+
+If  jvt.mode  =  0  (Jump  Table  Mode)  then  cm.jt  behaves  as  specified  here.  If  jvt.mode  is  a reserved value, then cm.jt is also reserved. In the future other defined values of jvt.mode may change the behaviour of cm.jt.
+
+Assembly Syntax:
+
+## cm.jt index
+
+## Description
+
+cm.jt reads an entry from the jump vector table in memory and jumps to the address that was read.
+
+For further information see Table Jump Overview.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists.
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. # table_address is temporary internal state, it doesn't represent a real register # InstMemory is byte indexed switch(XLEN) { 32 :  table_address[XLEN1 : 0 ] = jvt.base + (index<< 2 ); 64 :  table_address[XLEN1 : 0 ] = jvt.base + (index<< 3 ); } //fetch from the jump table pc = InstMemory[table_address][XLEN1 : 0 ]&~ 0x1 ;  // Clear bit 0.
+```
+
+## 29.14.5. cm.jalt
+
+## Synopsis
+
+jump via table with optional link
+
+## Mnemonic
+
+cm.jalt index
+
+Encoding (RV32, RV64):
+
+<image>
+
+FUNCT3
+
+<image>
+
+C2
+
+For this encoding to decode as cm.jalt, index>=32, otherwise it decodes as cm.jt, see Jump via table.
+
+<image>
+
+If  jvt.mode  =  0  (Jump  Table  Mode)  then  cm.jalt  behaves  as  specified  here.  If  jvt.mode  is  a reserved value, then cm.jalt is also reserved. In the future other defined values of jvt.mode may change the behaviour of cm.jalt.
+
+## Assembly Syntax:
+
+## cm.jalt index
+
+## Description
+
+cm.jalt reads an entry from the jump vector table in memory and jumps to the address that was read, linking to ra .
+
+For further information see Table Jump Overview.
+
+## Prerequisites
+
+None
+
+32-bit equivalent:
+
+No direct equivalent encoding exists.
+
+## Operation
+
+```
+//This is not SAIL, it's pseudocode. The SAIL hasn't been written yet. # table_address is temporary internal state, it doesn't represent a real register # InstMemory is byte indexed switch(XLEN) { 32 :  table_address[XLEN1 : 0 ] = jvt.base + (index<< 2 ); 64 :  table_address[XLEN1 : 0 ] = jvt.base + (index<< 3 ); } //fetch from the jump table ra = pc+ 2 ; pc = InstMemory[table_address][XLEN1 : 0 ]&~ 0x1 ;  // Clear bit 0.
+```
+
+## Chapter 30. Bit Manipulation Extensions
+
+The bit-manipulation (bitmanip) extension collection is comprised of several component extensions to the base  RISC-V  architecture  that  are  intended  to  provide  some  combination  of  code-size  reduction, performance  improvement,  and  energy  reduction.  While  the  instructions  are  intended  for  general  use, some  instructions  are  more  useful  in  certain  domains  than  in  others.  Hence,  several  smaller  bitmanip extensions are provided. Each of these smaller extensions is grouped by common function and use case, and each has its own Zb*-extension name.
+
+Each bitmanip extension includes a group of several bitmanip instructions that have similar purposes and can  often  share  the  same  logic.  Some  instructions  are  available  in  only  one  extension,  while  others  are available  in  several.  The  instructions  have  mnemonics  and  encodings  that  are  independent  of  the extensions  in  which  they  appear.  Thus,  when  implementing  extensions  with  overlapping  instructions, there is no redundancy in logic or encoding.
+
+The bitmanip extensions are defined for RV32 and RV64.
+
+The bitmanip extension follows the convention in RV64 that w -suffixed instructions (without a dot before the w ) ignore the upper 32 bits of their inputs, operate on the least-significant 32 bits as signed values, and produce a 32-bit signed result that is sign-extended to XLEN.
+
+Bitmanip  instructions  with  the  suffix .uw have  one  operand  that  is  an  unsigned  32-bit  value  that  is extracted from the least-significant 32 bits of the specified register. Other than that, these perform fullXLEN operations.
+
+Bitmanip instructions with the suffixes .b , .h , and .w only look at the least-significant 8 bits, 16 bits, and 32 bits of the input (respectively) and produce an XLEN-wide result that is sign-extended or zero-extended, based on the specific instruction.
+
+The bit-manipulation instructions comprise the following extensions:
+
+- ⚫ Zba: Address generation instructions
+- ⚫ Zbb: Basic bit-manipulation
+- ⚫ Zbs: Single-bit instructions
+- ⚫ Zbc: Carry-less multiplication
+- ⚫ Zbkb: Bit-manipulation for Cryptography
+- ⚫ Zbkc: Carry-less multiplication for Cryptography
+- ⚫ Zbkx: Crossbar permutations
+
+Below  is  a  list  of  all  of  the  instructions  that  are  included  in  these  extensions,  along  with  their  specific mapping:
+
+| RV32   | RV64   | Mnemonic              | Instruction                     | Zbb   | Zbk b   | Zbc   | Zbk c   |
+|--------|--------|-----------------------|---------------------------------|-------|---------|-------|---------|
+| ✓      | ✓      | andn rd , rs1 , rs2   | ANDwith inverted operand        | ✓     | ✓       |       |         |
+| ✓      | ✓      | brev8 rd , rs         | Reverse bits in bytes           |       | ✓       |       |         |
+| ✓      | ✓      | clmul rd , rs1 , rs2  | Carry-less multiply (low-part)  |       |         | ✓     | ✓       |
+| ✓      | ✓      | clmulh rd , rs1 , rs2 | Carry-less multiply (high-part) |       |         | ✓     | ✓       |
+| ✓      | ✓      | clmulr rd , rs1 , rs2 | Carry-less multiply (reversed)  |       |         | ✓     |         |
+| ✓      | ✓      | clz rd , rs           | Count leading zero bits         | ✓     |         |       |         |
+
+| RV32 RV64   | Mnemonic               | Instruction                          | Zbb   | Zbk b   | Zbc   | Zbk c   |
+|-------------|------------------------|--------------------------------------|-------|---------|-------|---------|
+| ✓           | clzw rd , rs           | Count leading zero bits in word      | ✓     |         |       |         |
+| ✓ ✓         | cpop rd , rs           | Count set bits                       | ✓     |         |       |         |
+| ✓           | cpopw rd , rs          | Count set bits in word               | ✓     |         |       |         |
+| ✓ ✓         | ctz rd , rs            | Count trailing zero bits             | ✓     |         |       |         |
+| ✓           | ctzw rd , rs           | Count trailing zero bits in word     | ✓     |         |       |         |
+| ✓ ✓         | max rd , rs1 , rs2     | Maximum                              | ✓     |         |       |         |
+| ✓ ✓         | maxu rd , rs1 , rs2    | Unsigned maximum                     | ✓     |         |       |         |
+| ✓ ✓         | min rd , rs1 , rs2     | Minimum                              | ✓     |         |       |         |
+| ✓ ✓         | minu rd , rs1 , rs2    | Unsigned minimum                     | ✓     |         |       |         |
+| ✓ ✓         | orc.b rd , rs          | Bitwise OR-Combine, byte granule     | ✓     |         |       |         |
+| ✓ ✓         | orn rd , rs1 , rs2     | ORwith inverted operand              | ✓     | ✓       |       |         |
+| ✓ ✓         | pack rd , rs1 , rs2    | Pack low halves of registers         |       | ✓       |       |         |
+| ✓ ✓         | packh rd , rs1 , rs2   | Pack low bytes of registers          |       | ✓       |       |         |
+| ✓           | packw rd , rs1 , rs2   | Pack low 16-bits of registers (RV64) |       | ✓       |       |         |
+| ✓ ✓         | rev8 rd , rs           | Byte-reverse register                | ✓     | ✓       |       |         |
+| ✓ ✓         | rol rd , rs1 , rs2     | Rotate left (Register)               | ✓     | ✓       |       |         |
+| ✓           | rolw rd , rs1 , rs2    | Rotate Left Word (Register)          | ✓     | ✓       |       |         |
+| ✓ ✓         | ror rd , rs1 , rs2     | Rotate right (Register)              | ✓     | ✓       |       |         |
+| ✓ ✓         | rori rd , rs1 , shamt  | Rotate right (Immediate)             | ✓     | ✓       |       |         |
+| ✓           | roriw rd , rs1 , shamt | Rotate right Word (Immediate)        | ✓     | ✓       |       |         |
+| ✓           | rorw rd , rs1 , rs2    | Rotate right Word (Register)         | ✓     | ✓       |       |         |
+| ✓ ✓         | sext.b rd , rs         | Sign-extend byte                     | ✓     |         |       |         |
+| ✓ ✓         | sext.h rd , rs         | Sign-extend halfword                 | ✓     |         |       |         |
+| ✓           | unzip rd , rs          | Bit deinterleave                     |       | ✓       |       |         |
+| ✓ ✓         | xnor rd , rs1 , rs2    | ExclusiveNOR                         | ✓     | ✓       |       |         |
+| ✓ ✓         | zext.h rd , rs         | Zero-extend halfword                 | ✓     |         |       |         |
+| ✓           | zip rd , rs            | Bit interleave                       |       | ✓       |       |         |
+
+| RV32   | RV64   | Mnemonic              | Instruction                    | Zba   | Zbs   |
+|--------|--------|-----------------------|--------------------------------|-------|-------|
+|        | ✓      | add.uw rd , rs1 , rs2 | Add unsigned word              | ✓     |       |
+| ✓      | ✓      | bclr rd , rs1 , rs2   | Single-Bit Clear (Register)    |       | ✓     |
+| ✓      | ✓      | bclri rd , rs1 , imm  | Single-Bit Clear (Immediate)   |       | ✓     |
+| ✓      | ✓      | bext rd , rs1 , rs2   | Single-Bit Extract (Register)  |       | ✓     |
+| ✓      | ✓      | bexti rd , rs1 , imm  | Single-Bit Extract (Immediate) |       | ✓     |
+| ✓      | ✓      | binv rd , rs1 , rs2   | Single-Bit Invert (Register)   |       | ✓     |
+| ✓      | ✓      | binvi rd , rs1 , imm  | Single-Bit Invert (Immediate)  |       | ✓     |
+| ✓      | ✓      | bset rd , rs1 , rs2   | Single-Bit Set (Register)      |       | ✓     |
+| ✓      | ✓      | bseti rd , rs1 , imm  | Single-Bit Set (Immediate)     |       | ✓     |
+| ✓      | ✓      | sh1add rd , rs1 , rs2 | Shift left by 1 and add        | ✓     |       |
+
+| RV32   | RV64   | Mnemonic                 | Instruction                           | Zba   | Zbs   |
+|--------|--------|--------------------------|---------------------------------------|-------|-------|
+|        | ✓      | sh1add.uw rd , rs1 , rs2 | Shift unsigned word left by 1 and add | ✓     |       |
+| ✓      | ✓      | sh2add rd , rs1 , rs2    | Shift left by 2 and add               | ✓     |       |
+|        | ✓      | sh2add.uw rd , rs1 , rs2 | Shift unsigned word left by 2 and add | ✓     |       |
+| ✓      | ✓      | sh3add rd , rs1 , rs2    | Shift left by 3 and add               | ✓     |       |
+|        | ✓      | sh3add.uw rd , rs1 , rs2 | Shift unsigned word left by 3 and add | ✓     |       |
+|        | ✓      | slli.uw rd , rs1 , imm   | Shift-left unsigned word (Immediate)  | ✓     |       |
+
+## 30.1. "B" Extension for Bit Manipulation, Version 1.0.0
+
+The B standard extension comprises instructions provided by the Zba, Zbb, and Zbs extensions.
+
+## 30.2. Zba: Extension for Address generation, Version 1.0.0
+
+The Zba instructions can be used to accelerate the generation of addresses that index into arrays of basic types  (halfword,  word,  doubleword)  using  both  unsigned  word-sized  and  XLEN-sized  indices:  a  shifted index is added to a base address.
+
+The shift and add instructions do a left shift of 1, 2, or 3 because these are commonly found in real-world code and because they can be implemented with a minimal amount of additional hardware beyond that of the simple adder. This avoids lengthening the critical path in implementations.
+
+While the shift and add instructions are limited to a maximum left shift of 3, the slli instruction (from the base  ISA)  can  be  used  to  perform  similar  shifts  for  indexing  into  arrays  of  wider  elements.  The slli.uw -added in this extension -can be used when the index is to be interpreted as an unsigned word.
+
+The following instructions comprise the Zba extension:
+
+| RV32   | RV64   | Mnemonic                 | Instruction                           |
+|--------|--------|--------------------------|---------------------------------------|
+|        | ✓      | add.uw rd , rs1 , rs2    | Add unsigned word                     |
+| ✓      | ✓      | sh1add rd , rs1 , rs2    | Shift left by 1 and add               |
+|        | ✓      | sh1add.uw rd , rs1 , rs2 | Shift unsigned word left by 1 and add |
+| ✓      | ✓      | sh2add rd , rs1 , rs2    | Shift left by 2 and add               |
+|        | ✓      | sh2add.uw rd , rs1 , rs2 | Shift unsigned word left by 2 and add |
+| ✓      | ✓      | sh3add rd , rs1 , rs2    | Shift left by 3 and add               |
+|        | ✓      | sh3add.uw rd , rs1 , rs2 | Shift unsigned word left by 3 and add |
+|        | ✓      | slli.uw rd , rs1 , imm   | Shift-left unsigned word (Immediate)  |
+
+## 30.3. Zbb: Extension for Basic bit-manipulation, Version 1.0.0
+
+## 30.3.1. Logical with negate
+
+| RV32   | RV64   | Mnemonic            | Instruction              |
+|--------|--------|---------------------|--------------------------|
+| ✓      | ✓      | andn rd , rs1 , rs2 | ANDwith inverted operand |
+| ✓      | ✓      | orn rd , rs1 , rs2  | ORwith inverted operand  |
+
+| RV32   | RV64   | Mnemonic            | Instruction   |
+|--------|--------|---------------------|---------------|
+| ✓      | ✓      | xnor rd , rs1 , rs2 | ExclusiveNOR  |
+
+Implementation Hint
+
+The Logical with Negate instructions can be implemented by inverting the rs2 inputs to the base-required AND, OR, and XOR logic instructions. In some implementations, the inverter on rs2 used for subtraction can be reused for this purpose.
+
+<image>
+
+## 30.3.2. Count leading/trailing zero bits
+
+| RV32   | RV64   | Mnemonic     | Instruction                      |
+|--------|--------|--------------|----------------------------------|
+| ✓      | ✓      | clz rd , rs  | Count leading zero bits          |
+|        | ✓      | clzw rd , rs | Count leading zero bits in word  |
+| ✓      | ✓      | ctz rd , rs  | Count trailing zero bits         |
+|        | ✓      | ctzw rd , rs | Count trailing zero bits in word |
+
+## 30.3.3. Count population
+
+These instructions count the number of set bits (1-bits). This is also commonly referred to as population count.
+
+| RV32   | RV64   | Mnemonic      | Instruction            |
+|--------|--------|---------------|------------------------|
+| ✓      | ✓      | cpop rd , rs  | Count set bits         |
+|        | ✓      | cpopw rd , rs | Count set bits in word |
+
+## 30.3.4. Integer minimum/maximum
+
+The  integer minimum/maximum  instructions  are  arithmetic  R-type  instructions  that return the smaller/larger of two operands.
+
+| RV32   | RV64   | Mnemonic            | Instruction      |
+|--------|--------|---------------------|------------------|
+| ✓      | ✓      | max rd , rs1 , rs2  | Maximum          |
+| ✓      | ✓      | maxu rd , rs1 , rs2 | Unsigned maximum |
+| ✓      | ✓      | min rd , rs1 , rs2  | Minimum          |
+| ✓      | ✓      | minu rd , rs1 , rs2 | Unsigned minimum |
+
+## 30.3.5. Sign extension and zero extension
+
+These instructions perform the sign extension or zero extension of the least-significant 8 bits or 16 bits of the source register.
+
+These instructions replace the generalized idioms slli rd,rs,(XLEN-<size>) + srai (for sign extension of 8-bit and 16-bit quantities) and slli + srli (for zero extension of 16-bit quantities).
+
+| RV32   | RV64   | Mnemonic       | Instruction      |
+|--------|--------|----------------|------------------|
+| ✓      | ✓      | sext.b rd , rs | Sign-extend byte |
+
+| RV32   | RV64   | Mnemonic       | Instruction          |
+|--------|--------|----------------|----------------------|
+| ✓      | ✓      | sext.h rd , rs | Sign-extend halfword |
+| ✓      | ✓      | zext.h rd , rs | Zero-extend halfword |
+
+## 30.3.6. Bitwise rotation
+
+Bitwise rotation instructions are similar to the shift-logical operations from the base spec. However, where the shift-logical instructions shift in zeros, the rotate instructions shift in the bits that were shifted out of the other side of the value. Such operations are also referred to as 'circular shifts'.
+
+| RV32   | RV64   | Mnemonic               | Instruction                   |
+|--------|--------|------------------------|-------------------------------|
+| ✓      | ✓      | rol rd , rs1 , rs2     | Rotate left (Register)        |
+|        | ✓      | rolw rd , rs1 , rs2    | Rotate Left Word (Register)   |
+| ✓      | ✓      | ror rd , rs1 , rs2     | Rotate right (Register)       |
+| ✓      | ✓      | rori rd , rs1 , shamt  | Rotate right (Immediate)      |
+|        | ✓      | roriw rd , rs1 , shamt | Rotate right Word (Immediate) |
+|        | ✓      | rorw rd , rs1 , rs2    | Rotate right Word (Register)  |
+
+<image>
+
+Architecture Explanation
+
+The  rotate  instructions  were  included  to  replace  a  common  four-instruction  sequence  to achieve the same effect (neg; sll/srl; srl/sll; or)
+
+## 30.3.7. OR Combine
+
+orc.b sets the bits of each byte in the result rd to all zeros if no bit within the respective byte of rs is set, or to all ones if any bit within the respective byte of rs is set.
+
+One use-case is string-processing functions, such as strlen and strcpy , which can use orc.b to test for the terminating zero byte by counting the set bits in leading non-zero bytes in a word.
+
+| RV32   | RV64   | Mnemonic      | Instruction                      |
+|--------|--------|---------------|----------------------------------|
+| ✓      | ✓      | orc.b rd , rs | Bitwise OR-Combine, byte granule |
+
+## 30.3.8. Byte-reverse
+
+rev8 reverses the byte-ordering of rs .
+
+| RV32   | RV64   | Mnemonic     | Instruction           |
+|--------|--------|--------------|-----------------------|
+| ✓      | ✓      | rev8 rd , rs | Byte-reverse register |
+
+## 30.4. Zbc: Extension for Carry-less multiplication, Version 1.0.0
+
+Carry-less multiplication is the multiplication in the polynomial ring over GF(2).
+
+clmul produces the lower half of the carry-less product and clmulh produces the upper half of the 2 × XLEN carry-less product.
+
+clmulr produces bits 2 × XLEN -2:XLEN-1 of the 2 × XLEN carry-less product.
+
+| RV32   | RV64   | Mnemonic              | Instruction                     |
+|--------|--------|-----------------------|---------------------------------|
+| ✓      | ✓      | clmul rd , rs1 , rs2  | Carry-less multiply (low-part)  |
+| ✓      | ✓      | clmulh rd , rs1 , rs2 | Carry-less multiply (high-part) |
+| ✓      | ✓      | clmulr rd , rs1 , rs2 | Carry-less multiply (reversed)  |
+
+## 30.5. Zbs: Extension for Single-bit instructions, Version 1.0.0
+
+The single-bit instructions provide a mechanism to set, clear, invert, or extract a single bit in a register. The bit is specified by its index.
+
+| RV32   | RV64   | Mnemonic             | Instruction                    |
+|--------|--------|----------------------|--------------------------------|
+| ✓      | ✓      | bclr rd , rs1 , rs2  | Single-Bit Clear (Register)    |
+| ✓      | ✓      | bclri rd , rs1 , imm | Single-Bit Clear (Immediate)   |
+
+
+Final instruction for scounteren: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

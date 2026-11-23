@@ -1,0 +1,53 @@
+You are comparing generated RISC-V architectural rules against a ground truth rule set.
+
+    Target: fcvt.w.d
+
+    Generated rules:
+    RULE 1: When FCVT.W.D executes without a trap and no invalid conversion condition applies, it writes to integer register rd the signed 32-bit integer equal to the double-precision floating-point value in f[rs1] rounded according to the selected rounding mode.
+RULE 2: When FCVT.W.D has rd=x0, the integer result is discarded and x0 remains zero.
+RULE 3: When FCVT.W.D writes a 32-bit signed result on RV64, it sign-extends bit 31 through bits XLEN-1:32 before writing the result to rd.
+RULE 4: When the rm field of FCVT.W.D is not 111, FCVT.W.D uses the static rounding mode encoded in rm.
+RULE 5: When the rm field of FCVT.W.D is 111, FCVT.W.D uses the dynamic rounding mode held in frm.
+RULE 6: When FCVT.W.D uses rounding mode RNE, it rounds to the nearest integer with ties to even.
+RULE 7: When FCVT.W.D uses rounding mode RTZ, it rounds toward zero.
+RULE 8: When FCVT.W.D uses rounding mode RDN, it rounds down toward negative infinity.
+RULE 9: When FCVT.W.D uses rounding mode RUP, it rounds up toward positive infinity.
+RULE 10: When FCVT.W.D uses rounding mode RMM, it rounds to the nearest integer with ties to maximum magnitude.
+RULE 11: When the FCVT.W.D source operand is finite, FCVT.W.D rounds it according to the selected rounding mode before determining whether the result is representable as a signed 32-bit integer.
+RULE 12: When the rounded finite result of FCVT.W.D is in the inclusive range -2^31 through 2^31-1, FCVT.W.D does not set the invalid operation flag due to range.
+RULE 13: When the rounded finite result of FCVT.W.D is less than -2^31, FCVT.W.D writes 0x80000000 to rd and sets the invalid operation flag.
+RULE 14: When the rounded finite result of FCVT.W.D is greater than 2^31-1, FCVT.W.D writes 0x7fffffff to rd and sets the invalid operation flag.
+RULE 15: When the source operand of FCVT.W.D is negative infinity, FCVT.W.D writes 0x80000000 to rd and sets the invalid operation flag.
+RULE 16: When the source operand of FCVT.W.D is positive infinity, FCVT.W.D writes 0x7fffffff to rd and sets the invalid operation flag.
+RULE 17: When the source operand of FCVT.W.D is a NaN, FCVT.W.D writes 0x7fffffff to rd and sets the invalid operation flag.
+RULE 18: When FLEN is greater than 64 and the double-precision value in f[rs1] is not correctly NaN-boxed, FCVT.W.D treats the source operand as a 64-bit canonical NaN.
+RULE 19: When the rounded result of FCVT.W.D differs from the source operand value and the invalid operation flag is not set by that conversion, FCVT.W.D sets the inexact flag.
+RULE 20: When FCVT.W.D sets the invalid operation flag for a conversion, it does not set the inexact flag as a result of that same conversion.
+RULE 21: FCVT.W.D does not set the divide-by-zero flag.
+RULE 22: FCVT.W.D does not set the overflow flag.
+RULE 23: FCVT.W.D does not set the underflow flag.
+RULE 24: FCVT.W.D accumulates any invalid operation and inexact flags it raises in fflags.
+RULE 25: FCVT.W.D does not cause a trap as a result of setting floating-point exception flags.
+RULE 26: When FCVT.W.D executes in the standard floating-point-register form and mstatus.FS is Off, FCVT.W.D raises an illegal-instruction exception.
+RULE 27: When FCVT.W.D executes in the standard floating-point-register form with V=1 and vsstatus.FS is Off, FCVT.W.D raises an illegal-instruction exception.
+RULE 28: When FCVT.W.D executes in the standard floating-point-register form with V=1, neither mstatus.FS nor vsstatus.FS is Off, and FCVT.W.D modifies floating-point state, both mstatus.FS and vsstatus.FS are set to Dirty.
+RULE 29: When FCVT.W.D executes in the standard floating-point-register form with V=0 and mstatus.FS is Initial or Clean, mstatus.FS is set to Dirty.
+RULE 30: When FCVT.W.D causes mstatus.FS to be Dirty, mstatus.SD is set to 1.
+RULE 31: When V=1 and FCVT.W.D causes vsstatus.FS to be Dirty, vsstatus.SD is set to 1.
+RULE 32: When the Zdinx extension is implemented, FCVT.W.D obtains its double-precision source operand from x[rs1] instead of f[rs1], with otherwise identical conversion semantics.
+RULE 33: When the Zdinx extension is implemented on RV32, the double-precision source operand of FCVT.W.D is held in an aligned x-register pair whose lowest-numbered register is even.
+RULE 34: When the Zdinx extension is implemented on RV32, the lower-numbered register of the FCVT.W.D source pair holds the low-order bits and the higher-numbered register holds the high-order bits.
+RULE 35: When the Zdinx extension is implemented and rs1=x0 for FCVT.W.D, the entire double-precision source operand is zero and x1 is not accessed.
+RULE 36: When the Zdinx extension is implemented on RV32 and FCVT.W.D specifies an odd-numbered rs1 for the double-precision source register pair, the encoding is reserved.
+RULE 37: When the Zdinx extension is implemented, mstatus.FS is hardwired to 0 and does not affect the trapping behavior of FCVT.W.D or fcsr accesses.
+
+    Ground truth rules in this batch:
+    RULE 1: FCVT.W.D converts the double-precision floating-point value in floating-point register rs1 to a signed 32-bit integer and writes the result to integer register rd.
+RULE 2: FCVT.W.D rounds the conversion result according to the rounding mode specified in the rm field of the instruction.
+RULE 3: When executed on an RV64 implementation, FCVT.W.D sign-extends the 32-bit integer result to produce a 64-bit value written to integer register rd.
+RULE 4: FCVT.W.D must raise the floating-point exception flags that correspond to converting its double-precision source operand to a signed 32-bit integer, and the set of flags raised is identical to those that would be raised for FCVTMOD.W.D with the same operand.
+
+    Determine all semantically qualifying matches. A generated rule covers a ground truth rule only if it expresses the same architectural behavior or fully includes the ground truth rule's required condition and outcome. Do not count a partial match. Use only the given rule texts. Do not use external knowledge or infer behavior that is not explicitly stated. Return candidate pairs for each qualifying match, including alternative candidates when more than one pair qualifies. A separate deterministic algorithm will select one-to-one matches from these candidates. Omit unmatched rules. Use only IDs present in the inputs.
+
+    Return only JSON:
+    {"mapping": [{"generated_id": <generated rule ID>, "gt_id": <ground truth rule ID>}]}

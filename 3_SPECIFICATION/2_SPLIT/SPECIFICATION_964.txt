@@ -1,0 +1,33 @@
+## 4.5.1. Domain configuration ( domaincfg )
+
+The domaincfg register has this format:
+
+```
+bits 31:24 read-only 0x80 bit 8 IE bit 7 read-only 0 bit 2 DM ( WARL ) bit 0 BE ( WARL )
+```
+
+All other register bits are reserved and read as zeros.
+
+Bit  IE  (Interrupt  Enable) is a global enable for all active interrupt sources at this interrupt domain. Only when IE = 1 are pending-and-enabled interrupts actually signaled or forwarded to harts.
+
+The value of bit IE affects only whether interrupts are delivered to harts. It has no effect on any other APLIC state, including the interrupt-enable and interrupt-pending bits of interrupt sources and IDC registers idelivery , topi , and claimi .
+
+Field DM (Delivery Mode) is WARL and determines how this interrupt domain delivers interrupts to harts. The two possible values for DM are:
+
+0 = direct delivery mode
+
+```
+1 = MSI delivery mode
+```
+
+In direct delivery mode ,  interrupts are prioritized and signaled directly to harts by the APLIC itself. In MSI delivery  mode ,  interrupts  are  forwarded  by  the  APLIC  as  MSIs  to  harts,  presumably  for  further handling by IMSICs at those harts. A given APLIC implementation may support either or both of these delivery modes for each interrupt domain.
+
+If the interrupt domain's harts have IMSICs, then unless the relevant interrupt files of those IMSICs support value 0x40000000 for register eidelivery , setting DM to zero (direct delivery mode) will have the same effect as setting IE to zero. See Section 3.8.1 and Section 4.8.2.
+
+BE (Big-Endian) is a WARL field  that  determines  the  byte  order  for  most  registers  in  the  interrupt domain's memory-mapped control region. If BE = 0, byte order is little-endian, and if BE = 1, it is bigendian. For RISC-V systems that support only little-endian, BE may be read-only zero, and for those that support only big-endian, BE may be read-only one. For bi-endian systems, BE is writable.
+
+Field BE affects the byte order of accesses to the domaincfg register itself, just as for other registers in the interrupt domain's control region. To deal with this fact, the read-only value in domaincfg's mostsignificant byte, bits 31:24, serves two purposes. First, for any read of domaincfg , the register's correct byte  order  is  easily  determined  from  the  four-byte  value  obtained:  When  interpreted  in  the  correct byte order, bit 31 is one, and in the wrong order, bit 31 is zero. Second, if the value of BE is uncertain (prior to software initializing the interrupt domain, presumably), an 8-bit value can be safely written to domaincfg by writing ( <<24)| , where <<24 represents shifting left by 24 bits, and the vertical bar
+
+(|)  represents  bitwise  logical  OR.  After domaincfg is  written  once,  the  value  of  BE  should  then  be known, so subsequent writes should not need to repeat the same trick.
+
+At system reset, all writable bits in domaincfg are initialized to zero, including IE. If  an implementation supports additional  forms  of  reset  for  the  APLIC,  it  is  implementation-defined  (or possibly platform-defined) how these other resets may affect domaincfg .

@@ -1,0 +1,28 @@
+Based on the provided text, here is the summary of the specifications for the `mcycle` and `minstret` registers:
+
+### **1. Basic Functions**
+*   **`mcycle`**: Counts the number of clock cycles executed by the processor core on which the hart is running.
+*   **`minstret`**: Counts the number of instructions the hart has retired.
+*   **Precision**: Both registers have **64-bit precision** on all RV32 and RV64 harts.
+
+### **2. Access and Behavior**
+*   **Reset Value**: The counters have an arbitrary value after the hart is reset and can be written with a given value.
+*   **Write Behavior**: Any CSR write takes effect after the writing instruction has otherwise completed.
+*   **Sharing**: The `mcycle` CSR may be shared between harts on the same core; in this case, writes to `mcycle` are visible to those harts.
+*   **Shadow Registers (XLEN=32)**: When XLEN=32, the registers `mcycleh` and `minstreth` provide access to the upper 32 bits (bits 63:32) of the 64-bit counters.
+
+### **3. Privilege Mode Filtering (Smcntrpmf Extension)**
+The `Smcntrpmf` extension introduces privilege mode filtering to prevent counters from incrementing while executing in inhibited modes and to reduce information leakage:
+*   **Configuration**: Controlled via `mcyclecfg` and `minstretcfg` (64-bit registers).
+*   **Inhibition Bits**:
+    *   **MINH**: Inhibits counting in M-mode.
+    *   **SINH**: Inhibits counting in S/HS-mode.
+    *   **UINH**: Inhibits counting in U-mode.
+    *   **VSINH**: Inhibits counting in VS-mode.
+    *   **VUINH**: Inhibits counting in VU-mode.
+*   **Transition Behavior**:
+    *   **`mcycle`**: Only counts cycles while the CPU is in a non-inhibited privilege mode. Traps and trap returns (mode transitions) may take multiple cycles, and the point of change is implementation-defined.
+    *   **`minstret`**: Instructions that retire in a non-inhibited mode increment the counter.
+        *   **Synchronous exceptions**: These do not retire and do not increment `minstret`.
+        *   **`xRET` instructions**: These do retire and increment `minstret` only if the originating privilege mode was not inhibited.
+        *   **Emulation**: If an instruction is emulated by software in an inhibited mode, the emulation routine must manually emulate the `minstret` increment.

@@ -1,0 +1,86 @@
+## Chapter 30. Bit Manipulation Extensions
+
+The bit-manipulation (bitmanip) extension collection is comprised of several component extensions to the base  RISC-V  architecture  that  are  intended  to  provide  some  combination  of  code-size  reduction, performance  improvement,  and  energy  reduction.  While  the  instructions  are  intended  for  general  use, some  instructions  are  more  useful  in  certain  domains  than  in  others.  Hence,  several  smaller  bitmanip extensions are provided. Each of these smaller extensions is grouped by common function and use case, and each has its own Zb*-extension name.
+
+Each bitmanip extension includes a group of several bitmanip instructions that have similar purposes and can  often  share  the  same  logic.  Some  instructions  are  available  in  only  one  extension,  while  others  are available  in  several.  The  instructions  have  mnemonics  and  encodings  that  are  independent  of  the extensions  in  which  they  appear.  Thus,  when  implementing  extensions  with  overlapping  instructions, there is no redundancy in logic or encoding.
+
+The bitmanip extensions are defined for RV32 and RV64.
+
+The bitmanip extension follows the convention in RV64 that w -suffixed instructions (without a dot before the w ) ignore the upper 32 bits of their inputs, operate on the least-significant 32 bits as signed values, and produce a 32-bit signed result that is sign-extended to XLEN.
+
+Bitmanip  instructions  with  the  suffix .uw have  one  operand  that  is  an  unsigned  32-bit  value  that  is extracted from the least-significant 32 bits of the specified register. Other than that, these perform fullXLEN operations.
+
+Bitmanip instructions with the suffixes .b , .h , and .w only look at the least-significant 8 bits, 16 bits, and 32 bits of the input (respectively) and produce an XLEN-wide result that is sign-extended or zero-extended, based on the specific instruction.
+
+The bit-manipulation instructions comprise the following extensions:
+
+- ⚫ Zba: Address generation instructions
+- ⚫ Zbb: Basic bit-manipulation
+- ⚫ Zbs: Single-bit instructions
+- ⚫ Zbc: Carry-less multiplication
+- ⚫ Zbkb: Bit-manipulation for Cryptography
+- ⚫ Zbkc: Carry-less multiplication for Cryptography
+- ⚫ Zbkx: Crossbar permutations
+
+Below  is  a  list  of  all  of  the  instructions  that  are  included  in  these  extensions,  along  with  their  specific mapping:
+
+| RV32   | RV64   | Mnemonic              | Instruction                     | Zbb   | Zbk b   | Zbc   | Zbk c   |
+|--------|--------|-----------------------|---------------------------------|-------|---------|-------|---------|
+| ✓      | ✓      | andn rd , rs1 , rs2   | AND with inverted operand       | ✓     | ✓       |       |         |
+| ✓      | ✓      | brev8 rd , rs         | Reverse bits in bytes           |       | ✓       |       |         |
+| ✓      | ✓      | clmul rd , rs1 , rs2  | Carry-less multiply (low-part)  |       |         | ✓     | ✓       |
+| ✓      | ✓      | clmulh rd , rs1 , rs2 | Carry-less multiply (high-part) |       |         | ✓     | ✓       |
+| ✓      | ✓      | clmulr rd , rs1 , rs2 | Carry-less multiply (reversed)  |       |         | ✓     |         |
+| ✓      | ✓      | clz rd , rs           | Count leading zero bits         | ✓     |         |       |         |
+
+| RV32   | RV64   | Mnemonic               | Instruction                          | Zbb   | Zbk b   | Zbc   | Zbk c   |
+|--------|--------|------------------------|--------------------------------------|-------|---------|-------|---------|
+|        | ✓      | clzw rd , rs           | Count leading zero bits in word      | ✓     |         |       |         |
+| ✓      | ✓      | cpop rd , rs           | Count set bits                       | ✓     |         |       |         |
+|        | ✓      | cpopw rd , rs          | Count set bits in word               | ✓     |         |       |         |
+| ✓      | ✓      | ctz rd , rs            | Count trailing zero bits             | ✓     |         |       |         |
+|        | ✓      | ctzw rd , rs           | Count trailing zero bits in word     | ✓     |         |       |         |
+| ✓      | ✓      | max rd , rs1 , rs2     | Maximum                              | ✓     |         |       |         |
+| ✓      | ✓      | maxu rd , rs1 , rs2    | Unsigned maximum                     | ✓     |         |       |         |
+| ✓      | ✓      | min rd , rs1 , rs2     | Minimum                              | ✓     |         |       |         |
+| ✓      | ✓      | minu rd , rs1 , rs2    | Unsigned minimum                     | ✓     |         |       |         |
+| ✓      | ✓      | orc.b rd , rs          | Bitwise OR-Combine, byte granule     | ✓     |         |       |         |
+| ✓      | ✓      | orn rd , rs1 , rs2     | OR with inverted operand             | ✓     | ✓       |       |         |
+| ✓      | ✓      | pack rd , rs1 , rs2    | Pack low halves of registers         |       | ✓       |       |         |
+| ✓      | ✓      | packh rd , rs1 , rs2   | Pack low bytes of registers          |       | ✓       |       |         |
+|        | ✓      | packw rd , rs1 , rs2   | Pack low 16-bits of registers (RV64) |       | ✓       |       |         |
+| ✓      | ✓      | rev8 rd , rs           | Byte-reverse register                | ✓     | ✓       |       |         |
+| ✓      | ✓      | rol rd , rs1 , rs2     | Rotate left (Register)               | ✓     | ✓       |       |         |
+|        | ✓      | rolw rd , rs1 , rs2    | Rotate Left Word (Register)          | ✓     | ✓       |       |         |
+| ✓      | ✓      | ror rd , rs1 , rs2     | Rotate right (Register)              | ✓     | ✓       |       |         |
+| ✓      | ✓      | rori rd , rs1 , shamt  | Rotate right (Immediate)             | ✓     | ✓       |       |         |
+|        | ✓      | roriw rd , rs1 , shamt | Rotate right Word (Immediate)        | ✓     | ✓       |       |         |
+|        | ✓      | rorw rd , rs1 , rs2    | Rotate right Word (Register)         | ✓     | ✓       |       |         |
+| ✓      | ✓      | sext.b rd , rs         | Sign-extend byte                     | ✓     |         |       |         |
+| ✓      | ✓      | sext.h rd , rs         | Sign-extend halfword                 | ✓     |         |       |         |
+| ✓      |        | unzip rd , rs          | Bit deinterleave                     |       | ✓       |       |         |
+| ✓      | ✓      | xnor rd , rs1 , rs2    | Exclusive NOR                        | ✓     | ✓       |       |         |
+| ✓      | ✓      | zext.h rd , rs         | Zero-extend halfword                 | ✓     |         |       |         |
+| ✓      |        | zip rd , rs            | Bit interleave                       |       | ✓       |       |         |
+
+| RV32   | RV64   | Mnemonic              | Instruction                    | Zba   | Zbs   |
+|--------|--------|-----------------------|--------------------------------|-------|-------|
+|        | ✓      | add.uw rd , rs1 , rs2 | Add unsigned word              | ✓     |       |
+| ✓      | ✓      | bclr rd , rs1 , rs2   | Single-Bit Clear (Register)    |       | ✓     |
+| ✓      | ✓      | bclri rd , rs1 , imm  | Single-Bit Clear (Immediate)   |       | ✓     |
+| ✓      | ✓      | bext rd , rs1 , rs2   | Single-Bit Extract (Register)  |       | ✓     |
+| ✓      | ✓      | bexti rd , rs1 , imm  | Single-Bit Extract (Immediate) |       | ✓     |
+| ✓      | ✓      | binv rd , rs1 , rs2   | Single-Bit Invert (Register)   |       | ✓     |
+| ✓      | ✓      | binvi rd , rs1 , imm  | Single-Bit Invert (Immediate)  |       | ✓     |
+| ✓      | ✓      | bset rd , rs1 , rs2   | Single-Bit Set (Register)      |       | ✓     |
+| ✓      | ✓      | bseti rd , rs1 , imm  | Single-Bit Set (Immediate)     |       | ✓     |
+| ✓      | ✓      | sh1add rd , rs1 , rs2 | Shift left by 1 and add        | ✓     |       |
+
+| RV32   | RV64   | Mnemonic                 | Instruction                           | Zba   | Zbs   |
+|--------|--------|--------------------------|---------------------------------------|-------|-------|
+|        | ✓      | sh1add.uw rd , rs1 , rs2 | Shift unsigned word left by 1 and add | ✓     |       |
+| ✓      | ✓      | sh2add rd , rs1 , rs2    | Shift left by 2 and add               | ✓     |       |
+|        | ✓      | sh2add.uw rd , rs1 , rs2 | Shift unsigned word left by 2 and add | ✓     |       |
+| ✓      | ✓      | sh3add rd , rs1 , rs2    | Shift left by 3 and add               | ✓     |       |
+|        | ✓      | sh3add.uw rd , rs1 , rs2 | Shift unsigned word left by 3 and add | ✓     |       |
+|        | ✓      | slli.uw rd , rs1 , imm   | Shift-left unsigned word (Immediate)  | ✓     |       |

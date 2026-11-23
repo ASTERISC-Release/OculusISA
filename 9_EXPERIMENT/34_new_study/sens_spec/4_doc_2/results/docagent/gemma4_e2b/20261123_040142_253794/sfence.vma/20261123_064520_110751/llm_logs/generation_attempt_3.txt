@@ -1,0 +1,84 @@
+This document excerpt details significant portions of the RISC-V Privileged Architecture specification, focusing heavily on **Supervisor Mode**, **Two-Stage Address Translation (VT/VS modes)**, and the **Hypervisor Extension (H extension)**.
+
+Here is a structured summary of the key concepts, architectural features, and extensions described:
+
+---
+
+## I. Core Supervisor Mode Features
+
+### 1. Address Translation and Protection (`satp`)
+*   **Register Structure:** The `satp` CSR holds the physical page number (PPN) of the root page table, an Address Space Identifier (ASID), and a `MODE` field that selects the address translation scheme (Bare, Sv32, Sv39, Sv48, Sv57).
+*   **Page Size:** The standard page size is **4 KiB**. Sv32 supports 4 MiB and 1 GiB megapages, while Sv48 supports up to 512 GiB terapages.
+*   **ASID Management:** ASIDs are used to facilitate address-translation fences on a per-address-space basis, with an ASID length (`ASIDLEN`) determined dynamically.
+*   **Mode Selection:** `MODE=Bare` means supervisor virtual addresses equal physical addresses with no memory protection.
+
+### 2. Timer and Interrupts
+*   **`stimecmp` CSR:** A 64-bit register used for supervisor-level timer interrupts. It tracks the time elapsed, and an interrupt is pending when time $\ge$ `stimecmp`.
+*   **Supervisor Instructions:** The `SRET` instruction is used to return from traps taken into S-mode or VS-mode, with its behavior dependent on the current virtualization mode ($\text{V}$).
+
+### 3. Memory-Management Fences
+*   **`SFENCE.VMA`:** Synchronizes updates to in-memory memory-management data structures with current execution.
+*   **HFENCE.VVMA / HFENCE.GVMA (Hypervisor):** Provide fences for VS-level and G-stage translations, respectively, allowing explicit ordering of memory access to translation data structures associated with a specific VMID.
+
+### 4. Page Table Entry (PTE) Details
+*   **Permissions (R/W/X):** Define read, write, and execute permissions.
+*   **Accessed (A) and Dirty (D) Bits:** Track memory access status. The implementation must handle updates to these bits atomically, with specific rules regarding speculation and memory ordering.
+*   **Global Mapping (G bit):** Indicates if a mapping exists in all address spaces.
+*   **Svnapot Extension (Chapter 13):** Introduces **NAPOT PTEs** to represent contiguous virtual-to-physical translation ranges, potentially improving TLB efficiency.
+*   **Svpbmt Extension (Chapter 14):** Adds **Page-Based Memory Types (PMA/NC/IO)** to PTEs, allowing memory accesses to adhere to specific memory ordering rules (e.g., I/O ordering).
+
+---
+
+## II. Two-Stage Address Translation (Virtualization)
+
+When the virtualization mode $\text{V}=1$ (VS-mode or VU-mode), two stages of address translation occur:
+1.  **VS-stage:** Virtual address $\rightarrow$ Guest Physical Address (controlled by `vsatp`).
+2.  **G-stage:** Guest Physical Address $\rightarrow$ Supervisor Physical Address (controlled by `hgatp`).
+
+*   **Guest Physical Address Translation:** The `hgatp` register selects the scheme (Sv32x4, Sv39x4, Sv48x4, or Sv57x4) for G-stage translation. This process widens the address by 2 bits and increases the root page table size (e.g., from 4 KiB to 16 KiB for Sv32x4).
+*   **Guest-Page Faults:** Guest-page faults are raised instead of regular page faults, and the trap value registers (`mtval2`, `htval`) contain guest physical addresses shifted by 2 bits.
+*   **Synchronization:** Hypervisor fences (`HFENCE.VVMA`, `HFENCE.GVMA`) are necessary to ensure memory consistency between the VS-stage and G-stage caches/structures, often depending on the `hgatp.VMID`.
+
+---
+
+## III. Hypervisor Extension (H Extension)
+
+The H extension virtualizes the supervisor environment into **HS-mode** (Hypervisor-extended Supervisor mode) and supports **VS-mode** (Virtual Supervisor mode).
+
+### 1. Privilege Modes
+*   **$\text{V}=0$**: M-mode, HS-mode, or U-mode atop HS-mode.
+*   **$\text{V}=1$**: VU-mode atop VS-mode.
+*   **$\text{HS-mode}$ (V=0):** OS or Hypervisor interacts via standard SBI.
+*   **$\text{VS-mode}$ (V=1):** Guest OS runs in VS-mode, utilizing virtualized address translation.
+
+### 2. Hypervisor CSRs
+*   **`hstatus`:** Analogous to `mstatus`, it tracks exception behavior for the VS-mode guest (e.g., $\text{VTVM}$ controls access to `hgatp`).
+*   **`hgatp`:** Controls G-stage translation and protection for guest physical addresses, featuring a `VMID` field for per-VM address space tracking.
+*   **`hcounteren` / `stimecmp`:** Controls hardware performance monitoring counters and enables `vstimecmp` for VS-mode timer interrupts.
+*   **Trap/Context Registers:** Registers like `htinst`, `mtinst`, `mtval2`, and `vsatp` manage trap information, trap values, and VS-mode state.
+
+### 3. Hypervisor Instructions
+*   **VM Load/Store (`HLV.*`, `HSV.*`):** Explicit memory accesses that operate with an effective privilege mode of VS or VU, applying two-stage address translation.
+*   **Memory Fences:** `HFENCE.VVMA` and `HFENCE.GVMA` coordinate memory ordering across the two stages of translation.
+
+---
+
+## IV. Control-Flow Integrity (CFI) and Pointer Masking
+
+### 1. Control-Flow Integrity (Zicfiss)
+*   **Landing Pad (`LPAD`):** Allows for backward-edge CFI protection.
+*   **Shadow Stack (Zicfiss):** Introduces the **SS page type** (PTE $\text{R}=0, \text{W}=1, \text{X}=0$) to protect shadow stack memory.
+*   **Pointer Masking Extensions (Ssnpm, Smnpm, Smmpm):** Provide hardware support to ignore upper bits of addresses (tags) during memory accesses, primarily for security features like HWASAN. This applies to explicit memory operations and cache management operations.
+
+### 2. Pointer Masking Details
+*   **Transformation:** Virtual addresses are transformed by sign-extending the upper PMLEN bits (for virtual addresses) or zero-extending them (for physical addresses, unless $\text{MODE}=\text{Bare}$).
+*   **Privilege Dependence:** Pointer masking settings are controlled by configuration registers in the next-higher privilege mode, and the active privilege mode dictates which masking rules apply.
+
+---
+
+## Key Takeaways
+
+1.  **Layered Translation:** The architecture supports complex address translation, involving both supervisor-level paging ($\text{satp}$) and guest physical address translation ($\text{hgatp}$) when virtualization ($\text{V}=1$) is active.
+2.  **Security Features:** The specification heavily incorporates security mechanisms like **Shadow Stacks** (Zicfiss) and **Pointer Masking** (Ssnpm/Smnpm) to defend against memory corruption attacks.
+3.  **Hypervisor Control:** The H extension provides fine-grained control over virtualization, managing guest state ($\text{vsstatus}$) and guest memory access through specialized instructions ($\text{HLV*}$) and memory fences ($\text{HFENCE}$).
+4.  **Exception Handling:** The exception system is complex, utilizing cause codes (Table 50) to distinguish between instruction faults, page faults, and environment calls, and employing instruction transformation registers ($\text{mtinst}/\text{htinst}$) to provide detailed fault context to the trap handler.

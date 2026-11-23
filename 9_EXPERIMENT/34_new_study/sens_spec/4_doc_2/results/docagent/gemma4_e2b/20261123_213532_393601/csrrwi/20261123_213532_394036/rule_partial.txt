@@ -1,0 +1,78 @@
+RULE 1: If rd is x0, the CSRRWI instruction does not read the CSR and does not cause any side effects that might occur on a CSR read.
+RULE 2: If rd is not x0, the CSRRWI instruction reads the CSR and writes the CSR.
+RULE 3: If uimm is zero, the CSRRWI instruction does not write to the CSR and does not cause any side effects that might otherwise occur on a CSR write.
+RULE 4: If uimm is non-zero, the CSRRWI instruction reads the CSR and writes the CSR.
+RULE 5: If an instruction is CSRRWI and the destination register is x0, the instruction does not carry a dependency from any source register to the destination register.
+RULE 6: If the instruction CSRRWI executes and the destination register rd is not equal to x0, then rd carries a dependency from csr.
+RULE 7: If the application vector length (AVL) is less than or equal to the maximum vector length (VLMAX), the resulting vector length (vl) is set to AVL.
+RULE 8: If the application vector length (AVL) is less than (2 * VLMAX), the resulting vector length (vl) is set such that ceil(AVL / 2) is less than or equal to vl, and vl is less than or equal to VLMAX.
+RULE 9: If the application vector length (AVL) is greater than or equal to (2 * VLMAX), the resulting vector length (vl) is set to VLMAX.
+RULE 10: The setting of vl is deterministic for a given implementation for the same input AVL and VLMAX values.
+RULE 11: If AVL is 0, the resulting vector length (vl) is 0.
+RULE 12: If AVL is greater than 0, the resulting vector length (vl) is greater than 0.
+RULE 13: The resulting vector length (vl) is less than or equal to VLMAX.
+RULE 14: If the vtype value is not supported by the implementation, the vill bit is set in vtype, the remaining bits in vtype are set to zero, and the vl register is set to zero.
+RULE 15: A vtype value with the vill bit set is treated as an unsupported configuration.
+RULE 16: For the vsetivli instruction, the AVL is encoded as a 5-bit zero-extended immediate (0-31) in the rs1 field.
+RULE 17: A write operation is mandated on the seed CSR upon reading to ensure the side effect of flushing the secret entropy bits occurs.
+RULE 18: Hardware must implement wipe-on-read on the randomness pathway during each successful poll.
+RULE 19: Only complete and fully processed random words shall be made available via entropy status (ES16 of seed).
+RULE 20: When NOISE_TEST is set to 1 in mnoise, the seed CSR must not return anything via ES16.
+RULE 21: When NOISE_TEST is set to 1 in mnoise, the seed CSR must be in the BIST state unless the source is in the DEAD state.
+RULE 22: When NOISE_TEST is disabled, the entropy source shall return from the BIST state via an appropriate zeroization and self-test mechanism.
+RULE 23: When NOISE_TEST is in mode, the WAIT and ES16 states are unreachable, and no entropy is output.
+RULE 24: If the instruction is CSRRWI, the value specified by the immediate field is written to the CSR specified by the opcode, using the value in rs1 as an operand.
+RULE 25: If a hart is running at a privilege level that does not permit access to a specified CSR according to Table 3, the instruction causes an illegal-instruction exception or a virtual-instruction exception.
+RULE 26: If an attempt is made to write to a CSR marked as read-only according to Table 3, the instruction causes an illegal-instruction exception.
+RULE 27: If an attempt is made to access a CSR address that does not exist, the instruction causes an illegal-instruction exception.
+RULE 28: A read operation to a CSR does not cause any architectural state side effects.
+RULE 29: A write operation to a CSR causes an architectural state side effect on that CSR.
+RULE 30: When attempting to access an `mireg*` while `miselect` holds a number in an allocated and implemented range, the resulting behavior is defined by the extension.
+RULE 31: Ordinarily, each `mireg` will access register state, access read-only 0 state, or raise an illegal-instruction exception.
+RULE 32: Values of `miselect` with the most-significant bit set are designated only for custom use.
+RULE 33: Values of `miselect` with the most significant bit clear are designated only for standard use and are reserved until allocated to a standard architecture extension.
+RULE 34: When attempting to access `sireg*` from M-mode or S-mode, if `siselect` holds a value that is not implemented at supervisor level, the behavior is unspecified.
+RULE 35: Ordinarily, each `sireg` will access register state, access read-only 0 state, or, unless executing in a virtual machine, raise an illegal-instruction exception.
+RULE 36: Widths of `siselect` and `sireg*` are the current XLEN rather than SXLEN.
+RULE 37: When attempting to access `vsireg*` from M-mode or HS-mode, or accessing `sireg*` (really `vsireg*`) from VS-mode, if `vsiselect` holds a value that is not implemented at HS level, the behavior is unspecified.
+RULE 38: Ordinarily, each `vsireg` will access register state, access read-only 0 state, or raise an exception (either an illegal-instruction exception or, for select accesses from VS-mode, a virtual-instruction exception).
+RULE 39: Widths of `vsiselect` and `vsireg*` are the current XLEN rather than VSXLEN.
+RULE 40: If Smstateen is implemented together with Smcsrind, when `mstateen0 [60]=0`, an attempt to access `siselect`, `sireg*`, `vsiselect`, or `vsireg*` from a privilege mode less privileged than M-mode results in an illegal-instruction exception.
+RULE 41: If Smstateen is implemented together with Smcsrind, when `mstateen0 [60]=1`, all attempts from VS-mode or VU-mode to directly access `vsiselect` or `vsireg*`, and for all attempts from VU-mode to access `siselect` or `sireg*`, result in a virtual-instruction exception.
+RULE 42: If the hypervisor extension is implemented, the bit `hstateen0 [60]` controls access to only `siselect` and `sireg*` (really `vsiselect` and `vsireg*`), which is the state potentially accessible to a virtual machine executing in VS or VU-mode.
+RULE 43: If `hstateen0 [60]=0` and `mstateen0 [60]=1`, all attempts from VS or VU-mode to access `siselect` or `sireg*` raise a virtual-instruction exception, regardless of the value of `vsiselect` or any other `mstateen` bit.
+RULE 44: When the current privilege mode is enabled for recording and the transfer type is not inhibited and sctrstatus .FROZEN is not set, a control transfer is qualified.
+RULE 45: Qualified control transfers update the Entry Registers at logical entry 0.
+RULE 46: If the CTR buffer is full, the oldest recorded entry is lost.
+RULE 47: Recorded transfers set the ctrsource .V bit to 1 and update all implemented record fields.
+RULE 48: The SCTRCLR instruction zeroes all CTR Entry Registers, the CTR cycle counter, and the Cycle Count Valid (CCV) bit.
+RULE 49: SCTRCLR raises an illegal-instruction exception in U-mode, and a virtual-instruction exception in VUmode, unless CTR state enable access restrictions apply.
+RULE 50: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, attempts to access sctrctl, vsctrctl, sctrdepth, sctrstatus, sireg* when siselect is in 0x200..0x2FF, or vsireg* when vsiselect is in 0x200..0x2FF, or execution of the SCTRCLR instruction raise an illegal-instruction exception.
+RULE 51: When mstateen0 .CTR is 1 and hstateen0 .CTR is 1, VS-mode accesses to supervisor CTR state behave as described in Section 7.2 and Section 11.2.
+RULE 52: When mstateen0 .CTR is 1 and hstateen0 .CTR is 0, VS-mode accesses to supervisor CTR state and VSmode execution of SCTRCLR raise a virtual-instruction exception.
+RULE 53: If the H extension is implemented, when mstateen0 .CTR is 1 and hstateen0 .CTR is 1, hstateen0 .CTR controls access to supervisor CTR state when V=1.
+RULE 54: When sctrstatus .FROZEN is set, transfer recording is inhibited.
+RULE 55: When sctrctl .LCOFIFRZ is 1 and a local-counter-overflow interrupt traps to M-mode or to S-mode, sctrstatus .FROZEN is set by hardware.
+RULE 56: When sctrctl .BPFRZ is 1 and a breakpoint exception traps to M-mode or S-mode, sctrstatus .FROZEN is set by hardware.
+RULE 57: When the H extension is implemented, freeze behavior for LCOFIs and breakpoint exceptions that trap to VSmode is determined by the LCOFIFRZ and BPFRZ values in vsctrctl.
+RULE 58: When an external trap is recorded, the ctrtarget .PC is 0.
+RULE 59: External trap recording depends on the external trap enable bits for the target mode and all intervening modes being enabled for recording.
+RULE 60: When an external trap is recorded, the ctrtarget .PC is 0.
+RULE 61: If an external trap is recorded, the ctrtarget .PC is 0.
+RULE 62: If sctrctl .STE is set, U-mode can opt-in to record traps to S-mode.
+RULE 63: If mctrctl .MTE and sctrctl .STE are implemented, U-mode can opt-in to record external traps to M-mode.
+RULE 64: If mctrctl .MTE, sctrctl .STE, and vsctrctl .STE are implemented, VS-mode can opt-in to record external traps to M-mode.
+RULE 65: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, attempts to access sireg* when siselect is in 0x200..0x2FF raise an illegal-instruction exception.
+RULE 66: When mstateen0 .CTR is 0 and the privilege mode is less privileged than M-mode, attempts to access vsireg* when vsiselect is in 0x200..0x2FF raise an illegal-instruction exception.
+RULE 67: When siselect holds a value in the range 0x40-0x5F and a counter i is delegated (mcounteren [ i ]=1 and menvcfg .CDE=1), the register state associated with counter i can be read or written via sireg*, while siselect holds 0x40+ i.
+RULE 68: If any extension upon which the underlying state for a specific siselect and sireg* combination depends is not implemented, an attempt from M or S mode to access the given state through sireg* raises an illegal-instruction exception.
+RULE 69: If any extension upon which the underlying state for a specific siselect and sireg* combination depends is not implemented, an attempt from M or S mode to access the given state through sireg* raises an illegal-instruction exception.
+RULE 70: If the H extension is implemented, attempts from VS-mode to access any sireg* (really vsireg*) raises an illegal-instruction exception if menvcfg .CDE = 0, or a virtual-instruction exception if menvcfg .CDE = 1.
+RULE 71: If an implementation of any transfer type filter bit results in reduced software performance, it is recommended that this reduced performance applies only when the bit is set.
+RULE 72: When CtrCycleCounter is incremented, the CC field is encoded such that CCE holds 0 if the CtrCycleCounter value is less than 4096.
+RULE 73: The elapsed cycle count can be calculated by software using the formula if (CCE==0): return CCM else: return (2 12 + CCM) << CCE-1 endif.
+RULE 74: The CtrCycleCounter is reset on writes to x ctrctl, and on execution of SCTRCLR.
+RULE 75: Attempts to access sctrdepth from VS-mode or VU-mode raise a virtual-instruction exception, unless CTR state enable access restrictions apply.
+RULE 76: When Virtualization Mode V=1, instructions that normally read or modify scause actually access vscause.
+RULE 77: When Virtualization Mode V=0, the vscause register does not directly affect the behavior of the machine.
+RULE 78: The vscause register must be able to hold the same set of values that scause can hold.

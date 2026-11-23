@@ -1,0 +1,27 @@
+## 1.5. Selection of harts to receive an interrupt
+
+Each  signaled  interrupt  is  delivered  to  only  one  hart  at  one  privilege  level,  usually  determined  by software  in  one  way  or  another.  Unlike  some  other  architectures,  the  RISC-V  Advanced  Interrupt Architecture provides no standard hardware mechanism for the broadcast or multicast of interrupts to multiple harts.
+
+For local interrupts, and for any "virtual" interrupts that software injects into less-privileged levels at a hart, the interrupts are entirely a local affair at the hart and are never visible to other harts. The RISCV  Privileged  Architecture's  timer  interrupts  are  also  uniquely  tied  to  individual  harts.  For  other interrupts, received by a hart from sources outside the hart, each interrupt signal (whether delivered by wire or by an MSI) is configured by software to go to only a single hart.
+
+To send an interprocessor interrupt (IPI) to multiple harts, the originating hart need only execute a loop,  sending  an  individual  IPI  to  each  destination  hart.  For  IPIs  to  a  single  destination  hart,  see Chapter 7.
+
+<image>
+
+The effort that a source hart expends in sending individual IPIs to multiple destinations will  invariably  be  dwarfed  by  the  combined  effort  at  the  receiving  harts  to  handle  those interrupts. Hence, providing an automated mechanism for IPI multicast could be expected to reduce a system's total overall work only modestly at best. With a very large number of harts,  a  hardware  mechanism  for  IPI  multicast  must  contend  with  the  question  of  how exactly software specifies the intended destination set with each use, and furthermore, the actual physical delivery of IPIs may not differ that much from the software version.
+
+We do not exclude the future possibility of an optional hardware mechanism for multicast IPI, but only if a significant advantage can be demonstrated in real use. As of 2020, Linux has been observed not to make use of multicast IPI hardware even on systems that have it.
+
+In the rare event that a single interrupt from an I/O device needs to be communicated to multiple harts, the interrupt must be sent to a single hart which can then signal the other harts by IPIs.
+
+We contend that the need to communicate an I/O interrupt to multiple harts is sufficiently rare that standardizing hardware support for multicast cannot be justified in this case.
+
+Along with multicast delivery, other architectures support an option for "1-of" delivery of interrupts,  whereby  the  hardware  chooses  a  single  destination  hart  from  among  a configured set of harts, with the goal of automatic load balancing of interrupt handling among the harts. Experiments in the 2010s called into question the utility of 1-ofmodes in practice, showing that software could often do a better job of load balancing than the hardware  algorithms  implemented  in  actual  chips.  Linux  was  consequently  modified  to discontinue using 1-ofinterrupt delivery even on systems that have it.
+
+We remain open to the argument that hardware load balancing of interrupt handling may be  beneficial  for  certain  specialized  markets,  such  as  networking.  However,  the  claims made so far in this regard do not justify requiring support for 1-ofdelivery in all RISC-V servers. With more evidence, some mechanism for 1-ofdelivery might become a future option.
+
+The original Platform-Level Interrupt Controller (PLIC) for RISC-V is configurable so each interrupt source signals external interrupts to any subset of the harts, potentially all harts. When multiple harts receive an external interrupt from a single cause at the PLIC, the first hart to claim the interrupt at the PLIC is the one responsible for servicing it. Usually this sets up a race, where the subset of harts configured to receive the multicast interrupt all take  an  external  interrupt  trap  simultaneously  and  compete  to  be  the  first  to  claim  the interrupt  at  the  PLIC.  The  intention  is  to  provide  a  form  of  1-ofinterrupt  delivery. However, for all the harts that fail  to  win  the  claim,  the  interrupt  trap  becomes  wasted effort.
+
+For  the  reasons  already  given,  the  Advanced  PLIC  supports  sending  each  signaled interrupt to only a single hart chosen by software, not to multiple harts.
+
+<image>

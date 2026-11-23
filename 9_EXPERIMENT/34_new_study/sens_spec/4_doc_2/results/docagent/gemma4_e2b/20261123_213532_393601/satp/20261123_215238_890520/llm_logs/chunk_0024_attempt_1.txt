@@ -1,0 +1,14 @@
+RULE 1: When V=1, instructions that normally read or modify satp actually access vsatp instead.
+RULE 2: When V=0, vsatp does not directly affect the behavior of the machine.
+RULE 3: vsatp controls VS-stage address translation.
+RULE 4: vsatp is considered active for the purposes of the address-translation algorithm unless the effective privilege mode is U and hstatus.HU is 0.
+RULE 5: When V=1, VS-stage page-table entries' A bits must not be set as a result of speculative execution, unless the effective privilege mode is VS or VU.
+RULE 6: When V=1, virtual-machine load/store instructions (HLV, HLVX, or HSV) that are mispredicted must not cause VS-stage A bits to be set.
+RULE 7: When V=1, two-stage address translation and protection is in effect.
+RULE 8: When V=1, either VS-stage or G-stage translation can be effectively disabled by zeroing the corresponding vsatp or hgatp register.
+RULE 9: When V=1, memory accesses that would normally bypass address translation are subject to G-stage address translation alone.
+RULE 10: When V=1, guest-page-fault exceptions are raised instead of regular page-fault exceptions during G-stage address translation.
+RULE 11: When V=1, the SFENCE.VMA instruction orders stores only to the VS-level address-translation structures with subsequent VS-stage address translations for the same virtual machine when hgatp.VMID is the same as when the SFENCE.VMA executed.
+RULE 12: When running with virtualization in VS/VU mode with vsatp.MODE = Bare, guest physical address bits may be subject to pointer masking, depending on hgatp.MODE and senvcfg.PMM or henvcfg.PMM.
+RULE 13: When henvcfg.PMM is changed from or to a value where (XLEN-PMLEN) is less than GPA width supported by the hgatp translation mode of that guest, an HFENCE.GVMA instruction with rs1 = x0 must be executed.
+RULE 14: An HFENCE.GVMA instruction with rs1 = x0 must be executed when PMLEN is 7 and hgatp.MODE is sv57x4, or when PMLEN is 16 and hgatp.MODE is sv57x4, or when PMLEN is 16 and hgatp.MODE is sv48x4.

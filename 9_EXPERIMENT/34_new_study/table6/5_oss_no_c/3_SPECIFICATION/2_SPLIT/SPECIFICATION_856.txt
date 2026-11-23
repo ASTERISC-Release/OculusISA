@@ -1,0 +1,44 @@
+## 22.3.2. Hypervisor Memory-Management Fence Instructions
+
+<image>
+
+The hypervisor memory-management fence instructions, HFENCE.VVMA and HFENCE.GVMA, perform a function similar to SFENCE.VMA (Section 12.2.1), except applying to the VS-level memory-management data  structures  controlled  by  CSR vsatp (HFENCE.VVMA)  or  the  guest-physical  memory-management data structures controlled by CSR hgatp (HFENCE.GVMA). Instruction SFENCE.VMA applies only to the memory-management data structures controlled by the current satp (either the HS-level satp when V=0 or vsatp when V=1).
+
+HFENCE.VVMA is valid only in M-mode or HS-mode. Its effect is much the same as temporarily entering VS-mode and executing SFENCE.VMA. Executing an HFENCE.VVMA guarantees that any previous stores already  visible  to  the  current  hart  are  ordered  before  all  implicit  reads  by  that  hart  done  for  VS-stage address translation for instructions that
+
+- ⚫ are subsequent to the HFENCE.VVMA, and
+- ⚫ execute when hgatp .VMID has the same setting as it did when HFENCE.VVMA executed.
+
+Implicit  reads  need  not  be  ordered  when hgatp .VMID  is  different  than  at  the  time  HFENCE.VVMA executed. If operand rs1 ≠ x0 ,  it specifies a single guest virtual address, and if operand rs2 ≠ x0 ,  it specifies a single guest address-space identifier (ASID).
+
+<image>
+
+An  HFENCE.VVMA  instruction  applies  only  to  a  single  virtual  machine,  identified  by  the setting of hgatp .VMID when HFENCE.VVMA executes.
+
+When rs2 ≠ x0 ,  bits  XLEN-1:ASIDMAX of the value held in rs2 are  reserved for future standard use. Until their  use  is  defined  by  a  standard  extension,  they  should  be  zeroed  by  software  and  ignored  by  current implementations. Furthermore, if ASIDLEN < ASIDMAX, the implementation shall ignore bits ASIDMAX1:ASIDLEN of the value held in rs2 .
+
+<image>
+
+Simpler implementations of HFENCE.VVMA can ignore the guest virtual address in rs1 and the guest ASID value in rs2, as well as hgatp .VMID, and always perform a global fence for the VS-level memory management of all virtual machines, or even a global fence for all memorymanagement data structures.
+
+Neither mstatus .TVM nor hstatus .VTVM causes HFENCE.VVMA to trap.
+
+HFENCE.GVMA  is  valid  only  in  HS-mode  when mstatus .TVM=0,  or  in  M-mode  (irrespective  of mstatus .TVM).  Executing  an  HFENCE.GVMA  instruction  guarantees  that  any  previous  stores  already visible  to  the  current  hart  are  ordered  before  all  implicit  reads  by  that  hart  done  for  G-stage  address translation for instructions that follow the HFENCE.GVMA. If operand rs1 ≠ x0 ,  it  specifies  a  single  guest physical  address,  shifted  right  by  2  bits,  and  if  operand rs2 ≠ x0 ,  it  specifies  a  single  virtual  machine identifier (VMID).
+
+Conceptually,  an  implementation  might  contain  two  address-translation  caches:  one  that maps  guest  virtual  addresses  to  guest  physical  addresses,  and  another  that  maps  guest physical  addresses  to  supervisor  physical  addresses.  HFENCE.GVMA  need  not  flush  the former cache, but it must flush entries from the latter cache that match the HFENCE.GVMA's address and VMID arguments.
+
+<image>
+
+More commonly, implementations contain address-translation caches that map guest virtual addresses directly to supervisor physical addresses, removing a level of indirection. For such implementations, any entry whose guest virtual address maps to a guest physical address that matches  the  HFENCE.GVMA's  address  and  VMID  arguments  must  be  flushed.  Selectively flushing entries in this fashion requires tagging them with the guest physical address, which is costly,  and  so  a  common  technique  is  to  flush  all  entries  that  match  the  HFENCE.GVMA's VMID argument, regardless of the address argument.
+
+Like for a guest physical address written to htval on a trap, a guest physical address specified in rs1 is shifted right by 2 bits to accommodate addresses wider than the current XLEN.
+
+When rs2 ≠ x0 ,  bits XLEN-1:VMIDMAX of the value held in rs2 are reserved for future standard use. Until their  use  is  defined  by  a  standard  extension,  they  should  be  zeroed  by  software  and  ignored  by  current implementations. Furthermore, if  VMIDLEN  <  VMIDMAX,  the  implementation  shall  ignore  bits VMIDMAX-1:VMIDLEN of the value held in rs2 .
+
+<image>
+
+Simpler implementations of HFENCE.GVMA can ignore the guest physical address in rs1 and the  VMID  value  in  rs2  and  always  perform  a  global  fence  for  the  guest-physical  memory management of all virtual machines, or even a global fence for all memory-management data structures.
+
+If hgatp .MODE is changed for a given VMID, an HFENCE.GVMA with rs1 = x0 (and rs2 set to either x0 or the VMID) must be executed to order subsequent guest translations with the MODE change-even if the old MODE or new MODE is Bare.
+
+Attempts to execute HFENCE.VVMA or HFENCE.GVMA when V=1 cause a virtual-instruction exception, while  attempts  to  do  the  same  in  U-mode  cause  an  illegal-instruction  exception.  Attempting  to  execute HFENCE.GVMA in HS-mode when mstatus .TVM=1 also causes an illegal-instruction exception.

@@ -1,0 +1,33 @@
+## 5.4. Native Triggers
+
+Triggers can be used for native debugging when action=0. If supported by the hart and desired by the debugger,  triggers  will  often  be  programmed  to  have  m=0  so  that  when  they  fire  they  cause  a breakpoint exception to trap to a more privileged mode. That breakpoint exception can either be taken in M-mode or it can be delegated to a less privileged mode. However, it is possible for triggers to fire in the same mode that the resulting exception will be handled in.
+
+In these cases such a trigger may cause a breakpoint exception while already in a trap handler. This might leave the hart unable to resume normal execution because state such as mcause and mepc would be overwritten.
+
+In particular, when action=0:
+
+1. mcontrol and mcontrol6 triggers with m=1 can cause a breakpoint exception that is taken from M-mode to M-mode (regardless of delegation).
+2. mcontrol  and  mcontrol6  triggers  with  s=1  can  cause  a  breakpoint  exception  that  is taken from S-mode to S-mode if medeleg [3]=1.
+3. mcontrol6 triggers with vs=1 can cause a breakpoint exception that is taken from VSmode to VS-mode if medeleg [3]=1 and hedeleg [3]=1 .
+4. icount triggers with m=1can cause a breakpoint exception that is taken from M-mode to M-mode (regardless of delegation).
+5. icount triggers with s=1 can cause a breakpoint exception that is taken from S-mode to S-mode if medeleg [3]=1 .
+6. icount triggers with vs=1 can cause a breakpoint exception that is taken from VS-mode to VS-mode if medeleg [3]=1 and hedeleg [3]=1.
+7. etrigger and itrigger triggers will always be taken from a trap handler before the first instruction of the handler. If etrigger/itrigger is set to trigger on exception/interrupt X and if X is delegated to mode Y then the trigger will cause a breakpoint exception that is taken from mode Y to mode Y unless breakpoint exceptions are delegated to a more privileged mode than Y.
+8. tmexttrigger triggers are asynchronous and may occur in any mode and at any time.
+
+Harts  that  support  triggers  with  action=0  should  implement  one  of  the  following  two  solutions  to solve the problem of reentrancy:
+
+1. The hardware prevents triggers with action=0 from matching or firing while in M-mode and while MIE in mstatus is  0.  If medeleg [3]=1  then  it  prevents  triggers  with  action=0  from  matching  or firing while in S-mode and while SIE in sstatus is  0. If medeleg [3]=1 and hedeleg [3]=1 then it prevents  triggers  with  action=0  from  matching  or  firing  while  in  VS-mode  and  while SIE in vstatus is 0.
+2. mte and mpte in tcontrol is implemented. medeleg [3] is hard-wired to 0.
+
+The first option has the limitation that interrupts might be disabled at times when a user still might want triggers to fire. It has the benefit that breakpoints are not required to be handled in M-mode.
+
+<image>
+
+The second option has the benefit that it only disables triggers during the trap handler, though  it  requires  specific  software  support  for  this  debug  feature  in  the  M-mode  trap handlers. It can only work if breakpoints are not delegated to less privileged modes and therefore targets primarily implementations without S-mode.
+
+Because tcontrol is not accessible to S-mode, the second option can not be extended to accommodate delegation without adding additional S-mode and VS-mode CSRs.
+
+Both  options  prevent  etrigger  and  itrigger  from  having  any  effect  on  exceptions  and interrupts that are handled in M-mode. They also prevent triggering during some initial portion of each handler. Debuggers should use other mechanisms to debug these cases, such  as  patching  the  handler  or  setting  a  breakpoint  on  the  instruction  after MIE is cleared.
+
+<image>

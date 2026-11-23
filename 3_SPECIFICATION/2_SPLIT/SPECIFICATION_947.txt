@@ -1,0 +1,28 @@
+## 3.5. Memory region for an interrupt file
+
+Each interrupt file in an IMSIC has one or two memory-mapped 32-bit registers for receiving MSI writes. These memory-mapped registers are located within a naturally aligned 4-KiB region (a page) of physical address space that exists for the interrupt file, i.e., one page per interrupt file.
+
+The layout of an interrupt-file's memory region is:
+
+| offset   | size    | register name   |
+|----------|---------|-----------------|
+| 0x000    | 4 bytes | seteipnum_le    |
+| 0x004    | 4 bytes | seteipnum_be    |
+
+All other bytes in an interrupt file's 4-KiB memory region are reserved and must be implemented as read-only zeros.
+
+Only naturally aligned 32-bit simple reads and writes are supported within an interrupt file's memory region.  Writes  to  read-only  bytes  are  ignored.  For  other  forms  of  accesses  (other  sizes,  misaligned accesses, or AMOs), an IMSIC implementation should preferably report an access fault or bus error but must otherwise ignore the access.
+
+If is  an  implemented  interrupt  identity  number,  writing  value    in  little-endian  byte  order  to seteipnum\_le (Set External Interrupt-Pending bit by Number, Little-Endian) causes the pending bit for  interrupt to  be  set  to  one.  A  write  to seteipnum\_le is  ignored  if  the  value  written  is  not  an implemented interrupt identity number in little-endian byte order. 1
+
+For  systems  that  support  big-endian  byte  order,  if is  an  implemented  interrupt  identity  number, writing  value in  big-endian  byte  order  to seteipnum\_be (Set  External  Interrupt-Pending  bit  by Number, Big-Endian) causes the pending bit for interrupt   to be set to one. A write to seteipnum\_be is ignored if the value written is not an implemented interrupt identity number in big-endian byte order. Systems that support only little-endian byte order may choose to ignore all writes to seteipnum\_be .
+
+In most systems, seteipnum\_le is  the  write port for MSIs directed to this interrupt file. For systems built mainly for big-endian byte order, seteipnum\_be may serve as the write port for MSIs directed to this interrupt file from some devices.
+
+A read of seteipnum\_le or seteipnum\_be returns zero in all cases.
+
+When not ignored, writes to an interrupt file's memory region are guaranteed to be reflected in the interrupt  file  eventually,  but  not  necessarily  immediately.  For  a  single  interrupt  file,  the  effects  of multiple  writes  (stores)  to  its  memory  region,  though  arbitrarily  delayed,  always  occur  in  the  same order as the global memory order of the stores as defined by the RISC-V Unprivileged ISA.
+
+<image>
+
+In most circumstances, any delay between the completion of a write to an interrupt file's memory region and the effect of the write on the interrupt file is indistinguishable from other  delays  in  the  memory  system.  However,  if  a  hart  writes  to  a seteipnum\_le or seteipnum\_be register of its own IMSIC, then a delay between the completion of the store instruction and the consequent setting of an interrupt-pending bit in the interrupt file may be visible to the hart.

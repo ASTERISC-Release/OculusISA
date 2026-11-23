@@ -1,0 +1,23 @@
+## Chapter 4. Advanced Platform-Level Interrupt Controller (APLIC)
+
+In a RISC-V system, a Platform-Level Interrupt Controller (PLIC) handles external interrupts that are signaled through wires rather than by MSIs. When the RISC-V harts in a system do not have IMSICs, the harts themselves do not support MSIs, and all external interrupts to such harts must pass through a PLIC. But even in machines where harts have IMSICs and most interrupts are communicated via MSIs, it is not unusual for some device interrupts still to be signaled by dedicated wires. In particular, for devices (or device controllers) that do not otherwise need to initiate bus transactions in the system, the  cost  of  supporting  MSIs  is  especially  high,  so  wired  interrupts  are  a  frugal  alternative.  Wired interrupts also continue to be universally supported by all current computer platforms, unlike MSIs, making another reason for many commodity devices or controllers to choose wired interrupts over MSIs, unless conforming to a standard like PCI Express that dictates MSIs.
+
+This  chapter  specifies  an Advanced  PLIC (APLIC)  that  is  not  backward  compatible  with  the  earlier RISC-V PLIC. Full conformance to the Advanced Interrupt Architecture requires the APLIC. However, a workable system can be built substituting the older PLIC instead, assuming only wired interrupts to harts, not MSIs.
+
+<image>
+
+We  intend  eventually  to  provide  a  free  example  parameterized  implementation  of  an APLIC, written in portable SystemVerilog, that we expect will be suitable for many RISC-V systems without modification.
+
+<image>
+
+A draft specification exists for a Duo-PLIC that is software-configurable to act as either an  original  RISC-V  PLIC  or  an  APLIC.  However,  at  this  time,  it  appears  unlikely  that RISC-V International will ever ratify the Duo-PLIC specification as a standard.
+
+In a machine without IMSICs, every RISC-V hart accepts interrupts from exactly one PLIC or APLIC that is the external interrupt controller for that hart. A hart's external interrupt controller (the PLIC or APLIC) signals interrupts to the hart through a dedicated connection, usually a wire, for each privilege level  that  the  hart  may  receive  interrupts.  (Recall  Figure  1).  A  system  without  IMSICs  will  typically have only one PLIC or APLIC, serving as the external interrupt controller for all RISC-V harts.
+
+<image>
+
+Because  every  RISC-V  hart  without  an  IMSIC  has  exactly  one  PLIC  or  APLIC  as  its external interrupt controller, a system with multiple APLICs must partition the harts into disjoint subsets, making each APLIC the external interrupt controller for a separate subset of  the  harts.  While  not  prohibited,  this  arrangement  is  likely  to  be  less  efficient  than having all harts share a single APLIC.
+
+RISC-V  harts  that  employ  IMSICs  as  their  external  interrupt  controllers  can  receive  external interrupts only in the form of MSIs. In that case, the role of an APLIC is to convert wired interrupts into MSIs for harts. (Recall Figure 2.) The APLIC is said to forward incoming wire-signaled interrupts to harts by sending MSIs to the harts.
+
+When harts have IMSICs to support MSIs, a system may easily contain multiple APLICs for converting wired interrupts into MSIs, with each APLIC forwarding interrupts from a different subset of devices. Multiple APLICs are presumably more likely to arise when groups of devices are physically distant from one another, perhaps even on separate chips (including chiplets in a multi-chip module).

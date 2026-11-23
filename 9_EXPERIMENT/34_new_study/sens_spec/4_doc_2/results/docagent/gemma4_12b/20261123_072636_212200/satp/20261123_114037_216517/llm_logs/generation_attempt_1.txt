@@ -1,0 +1,54 @@
+Based on the provided text, here are the answers to your questions:
+
+### 1. What happens when a trap is taken into S-mode?
+When a trap is taken into S-mode, the following actions occur:
+*   **`scause` register:** Is written with a code indicating the event that caused the trap.
+*   **`sepc` register:** Is written with the virtual address of the instruction that was interrupted or that encountered the exception.
+*   **`stval` register:** Is written with exception-specific information to assist software in handling the trap (e.g., the faulting virtual address for certain exceptions).
+*   **`mstatus` register:** The `SPP` field is written with the active privilege mode at the time of the trap; the `SPIE` field is written with the value of the `SIE` field at the time of the trap; and the `SIE` field is cleared.
+*   **Privilege Mode:** The hart transitions into S-mode.
+
+### 2. What is the difference between "Direct" and "Vectored" modes in the `stvec` register?
+These modes define how the trap vector base address (`BASE`) is used when a trap occurs:
+*   **Direct Mode:** All traps into supervisor mode cause the program counter (`pc`) to be set directly to the address in the `BASE` field.
+*   **Vectored Mode:** All synchronous exceptions into supervisor mode cause the `pc` to be set to the address in the `BASE` field. However, **interrupts** cause the `pc` to be set to the address in the `BASE` field **plus four times the interrupt cause number**.
+
+### 3. What is the purpose of the `mcounteren` register?
+The `mcounteren` register is a 32-bit register that controls the **availability** (accessibility) of the hardware performance-monitoring counters to the next-lower privileged mode. 
+*   If a bit (e.g., `CY`, `TM`, `IR`, or `HPMn`) is clear, attempts to read the corresponding counter while executing in S-mode or U-mode will cause an **illegal-instruction exception**.
+*   Setting the bit permits access to the corresponding register in the next implemented privilege mode (S-mode or U-mode).
+*   It does not affect the counters themselves, which continue to increment regardless of the setting.
+
+### 4. What is the `mnepc` register used for?
+The `mnepc` register is part of the **Smrnmi extension**, which adds support for **resumable non-maskable interrupts (RNMIs)**. 
+*   It holds the program counter (PC) of the instruction that took the RNMI interrupt.
+*   Unlike standard NMIs, which overwrite the `mepc` register and are generally non-resumable, the `mnepc` register allows the hart to save the interrupted state so that it can eventually resume execution from the point of the interrupt.
+
+### 5. What are "Shadow Stack" pages?
+Shadow stack pages are a specific memory protection type introduced by the **Zicfiss extension**. 
+*   They are represented by a specific page table entry (PTE) encoding: **R=0, W=1, and X=0**.
+*   These pages are intended to be used for shadow stacks to prevent ROP/JOP attacks.
+*   The memory is associated with a new page type (**SS**) in the page tables.
+*   Only specific instructions (`SSAMOSWAP.W/D`, `SSPUSH`, `C.SSPUSH`) are allowed to write to these pages; any other store attempts result in a store/AMO access-fault exception.
+
+### 6. Describe the "two-stage address translation" process in the Hypervisor extension.
+When virtualization mode `V=1` is active, address translation occurs in two stages:
+*   **Stage 1 (VS-stage):** The guest virtual address is converted into a **guest physical address** (GPA) using the address translation rules controlled by the `vsatp` register.
+*   **Stage 2 (G-stage):** The resulting GPA is then converted into a **supervisor physical address** (SPA) using the rules controlled by the `hgatp` register.
+*   **Final Access:** The memory access is performed using the SPA resulting from the G-stage translation.
+*   **Implicit Access:** Memory accesses for data structures needed for the VS-stage translation (like page tables) are subject to G-stage translation alone.
+
+### 7. What is the difference between a "page-fault" and an "access-fault" exception?
+The distinction depends on the specific rule being violated during the translation process (as seen in the Sv32 algorithm):
+*   **Page-Fault:** Typically occurs when the translation algorithm fails to find a valid mapping. This includes cases where the `V` (Valid) bit is 0, a page is not readable/writable/executable as required, or an address is invalid. These are usually "recoverable" by the OS (e.g., by loading a page from disk).
+*   **Access-Fault:** Occurs when the translation is successful, but the specific memory access is denied by **Physical Memory Protection (PMP)** rules or other specific permission checks (like the Shadow Stack protection). These are often "fatal" or represent a violation of security policies rather than a missing mapping.
+
+### 8. What is a "virtual-instruction" exception?
+A virtual-instruction exception is a specific type of exception (code 22) used primarily in the Hypervisor extension.
+*   It is raised when a guest OS (in VS-mode) attempts to execute an instruction that is **not allowed** in that mode, such as an instruction from the hypervisor's set or an instruction that is prevented by the `hcounteren` settings.
+*   It is distinct from an "illegal-instruction" exception; it allows the hypervisor to trap the instruction and emulate it if necessary.
+
+### 9. What is the "Request for Comment" (RFC) or "standard" status of the `mconfigptr` register?
+The `mconfigptr` register is an MXLEN-bit read-only CSR that holds the physical address of a **configuration data structure**.
+*   **Status:** The text states that the "format and schema of the configuration data structure have **yet to be standardized**."
+*   **Implementation:** It must be implemented, but it may be set to zero to indicate the structure does not exist. While the pointer itself must be aligned, the content of the structure is left for future standard definition.

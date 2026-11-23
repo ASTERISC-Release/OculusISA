@@ -1,0 +1,83 @@
+RULE 1: If the destination register for c.ldsp is x0, the instruction is reserved.
+RULE 2: If c.sdsp uses x0 as the source register, the entire 64-bit operand is zero, and register x1 is not accessed.
+RULE 3: c.ldsp computes its effective address by adding the zero-extended offset, scaled by 8, to the stack pointer, x2.
+RULE 4: c.ld computes an effective address by adding the zero-extended offset, scaled by 8, to the base address in register rs1'.
+RULE 5: c.sd computes an effective address by adding the zero-extended offset, scaled by 8, to the base address in register rs1'.
+RULE 6: c.sdsp computes an effective address by adding the zero-extended offset, scaled by 8, to the stack pointer, x2.
+RULE 7: An LD or SD instruction whose effective address is a multiple of 4 gives rise to two 4-byte memory operations.
+RULE 8: Decomposed sequences resulting from a 4-byte-aligned LD or SD instruction are interruptible.
+RULE 9: Exceptions may occur on subsequent operations resulting from decomposed LD or SD sequences, making the effects of previous operations within the same instruction visible.
+RULE 10: Execution of `mseccfg` writes the value to Machine security configuration register located at `0x747`.
+RULE 11: mseccfg exists if any extension that adds a field to mseccfg is implemented; otherwise, it is reserved.
+RULE 12: If mseccfg.USEED is 0, access to the seed CSR in U-mode raises an illegal-instruction exception.
+RULE 13: If mseccfg.USEED is 1, read-write access to the seed CSR from U-mode is allowed, and all other types of accesses raise an illegal-instruction exception.
+RULE 14: If Zkr or U-mode is not implemented, mseccfg.USEED is read-only zero.
+RULE 15: If mseccfg.SSEED is 0, access to the seed CSR from S-/HS-mode raises an illegal-instruction exception.
+RULE 16: If mseccfg.SSEED is 1, read-write access to the seed CSR from S-/HS-mode is allowed, and all other types of accesses raise an illegal-instruction exception.
+RULE 17: If Zkr or S-mode is not implemented, mseccfg.SSEED is read-only zero.
+RULE 18: If the H extension is implemented, access to the seed CSR from an HS-qualified instruction leads to a virtual-instruction exception in VS and VU modes; all other types of accesses raise an illegal-instruction exception.
+RULE 19: When mseccfg.RLB is 1, locked PMP rules may be removed or modified and locked PMP rules may be edited.
+RULE 20: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry, mseccfg.RLB remains 0 and any further modifications to mseccfg.RLB are ignored until a PMP reset.
+RULE 21: When mseccfg.MMWP is set, the default PMP policy for M-mode when accessing memory regions that don't have a matching PMP rule changes to denied instead of ignored.
+RULE 22: mseccfg.MMWP is a sticky bit, meaning that once set it cannot be unset until a PMP reset.
+RULE 23: When mseccfg.MML is set, the meaning of pmpcfg.L changes: a rule is marked as M-mode-only when set and S/U-mode-only when unset, or a Shared-Region rule is enforced.
+RULE 24: mseccfg.MML is a sticky bit, meaning that once set it cannot be unset until a PMP reset.
+RULE 25: If Smmpm is not implemented, the PMM field is read-only zero.
+RULE 26: When mseccfg.MLPE is 1, the Zicfilp extension is enabled in M-mode.
+RULE 27: When mseccfg.MLPE is 0, the Zicfilp extension is not enabled in M-mode.
+RULE 28: When XLEN=32, mseccfgh is a 32-bit read/write register that aliases bits 63:32 of mseccfg.
+RULE 29: The register mseccfgh does not exist when XLEN=64.
+RULE 30: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=0, W=0, and X=0, access to the memory region is inaccessible, resulting in an Access Exception for both MMode and S/U Mode.
+RULE 31: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=0, W=0, and X=1, access to the memory region results in an Access Exception for MMode, but grants execute-only access for S/U Mode.
+RULE 32: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=0, W=1, and X=0, access to the memory region allows read/write on MMode and read-only on S/U Mode.
+RULE 33: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=0, W=1, and X=1, access to the memory region allows read/write for both MMode and S/U Mode.
+RULE 34: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=1, W=0, and X=0, access to the memory region is inaccessible, resulting in an Access Exception for both MMode and S/U Mode.
+RULE 35: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=1, W=0, and X=1, access to the memory region results in an Access Exception for MMode, but grants read/execute access for S/U Mode.
+RULE 36: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=1, W=1, and X=0, access to the memory region results in an Access Exception for MMode, but allows read/write on S/U Mode.
+RULE 37: If mseccfg.MML is set to 1 and a PMP rule is configured with L=0, R=1, W=1, and X=1, access to the memory region allows read/write/execute for both MMode and S/U Mode.
+RULE 38: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=0, W=0, and X=0, access to the memory region results in a Locked inaccessible region* exception for both MMode and S/U Mode.
+RULE 39: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=0, W=0, and X=1, access to the memory region results in a Locked Execute-only region* exception for MMode, but results in an Access Exception for S/U Mode.
+RULE 40: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=0, W=1, and X=0, access to the memory region results in a Locked Shared code region: Execute only on both MMode and S/U Mode* exception.
+RULE 41: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=0, W=1, and X=1, access to the memory region results in a Locked Shared code region: Execute only on S/U Mode, read/execute on MMode* exception.
+RULE 42: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=1, W=0, and X=0, access to the memory region results in a Locked Read-only region* exception for both MMode and S/U Mode.
+RULE 43: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=1, W=0, and X=1, access to the memory region results in a Locked Read/Execute region* exception for both MMode and S/U Mode.
+RULE 44: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=1, W=1, and X=0, access to the memory region results in a Locked Read/Write region* exception for both MMode and S/U Mode.
+RULE 45: If mseccfg.MML is set to 1 and a PMP rule is configured with L=1, R=1, W=1, and X=1, access to the memory region results in a Locked Shared data region: Read only on both MMode and S/U Mode* exception.
+RULE 46: When Smcdeleg/Ssccfg extensions are enabled (`menvcfg.CDE=1`) and a counter $i$ is delegated (`mcounteren[i]=1`), the register state associated with counter $i$ can be read or written via sireg* when siselect holds $0x40+i$.
+RULE 47: If the Smcdeleg/Ssccfg extensions are enabled (`menvcfg.CDE=1`) and Sscofpmf is implemented, the event selector bit 62 (MINH) is read-only 0 when accessed through sireg*.
+RULE 48: If the Smcdeleg/Ssccfg extensions are enabled (`menvcfg.CDE=1`) and Smcntrpmf is implemented, the counter configuration register bit 62 (MINH) is read-only 0 when accessed through sireg*.
+RULE 49: If a local-counter-overflow interrupt (LCOFI) traps to M-mode or S-mode, sctrstatus.FROZEN is set by hardware.
+RULE 50: When $menvcfg.CDE=0$, attempts to access scountinhibit raise an illegal-instruction exception.
+RULE 51: When Supervisor Counter Delegation is enabled, attempts to access scountinhibit from VS-mode or VU-mode raise a virtual-instruction exception.
+RULE 52: If implementations support Smcdeleg/Ssccfg, Sscofpmf, and the H extension, attempts to read scountovf from VS-mode or VU-mode raise a virtual-instruction exception when $menvcfg.CDE=1$.
+RULE 53: If implementations support Smcdeleg/Ssccfg, Sscofpmf, Smaia/Ssaia, and the H extension, the LCOFI bit (bit 13) in hvip and hvien is implemented and writable.
+RULE 54: While siselect holds a value in the range 0x40-0x5F, an attempt to access any vsireg* from M or S mode raises an illegal-instruction exception.
+RULE 55: While siselect holds a value in the range 0x40-0x5F, an attempt from VS-mode to access any vsireg* (really vsiselect) raises an illegal-instruction exception if $menvcfg.CDE=0$.
+RULE 56: While siselect holds a value in the range 0x40-0x5F, an attempt from VS-mode to access any vsireg* (really vsiselect) raises a virtual-instruction exception if $menvcfg.CDE=1$.
+RULE 57: When mstateen0.CTR=0 and the privilege mode is less privileged than M-mode, attempts to access sctrctl, vsctrctl, sctrdepth, or sctrstatus raise an illegal-instruction exception.
+RULE 58: When mstateen0.CTR=0 and the privilege mode is less privileged than M-mode, attempts to access sireg* when siselect is in 0x200..0x2FF raise an illegal-instruction exception.
+RULE 59: When mstateen0.CTR=0 and the privilege mode is less privileged than M-mode, attempts to access vsireg* when vsiselect is in 0x200..0x2FF raise an illegal-instruction exception.
+RULE 60: When mstateen0.CTR=0, execution of the SCTRCLR instruction raises an illegal-instruction exception if the privilege mode is less privileged than M-mode.
+RULE 61: When mstateen0.CTR=1 and hstateen0.CTR=1, VS-mode accesses to supervisor CTR state behave as described in Section 7.2 and Section 11.2.
+RULE 62: When mstateen0.CTR=1 and hstateen0.CTR=0, VS-mode accesses to supervisor CTR state and execution of SCTRCLR raise a virtual-instruction exception.
+RULE 63: When hstateen0.CTR=0, qualified control transfers executed while V=1 will continue to implicitly update entry registers and sctrstatus.
+RULE 64: When mstateen0.CTR=1 and hstateen0.CTR=1, VS-mode accesses to supervisor CTR state behave as described in Section 7.2 and Section 11.2.
+RULE 65: When hstateen0.CTR=1, VS-mode accesses to supervisor CTR state behave as described in Section 7.2 and Section 11.2.
+RULE 66: When S-mode is implemented, xLPE is determined by mseccfg.MLPE when in M-mode.
+RULE 67: When S-mode is implemented, xLPE is determined by menvcfg.LPE when in S-mode or HS-mode.
+RULE 68: When S-mode is implemented, xLPE is determined by henvcfg.LPE when in VS-mode.
+RULE 69: When S-mode is implemented, xLPE is determined by senvcfg.LPE when in U-mode or VU-mode.
+RULE 70: When S-mode is not implemented, xLPE is determined by menvcfg.LPE when in M-mode.
+RULE 71: When S-mode is not implemented, xLPE is determined by menvcfg.LPE when in U-mode.
+RULE 72: The Zicfilp must be explicitly enabled for use at each privilege mode.
+RULE 73: Programs compiled with the LPAD instruction continue to function correctly but without forward-edge CFI protection when the Zicfilp extension is not implemented or is not enabled.
+RULE 74: If a shadow stack instruction raises an access-fault, page-fault, or guest-page-fault exception, then the reported exception cause is a store/AMO access fault, a store/AMO page fault, or a store/AMO guestpage fault.
+RULE 75: If a shadow stack instruction is executed, the reported instruction type is always as though it were a store or AMO.
+RULE 76: If a shadow stack instruction accesses a page that is not designated as a shadow stack page and is not marked as read-only, then a store/AMO access-fault exception is invoked.
+RULE 77: If a shadow stack instruction accesses a read-only page, then a store/AMO page-fault exception will be triggered.
+RULE 78: If a shadow stack instruction attempts to access a page marked read-write, read-writeexecute, read-execute, or execute-only, then a store/AMO access-fault exception is invoked.
+RULE 79: If a shadow stack instruction accesses memory that is not idempotent, then a store/AMO access-fault exception is invoked.
+RULE 80: If a shadow stack instruction accesses memory, and the PMP does not provide read-write permissions or the accessed memory is not idempotent, then a store/AMO access-fault exception is raised.
+RULE 81: If an SSPUSH / C.SSPUSH / SSPOPCHK / C.SSPOPCHK instruction is executed and the virtual address in ssp is not XLEN aligned, then a store/AMO access-fault exception is caused.
+RULE 82: If a shadow stack instruction accesses memory and the G-stage page table does not have read-write permission for the accessed memory, then a store/AMO guest-page-fault exception is raised.
+RULE 83: If the SSAMOSWAP.W/D instruction is executed, then the PMA of the accessed memory range must provide AMOSwap level support.

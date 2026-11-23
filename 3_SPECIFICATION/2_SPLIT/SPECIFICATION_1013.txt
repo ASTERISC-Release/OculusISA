@@ -1,0 +1,77 @@
+## 6.3.2. Virtual interrupts for VS level
+
+Assuming a virtual hart does not need configurable priority for major interrupts beyond the subset supported in hardware by hviprio1 and hviprio2 ,  a  hypervisor  can  assert  interrupts  to  the  virtual hart using CSRs hvien (Hypervisor Virtual-Interrupt-Enable) and hvip (Hypervisor Virtual-InterruptPending bits). These CSRs affect interrupts for VS level much the same way that mvien and mvip do for supervisor level, as explained in Section 5.3.
+
+Each bit of registers hvien and hvip corresponds with an interrupt number in the range 0-63. Bits 12:0 of hvien are reserved and must be read-only zeros, while bits 12:0 of hvip are defined by the H extension. Specifically, bits 10, 6, and 2 of hvip are writable bits that correspond to VS-level external interrupts  (VSEIP),  VS-level  timer  interrupts  (VSTIP),  and  VS-level  software  interrupts  (VSSIP), respectively.
+
+The following applies only to the CSR bits for interrupt numbers 13-63: When a bit in hideleg is one, then  the  same  bit  position  in vsip is  an  alias  for  the  corresponding  bit  in sip .  Else,  when  a  bit  in hideleg is zero and the matching bit in hvien is one, the same bit position in vsip is an alias for the corresponding bit in hvip . A bit in vsip is read-only zero when the corresponding bits in hideleg and hvien are both zero. The combined effects of hideleg and hvien on vsip and vsie are summarized in
+
+## Table 13.
+
+Table 13. The effects of hideleg and hvien on vsip and vsie for major interrupts 13-63.
+
+|   hideleg [ ] | hvien [ ]   | vsip [ ]          | vsie [ ]         |
+|---------------|-------------|-------------------|------------------|
+|             0 | 0           | Read-only 0       | Read-only 0      |
+|             0 | 1           | Alias of hvip [ ] | Writable         |
+|             1 | -           | Alias of sip [ ]  | Alias of sie [ ] |
+
+For interrupt numbers 13-63, a bit in vsie is  writable  if  and  only  if  the  corresponding  bit  is  set  in either hideleg or hvien . When an interrupt is delegated by hideleg , the writable bit in vsie is an alias of the corresponding bit in sie ; else it is an independent writable bit. The H extension specifies when bits 12:0 of vsie are aliases of bits in hie . As usual, bits that are not writable in vsie must be read-only zeros.
+
+If  a  bit  of hideleg is  zero and the corresponding bit in hvien is  changed from zero to one, then the value of the matching bit in vsie becomes UNSPECIFIED. Likewise, if a bit of hvien is  one and the corresponding bit in hideleg is changed from one to zero, the value of the matching bit in vsie again becomes UNSPECIFIED.
+
+For interrupt numbers 13-63, implementations may freely choose which bits of hvien are writable and which bits are read-only zero or one. If such a bit in hvien is  read-only zero (preventing the virtual interrupt  from  being  enabled),  the  same  bit  should  be  read-only  zero  in hvip .  All  other  bits  for interrupts 13-63 must be writable in hvip .
+
+CSR hvictl (Hypervisor Virtual Interrupt Control) provides further flexibility for injecting interrupts into VS level in situations not fully supported by the facilities described thus far, but only with more active involvement of the hypervisor. A hypervisor must use hvictl for any of the following:
+
+- asserting for VS level a major interrupt not supported by hvien and hvip ;
+- implementing configurability of priorities at VS level for major interrupts beyond those supported by hviprio1 and hviprio2 ; or
+- emulating an external interrupt controller for a virtual hart without the use of an IMSIC's guest interrupt  file,  while  also  supporting  configurable  priorities  both  for  external  interrupts  and  for major interrupts to the virtual hart.
+
+<image>
+
+Among the possible uses, hvictl is needed for a hypervisor to fully emulate HS-mode in VS-mode, which is a requirement for the hosting of nested hypervisors without paravirtualization.
+
+The format of hvictl is:
+
+bit 30
+
+VTI
+
+bits 27:16 IID ( WARL
+
+)
+
+bit 9
+
+DPR
+
+bit 8
+
+IPRIOM
+
+bits 7:0
+
+IPRIO
+
+All other bits of hvictl are reserved and read as zeros.
+
+When bit VTI (Virtual Trap Interrupt control) = 1, attempts from VS-mode to explicitly access CSRs sip and sie (or, for RV32 only, siph and sieh ) cause a virtual instruction exception. Furthermore, for any given CSR, if there is some circumstance in which a write to the register may cause a bit of vsip to change from one to zero, excluding bit 9 for external interrupts (SEIP), then when VTI = 1, a virtual instruction exception is raised also for any attempt by the guest to write this register. Both the value being written to the CSR and the value of vsip (before or after) are ignored for determining whether to raise the exception. (Hence a write would not actually need to change a bit of vsip from one to zero for the exception to be raised.) In particular, if register vstimecmp is implemented (from extension Sstc), then  attempts  from  VS-mode  to  write  to stimecmp (or,  for  RV32  only, stimecmph )  cause  a  virtual instruction exception when VTI = 1.
+
+<image>
+
+For  the  standard  local  interrupts  (major  identities  13-23  and  32-47),  and  for  software interrupts (SSI), the corresponding interrupt-pending bits in vsip are defined as "sticky," meaning a guest can clear them only by writing directly to sip (really vsip ).  Among the standard-defined interrupts, that leaves only timer interrupts (STI), which can potentially be cleared in vsip by writing a new value to vstimecmp .
+
+All hvictl fields together can affect the value of CSR vstopi (Virtual Supervisor Top Interrupt) and therefore  the  interrupt  identity  reported  in vscause when  an  interrupt  traps  to  VS-mode.  IID  is  a WARL unsigned integer field with at least 6 implemented bits, while IPRIO is always the full 8 bits. If bits are implemented for IID, then all values 0 through are supported, and a write to hvictl sets IID equal to bits ( ):16 of the value written.
+
+For  a  virtual  interrupt  specified  for  VS  level  by hvictl ,  if  VTI  =  1  and ,  field  DPR  (Default Priority  Rank)  determines  the  interrupt's  presumed  default  priority  order  relative  to  a  (virtual) supervisor external interrupt (SEI), major identity 9, as follows:
+
+0 = interrupt has higher default priority than an SEI
+
+1 = interrupt has lower default priority than an SEI
+
+When hvictl .IID = 9, DPR is ignored.
+
+<image>
+
+Register hvictl has no effect on any of mip , sip , hip , or vsip ; it affects only vstopi and the trapping of some instructions.

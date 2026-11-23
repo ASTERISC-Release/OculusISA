@@ -1,0 +1,27 @@
+## 4.5.15. Generate MSI ( genmsi )
+
+When the interrupt domain is configured in MSI delivery mode ( domaincfg .DM = 1), register genmsi can be used to cause an extempore MSI to be sent from the APLIC to a hart. The main purpose for this function is to assist in establishing a temporary known ordering between a hart's writes to the APLIC's registers and the transmission of MSIs from the APLIC to the hart, as explained later in Section 4.9.3.
+
+<image>
+
+For other purposes, sending an MSI to a hart is usually better done by writing directly to the hart's IMSIC, rather than employing an APLIC as an intermediary. Use of the genmsi register should be minimized to avoid it becoming a bottleneck.
+
+Register genmsi has this format:
+
+bits 31:18 Hart Index ( WLRL )
+
+```
+bits 12 Busy (read-only) bits 10:0 EIID ( WARL )
+```
+
+All other register bits are reserved and read as zeros.
+
+The  Busy  bit  is  ordinarily  zero  (false),  but  a  write  to genmsi causes  Busy  to  become  one  (true), indicating an extempore MSI is pending. The Hart Index field specifies the destination hart, and EIID (External Interrupt Identity) specifies the data value for the MSI. Fields Hart Index and EIID have the same formats and behavior as in a target register, documented in the next subsection, Section 4.5.16. For a machine-level interrupt domain, an extempore MSI is sent to the destination hart at machine level, and for a supervisor-level interrupt domain, an extempore MSI is sent to the destination hart at supervisor level.
+
+A pending extempore MSI should be sent by the APLIC with minimal delay. Once it has left the APLIC and the APLIC is able to accept a new write to genmsi for another extempore MSI, Busy reverts to false. All MSIs previously sent from this APLIC to the same hart must be visible at the hart's IMSIC before the extempore MSI becomes visible at the hart's IMSIC.
+
+While Busy is true, writes to genmsi are ignored.
+
+Extempore MSIs are not affected by the IE bit of the domain's domaincfg register. An extempore MSI is sent even if domaincfg .IE = 0.
+
+When the interrupt domain is configured in direct delivery mode ( domaincfg .DM = 0), register genmsi is read-only zero.

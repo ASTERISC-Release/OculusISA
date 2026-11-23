@@ -1,0 +1,129 @@
+Path 1: S extension disabled
+Condition:
+- ext_s = 0
+- Other inputs are irrelevant because the instruction fails before checking MMU, privilege, virtualization, or TVM.
+
+Outcome:
+- Exception: illegal instruction
+- TLB flush: no
+
+Summary:
+SFENCE.VMA raises an illegal instruction exception when the S extension is not available. No TLB flush is performed.
+
+Path 2: MMU unavailable
+Condition:
+- ext_s = 1
+- has_mmu = 0
+- Other inputs are irrelevant because the instruction fails before privilege or virtualization checks.
+
+Outcome:
+- Exception: illegal instruction
+- TLB flush: no
+
+Summary:
+SFENCE.VMA raises an illegal instruction exception when the S extension is available but the processor does not have an MMU. No TLB flush is performed.
+
+Path 3: Non virtual mode, TVM clear, U privilege
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 0
+- mstatus.TVM = 0
+- prv = U
+
+Outcome:
+- Exception: illegal instruction
+- TLB flush: no
+
+Summary:
+In non virtual mode, when mstatus.TVM is clear, SFENCE.VMA requires at least S privilege. If executed in U mode, it raises an illegal instruction exception and does not flush the TLB.
+
+Path 4: Non virtual mode, TVM clear, S or M privilege
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 0
+- mstatus.TVM = 0
+- prv = S or M
+
+Outcome:
+- Exception: none
+- TLB flush: yes
+
+Summary:
+In non virtual mode, when mstatus.TVM is clear, SFENCE.VMA is allowed in S mode or M mode. The instruction completes without exception and flushes the TLB.
+
+Path 5: Non virtual mode, TVM set, privilege below M
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 0
+- mstatus.TVM = 1
+- prv = U or S
+
+Outcome:
+- Exception: illegal instruction
+- TLB flush: no
+
+Summary:
+In non virtual mode, when mstatus.TVM is set, SFENCE.VMA requires M privilege. If executed below M mode, it raises an illegal instruction exception and does not flush the TLB.
+
+Path 6: Non virtual mode, TVM set, M privilege
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 0
+- mstatus.TVM = 1
+- prv = M
+
+Outcome:
+- Exception: none
+- TLB flush: yes
+
+Summary:
+In non virtual mode, when mstatus.TVM is set, SFENCE.VMA is allowed only in M mode. The instruction completes without exception and flushes the TLB.
+
+Path 7: Virtual mode, U privilege
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 1
+- prv = U
+- hstatus.VTVM is irrelevant because U privilege already triggers the virtual instruction exception.
+
+Outcome:
+- Exception: virtual instruction
+- TLB flush: no
+
+Summary:
+In virtual mode, SFENCE.VMA raises a virtual instruction exception when executed in U mode. No TLB flush is performed.
+
+Path 8: Virtual mode allowed
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 1
+- prv = S or M
+- hstatus.VTVM = 0
+
+Outcome:
+- Exception: none
+- TLB flush: yes
+
+Summary:
+In virtual mode, SFENCE.VMA is allowed when the current privilege is not U mode and hstatus.VTVM is clear. The instruction completes without exception and flushes the TLB.
+
+Path 9: Virtual mode, hstatus.VTVM set
+Condition:
+- ext_s = 1
+- has_mmu = 1
+- v = 1
+- prv = S or M
+- hstatus.VTVM = 1
+
+Outcome:
+- Exception: virtual instruction
+- TLB flush: no
+
+Summary:
+In virtual mode, SFENCE.VMA raises a virtual instruction exception when hstatus.VTVM is set. No TLB flush is performed.

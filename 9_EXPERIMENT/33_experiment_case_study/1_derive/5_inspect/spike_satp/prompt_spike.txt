@@ -1,0 +1,362 @@
+You are an expert RISC-V ISA conformance analyst and source-code path extractor.
+
+Task:
+Given Spike RISC-V source code, extract the architecturally relevant execution paths for the target.
+
+Target: satp
+
+Source restriction:
+Use only the provided Spike source code and your pretrained knowledge of C/C++, RISC-V terminology, and source-code reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided source code.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Spike source code is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Spike source code, follow the provided Spike source code.
+
+Input:
+The input is the provided Spike source code below.
+
+BEGIN SPIKE SOURCE CODE
+
+// File: riscv/encoding.h
+
+#define CSR_SATP  0x180
+#define CSR_VSATP 0x280
+
+#define SATP32_MODE ...
+#define SATP32_ASID ...
+#define SATP32_PPN  ...
+
+#define SATP64_MODE ...
+#define SATP64_ASID ...
+#define SATP64_PPN  ...
+
+#define SATP_MODE_OFF  ...
+#define SATP_MODE_SV32 ...
+#define SATP_MODE_SV39 ...
+#define SATP_MODE_SV48 ...
+#define SATP_MODE_SV57 ...
+#define SATP_MODE_SV64 ...
+
+DECLARE_CSR(satp, CSR_SATP)
+DECLARE_CSR(vsatp, CSR_VSATP)
+
+// File: riscv/processor.h
+
+virtualized_csr_t_p satp;
+csr_t_p vsatp;
+
+// File: riscv/csrs.h
+
+// For satp and vsatp.
+// These classes handle the TVM/VTVM permission checks.
+
+class base_atp_csr_t : public basic_csr_t {
+public:
+base_atp_csr_t(processor_t* const proc, const reg_t addr);
+
+bool unlogged_write(const reg_t val) noexcept override;
+
+protected:
+bool satp_valid(reg_t val) const noexcept;
+reg_t compute_new_satp(reg_t val) const noexcept;
+};
+
+class satp_csr_t : public base_atp_csr_t {
+public:
+satp_csr_t(processor_t* const proc, const reg_t addr);
+
+protected:
+void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class virtualized_satp_csr_t : public virtualized_csr_t {
+public:
+virtualized_satp_csr_t(
+processor_t* const proc,
+csr_t_p original,
+csr_t_p virt);
+
+protected:
+void verify_permissions(insn_t insn, bool write) const override;
+bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class virtualized_csr_t : public csr_t {
+public:
+reg_t read() const noexcept override;
+reg_t readvirt(bool virt) const noexcept;
+bool unlogged_write(const reg_t val) noexcept override;
+};
+
+// File: riscv/csrs.cc
+
+bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept
+{
+const reg_t newval = proc->has_mmu() ? compute_new_satp(val) : 0;
+
+if (newval != read())
+proc->get_mmu()->flush_tlb();
+
+return basic_csr_t::unlogged_write(newval);
+}
+
+bool base_atp_csr_t::satp_valid(reg_t val) const noexcept
+{
+if (proc->get_xlen() == 32) {
+switch (get_field(val, SATP32_MODE)) {
+case SATP_MODE_OFF:
+return true;
+case SATP_MODE_SV32:
+return proc->get_max_vaddr_bits() >= 32;
+default:
+return false;
+}
+}
+
+if (proc->get_xlen() == 64) {
+switch (get_field(val, SATP64_MODE)) {
+case SATP_MODE_OFF:
+return true;
+case SATP_MODE_SV39:
+return proc->get_max_vaddr_bits() >= 39;
+case SATP_MODE_SV48:
+return proc->get_max_vaddr_bits() >= 48;
+case SATP_MODE_SV57:
+return proc->get_max_vaddr_bits() >= 57;
+default:
+return false;
+}
+}
+
+return false;
+}
+
+reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept
+{
+const reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
+const reg_t asid_mask = proc->extension_enabled_const(EXT_ZICBOM)
+? 0
+: ...;
+const reg_t ppn_mask = ...;
+
+reg_t new_satp = val & (mode_mask | asid_mask | ppn_mask);
+
+if (!satp_valid(new_satp)) {
+new_satp = read();
+}
+
+return new_satp;
+}
+
+void satp_csr_t::verify_permissions(insn_t insn, bool write) const
+{
+require_privilege(get_field(proc->get_state()->mstatus->read(), MSTATUS_TVM)
+? PRV_M
+: PRV_S);
+}
+
+void virtualized_satp_csr_t::verify_permissions(insn_t insn, bool write) const
+{
+if (proc->get_state()->v) {
+if (get_field(proc->get_state()->hstatus->read(), HSTATUS_VTVM))
+throw trap_virtual_instruction(insn.bits());
+} else {
+original->verify_permissions(insn, write);
+}
+}
+
+bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept
+{
+if (proc->get_state()->v) {
+return virt->unlogged_write(val);
+} else {
+return original->unlogged_write(val);
+}
+}
+
+reg_t virtualized_csr_t::read() const noexcept
+{
+return readvirt(proc->get_state()->v);
+}
+
+reg_t virtualized_csr_t::readvirt(bool virt) const noexcept
+{
+return virt ? virtual_csr->read() : original_csr->read();
+}
+
+bool virtualized_csr_t::unlogged_write(const reg_t val) noexcept
+{
+return proc->get_state()->v
+? virtual_csr->unlogged_write(val)
+: original_csr->unlogged_write(val);
+}
+
+// File: riscv/csr_init.cc
+
+auto nonvirtual_satp =
+std::make_shared<satp_csr_t>(proc, CSR_SATP);
+
+add_hypervisor_csr(
+CSR_VSATP,
+vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP));
+
+add_supervisor_csr(
+CSR_SATP,
+satp = std::make_shared<virtualized_satp_csr_t>(
+proc,
+nonvirtual_satp,
+vsatp));
+
+// File: riscv/mmu.h
+
+vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp);
+
+// File: riscv/mmu.h or riscv/mmu.cc
+
+vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp)
+{
+if (!stage2) {
+if (xlen == 32) {
+switch (get_field(satp, SATP32_MODE)) {
+case SATP_MODE_OFF:
+return vm_info{ /* translation disabled */ };
+case SATP_MODE_SV32:
+return vm_info{ /* 2 page-table levels, 4-byte PTEs, base from SATP32_PPN */ };
+}
+}
+
+```
+if (xlen == 64) {
+  switch (get_field(satp, SATP64_MODE)) {
+    case SATP_MODE_OFF:
+      return vm_info{ /* translation disabled */ };
+    case SATP_MODE_SV39:
+      return vm_info{ /* 3 page-table levels, 8-byte PTEs, base from SATP64_PPN */ };
+    case SATP_MODE_SV48:
+      return vm_info{ /* 4 page-table levels, 8-byte PTEs, base from SATP64_PPN */ };
+    case SATP_MODE_SV57:
+      return vm_info{ /* 5 page-table levels, 8-byte PTEs, base from SATP64_PPN */ };
+  }
+}
+```
+
+}
+
+return vm_info{ /* invalid or unsupported translation mode */ };
+}
+
+// File: riscv/mmu.cc
+
+reg_t satp = proc->get_state()->satp->readvirt(virt);
+vm_info vm = decode_vm_info(proc->get_xlen(), false, prv, satp);
+
+// File: riscv/mmu.cc
+
+bool mmu_t::svukte_qualified(...)
+{
+reg_t satp = proc->get_state()->satp->readvirt(access_info.effective_virt);
+vm_info vm = decode_vm_info(proc->get_xlen(), false, prv, satp);
+
+if (vm.mode == SATP_MODE_OFF) {
+return false;
+}
+
+return true;
+}
+
+// File: riscv/mmu.cc
+
+reg_t mmu_t::transform_address(...)
+{
+reg_t satp = proc->get_state()->satp->readvirt(virt);
+vm_info vm = decode_vm_info(proc->get_xlen(), false, prv, satp);
+
+if (vm.mode == SATP_MODE_OFF) {
+return physical_address_behavior(...);
+} else {
+return virtual_address_behavior(...);
+}
+}
+
+// File: riscv/mmu.cc
+
+void mmu_t::walk(...)
+{
+reg_t satp = proc->get_state()->satp->readvirt(virt);
+vm_info vm = decode_vm_info(proc->get_xlen(), false, prv, satp);
+
+if (vm.mode == SATP_MODE_OFF) {
+return no_page_table_translation(...);
+}
+
+return page_table_walk_using_satp_ppn_asid_and_mode(...);
+}
+
+// File: riscv/triggers.cc
+
+#define SATP_ASID(SXLEN) (SXLEN == 32 ? SATP32_ASID : SATP64_ASID)
+
+if (sselect == SSELECT_ASID) {
+reg_t satp = state->satp->read();
+reg_t asid = get_field(satp, SATP_ASID(SXLEN));
+
+if (asid == trigger_value) {
+return trigger_match(...);
+}
+}
+
+END SPIKE SOURCE CODE
+
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the function, method, macro, or code region that implements the target.
+2. Identify the entry point and all relevant inputs, including instruction operands, privilege state, CSR state, extension state, memory state, and architectural mode state.
+3. Follow the control flow of the provided source code.
+4. Identify each architecturally distinct path through the source code.
+5. For each path, identify the path conditions.
+6. For each path, identify the source-code actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by implementation detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided source code.
+10. If the provided source code is incomplete for the target, extract only the paths supported by the provided source code.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct source-code behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on source-code behavior, not on the RISC-V specification unless the source code explicitly implements that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, logging-only, helper-only, debug-only, or performance-only paths.
+Do not include implementation details unless they affect an architecturally visible outcome.
+If multiple source-code branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one source-code branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct paths for the target that can be inferred from the provided Spike source code.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Source entry: <function, method, macro, or code region>
+Path condition: <explicit condition under which this path is taken>
+Source behavior: <concise source-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

@@ -1,0 +1,21 @@
+H-extension is unsupported.
+
+ASID field in satp is not implemented.
+
+V-extension is unsupported.
+
+fmv.h.x / fcvt.d.h are not yet supported in RVVM.
+
+In the current RVVM, `mhpmcounter3` (and many other `mhpmcounter*`) is mapped to a handler that directly calls `riscv_csr_zero(dest)`, so it effectively has hardwired-zero behavior. Also, `mhpmevent*` and `mip` are not fully implemented in the current RVVM. This is the same for hpmcounter*.
+
+`pmpcfg0` / `pmpaddr*` in the current RVVM are stubbed to zero. In the CSR switch, `pmpcfg0..3` and `pmpaddr0..15` are routed to `riscv_csr_zero(dest)`, so reading `pmpcfg0` will always return 0.
+`mseccfg` in RVVM only masks certain bits (USEED/SSEED). `CSR_MSECCFG_MASK` = `0x300`, so the `RLB` bit (`1<<2`) written to `mseccfg` is not stored/active in this model.
+Conclusion: PMP lock/RLB semantics are not yet fully supported in this RVVM.
+
+hcounteren is not supported.
+
+hedeleg is unsupported.
+
+Debug/trace/state-enable/event groups (t*, *stateen*, mhpmevent*, and related misc CSR groups) are unsupported.
+
+mcycle, minstret, mcountinhibit, etc. are not supported (riscv_csr_zero(dest)).

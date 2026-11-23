@@ -1,0 +1,141 @@
+# Test Case Rule: RULE 21: When the hypervisor extension is implemented and V=1, if either the vsstatus.FS field or the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x6600
+csrs mstatus, t0
+csrs vsstatus, t0
+li t0, 0x6000
+csrc mstatus, t0
+call machine_to_virtual
+vsetivli zero, 1, e32, m1, ta, ma
+vfadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 22: When the hypervisor extension is implemented and V=1, any vector floating-point instruction that modifies any floating-point extension state must set both mstatus.FS and vsstatus.FS to Dirty.
+##### ASSEMBLY #####
+nop # Skipped because both FS fields cannot be jointly observed from V=1 without a return trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 23: The mstatus CSR is defined to be accessed at Machine privilege level.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, mstatus
+# Result: mcause = 2
+
+# Test Case Rule: RULE 24: The mstatus CSR has machine-read/write (MRW) access permissions.
+##### ASSEMBLY #####
+csrw mstatus, x0
+csrr t0, mstatus
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 25: The mstatush CSR is defined to be accessed at Machine privilege level.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 26: The mstatush CSR has machine-read/write (MRW) access permissions.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 27: The mstatus register is an MXLEN-bit read/write register that keeps track of and controls the hart's current operating state.
+##### ASSEMBLY #####
+csrrw t0, mstatus, x0
+csrw mstatus, t0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 28: In the mstatush register, bits 30:4 generally contain the same fields that are found in bits 62:36 of the RV64 mstatus register.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 29: The fields SD, SXL, and UXL are not present in the mstatush register.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 30: The global interrupt-enable bits MIE and SIE reside in the low-order bits of mstatus, permitting atomic set or clear with a single CSR instruction.
+##### ASSEMBLY #####
+li t0, 0xa
+csrs mstatus, t0
+li t1, 0x2
+csrc mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+# Result: a0 = 0x8
+
+# Test Case Rule: RULE 31: In mstatus, interrupt enable for any lower-privilege mode w (w < x) is always globally disabled irrespective of the value of the wIE bit.
+##### ASSEMBLY #####
+nop # Skipped because deterministic interrupt delivery is not available
+# Result: x0 = 0
+
+# Test Case Rule: RULE 32: In mstatus, interrupt enable for any higher-privilege mode y (y > x) is always globally enabled irrespective of the value of the yIE bit.
+##### ASSEMBLY #####
+nop # Skipped because deterministic interrupt delivery is not available
+# Result: x0 = 0
+
+# Test Case Rule: RULE 33: If supervisor mode is not implemented, the SIE and SPIE fields of mstatus are read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because supervisor mode is implemented under the execution assumptions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 34: The xPP fields in mstatus can hold only privilege modes up to x, resulting in MPP being two bits wide and SPP being one bit wide.
+##### ASSEMBLY #####
+li t0, 0x1900
+csrs mstatus, t0
+csrr t1, mstatus
+and a0, t1, t0
+# Result: a0 = 0x1900
+
+# Test Case Rule: RULE 35: When a trap is taken from privilege mode y into privilege mode x, the mstatus field xPIE is set to the current value of xIE, the mstatus field xIE is cleared to 0, and the mstatus field xPP is written with y.
+##### ASSEMBLY #####
+nop # Skipped because trap-state fields cannot be observed after the stopping trap
+# Result: x0 = 0
+
+# Test Case Rule: RULE 36: Executing an xRET instruction (MRET or SRET) sets the mstatus field xIE to the value of xPIE, changes the current privilege mode to the value stored in xPP, sets xPIE in mstatus to 1, writes xPP in mstatus with the least-privileged supported mode (U if U-mode is implemented, otherwise M), and, if the saved privilege mode y is not M, also clears the MPRV bit in mstatus.
+##### ASSEMBLY #####
+li t0, 0x1888
+csrc mstatus, t0
+li t0, 0x1880
+csrs mstatus, t0
+la t0, after_mret
+csrw mepc, t0
+mret
+after_mret:
+csrr t1, mstatus
+li t0, 0x1888
+and a0, t1, t0
+# Result: a0 = 0x88
+
+# Test Case Rule: RULE 37: The xPP fields in mstatus are WARL fields that may contain only privilege mode x or any implemented privilege mode lower than x, and if privilege mode x is not implemented, the xPP field must be read-only 0.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrc mstatus, t0
+li t1, 0x1000
+csrs mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+srli a0, a0, 11
+# Result: a0 != 2
+
+# Test Case Rule: RULE 38: M-mode software can determine whether a privilege mode is implemented by writing that mode to the MPP field of mstatus and then reading it back.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrc mstatus, t0
+li t1, 0x800
+csrs mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+srli a0, a0, 11
+# Result: a0 = 1
+
+# Test Case Rule: RULE 39: When a machine implements only U and M privilege modes, a single hardware storage bit in the mstatus MPP field suffices to represent either the binary pattern 00 or 11.
+##### ASSEMBLY #####
+nop # Skipped because the implementation includes supervisor mode and storage size is not architecturally observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 40: Upon reset, the MDT field in mstatus is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because execution does not guarantee an unmodified reset state
+# Result: x0 = 0

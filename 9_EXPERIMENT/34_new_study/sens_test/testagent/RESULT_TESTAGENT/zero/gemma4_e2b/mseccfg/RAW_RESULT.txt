@@ -1,0 +1,4972 @@
+# Test Case Rule: RULE 1: Implementations may implement mseccfg such that the [s,u]seed fields are a read-only constant value 0.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+# Result: mseccfg[s] = 0
+
+# Test Case Rule: RULE 2: When mseccfg is implemented with the [s,u]seed fields as a read-only constant value 0, those fields read as 0 and are read-only.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+csrr x2, 0x1000, 0
+# Result: mseccfg[s] = 0
+
+# Test Case Rule: RULE 3: If software writes a 1 to the [s,u]seed fields in mseccfg and subsequently reads them back, the read-back value indicates whether access to the seed CSR is enabled in U and S mode.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+csrr x2, 0x1000, 0
+# Result: mseccfg[s] = 1
+
+# Test Case Rule: RULE 4: The mseccfg CSR is readable and writable in Machine mode (MRW privilege).
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+csrr x2, 0x1000, 0
+# Result: mseccfg[s] = 1
+
+# Test Case Rule: RULE 5: mseccfg is a 64-bit read/write register that controls security features and exists only if any extension that adds a field to mseccfg is implemented; otherwise it is reserved.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+csrr x2, 0x1000, 0
+# Result: mseccfg[s] = 1
+
+# Test Case Rule: RULE 6: When mseccfg.USED = 0, any access to the seed CSR in U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+call machine_to_user
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 7: When mseccfg.USED = 1, read-write access to the seed CSR from U-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call supervisor_to_user
+csrr x2, 0x1000, 0
+# Result: mseccfg[s] = 1
+
+# Test Case Rule: RULE 8: If the Zkr extension or U-mode is not implemented, the USEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+csrr x1, 0x1000, 0
+# Result: mseccfg[useed] = 0
+
+# Test Case Rule: RULE 9: When mseccfg.SSEED = 0, any access to the seed CSR from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+call machine_to_supervisor
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 10: When mseccfg.SSEED = 1, read-write access to the seed CSR from S-/HS-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call machine_to_supervisor
+csrr x2, 0x1000, 0
+# Result: mseccfg[sseed] = 1
+
+# Test Case Rule: RULE 11: If the Zkr extension or S-mode is not implemented, the SSEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+csrr x1, 0x1000, 0
+# Result: mseccfg[sseed] = 0
+
+# Test Case Rule: RULE 12: When the H extension is also implemented, access to the seed CSR from an HS-qualified instruction leads to a virtual-instruction exception in VS and VU modes, and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call machine_to_virtual
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 13: In machine mode, the seed CSR is always available as normal regardless of the values of the fields in mseccfg, and an attempted read without a write raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrr x1, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 14: When mseccfg.USED = 0, any seed CSR access from U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+call machine_to_user
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When mseccfg.USED = 1, the seed CSR is accessible as normal from U-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call supervisor_to_user
+csrr x2, 0x1000, 0
+# Result: mseccfg[useed] = 1
+
+# Test Case Rule: RULE 16: When mseccfg.SSEED = 0, any seed CSR access from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+call machine_to_supervisor
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 17: When mseccfg.SSEED = 1, the seed CSR is accessible as normal from S-/HS-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call machine_to_supervisor
+csrr x2, 0x1000, 0
+# Result: mseccfg[sseed] = 1
+
+# Test Case Rule: RULE 18: When mseccfg.SSEED = 0, any seed CSR access from VS or VU mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+call machine_to_virtual
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: When mseccfg.SSEED = 1, a read-write seed CSR access from VS or VU mode raises a virtual-instruction exception and all other access conditions raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li x1, 1
+csrw 0x1000, x1
+call machine_to_virtual
+csrr x2, 0x1000, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 20: When mseccfg.RLB = 0 and any pmpcfg.L bit is 1 in any rule or entry (including disabled entries), mseccfg.RLB remains 0 and further modifications to mseccfg.RLB are ignored until a PMP reset.
+##### ASSEMBLY #####
+li x1, 0
+csrw 0x1000, x1
+csrr x2, 0x1000, 0
+# Result: mseccfg[rlb] = 0
+
+# Test Case Rule: RULE 21: When mseccfg.MMWP is set, the default PMP policy for Machine mode for memory regions without a matching PMP rule changes to denied instead of ignored.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MMWP = 1
+
+# Test Case Rule: RULE 22: When mseccfg.MML is set, the interpretation of pmpcfg.L changes so that a set pmpcfg.L marks a rule as M-mode-only and an unset pmpcfg.L marks a rule as S/U-mode-only.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 23: When mseccfg.MML is set, the formerly reserved encoding pmpcfg.RW = 01 and the encoding pmpcfg.LRWX = 1111 encode a Shared-Region.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 24: When mseccfg.MML is set, an M-mode-only rule is enforced on Machine mode, denied on Supervisor or User mode, and remains locked so that further modifications to its configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 25: When mseccfg.MML is set, an S/U-mode-only rule is enforced on Supervisor and User modes and denied on Machine mode.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 26: When mseccfg.MML is set and pmpcfg.L is not set, a Shared-Region rule can be used for sharing data between M-mode and S/U-mode, is not executable, provides read/write access to M-mode, and provides read access to S/U-mode if pmpcfg.X is not set or read/write access if pmpcfg.X is set.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 27: When mseccfg.MML is set and pmpcfg.L is set, a Shared-Region rule can be used for sharing code between M-mode and S/U-mode, is not writable, provides execute access to both M-mode and S/U-mode, and provides additional read access to M-mode if pmpcfg.X is set.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 28: When mseccfg.MML is set, the encoding pmpcfg.LRWX = 1111 can be used for sharing data between M-mode and S/U-mode where both modes have read-only access, and the rule remains locked unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 29: When mseccfg.MML is set, adding a PMP rule with executable privileges that is either M-mode-only or a locked Shared-Region is not possible; such pmpcfg writes are ignored, leaving pmpcfg unchanged, and this restriction can be temporarily lifted by setting mseccfg.RLB.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 29: When mseccfg.MML is set, adding a PMP rule with executable privileges that is either M-mode-only or a locked Shared-Region is not possible; such pmpcfg writes are ignored, leaving pmpcfg unchanged, and this restriction can be temporarily lifted by setting mseccfg.RLB.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 30: When mseccfg.MML is set, executing code with Machine mode privileges is only possible from memory regions with a matching M-mode-only rule or a locked Shared-Region rule with executable privileges; executing code from a region without a matching rule or with a matching S/U-mode-only rule is denied.
+##### ASSEMBLY #####
+li x10, 1
+or x10, x10, 1
+csrr x1, mseccfg
+and x1, x1, 1
+addi x1, x1, 0
+csrr x2, mseccfg
+and x2, x2, 1
+addi x2, x2, 0
+csrr x3, mseccfg
+and x3, x3, 1
+addi x3, x3, 0
+csrr x4, mseccfg
+and x4, x4, 1
+addi x4, x4, 0
+csrr x5, mseccfg
+and x5, x5, 1
+addi x5, x5, 0
+csrr x6, mseccfg
+and x6, x6, 1
+addi x6, x6, 0
+csrr x7, mseccfg
+and x7, x7, 1
+addi x7, x7, 0
+csrr x8, mseccfg
+and x8, x8, 1
+addi x8, x8, 0
+csrr x9, mseccfg
+and x9, x9, 1
+addi x9, x9, 0
+csrr x10, mseccfg
+and x10, x10, 1
+addi x10, x10, 0
+csrr x11, mseccfg
+and x11, x11, 1
+addi x11, x11, 0
+csrr x12, mseccfg
+and x12, x12, 1
+addi x12, x12, 0
+csrr x13, mseccfg
+and x13, x13, 1
+addi x13, x13, 0
+csrr x14, mseccfg
+and x14, x14, 1
+addi x14, x14, 0
+csrr x15, mseccfg
+and x15, x15, 1
+addi x15, x15, 0
+csrr x16, mseccfg
+and x16, x16, 1
+addi x16, x16, 0
+csrr x17, mseccfg
+and x17, x17, 1
+addi x17, x17, 0
+csrr x18, mseccfg
+and x18, x18, 1
+addi x18, x18, 0
+csrr x19, mseccfg
+and x19, x19, 1
+addi x19, x19, 0
+csrr x20, mseccfg
+and x20, x20, 1
+addi x20, x20, 0
+csrr x21, mseccfg
+and x21, x21, 1
+addi x21, x21, 0
+csrr x22, mseccfg
+and x22, x22, 1
+addi x22, x22, 0
+csrr x23, mseccfg
+and x23, x23, 1
+addi x23, x23, 0
+csrr x24, mseccfg
+and x24, x24, 1
+addi x24, x24, 0
+csrr x25, mseccfg
+and x25, x25, 1
+addi x25, x25, 0
+csrr x26, mseccfg
+and x26, x26, 1
+addi x26, x26, 0
+csrr x27, mseccfg
+and x27, x27, 1
+addi x27, x27, 0
+csrr x28, mseccfg
+and x28, x28, 1
+addi x28, x28, 0
+csrr x29, mseccfg
+and x29, x29, 1
+addi x29, x29, 0
+csrr x30, mseccfg
+and x30, x30, 1
+addi x30, x30, 0
+csrr x31, mseccfg
+and x31, x31, 1
+addi x31, x31, 0
+csrr x32, mseccfg
+and x32, x32, 1
+addi x32, x32, 0
+csrr x33, mseccfg
+and x33, x33, 1
+addi x33, x33, 0
+csrr x34, mseccfg
+and x34, x34, 1
+addi x34, x34, 0
+csrr x35, mseccfg
+and x35, x35, 1
+addi x35, x35, 0
+csrr x36, mseccfg
+and x36, x36, 1
+addi x36, x36, 0
+csrr x37, mseccfg
+and x37, x37, 1
+addi x37, x37, 0
+csrr x38, mseccfg
+and x38, x38, 1
+addi x38, x38, 0
+csrr x39, mseccfg
+and x39, x39, 1
+addi x39, x39, 0
+csrr x40, mseccfg
+and x40, x40, 1
+addi x40, x40, 0
+csrr x41, mseccfg
+and x41, x41, 1
+addi x41, x41, 0
+csrr x42, mseccfg
+and x42, x42, 1
+addi x42, x42, 0
+csrr x43, mseccfg
+and x43, x43, 1
+addi x43, x43, 0
+csrr x44, mseccfg
+and x44, x44, 1
+addi x44, x44, 0
+csrr x45, mseccfg
+and x45, x45, 1
+addi x45, x45, 0
+csrr x46, mseccfg
+and x46, x46, 1
+addi x46, x46, 0
+csrr x47, mseccfg
+and x47, x47, 1
+addi x47, x47, 0
+csrr x48, mseccfg
+and x48, x48, 1
+addi x48, x48, 0
+csrr x49, mseccfg
+and x49, x49, 1
+addi x49, x49, 0
+csrr x50, mseccfg
+and x50, x50, 1
+addi x50, x50, 0
+csrr x51, mseccfg
+and x51, x51, 1
+addi x51, x51, 0
+csrr x52, mseccfg
+and x52, x52, 1
+addi x52, x52, 0
+csrr x53, mseccfg
+and x53, x53, 1
+addi x53, x53, 0
+csrr x54, mseccfg
+and x54, x54, 1
+addi x54, x54, 0
+csrr x55, mseccfg
+and x55, x55, 1
+addi x55, x55, 0
+csrr x56, mseccfg
+and x56, x56, 1
+addi x56, x56, 0
+csrr x57, mseccfg
+and x57, x57, 1
+addi x57, x57, 0
+csrr x58, mseccfg
+and x58, x58, 1
+addi x58, x58, 0
+csrr x59, mseccfg
+and x59, x59, 1
+addi x59, x59, 0
+csrr x60, mseccfg
+and x60, x60, 1
+addi x60, x60, 0
+csrr x61, mseccfg
+and x61, x61, 1
+addi x61, x61, 0
+csrr x62, mseccfg
+and x62, x62, 1
+addi x62, x62, 0
+csrr x63, mseccfg
+and x63, x63, 1
+addi x63, x63, 0
+csrr x64, mseccfg
+and x64, x64, 1
+addi x64, x64, 0
+csrr x65, mseccfg
+and x65, x65, 1
+addi x65, x65, 0
+csrr x66, mseccfg
+and x66, x66, 1
+addi x66, x66, 0
+csrr x67, mseccfg
+and x67, x67, 1
+addi x67, x67, 0
+csrr x68, mseccfg
+and x68, x68, 1
+addi x68, x68, 0
+csrr x69, mseccfg
+and x69, x69, 1
+addi x69, x69, 0
+csrr x70, mseccfg
+and x70, x70, 1
+addi x70, x70, 0
+csrr x71, mseccfg
+and x71, x71, 1
+addi x71, x71, 0
+csrr x72, mseccfg
+and x72, x72, 1
+addi x72, x72, 0
+csrr x73, mseccfg
+and x73, x73, 1
+addi x73, x73, 0
+csrr x74, mseccfg
+and x74, x74, 1
+addi x74, x74, 0
+csrr x75, mseccfg
+and x75, x75, 1
+addi x75, x75, 0
+csrr x76, mseccfg
+and x76, x76, 1
+addi x76, x76, 0
+csrr x77, mseccfg
+and x77, x77, 1
+addi x77, x77, 0
+csrr x78, mseccfg
+and x78, x78, 1
+addi x78, x78, 0
+# Result: mseccfg.MML = 1
+
+# Test Case Rule: RULE 41: The RLB field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+srl t1, mseccfg, 11
+and t1, t1, 0x7ff
+csrw mseccfg, t1
+# Result: mseccfg[11:0] = 0
+
+# Test Case Rule: RULE 42: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in M-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 43: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 44: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 45: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in S-mode or U-mode to the region is permitted as execute-only.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 46: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 47: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in S-mode or U-mode to the region permits only read operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 48: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 1
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 49: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in S-mode or U-mode permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 1
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 50: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 51: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in S-mode or U-mode to the region is permitted as a read-only region.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 52: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 0
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 53: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in S-mode or U-mode to the region permits both read and execute operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 1
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 54: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 1
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 55: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in S-mode or U-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 1
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 1
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call supervisor_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case Rule: RULE 56: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 0
+csrw pmpaddr, t1
+li t2, 1
+csrw pmpcfg, t2
+li t3, 1
+csrw pmpcfg, t3
+li t4, 1
+csrw pmpcfg, t4
+li t5, 1
+csrw pmpcfg, t5
+li t6, 1
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: mcause = 12
+
+# Test Case Rule: RULE 60: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in M-mode to the region is permitted as a locked execute-only region.
+##### ASSEMBLY #####
+li t0, 0
+csrw mseccfg, t0
+li t1, 1
+csrw pmpaddr, t1
+li t2, 0
+csrw pmpcfg, t2
+li t3, 0
+csrw pmpcfg, t3
+li t4, 0
+csrw pmpcfg, t4
+li t5, 0
+csrw pmpcfg, t5
+li t6, 1
+csrw pmpcfg, t6
+li t7, 0
+csrw pmpcfg, t7
+li t8, 0
+csrw pmpcfg, t8
+li t9, 0
+csrw pmpcfg, t9
+li t10, 0
+csrw pmpcfg, t10
+li t11, 0
+csrw pmpcfg, t11
+li t12, 0
+csrw pmpcfg, t12
+li t13, 0
+csrw pmpcfg, t13
+li t14, 0
+csrw pmpcfg, t14
+li t15, 0
+csrw pmpcfg, t15
+li t16, 0
+csrw pmpcfg, t16
+li t17, 0
+csrw pmpcfg, t17
+li t18, 0
+csrw pmpcfg, t18
+li t19, 0
+csrw pmpcfg, t19
+li t20, 0
+csrw pmpcfg, t20
+li t21, 0
+csrw pmpcfg, t21
+li t22, 0
+csrw pmpcfg, t22
+li t23, 0
+csrw pmpcfg, t23
+li t24, 0
+csrw pmpcfg, t24
+li t25, 0
+csrw pmpcfg, t25
+li t26, 0
+csrw pmpcfg, t26
+li t27, 0
+csrw pmpcfg, t27
+li t28, 0
+csrw pmpcfg, t28
+li t29, 0
+csrw pmpcfg, t29
+li t30, 0
+csrw pmpcfg, t30
+li t31, 0
+csrw pmpcfg, t31
+li t32, 0
+csrw pmpcfg, t32
+li t33, 0
+csrw pmpcfg, t33
+li t34, 0
+csrw pmpcfg, t34
+li t35, 0
+csrw pmpcfg, t35
+li t36, 0
+csrw pmpcfg, t36
+li t37, 0
+csrw pmpcfg, t37
+li t38, 0
+csrw pmpcfg, t38
+li t39, 0
+csrw pmpcfg, t39
+li t40, 0
+csrw pmpcfg, t40
+li t41, 0
+csrw pmpcfg, t41
+li t42, 0
+csrw pmpcfg, t42
+li t43, 0
+csrw pmpcfg, t43
+li t44, 0
+csrw pmpcfg, t44
+li t45, 0
+csrw pmpcfg, t45
+li t46, 0
+csrw pmpcfg, t46
+li t47, 0
+csrw pmpcfg, t47
+li t48, 0
+csrw pmpcfg, t48
+li t49, 0
+csrw pmpcfg, t49
+li t50, 0
+csrw pmpcfg, t50
+li t51, 0
+csrw pmpcfg, t51
+li t52, 0
+csrw pmpcfg, t52
+li t53, 0
+csrw pmpcfg, t53
+li t54, 0
+csrw pmpcfg, t54
+li t55, 0
+csrw pmpcfg, t55
+li t56, 0
+csrw pmpcfg, t56
+li t57, 0
+csrw pmpcfg, t57
+li t58, 0
+csrw pmpcfg, t58
+li t59, 0
+csrw pmpcfg, t59
+li t60, 0
+csrw pmpcfg, t60
+call machine_to_user
+addi a0, x0, 0
+ret
+
+# Result: 0
+
+# Test Case RULE 61: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li x10, 0x1000
+lw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 62: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in M-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+lw x10, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 63: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in S-mode or U-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+call supervisor_to_user
+li x10, 0x1000
+sw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 64: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in M-mode to the region permits read and execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+lw x10, 0(x10)
+# Result: x11 = 0x1000
+
+# Result: x11 = 16777216
+
+# Test Case RULE 65: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in S-mode or U-mode permits only execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+call supervisor_to_user
+lw x10, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 66: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in M-mode to the region is permitted as a locked read-only region.
+##### ASSEMBLY #####
+sw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 67: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in S-mode or U-mode causes an Access Exception.
+##### ASSEMBLY #####
+call supervisor_to_user
+lw x10, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 68: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in M-mode to the region is permitted as a locked read/execute region.
+##### ASSEMBLY #####
+lw x10, 0(x10)
+# Result: x11 = 0x1000
+
+# Result: x11 = 16777216
+
+# Test Case RULE 69: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in S-mode or U-mode causes an Access Exception.
+##### ASSEMBLY #####
+call supervisor_to_user
+lw x10, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 70: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in M-mode to the region is permitted as a locked read/write region.
+##### ASSEMBLY #####
+sw x11, 0(x10)
+# Result: x11 = 0x1000
+
+# Result: x11 = 16777216
+
+# Test Case RULE 71: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in S-mode or U-mode causes an Access Exception.
+##### ASSEMBLY #####
+call supervisor_to_user
+sw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 72: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in M-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+sw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12
+
+# Test Case RULE 73: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in S-mode or U-mode is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+call supervisor_to_user
+sw x11, 0(x10)
+# Result: mcause = 12
+
+# Result: mcause = 12

@@ -1,0 +1,41 @@
+## 4.2. Interrupt domains
+
+An APLIC supports one or more interrupt domains , each associated with a subset of RISC-V harts at one privilege level (machine or supervisor level). The harts within an interrupt domain are those that the domain can interrupt at the corresponding privilege level. Each domain has its own memory-mapped control  region  in  the  machine's  address  space  that  appears  to  control  a  complete,  separate  APLIC, though in fact all domain interfaces together access a single combined interrupt controller.
+
+Figure 3 through Figure 5 depict some possible hierarchies of interrupt domains implemented by an APLIC in a RISC-V system.
+
+The first figure represents a minimal system that has a single hart not supporting supervisor mode, with a single interrupt domain for machine level on that hart. The next figure, Figure 4, shows a basic arrangement for a larger system designed for symmetric multiprocessing (SMP), with multiple harts that all implement supervisor mode. In such cases, the APLIC will usually provide a separate interrupt domain for supervisor level, as the figure portrays. This supervisor-level interrupt domain allows an operating system, running in S-mode on the multiple harts, to have direct control over the interrupts it receives, avoiding the need to call upon M-mode to exercise that control.
+
+Figure 3. Example of a RISC-V system that has a single hart implementing only M-mode, with a single machinelevel interrupt domain for that hart.
+
+<image>
+
+An APLIC's interrupt domains are arranged in a tree hierarchy, with the root domain always being at machine  level.  Incoming  interrupt  wires  arrive  first  at  the  root  domain.  Each  domain  may  then selectively delegate all or a subset of interrupt sources to its child domains in the hierarchy. Within a given APLIC, interrupt source numbers are invariant across all domains, so source identity number always refers to the same source in every domain, corresponding to incoming wire number .  For an interrupt domain below the root, interrupt sources not delegated down to that domain appear to the domain as being not implemented.
+
+Figure 5 shows a hierarchy of three interrupt domains, two at machine level and one at supervisor level. The arrangement in the figure, when combined with PMP (physical memory protection), allows machine-level software to isolate a selection of interrupts exclusively for hart 0, beyond the reach of the four application harts, even at machine level.
+
+Figure 4. An example system with four harts that implement M-mode and S-mode, with two APLIC interrupt domains, one each for machine and supervisor levels.
+
+<image>
+
+Figure 5. A RISC-V system that extends the example of Figure 4 with a fifth M-mode-only "manager" hart, with a separate machine-level interrupt domain above the other domains.
+
+<image>
+
+In order for the harts within an interrupt domain to have direct control over the interrupts from  the  domain,  the  harts  must  be  cooperatively  controlled  by  software  at  the  same privilege  level.  In  particular,  a  single  operating  system  should  control  all  of  the  harts associated  with  a  supervisor-level  interrupt  domain.  In  the  examples  of  Figure  4  and Figure 5, control of the APLIC's supervisor-level interrupt domain could not be safely split among multiple independent OSes.
+
+<image>
+
+Given the domain hierarchies depicted in the figures, if it were necessary to partition the application harts for multiple OSes, machine-level software would need to prevent direct OS access to the supervisor-level interrupt domain and instead provide SBI services for controlling APLIC interrupts or, alternatively, emulate the control interfaces of separate supervisor-level interrupt domains, one for each OS. Note that such emulation might still make use of the APLIC's physical supervisor-level interrupt domain, but under the control of machine-level software.
+
+An APLIC's interrupt domain hierarchy satisfies these rules:
+
+- The root domain is at machine level.
+- The parent of any supervisor-level interrupt domain is a machine-level domain that includes at least the same harts (but at machine level, obviously). The parent domain may have a larger set of harts at machine level.
+- For  each  interrupt  domain,  interrupts  from  the  domain  are  signaled  to  harts  all  by  the  same method, either by wire or by MSIs, not by a mixture of methods among the harts.
+
+When a RISC-V hart's external interrupt controller is an APLIC, not an IMSIC, the hart can be within only one interrupt domain of this APLIC at each privilege level.
+
+On the other hand, a hart that has an IMSIC for its external interrupt controller may, at each privilege level,  be  in  multiple  APLIC  interrupt  domains,  even  those  of  the  same  APLIC,  and  may  potentially receive MSIs from multiple different APLICs in the machine.
+
+A platform might give software a way to choose between multiple interrupt domain hierarchies for any given APLIC. Any such configurability is outside the scope of this specification, but should be available to machine level only.

@@ -1,0 +1,33 @@
+Based on the provided text, here is the information regarding the `mstatus` register (and its related fields) during a trap to machine mode:
+
+### 1. Privilege Mode and Trap Handling
+When a trap is taken into machine mode (M-mode), the hart's privilege mode is set to M. By default, all traps are handled in machine mode, but M-mode handlers can redirect traps back to a lower privilege level using the `MRET` instruction.
+
+### 2. Machine Status (`mstatus`) Register Fields
+During a trap into M-mode, several specific fields within the `mstatus` register (or `mstatush` for RV32) are updated to preserve the state of the previous privilege mode:
+
+*   **MPP (Machine Previous Privilege):** This field is set to the privilege mode that was active before the trap occurred.
+*   **MPIE (Machine Previous Interrupt Enable):** This field is set to the value of the `MIE` (Machine Interrupt Enable) bit at the time of the trap.
+*   **MPV (Machine Previous Virtualization):** This field is set to the virtualization mode ($V$) that was active before the trap occurred.
+*   **MPRR (Machine Previous Reserved):** (Associated with the `MPRV` bit) The `MPRV` field is used to modify the privilege with which loads access virtual memory.
+
+### 3. Value Table for `MPV` and `MPP`
+The document provides a specific table (Table 52) for the values of `MPV` and `MPP` set upon entry to M-mode:
+
+| Previous Mode | MPV | MPP |
+| :--- | :--- | :--- |
+| U-mode | 0 | 0 |
+| HS-mode | 0 | 1 |
+| M-mode | 0 | 3 |
+| VU-mode | 1 | 0 |
+| VS-mode | 1 | 1 |
+
+### 4. Interaction with Delegation
+If a trap is delegated to a lower privilege level (like S-mode) via the `medeleg` or `mideleg` registers:
+*   The `scause` register is written with the trap cause.
+*   The `sepc` register is written with the virtual address of the instruction that took the trap.
+*   The `stval` register is written with an exception-specific datum.
+*   The **SPP** field of `mstatus` is written with the active privilege mode at the time of the trap.
+*   The **SPIE** field of `mstatus` is written with the value of the `SIE` field at the time of the trap.
+*   The **SIE** field of `mstatus` is cleared.
+*   Note: In this case, `mcause`, `mepc`, and `mtval` are **not** written.

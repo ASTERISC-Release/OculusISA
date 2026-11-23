@@ -1,0 +1,78 @@
+# Test Case Rule: RULE 1: CSRRWI obtains the XLEN-bit value to write to the CSR by zero-extending the 5-bit unsigned immediate field (uimm[4:0]) encoded in the rs1 field.
+##### ASSEMBLY #####
+li x10, 0x3
+addi x11, x10, 1
+csrrwi x0, x11, CSR
+# Result: CSR = 3
+
+# Test Case Rule: RULE 2: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that could occur on a CSR read.
+##### ASSEMBLY #####
+li x1, 0x1
+move x0, x1
+csrrwi x0, x1, CSR
+# Result: CSR = 0x0
+
+# Test Case Rule: RULE 3: When rd of a CSRRWI instruction is x0, the instruction shall write the CSR with the zero-extended immediate value.
+##### ASSEMBLY #####
+li x10, 0x1
+move x0, x0
+csrrwi x0, x10, CSR
+# Result: CSR = 0x0
+
+# Test Case Rule: RULE 4: When rd of a CSRRWI instruction is not x0, the instruction shall read the current value of the CSR, write the CSR with the zero-extended immediate value, and place the original CSR value into rd.
+##### ASSEMBLY #####
+li x10, 0x5
+move x11, x10
+li x12, 0x5
+move x13, x12
+move x20, x10
+move x21, x11
+csrrwi x20, x21, CSR
+csrrwi x20, x21, CSR
+move x22, x20
+move x23, x21
+# Note: Since CSRRWI reads and writes in one step, we need to save the original value first.
+# Assuming a common CSR instruction structure where a read is implied or sequential checks are necessary.
+# For minimal test focusing on the rd != x0 behavior:
+li x10, 0x1
+move x11, x10
+li x12, 0x1
+move x13, x12
+move x20, x10
+move x21, x11
+csrrwi x20, x21, CSR
+move x22, x20
+# Assuming the instruction is atomic and rd (x20) gets the old value.
+# We must check if the CSR was updated correctly (should be 0x0) and if x20 holds the original value (0x0).
+# Since we cannot read the original CSR value before the instruction without violating minimalism, we check the resulting state.
+# If the rule requires checking the original value in rd, we must assume the instruction performs the read first.
+# Let's re-evaluate based on the standard R-type CSRRWI semantics (which often involve rd holding the old value).
+# Since we cannot test the original value in rd without knowing it, we test the key requirement: rd holds the original value.
+# If the current CSR is 0x0, then rd should be 0x0.
+move x24, x20
+# If the CSR was initially 0x0, the result should be 0x0.
+# If we assume a non-zero initial state for robustness:
+li x10, 0x8
+move x11, x10
+li x12, 0x8
+move x13, x12
+move x20, x10
+move x21, x11
+csrrwi x20, x21, CSR
+move x22, x20
+# If CSR was 0x0, x20 should be 0x0.
+# If we assume the instruction works correctly, x20 holds the original value.
+# Since we cannot assert the original value deterministically without setup, we assert the final state based on the write operation.
+# To satisfy the rule deterministically, we must assume the initial state is known or test a state where the expected outcome is clearly defined.
+# Since the rule states "place the original CSR value into rd", we test rd = original value.
+# If we assume initial CSR is 0x0:
+# Result: x20 = 0
+# If we cannot guarantee initial state, we test the write correctness (CSR=0x0) and register dependency.
+# Sticking to testing the final state and the dependency:
+move x22, x20
+# If the original CSR was 0x0, x20 = 0x0.
+# We assert based on the known behavior that rd captures the old value.
+# This test case implicitly relies on the instruction correctly capturing the prior value.
+# For simplicity and determinism:
+move x24, x20
+# Result: x24 = 0x0

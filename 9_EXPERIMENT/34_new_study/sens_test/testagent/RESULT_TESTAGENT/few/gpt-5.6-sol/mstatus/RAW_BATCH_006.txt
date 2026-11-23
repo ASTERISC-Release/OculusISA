@@ -1,0 +1,137 @@
+# Test Case Rule: RULE 101: When the TVM bit in mstatus is 0, attempts to read or write the satp CSR while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+csrr t1, satp
+csrw satp, t1
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 102: When the TVM bit in mstatus is 0, attempts to execute an SFENCE.VMA instruction while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 103: When the TVM bit in mstatus is 0, attempts to execute a SINVAL.VMA instruction while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 104: The TVM bit in mstatus is read-only 0 when S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the required no-S-mode configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 105: The TW field in mstatus is a WARL field.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic TW legal readback is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 106: The TW bit in mstatus is read-only 0 when there are no modes less privileged than M.
+##### ASSEMBLY #####
+nop # Skipped because the required M-only configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 107: The TSR field in mstatus is a WARL field.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic TSR legal readback is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 108: When the TSR bit in mstatus is 1, attempts to execute SRET while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 1 << 22
+csrs mstatus, t0
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# Test Case Rule: RULE 109: When the TSR bit in mstatus is 0, attempts to execute SRET while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 22
+csrc mstatus, t0
+call machine_to_supervisor
+li t0, 1 << 8
+csrs sstatus, t0
+la t1, sret_return_109
+csrw sepc, t1
+sret
+sret_return_109:
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 110: The TSR bit in mstatus is read-only 0 when S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the required no-S-mode configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 111: The mstatus register contains the FS[1:0] and VS[1:0] fields, which are WARL fields, and the XS[1:0] field, which is a read-only field.
+##### ASSEMBLY #####
+nop # Skipped because WARL legal readbacks and the XS value are unspecified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 112: The SD bit in mstatus is a read-only bit that summarizes whether either the FS, VS, or XS fields signal the presence of dirty state that will require saving extended user context to memory.
+##### ASSEMBLY #####
+li t0, 1 << 63
+csrs mstatus, t0
+li t0, 3 << 13
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 113: If the FS, VS, and XS fields in mstatus are all read-only zero, then the SD bit in mstatus is also always zero.
+##### ASSEMBLY #####
+nop # Skipped because the required hardwired-zero FS VS XS configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 114: If the F extension is implemented, the FS field in mstatus shall not be read-only zero.
+##### ASSEMBLY #####
+li t0, 1 << 13
+csrs mstatus, t0
+csrr t1, mstatus
+li t0, 3 << 13
+and a0, t1, t0
+# Result: a0 != 0
+
+# Test Case Rule: RULE 115: If neither the F extension nor S-mode is implemented, then the FS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because the required no-F no-S configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 116: If S-mode is implemented but the F extension is not, the FS field in mstatus may optionally be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because FS read-only-zero behavior is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 117: Implementations with S-mode but without the F extension are permitted, but not required, to make the FS field in mstatus be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because FS read-only-zero behavior is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 118: If the v registers are implemented, the VS field in mstatus shall not be read-only zero.
+##### ASSEMBLY #####
+li t0, 1 << 9
+csrs mstatus, t0
+csrr t1, mstatus
+li t0, 3 << 9
+and a0, t1, t0
+# Result: a0 != 0
+
+# Test Case Rule: RULE 119: If neither the v registers nor S-mode is implemented, then the VS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because the required no-vector no-S configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 120: If S-mode is implemented but the v registers are not, the VS field in mstatus may optionally be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because VS read-only-zero behavior is optional
+# Result: x0 = 0

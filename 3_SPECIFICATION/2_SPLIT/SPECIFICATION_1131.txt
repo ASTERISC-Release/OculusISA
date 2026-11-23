@@ -1,0 +1,60 @@
+## 5.7.13. Instruction Count (icount, at 0x7a1)
+
+This  register  provides  access  to  the  trigger  selected  by  tselect.  The  reset  values  listed  here  apply  to every underlying trigger.
+
+This register is accessible as tdata1 when type is 3.
+
+This trigger matches when:
+
+1. An instruction retires after having been fetched in a privilege mode where the trigger is enabled. This explicitly includes all RET instructions from various modes.
+2. A trap is taken from a privilege mode where the trigger is enabled. This explicitly includes traps taken due to interrupts.
+
+If more than one of the above events occur during a single instruction execution, the trigger still only matches once for that instruction.
+
+<image>
+
+For  use  in  single  step,  icount  must  match  for  traps  where  the  instruction  will  not  be reexecuted after the handler, such as illegal instructions that are emulated by privileged software and the instruction being emulated never retires. Ideally, icount would not match for  traps  where  the  instruction  will  later  be  retried  by  the  handler,  such  as  page  faults where privileged software modifies the page tables and returns to the faulting instruction which  ultimately  retires.  Trying  to  distinguish  the  two  cases  leads  to  complex  rules,  so instead the rule is simply that all traps match. See also Section 4.5.2.
+
+When count is greater than 1 and the trigger matches, then count is decremented by 1.
+
+When count is 1 and the trigger matches, then pending becomes set. In addition count will become 0 unless it is hard-wired to 1.
+
+The only exception to the above is when the instruction the trigger matched on is a write to the icount trigger. In that case pending might or might not become set if count was 1. Afterwards count contains the newly written value.
+
+When count is 0 it stays at 0 until explicitly written.
+
+When pending  is  set,  the  trigger  fires  just  before  any  further  instructions  are  executed  in  a  mode where the trigger is enabled. As the trigger fires, pending is cleared. In addition, if count is hard-wired to 1 then m, s, u, vs, and vu are all cleared.
+
+If the trigger fires with action=0 then zero is written to the tval CSR on the breakpoint trap.
+
+<image>
+
+The intent of pending is to cleanly handle the case where action is 0, m is 0, u is 1, count is 1, and the U-mode instruction being executed causes a trap into M-mode. In that case we want the entire M-mode handler to be executed, and the debug trap to be taken before the next U-mode instruction.
+
+<image>
+
+This trigger type is intended to be used as a single step for software monitor programs or native debug. Systems that support multiple privilege modes that want to debug software running in lower privilege modes don't need to support count greater than 1.
+
+If textra32 or textra64 are implemented for this trigger, it only matches when the conditions set there are satisfied.
+
+This CSR is read/write.
+
+<image>
+
+| XLEN-1 XLEN-4 type 4   | XLEN-5 dmode 1   | XLEN-6 27 0 XLEN   | 26 vs vu 1   | 25 1   | 24 23 hit 1   | count 14   | 10 9 m 1   | 8 pending 1   | 7 s 1   | 6 5 u 1   | 0 action 6   |
+|------------------------|------------------|--------------------|--------------|--------|---------------|------------|------------|---------------|---------|-----------|--------------|
+
+| Field   | Description                                                                                                                                                                                                                                               | Access   |   Reset |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| vs      | When set, enable this trigger in VS-mode. This bit is hard- wired to 0 if the hart does not support virtualization mode.                                                                                                                                  | WARL     |       0 |
+| vu      | When set, enable this trigger in VU-mode. This bit is hard- wired to 0 if the hart does not support virtualization mode.                                                                                                                                  | WARL     |       0 |
+| hit     | If this bit is implemented, the hardware sets it when this trigger fires. The trigger's user can set or clear it at any time. It is used to determine which trigger(s) fires. If the bit is not implemented, it is always 0 and writing it has no effect. | WARL     |       0 |
+| count   | The trigger will generally fire after count instructions in enabled modes have been executed. See above for the precise behavior.                                                                                                                         | WARL     |       1 |
+| m       | When set, enable this trigger in M-mode.                                                                                                                                                                                                                  | WARL     |       0 |
+| pending | This bit becomes set when count is decremented from 1 to 0. It is cleared when the trigger fires, which will happen just before executing the next instruction in one of the enabled modes.                                                               | R/W      |       0 |
+| s       | When set, enable this trigger in S/HS-mode. This bit is hard-wired to 0 if the hart does not support S-mode.                                                                                                                                              | WARL     |       0 |
+
+| Field   | Description                                                                                                | Access   |   Reset |
+|---------|------------------------------------------------------------------------------------------------------------|----------|---------|
+| u       | When set, enable this trigger in U-mode. This bit is hard- wired to 0 if the hart does not support U-mode. | WARL     |       0 |
+| action  | The action to take when the trigger fires. The values are explained in Table 12.                           | WARL     |       0 |

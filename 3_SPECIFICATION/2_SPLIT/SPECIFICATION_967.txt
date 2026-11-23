@@ -1,0 +1,33 @@
+## 4.5.4. Supervisor MSI address configuration ( smsiaddrcfg and smsiaddrcfgh )
+
+For  machine-level  interrupt  domains,  registers smsiaddrcfg and smsiaddrcfgh may  optionally provide  parameters  used  by  supervisor-level  domains  to  determine  the  addresses  to  write  outgoing MSIs.
+
+Registers smsiaddrcfg and smsiaddrcfgh are  implemented by a domain if the domain implements mmsiaddrcfg and mmsiaddrcfgh and the APLIC has at least one supervisor-level interrupt domain. If the registers are not implemented, the eight bytes at their locations are simply read-only zeros like other reserved bytes.
+
+Like mmsiaddrcfg and mmsiaddrcfgh , registers smsiaddrcfg and smsiaddrcfgh are  potentially writable only for the root domain. For all other machine-level domains that implement them, they are read-only.
+
+When implemented, smsiaddrcfg has this format:
+
+bits 31:0 Low Base PPN ( WARL )
+
+and smsiaddrcfgh has this format:
+
+bits 22:20 LHXS ( WARL )
+
+bits 11:0 High Base PPN ( WARL
+
+)
+
+All other bits of smsiaddrcfgh are reserved and read as zeros.
+
+Fields High Base PPN from smsiaddrcfgh and Low Base PPN from smsiaddrcfg concatenate to form a 44-bit Base PPN (Physical Page Number). The use of this value and field LHXS (Low Hart Index Shift) for determining target addresses for MSIs is described later, in Section 4.9.1.
+
+When smsiaddrcfg and smsiaddrcfgh are  writable  (root  domain  only),  all  fields  are WARL .  An implementation  is free to choose what values are supported, just as for mmsiaddrcfg and mmsiaddrcfgh .
+
+If register mmsiaddrcfgh of the domain has bit L set to one, then smsiaddrcfg and smsiaddrcfgh are locked as  read-only  alongside mmsiaddrcfg and mmsiaddrcfgh .  When mmsiaddrcfgh.L =  1,  if  the readable  values  of mmsiaddrcfg and mmsiaddrcfgh are  zero  and 0x80000000 respectively-because their other fields are hidden-then smsiaddrcfg and smsiaddrcfgh are hidden also and read as zeros.
+
+For the root domain only, if mmsiaddrcfgh.L = 1 and the MSI-address-configuration fields are hidden (so mmsiaddrcfgh reads as 0x80000000 and registers mmsiaddrcfg , smsiaddrcfg , and smsiaddrcfgh all read as zeros), then whatever values smsiaddrcfg and smsiaddrcfgh had when mmsiaddrcfgh .L was first set are retained internally by the APLIC, though those values are no longer visible by reading the registers.  Alternatively,  if  system  reset  initializes mmsiaddrcfgh.L =  1  in  the  root  domain,  and  if  all MSI-address-configuration  fields  never  appear  as  anything  other  than  zeros,  then  the  APLIC implementation  has  some  other,  possibly  nonstandard,  means  for  determining  the  addresses  of outgoing MSIs, as discussed in the previous subsection, Section 4.5.3.
+
+Any  time mmsiaddrcfg and mmsiaddrcfgh are  not  read-only  zero  and 0x80000000 respectively,  the addresses  for  outgoing  MSI  writes  directed  to  supervisor  level  must  be  derivable  from  the  visible values of registers mmsiaddrcfgh , smsiaddrcfg , and smsiaddrcfgh , as specified in Section 4.9.1.
+
+For  machine-level  domains  that  are  not  the  root  domain,  if smsiaddrcfg and smsiaddrcfgh are implemented and are not read-only zeros, then they are read-only copies of the same registers from the root domain.

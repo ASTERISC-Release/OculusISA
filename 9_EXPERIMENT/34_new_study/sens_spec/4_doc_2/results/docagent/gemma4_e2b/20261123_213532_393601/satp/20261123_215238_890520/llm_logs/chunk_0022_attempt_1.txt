@@ -1,0 +1,20 @@
+RULE 1: When the effective privilege mode is S-mode or U-mode, the supervisor address translation algorithm may begin using the value of `satp`.
+RULE 2: Writing `satp` does not imply any ordering constraints between page-table updates and subsequent address translations.
+RULE 3: Changes to `satp .MODE` from Bare to other modes or vice versa take effect immediately without requiring an `SFENCE.VMA` instruction.
+RULE 4: Changes to `satp .ASID` take effect immediately without requiring an `SFENCE.VMA` instruction.
+RULE 5: Attempting to select `satp .MODE` to Bare with a nonzero pattern results in an UNSPECIFIED effect on the value and an UNSPECIFIED effect on address translation and protection behavior.
+RULE 6: If `satp .MODE` is read-only zero (Bare), attempting to execute `SFENCE.VMA` may raise an illegal-instruction exception.
+RULE 7: If an address-translation is initiated while `satp` is active, the translation is not required to complete or terminate when `satp` is no longer active, unless an `SFENCE.VMA` instruction matching the address and ASID is executed.
+RULE 8: An implicit read of memory-management data structures may return any translation for an address that was valid at any time since the most recent `SFENCE.VMA` that subsumes that address.
+RULE 9: If a hart employs an address-translation cache, the meaning of an ASID is local to that hart.
+RULE 10: To ensure that implicit reads observe writes to the same memory locations, an `SFENCE.VMA` instruction must be executed after the writes to flush the relevant cached translations.
+RULE 11: If the Svade extension is not implemented, accessing a virtual page when the accessed bit (`pte . a`) is clear or a store operation when the dirty bit (`pte . d`) is clear raises a page-fault exception.
+RULE 12: When performing a PTE update, the operation must be atomic with respect to other accesses to the PTE, and must atomically perform all page-table walk checks before conditionally updating the PTE value.
+RULE 13: If an atomic PTE update fails the comparison check (step 14 in the translation process), the algorithm must return to step 2.
+RULE 14: The dirty bit (`pte . d`) update resulting from an explicit store must be exact (non-speculative) and observed in program order by the local hart.
+RULE 15: PTE updates resulting from memory accesses must appear in global memory order before the memory access that caused the PTE update and before any subsequent explicit memory access to that virtual page by the local hart.
+RULE 16: Speculative executions of the address-translation algorithm must not set the dirty bit for a PTE.
+RULE 17: Speculative executions of the address-translation algorithm must not trigger an exception.
+RULE 18: Speculative executions of the address-translation algorithm must not create address-translation cache entries if those entries would have been invalidated by any `SFENCE.VMA` instruction executed by the hart since the speculative execution began.
+RULE 19: If `satp` is written with an unsupported `MODE`, the entire write has no effect, and no fields in `satp` are modified.
+RULE 20: If `satp .MODE` is read-only zero (Bare), attempts to execute `SFENCE.VMA` may raise an illegal-instruction exception.

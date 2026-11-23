@@ -1,0 +1,39 @@
+VALIDATION SUMMARY
+Total rules: 7
+Correct rules: 0
+Wrong rules: 7
+Correct percentage: 0 / 7 = 0%
+Wrong percentage: 7 / 7 = 100%
+
+RULE VALIDATION
+
+RULE 1: WRONG
+Reason: U-mode is not a permitted mode for this supervisor memory-management instruction, but the rule’s “no TLB flush retirement effect” wording is not an architectural term/effect specified by the manual; SFENCE.VMA is specified in terms of ordering implicit references and invalidating address-translation-cache entries when it executes, not “modeled TLB flush retirement effect.”
+
+RULE 2: WRONG
+Reason: The VU-mode virtual-instruction trap is supported, but the extra claim that it produces “no TLB flush retirement effect” is model-specific/unsupported wording, so the whole rule is not fully supported.
+
+RULE 3: WRONG
+Reason: The TVM=1 S-mode illegal-instruction trap is supported, but the added “no TLB flush retirement effect” outcome is not specified in those architectural terms; the rule is therefore only partially supported.
+
+RULE 4: WRONG
+Reason: TVM=0 permits S-mode execution, and rs1=x0/rs2=x0 invalidates all address-translation-cache entries if SFENCE.VMA executes, but “retires successfully” is incomplete because an implementation with satp.MODE read-only zero may raise illegal-instruction, and “modeled TLB entries” is not the architectural object.
+
+RULE 5: WRONG
+Reason: The rs1=x0/rs2≠x0 non-global ASID-selective behavior is described by the manual, but the rule’s “only” is too strict because implementations may over-fence or ignore rs1/rs2 and perform a global fence; “modeled TLB entries” is also not architectural.
+
+RULE 6: WRONG
+Reason: The manual describes invalidating entries containing leaf PTEs corresponding to the virtual address in rs1 for all address spaces, but this rule adds unsupported “virtual page derived … after sign extension and level-mask comparison” model semantics and uses “only,” which conflicts with permitted over-fencing.
+
+RULE 7: WRONG
+Reason: The ASID/VA selective non-global case is supported in broad terms, but the rule is too strict and model-specific: over-fencing is architecturally permitted, and the manual does not specify “modeled TLB entries,” exact X(rs2)[asidlen-1..0] matching as stated, or the virtual-page matching algorithm used here.
+
+WRONG RULES ONLY
+
+RULE 1: Unsupported/model-specific “no TLB flush retirement effect” wording.
+RULE 2: VU trap is supported, but “no TLB flush retirement effect” is unsupported.
+RULE 3: TVM trap is supported, but “no TLB flush retirement effect” is unsupported.
+RULE 4: Incomplete success condition due satp.MODE read-only-zero caveat; “modeled TLB” is unsupported.
+RULE 5: “Only” contradicts legal over-fencing; “modeled TLB” is unsupported.
+RULE 6: “Only” contradicts legal over-fencing; sign-extension/level-mask matching is unsupported.
+RULE 7: “Only” contradicts legal over-fencing; exact modeled TLB/ASID/VA matching semantics are unsupported.

@@ -1,0 +1,34 @@
+VALIDATION SUMMARY
+Total rules: 7
+Correct rules: 3
+Wrong rules: 4
+Correct percentage: 3 / 7 = 42.86%
+Wrong percentage: 4 / 7 = 57.14%
+
+RULE VALIDATION
+RULE 1: CORRECT
+Reason: satp is an SRW supervisor CSR, and M-mode is above supervisor privilege, so M-mode may read it and receive the CSR value in x10.
+
+RULE 10: WRONG
+Reason: S-mode satp read is permitted only when mstatus.TVM=0; when TVM=1, S-mode attempts to read satp raise illegal-instruction. The rule omits this condition.
+
+RULE 28: CORRECT
+Reason: satp is an SRW supervisor CSR, so U-mode is below the required CSR privilege and a csrr access traps with illegal-instruction.
+
+RULE 50: WRONG
+Reason: On RV64, value 0x1 selects MODE=Bare with nonzero remaining fields; the manual says this has UNSPECIFIED effects on the remaining fields and translation/protection behavior, so reflecting exactly 0x1 is not guaranteed.
+
+RULE 52: WRONG
+Reason: Value 0x0000100000000000 sets an ASID bit while MODE=Bare; Bare with nonzero remaining fields has UNSPECIFIED effects, and ASID bits are implementation-dependent/WARL.
+
+RULE 53: CORRECT
+Reason: On RV64, 0x1000000000000000 encodes MODE=1, which is reserved/unsupported in the standard; writing an unsupported satp.MODE has no effect and no fields are modified.
+
+RULE 60: WRONG
+Reason: On RV64, all ones encodes MODE=15, which is designated for custom use; the manual does not universally require this write to preserve the old value.
+
+WRONG RULES ONLY
+RULE 10: Missing mstatus.TVM=0; S-mode satp read can trap when TVM is set.
+RULE 50: Bare mode with nonzero remaining fields has UNSPECIFIED effects; exact reflection is not guaranteed.
+RULE 52: Bare mode with nonzero ASID field is UNSPECIFIED, and ASID writability is implementation-dependent.
+RULE 60: MODE=15 is custom-use, so preserving old satp is not universally specified.

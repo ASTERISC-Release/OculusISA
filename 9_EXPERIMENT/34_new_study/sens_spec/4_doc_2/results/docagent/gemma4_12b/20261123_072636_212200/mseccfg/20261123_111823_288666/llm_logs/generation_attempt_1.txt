@@ -1,0 +1,26 @@
+Based on the provided text from the RISC-V Privileged Architecture Specification, here is the summary of the requirements for a **Supervisor-mode Timer Interrupt** under the **Sstc extension**:
+
+### **1. Core Requirement**
+The **Sstc extension** provides a dedicated, CSR-based timer interrupt facility for supervisor mode (S-mode). It allows the supervisor to manage its own timer interrupts directly without the overhead of requesting them via SBI calls to M-mode.
+
+### **2. Register Implementations**
+*   **stimecmp:** A 64-bit register that serves as the supervisor-mode timer compare value.
+*   **Precision:** It has 64-bit precision on all RV32 and RV64 systems.
+*   **Interrupt Trigger:** A supervisor-mode timer interrupt becomes pending whenever the `mtime` register (the real-time counter) contains a value greater than or equal to `stimecmp` (treating them as unsigned integers).
+*   **Persistence:** The interrupt remains posted until `stimecmp` is updated to a value greater than `mtime`.
+
+### **3. Access and Behavior**
+*   **Standard Behavior:** The interrupt is taken only if interrupts are enabled and the **STIE** bit (in the `sie` CSR) is set.
+*   **RV32 Handling:** In RV32 systems, the `stimecmp` CSR is 64 bits wide. Accesses to the CSR access the lower 32 bits, while the `stimecmph` CSR accesses the upper 32 bits.
+*   **Spurious Interrupts:** Software should be written to handle potential "spurious" interrupts that may occur if `stimecmp` is updated and the handler returns immediately before the `STIP` bit falls.
+*   **Wait-for-Interrupt (WFI):** The `WFI` instruction can be used to stall the hart until a timer interrupt occurs.
+
+### **4. Extension Dependencies and Configuration**
+*   **menvcfg (M-mode):** The **STCE** (STimecmp Enable) bit in the `menvcfg` CSR must be set to 1 to enable the facility.
+*   **henvcfg (H-mode):** If the Hypervisor extension is implemented, the **STCE** bit in `henvcfg` enables the `vstimecmp` register for VS-mode.
+*   **Disabling:** If the Sstc extension is not implemented, the `STCE` bit is read-only zero. In this state, any attempt to access `stimecmp` in a mode other than M-mode will trigger an **illegal-instruction exception**.
+
+### **5. Virtualization (Hypervisor Extension)**
+*   **vstimecmp:** Provides a similar facility for VS-mode.
+*   **STIP:** The `VSTIP` bit in the `hip` register is the interrupt-pending bit for VS-level timer interrupts.
+*   **Triggering:** For VS-mode, the interrupt is pending whenever (`time` + `htimedelta`) is greater than or equal to `vstimecmp`.

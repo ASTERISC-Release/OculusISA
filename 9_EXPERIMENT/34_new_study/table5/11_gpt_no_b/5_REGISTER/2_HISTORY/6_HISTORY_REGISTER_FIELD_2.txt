@@ -1,0 +1,355 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: mseccfg
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mseccfg register. The register of mseccfg is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+| Bits | Field | Mask | Access / implementation | Reset | Description |
+|---:|---|---:|---|---|---|
+| 63:34 | Reserved | — | WPRI | — | Reserved for future standard use. |
+| 33:32 | `PMM` | `0x0000000300000000` | WARL when Smmpm is implemented; read-only zero otherwise. Always read-only zero on RV32. | Unspecified legal value | Controls M-mode pointer masking: `00` = disabled (`PMLEN=0`); `01` = reserved; `10` = enabled with `PMLEN=XLEN-57` (7 on RV64); `11` = enabled with `PMLEN=XLEN-48` (16 on RV64). |
+| 31:11 | Reserved | — | WPRI | — | Reserved for future standard use. |
+| 10 | `MLPE` | `0x0000000000000400` | Read/write when Zicfilp is implemented; otherwise reserved/read-only zero | `0` | Machine Landing-Pad Enable. `1` enables Zicfilp in M-mode. When `0`, M-mode does not update ELP state, ELP remains `NO_LP_EXPECTED`, and `LPAD` operates as a no-op. |
+| 9 | `SSEED` | `0x0000000000000200` | Read/write when Zkr and S-mode are implemented; may be implemented as read-only zero | Defined implementation/platform value | Controls `seed` CSR access from S/HS mode. `0`: all accesses raise an illegal-instruction exception. `1`: read-write CSR access is allowed; other access forms raise an illegal-instruction exception. With H implemented, VS/VU read-write access raises a virtual-instruction exception when enabled; other access forms raise an illegal-instruction exception. |
+| 8 | `USEED` | `0x0000000000000100` | Read/write when Zkr and U-mode are implemented; may be implemented as read-only zero | Defined implementation/platform value | Controls `seed` CSR access from U-mode. `0`: all accesses raise an illegal-instruction exception. `1`: read-write CSR access is allowed; other access forms raise an illegal-instruction exception. |
+| 7:3 | Reserved | — | WPRI | — | Reserved for future standard use. |
+| 2 | `RLB` | `0x0000000000000004` | WARL; may be hardwired to zero | `0`, unless the platform mandates another value | Rule Locking Bypass. `1` temporarily permits locked PMP rules to be modified or removed. If `RLB=0` while any PMP entry has `pmpcfg.L=1`, attempts to set `RLB` are ignored until a PMP reset. Intended for boot/debug use. |
+| 1 | `MMWP` | `0x0000000000000002` | WARL, sticky | `0`, unless the platform mandates another value | Machine-Mode Allowlist Policy. `0`: an unmatched PMP region is ignored for M-mode. `1`: an unmatched PMP region is denied for M-mode. Once set, cannot be cleared until a PMP reset. |
+| 0 | `MML` | `0x0000000000000001` | WARL, sticky | `0`, unless the platform mandates another value | Machine Mode Lockdown. Changes PMP rule interpretation: `L=1` identifies M-mode-only or locked shared rules; `L=0` identifies S/U-mode-only or unlocked shared rules. Enables shared-region encodings, restricts M-mode execution to matching M-mode-only or locked executable shared rules, and remains set until a PMP reset. |
+
+| Register property | Value |
+|---|---|
+| Width | 64 bits |
+| CSR address | `0x747` |
+| Privilege/access | MRW |
+| RV32 upper-half alias | `mseccfgh` at `0x757`, representing bits 63:32 |
+| Existence | Implemented if any extension adds a field to `mseccfg`; otherwise reserved |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..34=WPRI, 33..32=PMM, 31..11=WPRI, 10..10=MLPE, 9..9=SSEED, 8..8=USEED, 7..3=WPRI, 2..2=RLB, 1..1=MMWP, 0..0=MML
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 1
+NAME: mstatus
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mstatus register. The register of mstatus is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+## mstatus — CSR 0x300, MRW, width MXLEN
+
+### RV32
+
+| Bits | Field | Access | Description |
+|---:|---|---|---|
+| 31 | SD | RO | Dirty-state summary. Set when `FS=Dirty`, `VS=Dirty`, or `XS=Dirty`: `SD = (FS==3) \|\| (VS==3) \|\| (XS==3)`. |
+| 30:25 | WPRI | — | Reserved. Software should preserve these bits and ignore their read values. |
+| 24 | SDT | WARL | Supervisor-mode Disable Trap state, provided by the Ssdbltrp extension for detecting double traps into S/HS mode. |
+| 23 | SPELP | RW, trap-updated | Previous Expected Landing Pad state for S/HS-mode traps, provided by Zicfilp. `0` = no landing pad expected; `1` = landing pad expected. |
+| 22 | TSR | WARL | Trap SRET. `1` causes SRET executed in S/HS mode to raise an illegal-instruction exception. Read-only zero if S-mode is unsupported. |
+| 21 | TW | WARL | Timeout Wait. Controls trapping of WFI and WRS.NTO in modes less privileged than M. If set and the instruction does not complete within a bounded time, an illegal-instruction exception occurs. Read-only zero if no lower privilege mode exists. |
+| 20 | TVM | WARL | Trap Virtual Memory. In S/HS mode, `1` traps accesses to `satp` and execution of SFENCE.VMA/SINVAL.VMA. With H, it also traps HS-mode access to `hgatp` and HFENCE.GVMA/HINVAL.GVMA. Read-only zero if S-mode is unsupported. |
+| 19 | MXR | RW/RO0 | Make Executable Readable. `0`: loads require readable pages. `1`: loads may access readable or executable pages. Read-only zero if S-mode is unsupported. |
+| 18 | SUM | RW/RO0 | Permit Supervisor User Memory access. `1` permits S-mode data accesses to U-mode pages. Also applies when `MPRV=1` and `MPP=S`. Read-only zero if S-mode or page-based translation is unsupported. |
+| 17 | MPRV | RW/RO0 | Modify Privilege. When set, explicit data accesses use the privilege in `MPP`; with H, they also use virtualization mode `MPV`. Instruction fetch is unaffected. Read-only zero if U-mode is unsupported. |
+| 16:15 | XS | RO | Summary status of additional user-extension state. |
+| 14:13 | FS | WARL/RO0 | Floating-point context status. Encodes Off, Initial, Clean, or Dirty. Hardwired to zero when Zfinx is implemented. |
+| 12:11 | MPP | WARL | Previous privilege mode for traps into M-mode. |
+| 10:9 | VS | WARL/RO0 | Vector context status. Encodes Off, Initial, Clean, or Dirty. |
+| 8 | SPP | WARL/RO0 | Previous nominal privilege for traps into S/HS mode. `0` = U/VU; `1` = S/HS or VS. Read-only zero if S-mode is unsupported. |
+| 7 | MPIE | RW | Value of `MIE` before the most recent trap into M-mode. MRET copies `MPIE` to `MIE`, then sets `MPIE=1`. |
+| 6 | UBE | WARL/RO0 | U-mode data endianness. `0` = little-endian; `1` = big-endian. Instruction fetch remains little-endian. Read-only zero if U-mode is unsupported. |
+| 5 | SPIE | RW/RO0 | Value of `SIE` before the most recent trap into S/HS mode. SRET copies `SPIE` to `SIE`, then sets `SPIE=1`. Read-only zero if S-mode is unsupported. |
+| 4 | WPRI | — | Reserved. |
+| 3 | MIE | RW | M-mode global interrupt enable. Cleared on trap entry into M-mode and restored from `MPIE` by MRET. Reset to zero. |
+| 2 | WPRI | — | Reserved. |
+| 1 | SIE | RW/RO0 | S-mode global interrupt enable. Cleared on trap entry into S/HS mode and restored from `SPIE` by SRET. Read-only zero if S-mode is unsupported. |
+| 0 | WPRI | — | Reserved. |
+
+### RV64
+
+| Bits | Field | Access | Description |
+|---:|---|---|---|
+| 63 | SD | RO | Dirty-state summary. Set when `FS=Dirty`, `VS=Dirty`, or `XS=Dirty`: `SD = (FS==3) \|\| (VS==3) \|\| (XS==3)`. |
+| 62:43 | WPRI | — | Reserved. |
+| 42 | MDT | WARL | M-mode Disable Trap, provided by Smdbltrp. Reset to `1`. Explicitly setting it clears `MIE`. A trap into M-mode sets it when previously zero; a trap while already set is an unexpected/double trap. |
+| 41 | MPELP | RW, trap-updated | Previous Expected Landing Pad state for M-mode traps, provided by Zicfilp. `0` = no landing pad expected; `1` = landing pad expected. |
+| 40 | WPRI | — | Reserved. |
+| 39 | MPV | RW, trap-updated | Machine Previous Virtualization mode, provided by H. Records `V` on a trap into M-mode. Used with `MPP` by MRET and by `MPRV` data accesses. |
+| 38 | GVA | RW, trap-updated | Guest Virtual Address indicator, provided by H. Set when a trap into M-mode writes a guest virtual address to `mtval`; otherwise cleared. |
+| 37 | MBE | WARL | M-mode data endianness when `MPRV=0`. `0` = little-endian; `1` = big-endian. Instruction fetch remains little-endian. |
+| 36 | SBE | WARL/RO0 | S-mode data endianness and endianness of implicit supervisor memory-management accesses. `0` = little-endian; `1` = big-endian. Read-only zero if S-mode is unsupported. |
+| 35:34 | SXL | WARL/RO0 | Effective XLEN for S-mode. Uses the same encoding as `misa.MXL`. Read-only zero if S-mode is unsupported. |
+| 33:32 | UXL | WARL/RO0 | Effective XLEN for U-mode. Uses the same encoding as `misa.MXL`. Read-only zero if U-mode is unsupported. |
+| 31:25 | WPRI | — | Reserved. |
+| 24 | SDT | WARL | Supervisor-mode Disable Trap state, provided by the Ssdbltrp extension for detecting double traps into S/HS mode. |
+| 23 | SPELP | RW, trap-updated | Previous Expected Landing Pad state for S/HS-mode traps, provided by Zicfilp. `0` = no landing pad expected; `1` = landing pad expected. |
+| 22 | TSR | WARL | Trap SRET. `1` causes SRET executed in S/HS mode to raise an illegal-instruction exception. Does not affect VS mode. Read-only zero if S-mode is unsupported. |
+| 21 | TW | WARL | Timeout Wait. Controls trapping of WFI and WRS.NTO in all modes except M. If set and the instruction does not complete within a bounded time, an illegal-instruction exception occurs. |
+| 20 | TVM | WARL | Trap Virtual Memory. In S/HS mode, `1` traps accesses to `satp` and execution of SFENCE.VMA/SINVAL.VMA. With H, it also traps HS-mode access to `hgatp` and HFENCE.GVMA/HINVAL.GVMA. It does not affect VS-mode operations. |
+| 19 | MXR | RW/RO0 | Make Executable Readable. `0`: loads require readable pages. `1`: loads may access readable or executable pages. Read-only zero if S-mode is unsupported. |
+| 18 | SUM | RW/RO0 | Permit Supervisor User Memory access. `1` permits S-mode data accesses to U-mode pages. Also applies when `MPRV=1` and `MPP=S`. |
+| 17 | MPRV | RW/RO0 | Modify Privilege. Explicit data accesses use `MPP`; with H, they use both `MPV` and `MPP`. Instruction fetch is unaffected. Reset to zero. |
+| 16:15 | XS | RO | Summary status of additional user-extension state. |
+| 14:13 | FS | WARL/RO0 | Floating-point context status. Encodes Off, Initial, Clean, or Dirty. Hardwired to zero when Zfinx is implemented. |
+| 12:11 | MPP | WARL | Previous nominal privilege mode for traps into M-mode. |
+| 10:9 | VS | WARL/RO0 | Vector context status. Encodes Off, Initial, Clean, or Dirty. |
+| 8 | SPP | WARL/RO0 | Previous nominal privilege for traps into S/HS mode. `0` = U/VU; `1` = S/HS or VS. |
+| 7 | MPIE | RW | Value of `MIE` before the most recent trap into M-mode. MRET copies `MPIE` to `MIE`, then sets `MPIE=1`. |
+| 6 | UBE | WARL/RO0 | U-mode data endianness. `0` = little-endian; `1` = big-endian. Instruction fetch remains little-endian. |
+| 5 | SPIE | RW/RO0 | Value of `SIE` before the most recent trap into S/HS mode. SRET copies `SPIE` to `SIE`, then sets `SPIE=1`. |
+| 4 | WPRI | — | Reserved. |
+| 3 | MIE | RW | M-mode global interrupt enable. Cleared on trap entry into M-mode and restored from `MPIE` by MRET. Reset to zero. |
+| 2 | WPRI | — | Reserved. |
+| 1 | SIE | RW/RO0 | S-mode global interrupt enable. Cleared on trap entry into S/HS mode and restored from `SPIE` by SRET. |
+| 0 | WPRI | — | Reserved. |
+
+### RV32 fields located in mstatush rather than mstatus
+
+| mstatush bits | Field | Description |
+|---:|---|---|
+| 31:11 | WPRI | Reserved. |
+| 10 | MDT | M-mode Disable Trap. Corresponds to RV64 `mstatus[42]`. |
+| 9 | MPELP | M-mode Previous Expected Landing Pad. Corresponds to RV64 `mstatus[41]`. |
+| 8 | WPRI | Reserved. |
+| 7 | MPV | Machine Previous Virtualization mode. Corresponds to RV64 `mstatus[39]`. |
+| 6 | GVA | Guest Virtual Address indicator. Corresponds to RV64 `mstatus[38]`. |
+| 5 | MBE | M-mode data endianness. Corresponds to RV64 `mstatus[37]`. |
+| 4 | SBE | S-mode data endianness. Corresponds to RV64 `mstatus[36]`. |
+| 3:0 | WPRI | Reserved. `SXL` and `UXL` do not exist for RV32. |
+
+### FS, VS, and XS encodings
+
+| Value | FS/VS meaning | XS meaning |
+|---:|---|---|
+| `00` | Off | All off |
+| `01` | Initial | None dirty or clean; some on |
+| `10` | Clean | None dirty; some clean |
+| `11` | Dirty | Some dirty |
+
+### MPP encoding
+
+| Value | Previous mode |
+|---:|---|
+| `00` | U-mode or VU-mode, distinguished by `MPV` |
+| `01` | S/HS-mode or VS-mode, distinguished by `MPV` |
+| `10` | Reserved |
+| `11` | M-mode; `MPV` is ignored |
+
+### SXL and UXL encoding
+
+| Value | XLEN |
+|---:|---:|
+| `00` | Reserved |
+| `01` | 32 |
+| `10` | 64 |
+| `11` | 128; not legal when wider than the implementation's MXLEN |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..63=SD, 62..43=WPRI, 42..42=MDT, 41..41=MPELP, 40..40=WPRI, 39..39=MPV, 38..38=GVA, 37..37=MBE, 36..36=SBE, 35..34=SXL, 33..32=UXL, 31..25=WPRI, 24..24=SDT, 23..23=SPELP, 22..22=TSR, 21..21=TW, 20..20=TVM, 19..19=MXR, 18..18=SUM, 17..17=MPRV, 16..15=XS, 14..13=FS, 12..11=MPP, 10..9=VS, 8..8=SPP, 7..7=MPIE, 6..6=UBE, 5..5=SPIE, 4..4=WPRI, 3..3=MIE, 2..2=WPRI, 1..1=SIE, 0..0=WPRI
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: satp
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for satp register. The register of satp is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+**Register:** `satp`  
+**CSR address:** `0x180`  
+**Privilege/access:** `SRW`  
+**Width:** `SXLEN`  
+**Description:** Supervisor address translation and protection.
+
+### SXLEN = 32
+
+| Bits | Width | Field | Type | Description |
+|---|---:|---|---|---|
+| 31 | 1 | `MODE` | WARL | Selects the supervisor address-translation scheme. |
+| 30:22 | 9 | `ASID` | WARL | Address-space identifier used for per-address-space translation fences and translation-cache tagging. |
+| 21:0 | 22 | `PPN` | WARL | Physical page number of the root page table. The root address is `PPN × 4096`. |
+
+#### `MODE` encodings, SXLEN=32
+
+| Value | Name | Description |
+|---:|---|---|
+| 0 | `Bare` | No address translation or additional protection. |
+| 1 | `Sv32` | Page-based 32-bit virtual addressing. |
+
+### SXLEN = 64
+
+| Bits | Width | Field | Type | Description |
+|---|---:|---|---|---|
+| 63:60 | 4 | `MODE` | WARL | Selects the supervisor address-translation scheme. |
+| 59:44 | 16 | `ASID` | WARL | Address-space identifier used for per-address-space translation fences and translation-cache tagging. |
+| 43:0 | 44 | `PPN` | WARL | Physical page number of the root page table. The root address is `PPN × 4096`. |
+
+#### `MODE` encodings, SXLEN=64
+
+| Value | Name | Description |
+|---:|---|---|
+| 0 | `Bare` | No address translation or additional protection. |
+| 1–7 | — | Reserved for standard use. |
+| 8 | `Sv39` | Page-based 39-bit virtual addressing. |
+| 9 | `Sv48` | Page-based 48-bit virtual addressing. |
+| 10 | `Sv57` | Page-based 57-bit virtual addressing. |
+| 11 | `Sv64` | Reserved for page-based 64-bit virtual addressing. |
+| 12–13 | — | Reserved for standard use. |
+| 14–15 | — | Designated for custom use. |
+
+### Field constraints
+
+| Field | Constraints |
+|---|---|
+| `MODE` | Implementations need not support every mode. A write specifying an unsupported mode has no effect on any `satp` field. |
+| `ASID` | The implemented width, `ASIDLEN`, is unspecified and may be zero. Implemented bits begin at the least-significant end. `ASIDMAX` is 9 for Sv32 and 16 for Sv39, Sv48, and Sv57. |
+| `PPN` | May not represent every physical page number; platform standards may constrain writable values. |
+| `Bare` | Software must write zero to all remaining fields: bits 30:0 for SXLEN=32 or bits 59:0 for SXLEN=64. A nonzero value in these fields with `MODE=Bare` has unspecified effects. |
+| `Bare`, SXLEN=32 | Encodings with `ASID[8:7]=3` are designated for custom use. Encodings with `ASID[8:7]≠3` are reserved for future standard use. |
+| `Bare`, SXLEN=64 | All encodings are reserved for future standard use. |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..60=MODE, 59..44=ASID, 43..0=PPN
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 1
+NAME: scounteren
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for scounteren register. The register of scounteren is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+| Bits | Field | Type | Description |
+|---:|---|---|---|
+| 31 | HPM31 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter31`. If clear, access traps. |
+| 30 | HPM30 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter30`. If clear, access traps. |
+| 29 | HPM29 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter29`. If clear, access traps. |
+| 28 | HPM28 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter28`. If clear, access traps. |
+| 27 | HPM27 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter27`. If clear, access traps. |
+| 26 | HPM26 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter26`. If clear, access traps. |
+| 25 | HPM25 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter25`. If clear, access traps. |
+| 24 | HPM24 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter24`. If clear, access traps. |
+| 23 | HPM23 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter23`. If clear, access traps. |
+| 22 | HPM22 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter22`. If clear, access traps. |
+| 21 | HPM21 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter21`. If clear, access traps. |
+| 20 | HPM20 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter20`. If clear, access traps. |
+| 19 | HPM19 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter19`. If clear, access traps. |
+| 18 | HPM18 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter18`. If clear, access traps. |
+| 17 | HPM17 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter17`. If clear, access traps. |
+| 16 | HPM16 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter16`. If clear, access traps. |
+| 15 | HPM15 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter15`. If clear, access traps. |
+| 14 | HPM14 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter14`. If clear, access traps. |
+| 13 | HPM13 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter13`. If clear, access traps. |
+| 12 | HPM12 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter12`. If clear, access traps. |
+| 11 | HPM11 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter11`. If clear, access traps. |
+| 10 | HPM10 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter10`. If clear, access traps. |
+| 9 | HPM9 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter9`. If clear, access traps. |
+| 8 | HPM8 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter8`. If clear, access traps. |
+| 7 | HPM7 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter7`. If clear, access traps. |
+| 6 | HPM6 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter6`. If clear, access traps. |
+| 5 | HPM5 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter5`. If clear, access traps. |
+| 4 | HPM4 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter4`. If clear, access traps. |
+| 3 | HPM3 | WARL, possibly RO-0 | Enables U-mode access to `hpmcounter3`. If clear, access traps. |
+| 2 | IR | WARL, possibly RO-0 | Enables U-mode access to `instret`. If clear, access traps. |
+| 1 | TM | WARL, possibly RO-0 | Enables U-mode access to `time`. If clear, access traps. |
+| 0 | CY | WARL, possibly RO-0 | Enables U-mode access to `cycle`. If clear, access traps. |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..32=WPRI, 31..31=HPM31, 30..30=HPM30, 29..29=HPM29, 28..28=HPM28, 27..27=HPM27, 26..26=HPM26, 25..25=HPM25, 24..24=HPM24, 23..23=HPM23, 22..22=HPM22, 21..21=HPM21, 20..20=HPM20, 19..19=HPM19, 18..18=HPM18, 17..17=HPM17, 16..16=HPM16, 15..15=HPM15, 14..14=HPM14, 13..13=HPM13, 12..12=HPM12, 11..11=HPM11, 10..10=HPM10, 9..9=HPM9, 8..8=HPM8, 7..7=HPM7, 6..6=HPM6, 5..5=HPM5, 4..4=HPM4, 3..3=HPM3, 2..2=IR, 1..1=TM, 0..0=CY
+======================================================= END - 4 ========================================================

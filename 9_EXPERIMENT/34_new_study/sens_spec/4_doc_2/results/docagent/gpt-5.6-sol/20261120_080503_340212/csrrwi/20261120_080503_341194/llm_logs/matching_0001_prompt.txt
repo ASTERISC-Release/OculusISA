@@ -1,0 +1,52 @@
+You are comparing generated RISC-V architectural rules against a ground truth rule set.
+
+    Target: csrrwi
+
+    Generated rules:
+    RULE 1: When CSRRWI executes successfully, it atomically accesses exactly one addressed CSR.
+RULE 2: When CSRRWI executes, its 5-bit unsigned immediate is zero-extended to XLEN bits to form the CSR write value.
+RULE 3: When CSRRWI executes successfully, it attempts to write the addressed CSR regardless of the value of uimm.
+RULE 4: When CSRRWI executes with uimm=0, it attempts to write zero to the addressed CSR.
+RULE 5: When CSRRWI executes successfully with rd≠x0, it reads the addressed CSR value that existed before execution of the instruction.
+RULE 6: When CSRRWI executes successfully with rd≠x0 and the addressed CSR is no wider than XLEN, it writes the old CSR value zero-extended to XLEN bits into rd.
+RULE 7: When CSRRWI executes successfully with rd≠x0 and the addressed standard CSR is wider than XLEN, it writes the least-significant XLEN bits of the old CSR value into rd.
+RULE 8: When CSRRWI executes with rd=x0, it does not read the addressed CSR.
+RULE 9: When CSRRWI executes with rd=x0, it does not cause any side effect associated with reading the addressed CSR.
+RULE 10: When CSRRWI executes successfully, it writes the XLEN-bit zero-extended uimm value to the addressed CSR.
+RULE 11: When CSRRWI writes a standard CSR wider than XLEN, it modifies only the least-significant XLEN bits and leaves the upper bits unchanged.
+RULE 12: When CSRRWI writes a read/write CSR containing read-only bits, writes to those read-only bits are ignored.
+RULE 13: When CSRRWI writes a WARL field with an unsupported value, the unsupported value does not by itself cause an exception.
+RULE 14: When CSRRWI writes a WARL field, a subsequent read of that field returns a legal value.
+RULE 15: When CSRRWI successfully writes a CSR having whole-CSR write side effects, those write side effects occur even when uimm=0.
+RULE 16: When CSRRWI successfully writes a CSR having field-specific write side effects, write side effects are actioned for every such field in the CSR.
+RULE 17: When CSRRWI both reads and writes a CSR that can also be modified implicitly by instruction execution, the explicit read returns the CSR value from before execution of CSRRWI.
+RULE 18: When CSRRWI explicitly writes a CSR that the same instruction would otherwise modify implicitly, the explicit write suppresses and overrides that implicit modification.
+RULE 19: When CSRRWI writes instret, the explicit CSR value is written instead of incrementing instret for retirement of that CSRRWI.
+RULE 20: When CSRRWI attempts to write a read-only CSR, it raises an illegal-instruction exception.
+RULE 21: When CSRRWI attempts to access a CSR from a privilege mode below the CSR's minimum permitted privilege and the access does not qualify for a virtual-instruction exception, it raises an illegal-instruction exception.
+RULE 22: When V=1 and a CSRRWI access is HS-qualified but is prevented from executing by virtualization state or virtualization-specific CSR access controls, it raises a virtual-instruction exception.
+RULE 23: When V=1 and a prohibited CSRRWI access is not HS-qualified, it raises an illegal-instruction exception rather than a virtual-instruction exception.
+RULE 24: When CSRRWI raises an illegal-instruction or virtual-instruction exception, it does not update the addressed CSR.
+RULE 25: When CSRRWI raises an illegal-instruction or virtual-instruction exception, it does not update rd.
+RULE 26: Unless otherwise specified for the addressed CSR, a successful CSRRWI access is observed by the executing hart after all earlier program-ordered instructions whose behavior modifies or is modified by that CSR state.
+RULE 27: Unless otherwise specified for the addressed CSR, a successful CSRRWI access is observed by the executing hart before all later program-ordered instructions whose behavior modifies or is modified by that CSR state.
+RULE 28: Unless otherwise specified, side effects caused by a successful CSRRWI access are observable by the next instruction in program order.
+RULE 29: Unless otherwise specified, consequences of CSRRWI CSR-access side effects are not observable by preceding instructions.
+RULE 30: Under RVWMO, other harts or devices may observe a CSRRWI CSR access in an order different from program order unless an applicable ordering rule imposes stronger ordering.
+RULE 31: A CSRRWI CSR access is not ordered with respect to an explicit memory access unless the CSR access modifies that memory instruction's execution behavior, a memory-model syntactic dependency orders them, an applicable memory-ordering PMA orders them, or an ordering instruction enforces the order.
+RULE 32: For FENCE ordering, the CSR read performed by CSRRWI with rd≠x0 is classified as device input.
+RULE 33: For FENCE ordering, the CSR write performed by every CSRRWI is classified as device output.
+RULE 34: When CSRRWI executes with rd≠x0, it carries a syntactic dependency from the addressed CSR value to rd.
+RULE 35: When CSRRWI executes with rd=x0, the addressed CSR is not a source register for syntactic-dependency purposes.
+RULE 36: For every successfully executed CSRRWI, the addressed CSR is a destination register for syntactic-dependency purposes.
+
+    Ground truth rules in this batch:
+    RULE 1: CSRRWI obtains the XLEN-bit value to write to the CSR by zero-extending the 5-bit unsigned immediate field (uimm[4:0]) encoded in the rs1 field.
+RULE 2: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that could occur on a CSR read.
+RULE 3: When rd of a CSRRWI instruction is x0, the instruction shall write the CSR with the zero-extended immediate value.
+RULE 4: When rd of a CSRRWI instruction is not x0, the instruction shall read the current value of the CSR, write the CSR with the zero-extended immediate value, and place the original CSR value into rd.
+
+    Determine all semantically qualifying matches. A generated rule covers a ground truth rule only if it expresses the same architectural behavior or fully includes the ground truth rule's required condition and outcome. Do not count a partial match. Use only the given rule texts. Do not use external knowledge or infer behavior that is not explicitly stated. Return candidate pairs for each qualifying match, including alternative candidates when more than one pair qualifies. A separate deterministic algorithm will select one-to-one matches from these candidates. Omit unmatched rules. Use only IDs present in the inputs.
+
+    Return only JSON:
+    {"mapping": [{"generated_id": <generated rule ID>, "gt_id": <ground truth rule ID>}]}

@@ -1,0 +1,1184 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `VLE32FF.V`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+idening arithmetic instruction is not available.
+
+## 31.11.4. Vector Integer Add-with-Carry / Subtract-with-Borrow Instructions
+
+To support multi-word integer arithmetic, instructions that operate on a carry bit are provided. For each operation (add or subtract), two instructions are provided: one to provide the result (SEW width), and the second to generate the carry output (single bit encoded as a mask boolean).
+
+The carry inputs and outputs are represented using the mask register layout as described in Section 31.4.5. Due to encoding constraints, the carry input must come from the implicit v0 register, but carry outputs can be written to any vector register that respects the source/destination overlap restrictions.
+
+vadc and vsbc add or subtract the source operands and the carry-in or borrow-in, and write the result to vector register vd .  These instructions are encoded as masked instructions ( vm=0 ), but they operate on and
+
+write back all body elements. Encodings corresponding to the unmasked versions ( vm=1 ) are reserved.
+
+vmadc and vmsbc add or subtract the source operands, optionally add the carry-in or subtract the borrow-in if  masked ( vm=0 ),  and  write  the  resulting  carry-out  or  borrow-out back to mask register vd .  If  unmasked ( vm=1 ), there is no carry-in or borrow-in. These instructions operate on and write back all body elements, even if masked. Because these instructions produce a mask value, they always operate with a tail-agnostic policy.
+
+```
+# Produce sum with carry. # vd[i] = vs2[i] + vs1[i] + v0.mask[i] vadc.vvm   vd, vs2, vs1, v0  # Vector-vector # vd[i] = vs2[i] + x[rs1] + v0.mask[i] vadc.vxm   vd, vs2, rs1, v0  # Vector-scalar # vd[i] = vs2[i] + imm + v0.mask[i] vadc.vim   vd, vs2, imm, v0  # Vector-immediate # Produce carry out in mask register format # vd.mask[i] = carry_out(vs2[i] + vs1[i] + v0.mask[i]) vmadc.vvm   vd, vs2, vs1, v0  # Vector-vector # vd.mask[i] = carry_out(vs2[i] + x[rs1] + v0.mask[i]) vmadc.vxm   vd, vs2, rs1, v0  # Vector-scalar # vd.mask[i] = carry_out(vs2[i] + imm + v0.mask[i]) vmadc.vim   vd, vs2, imm, v0  # Vector-immediate # vd.mask[i] = carry_out(vs2[i] + vs1[i]) vmadc.vv    vd, vs2, vs1      # Vector-vector, no carry-in # vd.mask[i] = carry_out(vs2[i] + x[rs1]) vmadc.vx    vd, vs2, rs1      # Vector-scalar, no carry-in # vd.mask[i] = carry_out(vs2[i] + imm) vmadc.vi    vd, vs2, imm      # Vector-immediate, no carry-in
+```
+
+Because  implementing  a  carry  propagation  requires  executing  two  instructions  with  unchanged  inputs, destructive accumulations will require an additional move to obtain correct results.
+
+```
+# Example multi-word arithmetic sequence, accumulating into v4 vmadc.vvm v1, v4, v8, v0  # Get carry into temp register v1 vadc.vvm v4, v4, v8, v0   # Calc new sum vmmv.m v0, v1             # Move temp carry into v0 for next word
+```
+
+The  subtract  with  borrow  instruction vsbc performs  the  equivalent  function  to  support  long  word
+
+arithmetic for subtraction. There are no subtract with immediate instructions.
+
+```
+# Produce difference with borrow. # vd[i] = vs2[i] - vs1[i] - v0.mask[i] vsbc.vvm   vd, vs2, vs1, v0  # Vector-vector # vd[i] = vs2[i] - x[rs1] - v0.mask[i] vsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar # Produce borrow out in mask register format # vd.mask[i] = borrow_out(vs2[i] - vs1[i] - v0.mask[i]) vmsbc.vvm   vd, vs2, vs1, v0  # Vector-vector # vd.mask[i] = borrow_out(vs2[i] - x[rs1] - v0.mask[i]) vmsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar # vd.mask[i] = borrow_out(vs2[i] - vs1[i]) vmsbc.vv    vd, vs2, vs1      # Vector-vector, no borrow-in # vd.mask[i] = borrow_out(vs2[i] - x[rs1]) vmsbc.vx    vd, vs2, rs1      # Vector-scalar, no borrow-in
+```
+
+For vmsbc , the borrow is defined to be 1 iff the difference, prior to truncation, is negative.
+
+For vadc and vsbc , the instruction encoding is reserved if the destination vector register is v0 .
+
+<image>
+
+This constraint corresponds to the constraint on masked vector operations that overwrite the mask register.
+
+## 31.11.5. Vector Bitwise Logical Instructions
+
+```
+# Bitwise logical operations. vand.vv vd, vs2, vs1, vm   # Vector-vector vand.vx vd, vs2, rs1, vm   # vector-scalar vand.vi vd, vs2, imm, vm   # vector-immediate vor.vv vd, vs2, vs1, vm    # Vector-vector vor.vx vd, vs2, rs1, vm    # vector-scalar vor.vi vd, vs2, imm, vm    # vector-immediate vxor.vv vd, vs2, vs1, vm    # Vector-vector vxor.vx vd, vs2, rs1, vm    # vector-scalar vxor.vi vd, vs2, imm, vm    # vector-immediate
+```
+
+<image>
+
+With  an  immediate  of  -1,  scalar-immediate  forms  of  the vxor instruction  provide  a  bitwise NOT  operation.  This  is  provided  as  an  assembler  pseudoinstruction vnot.v  vd,vs,vm =
+
+vxor.vi vd,vs,-1,vm .
+
+## 31.11.6. Vector Single-Width Shift Instructions
+
+A  full  set  of  vector  shift  instructions  are  provided,  including  logical  shift  left  ( sll ),  and  logical  (zeroextending srl )  and  arithmetic  (sign-extending sra )  shift  right.  The  data  to  be  shifted  is  in  the  vector register group specified by vs2 and the shift amount value can come from a vector register group vs1 ,  a scalar  integer  register rs1 ,  or  a  zero-extended  5-bit  immediate.  Only  the  low  lg2(SEW)  bits  of  the  shiftamount value are used to control the shift amount.
+
+```
+# Bit shift operations vsll.vv vd, vs2, vs1, vm   # Vector-vector vsll.vx vd, vs2, rs1, vm   # vector-scalar vsll.vi vd, vs2, uimm, vm   # vector-immediate vsrl.vv vd, vs2, vs1, vm   # Vector-vector vsrl.vx vd, vs2, rs1, vm   # vector-scalar vsrl.vi vd, vs2, uimm, vm   # vector-immediate vsra.vv vd, vs2, vs1, vm   # Vector-vector vsra.vx vd, vs2, rs1, vm   # vector-scalar vsra.vi vd, vs2, uimm, vm   # vector-immediate
+```
+
+## 31.11.7. Vector Narrowing Integer Right Shift Instructions
+
+The narrowing right shifts extract a smaller field from a wider operand and have both zero-extending ( srl ) and  sign-extending  ( sra )  forms.  The  shift  amount  can  come  from  a  vector  register  group,  or  a  scalar x register, or a zero-extended 5-bit immediate. The low lg2(2*SEW) bits of the shift-amount value are used (e.g., the low 6 bits for a SEW=64-bit to SEW=32-bit narrowing operation).
+
+```
+# Narrowing shift right logical, SEW = (2*SEW) >> SEW vnsrl.wv vd, vs2, vs1, vm   # vector-vector vnsrl.wx vd, vs2, rs1, vm   # vector-scalar vnsrl.wi vd, vs2, uimm, vm   # vector-immediate # Narrowing shift right arithmetic, SEW = (2*SEW) >> SEW vnsra.wv vd, vs2, vs1, vm   # vector-vector vnsra.wx vd, vs2, rs1, vm   # vector-scalar vnsra.wi vd, vs2, uimm, vm   # vector-immediate
+```
+
+<image>
+
+Future extensions might add support for versions that narrow to a destination that is 1/4 the width of the source.
+
+<image>
+
+An integer value can be halved in width using the narrowing integer shift instructions with a scalar operand of x0 .  An  assembly pseudoinstruction is provided vncvt.x.x.w vd,vs,vm = vnsrl.wx vd,vs,x0,vm .
+
+## 31.11.8. Vector Integer Compare Instructions
+
+The  following  integer  compare  instructions  write  1  to  the  destination  mask  register  element  if  the comparison  evaluates  to  true,  and  0  otherwise.  The  destination  mask  vector  is  always  held  in  a  single vector  register,  with  a  layout  of  elements  as  described  in  Section  31.4.5.  The  destination  mask  vector register may be the same as the source vector mask register ( v0 ).
+
+```
+# Set if equal vmseq.vv vd, vs2, vs1, vm  # Vector-vector vmseq.vx vd, vs2, rs1, vm  # vector-scalar vmseq.vi vd, vs2, imm, vm  # vector-immediate # Set if not equal vmsne.vv vd, vs2, vs1, vm  # Vector-vector vmsne.vx vd, vs2, rs1, vm  # vector-scalar vmsne.vi vd, vs2, imm, vm  # vector-immediate # Set if less than, unsigned vmsltu.vv vd, vs2, vs1, vm  # Vector-vector vmsltu.vx vd, vs2, rs1, vm  # Vector-scalar # Set if less than, signed vmslt.vv vd, vs2, vs1, vm  # Vector-vector vmslt.vx vd, vs2, rs1, vm  # vector-scalar # Set if less than or equal, unsigned vmsleu.vv vd, vs2, vs1, vm   # Vector-vector vmsleu.vx vd, vs2, rs1, vm   # vector-scalar vmsleu.vi vd, vs2, imm, vm   # Vector-immediate # Set if less than or equal, signed vmsle.vv vd, vs2, vs1, vm  # Vector-vector vmsle.vx vd, vs2, rs1, vm  # vector-scalar vmsle.vi vd, vs2, imm, vm  # vector-immediate # Set if greater than, unsigned vmsgtu.vx vd, vs2, rs1, vm   # Vector-scalar vmsgtu.vi vd, vs2, imm, vm   # Vector-immediate # Set if greater than, signed vmsgt.vx vd, vs2, rs1, vm    # Vector-scalar vmsgt.vi vd, vs2, imm, vm    # Vector-immediate # Following two instructions are not provided directly # Set if greater than or equal, unsigned # vmsgeu.vx vd, vs2, rs1, vm    # Vector-scalar # Set if greater than or equal, signed # vmsge.vx vd, vs2, rs1, vm    # Vector-scalar
+```
+
+The following table indicates how all comparisons are implemented in native machine code.
+
+| Comparison                           | Assembler Mapping                                                                                           | Assembler Pseudoinstruction                           |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| va < vb va <= vb va > vb va >= vb    | vmslt{u}.vv vd, va, vb, vm vmsle{u}.vv vd, va, vb, vm vmslt{u}.vv vd, vb, va, vm vmsle{u}.vv vd, vb, va, vm | vmsgt{u}.vv vd, va, vb, vm vmsge{u}.vv vd, va, vb, vm |
+| va < x va <= x va > x va >= x va < i | vmslt{u}.vx vd, va, x, vm vmsle{u}.vx vd, va, x, vm vmsgt{u}.vx vd, va, x, vm see below vm                  | vmslt{u}.vi vd, va, i, vm                             |
+| va <= i va > i va >= i va, vb x      | vmsle{u}.vi vd, va, i-1, vmsle{u}.vi vd, va, i, vm vmsgt{u}.vi vd, va, i, vm vmsgt{u}.vi vd, va, i-1, vm    | vmsge{u}.vi vd, va, i, vm                             |
+| i                                    | vector register groups scalar integer register immediate                                                    |                                                       |
+
+<image>
+
+The  immediate  forms  of vmslt{u}.vi are  not  provided  as  the  immediate  value  can  be decreased by 1 and the vmsle{u}.vi variants used instead. The vmsle.vi range is -16 to 15, resulting in an effective vmslt.vi range of -15 to 16. The vmsleu.vi range is 0 to 15 giving an effective vmsltu.vi range of 1 to 16 (Note, vmsltu.vi with immediate 0 is not useful as it is always false).
+
+<image>
+
+Because the 5-bit vector immediates are always sign-extended, when the high bit of the simm5 immediate is set, vmsleu.vi also supports unsigned immediate values in the range 2 SEW -16 to 2 SEW -1 ,  allowing  corresponding vmsltu.vi compares  against  unsigned  immediates  in  the range 2 SEW -15 to 2 SEW . Note that vmsltu.vi with immediate 2 SEW is not useful as it is always true.
+
+Similarly, vmsge{u}.vi is  not  provided  and  the  compare  is  implemented  using vmsgt{u}.vi with  the immediate  decremented  by  one.  The  resulting  effective vmsge.vi range  is  -15  to  16,  and  the  resulting effective vmsgeu.vi range is 1 to 16 (Note, vmsgeu.vi with immediate 0 is not useful as it is always true).
+
+<image>
+
+The vmsgt forms for register scalar and immediates are provided to allow a single compare instruction to provide the correct polarity of mask value without using additional mask logical instructions.
+
+To reduce encoding space, the vmsge{u}.vx form is not directly provided, and so the va ≥ x case requires special treatment.
+
+<image>
+
+The vmsge{u}.vx could  potentially  be  encoded  in  a  non-orthogonal  way  under  the  unused OPIVI variant of vmslt{u} . These would be the only instructions in OPIVI that use a scalar x register however. Alternatively, a further two funct6 encodings could be used, but these would have a different operand format (writes to mask register) than others in the same group of 8 funct6  encodings.  The  current  PoR  is  to  omit  these  instructions  and  to  synthesize  where needed as described below.
+
+The vmsge{u}.vx operation can be synthesized by reducing the value of x by 1 and using the vmsgt{u}.vx instruction, when it is known that this will not underflow the representation in x .
+
+```
+Sequences to synthesize vmsge{u}.vx instruction va >= x,  x > minimum addi t0, x, -1; vmsgt{u}.vx vd, va, t0, vm
+```
+
+The above sequence will usually be the most efficient implementation, but assembler pseudoinstructions can be provided for cases where the range of x is unknown.
+
+```
+unmasked va >= x pseudoinstruction: vmsge{u}.vx vd, va, x expansion: vmslt{u}.vx vd, va, x; vmnand.mm vd, vd, vd masked va >= x, vd != v0 pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t expansion: vmslt{u}.vx vd, va, x, v0.t; vmxor.mm vd, vd, v0 masked va >= x, vd == v0 pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t, vt expansion: vmslt{u}.vx vt, va, x;  vmandn.mm vd, vd, vt masked va >= x, any vd pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t, vt expansion: vmslt{u}.vx vt, va, x;  vmandn.mm vt, v0, vt;  vmandn.mm vd, vd, v0;  vmor.mm vd, vt, vd The vt argument to the pseudoinstruction must name a temporary vector register that is not same as vd and which will be clobbered by the pseudoinstruction
+```
+
+Compares effectively AND in the mask under a mask-undisturbed policy if the destination register is v0 , e.g.,
+
+```
+# (a < b) && (b < c) in two instructions when mask-undisturbed vmslt.vv    v0, va, vb        # All body elements written vmslt.vv    v0, vb, vc, v0.t  # Only update at set mask
+```
+
+Compares write mask registers, and so always operate under a tail-agnostic policy.
+
+## 31.11.9. Vector Integer Min/Max Instructions
+
+Signed and unsigned integer minimum and maximum instructions are supported.
+
+```
+# Unsigned minimum vminu.vv vd, vs2, vs1, vm   # Vector-vector vminu.vx vd, vs2, rs1, vm   # vector-scalar # Signed minimum vmin.vv vd, vs2, vs1, vm   # Vector-vector vmin.vx vd, vs2, rs1, vm   # vector-scalar # Unsigned maximum vmaxu.vv vd, vs2, vs1, vm   # Vector-vector vmaxu.vx vd, vs2, rs1, vm   # vector-scalar # Signed maximum vmax.vv vd, vs2, vs1, vm   # Vector-vector vmax.vx vd, vs2, rs1, vm   # vector-scalar
+```
+
+## 31.11.10. Vector Single-Width Integer Multiply Instructions
+
+The  single-width  multiply  instructions  perform  a  SEW-bit*SEW-bit  multiply  to  generate  a  2*SEW-bit product, then return one half of the product in the SEW-bit-wide destination. The mul versions write the low  word  of  the  product  to  the  destination  register,  while  the mulh versions  write  the  high  word  of  the product to the destination register.
+
+```
+# Signed multiply, returning low bits of product vmul.vv vd, vs2, vs1, vm   # Vector-vector vmul.vx vd, vs2, rs1, vm   # vector-scalar # Signed multiply, returning high bits of product vmulh.vv vd, vs2, vs1, vm   # Vector-vector vmulh.vx vd, vs2, rs1, vm   # vector-scalar # Unsigned multiply, returning high bits of product vmulhu.vv vd, vs2, vs1, vm   # Vector-vector vmulhu.vx vd, vs2, rs1, vm   # vector-scalar # Signed(vs2)-Unsigned multiply, returning high bits of product vmulhsu.vv vd, vs2, vs1, vm   # Vector-vector vmulhsu.vx vd, vs2, rs1, vm   # vector-scalar
+```
+
+<image>
+
+There is no vmulhus.vx opcode to return high half of unsigned-vector * signed-scalar product. The scalar can be splatted to a vector, then a vmulhsu.vv used.
+
+<image>
+
+The current vmulh* opcodes perform simple fractional multiplies, but with no option to scale, round, and/or saturate the result. A possible future extension can consider variants of vmulh ,
+
+vmulhu , vmulhsu that use the vxrm rounding mode when discarding low half of product. There is no possibility of overflow in these cases.
+
+## 31.11.11. Vector Integer Divide Instructions
+
+The divide and remainder instructions are equivalent to the RISC-V standard scalar integer multiply/divides, with the same results for extreme inputs.
+
+```
+# Unsigned divide. vdivu.vv vd, vs2, vs1, vm   # Vector-vector vdivu.vx vd, vs2, rs1, vm   # vector-scalar # Signed divide vdiv.vv vd, vs2, vs1, vm   # Vector-vector vdiv.vx vd, vs2, rs1, vm   # vector-scalar # Unsigned remainder vremu.vv vd, vs2, vs1, vm   # Vector-vector vremu.vx vd, vs2, rs1, vm   # vector-scalar # Signed remainder vrem.vv vd, vs2, vs1, vm   # Vector-vector vrem.vx vd, vs2, rs1, vm   # vector-scalar
+```
+
+<image>
+
+The decision to include integer divide and remainder was contentious. The argument in favor is that without a standard instruction, software would have to pick some algorithm to perform the operation, which would likely perform poorly on some microarchitectures versus others.
+
+<image>
+
+There is no instruction to perform a "scalar divide by vector" operation.
+
+## 31.11.12. Vector Widening Integer Multiply Instructions
+
+The widening integer multiply instructions return the full 2*SEW-bit product from an SEW-bit*SEW-bit multiply.
+
+```
+# Widening signed-integer multiply vwmul.vv  vd, vs2, vs1, vm # vector-vector vwmul.vx  vd, vs2, rs1, vm # vector-scalar # Widening unsigned-integer multiply vwmulu.vv vd, vs2, vs1, vm # vector-vector vwmulu.vx vd, vs2, rs1, vm # vector-scalar # Widening signed(vs2)-unsigned integer multiply vwmulsu.vv vd, vs2, vs1, vm # vector-vector vwmulsu.vx vd, vs2, rs1, vm # vector-scalar
+```
+
+## 31.11.13. Vector Single-Width Integer Multiply-Add Instructions
+
+The integer multiply-add instructions are destructive and are provided in two forms, one that overwrites the addend or minuend ( vmacc , vnmsac ) and one that overwrites the first multiplicand ( vmadd , vnmsub ).
+
+The low half of the product is added or subtracted from the third operand.
+
+<image>
+
+sac is intended to be read as "subtract from accumulator". The opcode is vnmsac to match the (unfortunately counterintuitive) floating-point fnmsub instruction definition. Similarly for the vnmsub opcode.
+
+```
+# Integer multiply-add, overwrite addend vmacc.vv vd, vs1, vs2, vm     # vd[i] = (vs1[i] * vs2[i]) + vd[i] vmacc.vx vd, rs1, vs2, vm     # vd[i] = (x[rs1] * vs2[i]) + vd[i] # Integer multiply-sub, overwrite minuend vnmsac.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i] vnmsac.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i] # Integer multiply-add, overwrite multiplicand vmadd.vv vd, vs1, vs2, vm     # vd[i] = (vs1[i] * vd[i]) + vs2[i] vmadd.vx vd, rs1, vs2, vm     # vd[i] = (x[rs1] * vd[i]) + vs2[i] # Integer multiply-sub, overwrite multiplicand vnmsub.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vd[i]) + vs2[i] vnmsub.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vd[i]) + vs2[i]
+```
+
+## 31.11.14. Vector Widening Integer Multiply-Add Instructions
+
+The widening integer multiply-add instructions add the full 2*SEW-bit product from a SEW-bit*SEW-bit multiply to a 2*SEW-bit value and produce a 2*SEW-bit result. All combinations of signed and unsigned multiply operands are supported.
+
+```
+# Widening unsigned-integer multiply-add, overwrite addend vwmaccu.vv vd, vs1, vs2, vm   # vd[i] = (vs1[i] * vs2[i]) + vd[i] vwmaccu.vx vd, rs1, vs2, vm   # vd[i] = (x[rs1] * vs2[i]) + vd[i] # Widening signed-integer multiply-add, overwrite addend vwmacc.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vs2[i]) + vd[i] vwmacc.vx vd, rs1, vs2, vm    # vd[i] = (x[rs1] * vs2[i]) + vd[i] # Widening signed-unsigned-integer multiply-add, overwrite addend vwmaccsu.vv vd, vs1, vs2, vm  # vd[i] = (signed(vs1[i]) * unsigned(vs2[i])) + vd[i] vwmaccsu.vx vd, rs1, vs2, vm  # vd[i] = (signed(x[rs1]) * unsigned(vs2[i])) + vd[i] # Widening unsigned-signed-integer multiply-add, overwrite addend vwmaccus.vx vd, rs1, vs2, vm  # vd[i] = (unsigned(x[rs1]) * signed(vs2[i])) +
+```
+
+## 31.11.15. Vector Integer Merge Instructions
+
+The  vector  integer  merge  instructions  combine  two  source  operands  based  on  a  mask.  Unlike  regular arithmetic instructions, the merge operates on all body elements (i.e., the set of elements from vstart up to the current vector length in vl ).
+
+The vmerge instructions are encoded as masked instructions ( vm=0 ). The instructions combine two sources as follows. At elements where the mask value is zero, the first operand is copied to the destination element, otherwise the second operand is copied to the destination element. The first operand is always a vector register group specified by vs2 . The second operand is a vector register group specified by vs1 or a scalar x register specified by rs1 or a 5-bit sign-extended immediate.
+
+```
+vmerge.vvm vd, vs2, vs1, v0  # vd[i] = v0.mask[i] ? vs1[i] : vs2[i] vmerge.vxm vd, vs2, rs1, v0  # vd[i] = v0.mask[i] ? x[rs1] : vs2[i] vmerge.vim vd, vs2, imm, v0  # vd[i] = v0.mask[i] ? imm    : vs2[i]
+```
+
+## 31.11.16. Vector Integer Move Instructions
+
+The vector integer move instructions copy a source operand to a vector register group. The vmv.v.v variant copies  a  vector  register  group,  whereas  the vmv.v.x and vmv.v.i variants splat a  scalar  register  or immediate to all active elements of the destination vector register group. These instructions are encoded as unmasked  instructions  ( vm=1 ).  The  first  operand  specifier  ( vs2 )  must  contain v0 ,  and  any  other  vector register number in vs2 is reserved .
+
+```
+vmv.v.v vd, vs1 # vd[i] = vs1[i] vmv.v.x vd, rs1 # vd[i] = x[rs1] vmv.v.i vd, imm # vd[i] = imm
+```
+
+<image>
+
+Mask values  can  be  widened  into  SEW-width  elements  using  a  sequence vmv.v.i vd, 0; vmerge.vim vd, vd, 1, v0 .
+
+<image>
+
+The vector integer move instructions share the encoding with the vector merge instructions, but with vm=1 and vs2=v0 .
+
+The form vmv.v.v vd, vd , which leaves body elements unchanged, can be used to indicate that the register will next be used with an EEW equal to SEW.
+
+<image>
+
+Implementations that internally  reorganize  data  according  to  EEW  can  shuffle  the  internal representation according to SEW. Implementations that do not internally reorganize data can dynamically elide this instruction (aside from resetting vstart to 0).
+
+<image>
+
+The vmv.v.v vd, vd instruction is not a RISC-V HINT as a tail-agnostic setting may cause an architectural state change on some implementations.
+
+## 31.12. Vector Fixed-Point Arithmetic Instructions
+
+The preceding set of integer arithmetic instructions is extended to support fixed-point arithmetic.
+
+A fixed-point number is a two's-complement signed or unsigned integer interpreted as the numerator in a fraction  with  an  implicit  denominator.  The  fixed-point  instructions  are  intended  to  be  applied  to  the numerators; it is the responsibility of software to manage the denominators. An N-bit element can hold two's-complement signed integers in the range -2 N-1 …+2 N-1 -1, and unsigned integers in the range 0 … +2 N -1. The  fixed-point  instructions  help  preserve  precision  in  narrow  operands  by  supporting  scaling  and rounding, and can handle overflow by saturating results into the destination format range.
+
+<image>
+
+The widening integer operations described above can also be used to avoid overflow.
+
+## 31.12.1. Vector Single-Width Saturating Add and Subtract
+
+Saturating forms of integer add and subtract are provided, for both signed and unsigned integers. If the result would overflow the destination, the result is replaced with the closest representable value, and the vxsat bit is set.
+
+```
+# Saturating adds of unsigned integers. vsaddu.vv vd, vs2, vs1, vm   # Vector-vector vsaddu.vx vd, vs2, rs1, vm   # vector-scalar vsaddu.vi vd, vs2, imm, vm   # vector-immediate # Saturating adds of signed integers. vsadd.vv vd, vs2, vs1, vm   # Vector-vector vsadd.vx vd, vs2, rs1, vm   # vector-scalar vsadd.vi vd, vs2, imm, vm   # vector-immediate # Saturating subtract of unsigned integers. vssubu.vv vd, vs2, vs1, vm   # Vector-vector vssubu.vx vd, vs2, rs1, vm   # vector-scalar # Saturating subtract of signed integers. vssub.vv vd, vs2, vs1, vm   # Vector-vector vssub.vx vd, vs2, rs1, vm   # vector-scalar
+```
+
+## 31.12.2. Vector Single-Width Averaging Add and Subtract
+
+The  averaging  add  and  subtract  instructions  right  shift  the  result  by  one  bit  and  round  off  the  result according  to  the  setting  in vxrm .  Computation  is  performed  in  infinite  precision  before  rounding  and truncating.  Both  unsigned  and  signed  versions  are  provided.  For vaaddu and vaadd there  can  be  no overflow in the result. For vasub and vasubu , overflow is ignored and the result wraps around.
+
+<image>
+
+For vasub ,  overflow  occurs  only  when  subtracting  the  smallest  number  from  the  largest number under rnu or rne rounding.
+
+```
+# Averaging add
+```
+
+```
+# Averaging adds of unsigned integers. vaaddu.vv vd, vs2, vs1, vm   # roundoff_unsigned(vs2[i] + vs1[i], 1) vaaddu.vx vd, vs2, rs1, vm   # roundoff_unsigned(vs2[i] + x[rs1], 1) # Averaging adds of signed integers. vaadd.vv vd, vs2, vs1, vm   # roundoff_signed(vs2[i] + vs1[i], 1) vaadd.vx vd, vs2, rs1, vm   # roundoff_signed(vs2[i] + x[rs1], 1) # Averaging subtract # Averaging subtract of unsigned integers. vasubu.vv vd, vs2, vs1, vm   # roundoff_unsigned(vs2[i] - vs1[i], 1) vasubu.vx vd, vs2, rs1, vm   # roundoff_unsigned(vs2[i] - x[rs1], 1) # Averaging subtract of signed integers. vasub.vv vd, vs2, vs1, vm   # roundoff_signed(vs2[i] - vs1[i], 1) vasub.vx vd, vs2, rs1, vm   # roundoff_signed(vs2[i] - x[rs1], 1)
+```
+
+## 31.12.3. Vector Single-Width Fractional Multiply with Rounding and Saturation
+
+The signed fractional multiply instruction produces a 2*SEW product of the two SEW inputs, then shifts the result right by SEW-1 bits, rounding these bits according to vxrm ,  then saturates the result to fit into SEW bits. If the result causes saturation, the vxsat bit is set.
+
+```
+# Signed saturating and rounding fractional multiply # See vxrm description for rounding calculation vsmul.vv vd, vs2, vs1, vm  # vd[i] = clip(roundoff_signed(vs2[i]*vs1[i], SEW1)) vsmul.vx vd, vs2, rs1, vm  # vd[i] = clip(roundoff_signed(vs2[i]*x[rs1], SEW1))
+```
+
+<image>
+
+When multiplying two N-bit signed numbers, the largest magnitude is obtained for -2 N-1 * -2 N-1 producing a result +2 2N-2 ,  which  has  a  single  (zero)  sign  bit  when  held  in  2N  bits.  All  other products have two sign bits in 2N bits. To retain greater precision in N result bits, the product is shifted right by one bit less than N, saturating the largest magnitude result but increasing result precision by one bit for all other products.
+
+<image>
+
+We do  not  provide  an  equivalent  fractional  multiply  where  one  input  is  unsigned,  as  these would  retain  all  upper  SEW  bits  and  would  not  need  to  saturate.  This  operation  is  partly covered  by  the vmulhu and vmulhsu instructions,  for  the  case  where  rounding  is  simply truncation ( rdn ).
+
+## 31.12.4. Vector Single-Width Scaling Shift Instructions
+
+These instructions shift the input value right, and round off the shifted out bits according to vxrm .  The scaling  right  shifts  have  both  zero-extending  ( vssrl )  and  sign-extending  ( vssra )  forms.  The  data  to  be shifted is in the vector register group specified by vs2 and the shift amount value can come from a vector register group vs1 , a scalar integer register rs1 , or a zero-extended 5-bit immediate. Only the low lg2(SEW)
+
+bits of the shift-amount value are used to control the shift amount.
+
+```
+# Scaling shift right logical vssrl.vv vd, vs2, vs1, vm   # vd[i] = roundoff_unsigned(vs2[i], vs1[i]) vssrl.vx vd, vs2, rs1, vm   # vd[i] = roundoff_unsigned(vs2[i], x[rs1]) vssrl.vi vd, vs2, uimm, vm  # vd[i] = roundoff_unsigned(vs2[i], uimm) # Scaling shift right arithmetic vssra.vv vd, vs2, vs1, vm   # vd[i] = roundoff_signed(vs2[i],vs1[i]) vssra.vx vd, vs2, rs1, vm   # vd[i] = roundoff_signed(vs2[i], x[rs1]) vssra.vi vd, vs2, uimm, vm  # vd[i] = roundoff_signed(vs2[i], uimm)
+```
+
+## 31.12.5. Vector Narrowing Fixed-Point Clip Instructions
+
+The vnclip instructions are used to pack a fixed-point value into a narrower destination. The instructions support rounding, scaling, and saturation into the final destination format. The source data is in the vector register group specified by vs2 . The scaling shift amount value can come from a vector register group vs1 , a scalar integer register rs1 ,  or  a  zero-extended 5-bit immediate. The low lg2(2*SEW) bits of the vector or scalar shift-amount value (e.g., the low 6 bits for a SEW=64-bit to SEW=32-bit narrowing operation) are used to control the right shift amount, which provides the scaling.
+
+```
+# Narrowing unsigned clip #                                SEW                            2*SEW   SEW vnclipu.wv vd, vs2, vs1, vm  # vd[i] = clip(roundoff_unsigned(vs2[i], vs1[i])) vnclipu.wx vd, vs2, rs1, vm  # vd[i] = clip(roundoff_unsigned(vs2[i], x[rs1])) vnclipu.wi vd, vs2, uimm, vm # vd[i] = clip(roundoff_unsigned(vs2[i], uimm)) # Narrowing signed clip vnclip.wv vd, vs2, vs1, vm   # vd[i] = clip(roundoff_signed(vs2[i], vs1[i])) vnclip.wx vd, vs2, rs1, vm   # vd[i] = clip(roundoff_signed(vs2[i], x[rs1])) vnclip.wi vd, vs2, uimm, vm  # vd[i] = clip(roundoff_signed(vs2[i], uimm))
+```
+
+For vnclipu / vnclip ,  the rounding mode is specified in the vxrm CSR. Rounding occurs around the leastsignificant bit of the destination and before saturation.
+
+For vnclipu , the shifted rounded source value is treated as an unsigned integer and saturates if the result would overflow the destination viewed as an unsigned integer.
+
+<image>
+
+There is no single instruction that can saturate a signed value into an unsigned destination. A sequence of two vector instructions that first removes negative numbers by performing a max against  0  using vmax then  clips  the  resulting  unsigned  value  into  the  destination  using vnclipu can be used if setting vxsat value for negative numbers is not required. A vsetvli is required between these two instructions to change SEW.
+
+For vnclip , the shifted rounded source value is treated as a signed integer and saturates if the result would overflow the destination viewed as a signed integer.
+
+If any destination element is saturated, the vxsat bit is set in the vxsat register.
+
+## 31.13. Vector Floating-Point Instructions
+
+The standard vector floating-point instructions treat elements as IEEE-754/2008-compatible values. If the EEW of a vector floating-point operand does not correspond to a supported IEEE floating-point type, the instruction encoding is reserved.
+
+<image>
+
+Whether  floating-point  is  supported,  and  for  which  element  widths,  is  determined  by  the specific vector extension. The current set of extensions include support for 32-bit and 64-bit floating-point values. When 16-bit and 128-bit element widths are added, they will be also be treated as IEEE-754/2008-compatible values. Other floating-point formats may be supported in future extensions.
+
+Vector floating-point instructions require the presence of base scalar floating-point extensions corresponding to the supported vector floating-point element widths.
+
+<image>
+
+In  particular,  future  vector  extensions  supporting  16-bit  half-precision  floating-point  values will also require some scalar half-precision floating-point support.
+
+If the floating-point unit status field mstatus.FS is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception. Any vector floating-point instruction that modifies any floating-point extension state (i.e., floating-point CSRs or f registers) must set mstatus.FS to Dirty .
+
+If  the  hypervisor  extension  is  implemented  and  V=1,  the vsstatus.FS field  is  additionally  in  effect  for vector floating-point instructions. If vsstatus.FS or mstatus.FS is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception. Any vector floating-point instruction that  modifies  any  floating-point  extension  state  (i.e.,  floating-point  CSRs  or f registers)  must  set  both mstatus.FS and vsstatus.FS to Dirty .
+
+The vector floating-point instructions have the same behavior as the scalar floating-point instructions with regard to NaNs.
+
+Scalar values for floating-point vector-scalar operations are sourced as described in Section 31.10.1.
+
+## 31.13.1. Vector Floating-Point Exception Flags
+
+A vector floating-point exception at any active floating-point element sets the standard FP exception flags in the fflags register. Inactive elements do not set FP exception flags.
+
+## 31.13.2. Vector Single-Width Floating-Point Add/Subtract Instructions
+
+```
+# Floating-point add vfadd.vv vd, vs2, vs1, vm   # Vector-vector vfadd.vf vd, vs2, rs1, vm   # vector-scalar # Floating-point subtract vfsub.vv vd, vs2, vs1, vm   # Vector-vector vfsub.vf vd, vs2, rs1, vm   # Vector-scalar vd[i] = vs2[i] - f[rs1] vfrsub.vf vd, vs2, rs1, vm  # Scalar-vector vd[i] = f[rs1] - vs2[i]
+```
+
+## 31.13.3. Vector Widening Floating-Point Add/Subtract Instructions
+
+```
+# Widening FP add/subtract, 2*SEW = SEW +/- SEW vfwadd.vv vd, vs2, vs1, vm  # vector-vector vfwadd.vf vd, vs2, rs1, vm  # vector-scalar vfwsub.vv vd, vs2, vs1, vm  # vector-vector vfwsub.vf vd, vs2, rs1, vm  # vector-scalar # Widening FP add/subtract, 2*SEW = 2*SEW +/- SEW vfwadd.wv  vd, vs2, vs1, vm  # vector-vector vfwadd.wf  vd, vs2, rs1, vm  # vector-scalar vfwsub.wv  vd, vs2, vs1, vm  # vector-vector vfwsub.wf  vd, vs2, rs1, vm  # vector-scalar
+```
+
+## 31.13.4. Vector Single-Width Floating-Point Multiply/Divide Instructions
+
+```
+# Floating-point multiply vfmul.vv vd, vs2, vs1, vm   # Vector-vector vfmul.vf vd, vs2, rs1, vm   # vector-scalar # Floating-point divide vfdiv.vv vd, vs2, vs1, vm   # Vector-vector vfdiv.vf vd, vs2, rs1, vm   # vector-scalar # Reverse floating-point divide vector = scalar / vector vfrdiv.vf vd, vs2, rs1, vm  # scalar-vector, vd[i] = f[rs1]/vs2[i]
+```
+
+## 31.13.5. Vector Widening Floating-Point Multiply
+
+```
+# Widening floating-point multiply vfwmul.vv    vd, vs2, vs1, vm # vector-vector vfwmul.vf    vd, vs2, rs1, vm # vector-scalar
+```
+
+## 31.13.6. Vector Single-Width Floating-Point Fused Multiply-Add Instructions
+
+All four varieties of fused multiply-add are provided, and in two destructive forms that overwrite one of the operands, either the addend or the first multiplicand.
+
+```
+# FP multiply-accumulate, overwrites addend vfmacc.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vs2[i]) + vd[i] vfmacc.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vs2[i]) + vd[i] # FP negate-(multiply-accumulate), overwrites subtrahend vfnmacc.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vs2[i]) - vd[i]
+```
+
+```
+vfnmacc.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vs2[i]) - vd[i] # FP multiply-subtract-accumulator, overwrites subtrahend vfmsac.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vs2[i]) - vd[i] vfmsac.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vs2[i]) - vd[i] # FP negate-(multiply-subtract-accumulator), overwrites minuend vfnmsac.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vs2[i]) + vd[i] vfnmsac.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vs2[i]) + vd[i] # FP multiply-add, overwrites multiplicand vfmadd.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vd[i]) + vs2[i] vfmadd.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vd[i]) + vs2[i] # FP negate-(multiply-add), overwrites multiplicand vfnmadd.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vd[i]) - vs2[i] vfnmadd.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vd[i]) - vs2[i] # FP multiply-sub, overwrites multiplicand vfmsub.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vd[i]) - vs2[i] vfmsub.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vd[i]) - vs2[i] # FP negate-(multiply-sub), overwrites multiplicand vfnmsub.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vd[i]) + vs2[i] vfnmsub.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vd[i]) + vs2[i]
+```
+
+<image>
+
+While we considered using the two unused rounding modes in the scalar FP FMA encoding to provide a few non-destructive FMAs, these would complicate microarchitectures by being the only maskable operation with three inputs and separate output.
+
+## 31.13.7. Vector Widening Floating-Point Fused Multiply-Add Instructions
+
+The widening floating-point fused multiply-add instructions all overwrite the wide addend with the result. The multiplier inputs are all SEW wide, while the addend and destination is 2*SEW bits wide.
+
+```
+# FP widening multiply-accumulate, overwrites addend vfwmacc.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vs2[i]) + vd[i] vfwmacc.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vs2[i]) + vd[i] # FP widening negate-(multiply-accumulate), overwrites addend vfwnmacc.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vs2[i]) - vd[i] vfwnmacc.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vs2[i]) - vd[i] # FP widening multiply-subtract-accumulator, overwrites addend vfwmsac.vv vd, vs1, vs2, vm    # vd[i] = (vs1[i] * vs2[i]) - vd[i] vfwmsac.vf vd, rs1, vs2, vm    # vd[i] = (f[rs1] * vs2[i]) - vd[i] # FP widening negate-(multiply-subtract-accumulator), overwrites addend vfwnmsac.vv vd, vs1, vs2, vm   # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
+```
+
+```
+vfwnmsac.vf vd, rs1, vs2, vm   # vd[i] = -(f[rs1] * vs2[i]) + vd[i]
+```
+
+## 31.13.8. Vector Floating-Point Square-Root Instruction
+
+This is a unary vector-vector instruction.
+
+```
+# Floating-point square root
+```
+
+```
+vfsqrt.v vd, vs2, vm   # Vector-vector square root
+```
+
+## 31.13.9. Vector Floating-Point Reciprocal Square-Root Estimate Instruction
+
+```
+# Floating-point reciprocal square-root estimate to 7 bits.
+```
+
+```
+vfrsqrt7.v vd, vs2, vm
+```
+
+This is a unary vector-vector instruction that returns an estimate of 1/sqrt(x) accurate to 7 bits.
+
+<image>
+
+An  earlier  draft  version  had  used  the  assembler  name vfrsqrte7 but  this  was  deemed  to cause confusion with the e x notation for element width. The earlier name can be retained as alias in tool chains for backward compatibility.
+
+The following table describes the instruction's behavior for all classes of floating-point inputs:
+
+| Input         | Output                | Exceptions raised   |
+|---------------|-----------------------|---------------------|
+| -∞ ≤ x < -0.0 | canonical NaN         | NV                  |
+| -0.0          | -∞                    | DZ                  |
+| +0.0          | +∞                    | DZ                  |
+| +0.0 < x < +∞ | estimate of 1/sqrt(x) |                     |
+| +∞            | +0.0                  |                     |
+| qNaN          | canonical NaN         |                     |
+| sNaN          | canonical NaN         | NV                  |
+
+-  All positive normal and subnormal inputs produce normal outputs.
+
+<image>
+
+<image>
+
+The output value is independent of the dynamic rounding mode.
+
+For the non-exceptional cases, the low bit of the exponent and the six high bits of significand (after the leading one) are concatenated and used to address the following table. The output of the table becomes the seven high bits of the result significand (after the leading one); the remainder of the result significand is zero.  Subnormal inputs are normalized and the exponent adjusted appropriately before the lookup. The output  exponent  is  chosen  to  make  the  result  approximate  the  reciprocal  of  the  square  root  of  the argument.
+
+More precisely, the result is computed as follows. Let the normalized input exponent be equal to the input exponent if the input is normal, or 0 minus the number of leading zeros in the significand otherwise. If the input is subnormal, the normalized input significand is given by shifting the input significand left by 1 minus the normalized input exponent, discarding the leading 1 bit. The output exponent equals floor((3*B -
+
+1 - the normalized input exponent) / 2), where B is the exponent bias. The output sign equals the input sign.
+
+The  following  table  gives  the  seven  MSBs  of  the  output  significand  as  a  function  of  the  LSB  of  the normalized input exponent and the six MSBs of the normalized input significand; the other bits of the output significand are zero.
+
+Table 57. vfrsqrt7.v common-case lookup table contents
+
+|   exp[0] |   sig[MSB -: 6] |   sig_out[MSB -: 7] |
+|----------|-----------------|---------------------|
+|        0 |               0 |                  52 |
+|        0 |               1 |                  51 |
+|        0 |               2 |                  50 |
+|        0 |               3 |                  48 |
+|        0 |               4 |                  47 |
+|        0 |               5 |                  46 |
+|        0 |               6 |                  44 |
+|        0 |               7 |                  43 |
+|        0 |               8 |                  42 |
+|        0 |               9 |                  41 |
+|        0 |              10 |                  40 |
+|        0 |              11 |                  39 |
+|        0 |              12 |                  38 |
+|        0 |              13 |                  36 |
+|        0 |              14 |                  35 |
+|        0 |              15 |                  34 |
+|        0 |              16 |                  33 |
+|        0 |              17 |                  32 |
+|        0 |              18 |                  31 |
+|        0 |              19 |                  30 |
+|        0 |              20 |                  30 |
+|        0 |              21 |                  29 |
+|        0 |              22 |                  28 |
+|        0 |              23 |                  27 |
+|        0 |              24 |                  26 |
+|        0 |              25 |                  25 |
+|        0 |              26 |                  24 |
+|        0 |              27 |                  23 |
+|        0 |              28 |                  23 |
+|        0 |              29 |                  22 |
+|        0 |              30 |                  21 |
+|        0 |              31 |                  20 |
+|        0 |              32 |                  19 |
+|        0 |              33 |                  19 |
+
+|   exp[0] |   sig[MSB -: 6] |   sig_out[MSB -: 7] |
+|----------|-----------------|---------------------|
+|        0 |              34 |                  18 |
+|        0 |              35 |                  17 |
+|        0 |              36 |                  16 |
+|        0 |              37 |                  16 |
+|        0 |              38 |                  15 |
+|        0 |              39 |                  14 |
+|        0 |              40 |                  14 |
+|        0 |              41 |                  13 |
+|        0 |              42 |                  12 |
+|        0 |              43 |                  12 |
+|        0 |              44 |                  11 |
+|        0 |              45 |                  10 |
+|        0 |              46 |                  10 |
+|        0 |              47 |                   9 |
+|        0 |              48 |                   9 |
+|        0 |              49 |                   8 |
+|        0 |              50 |                   7 |
+|        0 |              51 |                   7 |
+|        0 |              52 |                   6 |
+|        0 |              53 |                   6 |
+|        0 |              54 |                   5 |
+|        0 |              55 |                   4 |
+|        0 |              56 |                   4 |
+|        0 |              57 |                   3 |
+|        0 |              58 |                   3 |
+|        0 |              59 |                   2 |
+|        0 |              60 |                   2 |
+|        0 |              61 |                   1 |
+|        0 |              62 |                   1 |
+|        0 |              63 |                   0 |
+|        1 |               0 |                 127 |
+|        1 |               1 |                 125 |
+|        1 |               2 |                 123 |
+|        1 |               3 |                 121 |
+|        1 |               4 |                 119 |
+|        1 |               5 |                 118 |
+|        1 |               6 |                 116 |
+|        1 |               7 |                 114 |
+|        1 |               8 |                 113 |
+
+|   exp[0] |   sig[MSB -: 6] |   sig_out[MSB -: 7] |
+|----------|-----------------|---------------------|
+|        1 |               9 |                 111 |
+|        1 |              10 |                 109 |
+|        1 |              11 |                 108 |
+|        1 |              12 |                 106 |
+|        1 |              13 |                 105 |
+|        1 |              14 |                 103 |
+|        1 |              15 |                 102 |
+|        1 |              16 |                 100 |
+|        1 |              17 |                  99 |
+|        1 |              18 |                  97 |
+|        1 |              19 |                  96 |
+|        1 |              20 |                  95 |
+|        1 |              21 |                  93 |
+|        1 |              22 |                  92 |
+|        1 |              23 |                  91 |
+|        1 |              24 |                  90 |
+|        1 |              25 |                  88 |
+|        1 |              26 |                  87 |
+|        1 |              27 |                  86 |
+|        1 |              28 |                  85 |
+|        1 |              29 |                  84 |
+|        1 |              30 |                  83 |
+|        1 |              31 |                  82 |
+|        1 |              32 |                  80 |
+|        1 |              33 |                  79 |
+|        1 |              34 |                  78 |
+|        1 |              35 |                  77 |
+|        1 |              36 |                  76 |
+|        1 |              37 |                  75 |
+|        1 |              38 |                  74 |
+|        1 |              39 |                  73 |
+|        1 |              40 |                  72 |
+|        1 |              41 |                  71 |
+|        1 |              42 |                  70 |
+|        1 |              43 |                  70 |
+|        1 |              44 |                  69 |
+|        1 |              45 |                  68 |
+|        1 |              46 |                  67 |
+|        1 |              47 |                  66 |
+
+<image>
+
+<image>
+
+|   exp[0] |   sig[MSB -: 6] |   sig_out[MSB -: 7] |
+|----------|-----------------|---------------------|
+|        1 |              48 |                  65 |
+|        1 |              49 |                  64 |
+|        1 |              50 |                  63 |
+|        1 |              51 |                  63 |
+|        1 |              52 |                  62 |
+|        1 |              53 |                  61 |
+|        1 |              54 |                  60 |
+|        1 |              55 |                  59 |
+|        1 |              56 |                  59 |
+|        1 |              57 |                  58 |
+|        1 |              58 |                  57 |
+|        1 |              59 |                  56 |
+|        1 |              60 |                  56 |
+|        1 |              61 |                  55 |
+|        1 |              62 |                  54 |
+|        1 |              63 |                  53 |
+
+For example, when SEW=32, vfrsqrt7(0x00718abc (≈ 1.043e-38)) = 0x5f080000 (≈ 9.800e18), and vfrsqrt7(0x7f765432 (≈ 3.274e38)) = 0x1f820000 (≈ 5.506e-20).
+
+The 7 bit accuracy was chosen as it requires 0,1,2,3 Newton-Raphson iterations to converge to close to bfloat16, FP16, FP32, FP64 accuracy respectively. Future instructions can be defined with greater estimate accuracy.
+
+## 31.13.10. Vector Floating-Point Reciprocal Estimate Instruction
+
+# Floating-point reciprocal estimate to 7 bits.
+
+vfrec7.v vd, vs2, vm
+
+<image>
+
+An earlier draft version had used the assembler name vfrece7 but this was deemed to cause confusion with e x notation for element width. The earlier name can be retained as alias in tool chains for backward compatibility.
+
+This is a unary vector-vector instruction that returns an estimate of 1/x accurate to 7 bits.
+
+The following table describes the instruction's behavior for all classes of floating-point inputs, where B is the exponent bias:
+
+| Input ( x )                   | Rounding Mode   | Output ( y ≈ 1/x )                         | Exceptions raised   |
+|-------------------------------|-----------------|--------------------------------------------|---------------------|
+| -∞                            | any             | -0.0                                       |                     |
+| -2 B+1 < x ≤ -2 B (normal)    | any             | -2 -(B+1) ≥ y > -2 -B (subnormal, sig=01…) |                     |
+| -2 B < x ≤ -2 B-1 (normal)    | any             | -2 -B ≥ y > -2 -B+1 (subnormal, sig=1…)    |                     |
+| -2 B-1 < x ≤ -2 -B+1 (normal) | any             | -2 -B+1 ≥ y > -2 B-1 (normal)              |                     |
+
+| Input ( x )                                | Rounding Mode   | Output ( y ≈ 1/x )                       | Exceptions raised   |
+|--------------------------------------------|-----------------|------------------------------------------|---------------------|
+| -2 -B+1 < x ≤ -2 -B (subnormal, sig=1…)    | any             | -2 B-1 ≥ y > -2 B (normal)               |                     |
+| -2 -B < x ≤ -2 -(B+1) (subnormal, sig=01…) | any             | -2 B ≥ y > -2 B+1 (normal)               |                     |
+| -2 -(B+1) < x < -0.0 (subnormal, sig=00…)  | RUP, RTZ        | greatest-mag. negative finite value      | NX, OF              |
+| -2 -(B+1) < x < -0.0 (subnormal, sig=00…)  | RDN,RNE,RMM     | -∞                                       | NX, OF              |
+| -0.0                                       | any             | -∞                                       | DZ                  |
+| +0.0                                       | any             | +∞                                       | DZ                  |
+| +0.0 < x < 2 -(B+1) (subnormal, sig=00…)   | RUP,RNE,RMM     | +∞                                       | NX, OF              |
+| +0.0 < x < 2 -(B+1) (subnormal, sig=00…)   | RDN, RTZ        | greatest finite value                    | NX, OF              |
+| 2 -(B+1) ≤ x < 2 -B (subnormal, sig=01…)   | any             | 2 B+1 > y ≥ 2 B (normal)                 |                     |
+| 2 -B ≤ x < 2 -B+1 (subnormal, sig=1…)      | any             | 2 B > y ≥ 2 B-1 (normal)                 |                     |
+| 2 -B+1 ≤ x < 2 B-1 (normal)                | any             | 2 B-1 > y ≥ 2 -B+1 (normal)              |                     |
+| 2 B-1 ≤ x < 2 B (normal)                   | any             | 2 -B+1 > y ≥ 2 -B (subnormal, sig=1…)    |                     |
+| 2 B ≤ x < 2 B+1 (normal)                   | any             | 2 -B > y ≥ 2 -(B+1) (subnormal, sig=01…) |                     |
+| +∞                                         | any             | +0.0                                     |                     |
+| qNaN                                       | any             | canonical NaN                            |                     |
+| sNaN                                       | any             | canonical NaN                            | NV                  |
+
+<image>
+
+Subnormal  inputs  with  magnitude  at  least  2 -(B+1) produce  normal  outputs;  other  subnormal inputs produce  infinite  outputs.  Normal  inputs  with  magnitude  at  least  2 B-1 produce subnormal outputs; other normal inputs produce normal outputs.
+
+<image>
+
+The  output  value  depends  on  the  dynamic  rounding  mode  when  the  overflow  exception  is raised.
+
+For the non-exceptional cases, the seven high bits of significand (after the leading one) are used to address the following table. The output of the table becomes the seven high bits of the result significand (after the leading  one);  the  remainder  of  the  result  significand  is  zero.  Subnormal  inputs  are  normalized  and  the exponent  adjusted  appropriately  before  the  lookup.  The  output  exponent  is  chosen  to  make  the  result approximate the reciprocal of the argument, and subnormal outputs are denormalized accordingly.
+
+More precisely, the result is computed as follows. Let the normalized input exponent be equal to the input exponent if the input is normal, or 0 minus the number of leading zeros in the significand otherwise. The normalized output exponent equals (2*B - 1 - the normalized input exponent). If the normalized output exponent is outside the range [-1, 2*B], the result corresponds to one of the exceptional cases in the table above.
+
+If the input is subnormal, the normalized input significand is given by shifting the input significand left by 1  minus  the  normalized  input  exponent,  discarding  the  leading  1  bit.  Otherwise,  the  normalized  input significand  equals  the  input  significand.  The  following  table  gives  the  seven  MSBs  of  the  normalized output significand as a function of the seven MSBs of the normalized input significand; the other bits of the normalized output significand are zero.
+
+Table 58. vfrec7.v common-case lookup table contents
+
+|   sig[MSB -: 7] |   sig_out[MSB -: 7] |
+|-----------------|---------------------|
+|               0 |                 127 |
+|               1 |                 125 |
+
+|   sig[MSB -: 7] |   sig_out[MSB -: 7] |
+|-----------------|---------------------|
+|               2 |                 123 |
+|               3 |                 121 |
+|               4 |                 119 |
+|               5 |                 117 |
+|               6 |                 116 |
+|               7 |                 114 |
+|               8 |                 112 |
+|               9 |                 110 |
+|              10 |                 109 |
+|              11 |                 107 |
+|              12 |                 105 |
+|              13 |                 104 |
+|              14 |                 102 |
+|              15 |                 100 |
+|              16 |                  99 |
+|              17 |                  97 |
+|              18 |                  96 |
+|              19 |                  94 |
+|              20 |                  93 |
+|              21 |                  91 |
+|              22 |                  90 |
+|              23 |                  88 |
+|              24 |                  87 |
+|              25 |                  85 |
+|              26 |                  84 |
+|              27 |                  83 |
+|              28 |                  81 |
+|              29 |                  80 |
+|              30 |                  79 |
+|              31 |                  77 |
+|              32 |                  76 |
+|              33 |                  75 |
+|              34 |                  74 |
+|              35 |                  72 |
+|              36 |                  71 |
+|              37 |                  70 |
+|              38 |                  69 |
+|              39 |                  68 |
+|              40 |                  66 |
+
+|   sig[MSB -: 7] |   sig_out[MSB -: 7] |
+|-----------------|---------------------|
+|              41 |                  65 |
+|              42 |                  64 |
+|              43 |                  63 |
+|              44 |                  62 |
+|              45 |                  61 |
+|              46 |                  60 |
+|              47 |                  59 |
+|              48 |                  58 |
+|              49 |                  57 |
+|              50 |                  56 |
+|              51 |                  55 |
+|              52 |                  54 |
+|              53 |                  53 |
+|              54 |                  52 |
+|              55 |                  51 |
+|              56 |                  50 |
+|              57 |                  49 |
+|              58 |                  48 |
+|              59 |                  47 |
+|              60 |                  46 |
+|              61 |                  45 |
+|              62 |                  44 |
+|              63 |                  43 |
+|              64 |                  42 |
+|              65 |                  41 |
+|              66 |                  40 |
+|              67 |                  40 |
+|              68 |                  39 |
+|              69 |                  38 |
+|              70 |                  37 |
+|              71 |                  36 |
+|              72 |                  35 |
+|              73 |                  35 |
+|              74 |                  34 |
+|              75 |                  33 |
+|              76 |                  32 |
+|              77 |                  31 |
+|              78 |                  31 |
+|              79 |                  30 |
+
+|   sig[MSB -: |   sig_out[MSB -: 7] |
+|--------------|---------------------|
+|           80 |                  29 |
+|           81 |                  28 |
+|           82 |                  28 |
+|           83 |                  27 |
+|           84 |                  26 |
+|           85 |                  25 |
+|           86 |                  25 |
+|           87 |                  24 |
+|           88 |                  23 |
+|           89 |                  23 |
+|           90 |                  22 |
+|           91 |                  21 |
+|           92 |                  21 |
+|           93 |                  20 |
+|           94 |                  19 |
+|           95 |                  19 |
+|           96 |                  18 |
+|           97 |                  17 |
+|           98 |                  17 |
+|           99 |                  16 |
+|          100 |                  15 |
+|          101 |                  15 |
+|          102 |                  14 |
+|          103 |                  14 |
+|          104 |                  13 |
+|          105 |                  12 |
+|          106 |                  12 |
+|          107 |                  11 |
+|          108 |                  11 |
+|          109 |                  10 |
+|          110 |                   9 |
+|          111 |                   9 |
+|          112 |                   8 |
+|          113 |                   8 |
+|          114 |                   7 |
+|          115 |                   7 |
+|          116 |                   6 |
+|          117 |                   5 |
+|          118 |                   5 |
+
+|   sig[MSB -: 7] |   sig_out[MSB -: 7] |
+|-----------------|---------------------|
+|             119 |                   4 |
+|             120 |                   4 |
+|             121 |                   3 |
+|             122 |                   3 |
+|             123 |                   2 |
+|             124 |                   2 |
+|             125 |                   1 |
+|             126 |                   1 |
+|             127 |                   0 |
+
+If  the  normalized output exponent is 0 or -1, the result is subnormal: the output exponent is 0, and the output significand is given by concatenating a 1 bit to the left of the normalized output significand, then shifting that quantity right by 1 minus the normalized output exponent. Otherwise, the output exponent equals  the  normalized  output  exponent,  and  the  output  significand  equals  the  normalized  output significand. The output sign equals the input sign.
+
+<image>
+
+For example, when SEW=32, vfrec7(0x00718abc (≈ 1.043e-38)) = 0x7e900000 (≈ 9.570e37), and vfrec7(0x7f765432 (≈ 3.274e38)) = 0x00214000 (≈ 3.053e-39).
+
+<image>
+
+The 7 bit accuracy was chosen as it requires 0,1,2,3 Newton-Raphson iterations to converge to close to bfloat16, FP16, FP32, FP64 accuracy respectively. Future instructions can be defined with greater estimate accuracy.
+
+## 31.13.11. Vector Floating-Point MIN/MAX Instructions
+
+The vector floating-point vfmin and vfmax instructions have the same behavior as the corresponding scalar floating-point instructions in version 2.2 of the RISC-V F/D/Q extension: they perform the minimumNumber or maximumNumber operation on active elements.
+
+```
+# Floating-point minimum vfmin.vv vd, vs2, vs1, vm   # Vector-vector vfmin.vf vd, vs2, rs1, vm   # vector-scalar # Floating-point maximum vfmax.vv vd, vs2, vs1, vm   # Vector-vector vfmax.vf vd, vs2, rs1, vm   # vector-scalar
+```
+
+## 31.13.12. Vector Floating-Point Sign-Injection Instructions
+
+Vector versions of the scalar sign-injection instructions. The result takes all bits except the sign bit from the vector vs2 operands.
+
+```
+vfsgnj.vv vd, vs2, vs1, vm   # Vector-vector vfsgnj.vf vd, vs2, rs1, vm   # vector-scalar vfsgnjn.vv vd, vs2, vs1, vm  # Vector-vector
+```
+
+```
+vfsgnjn.vf vd, vs2, rs1, vm  # vector-scalar vfsgnjx.vv vd, vs2, vs1, vm  # Vector-vector vfsgnjx.vf vd, vs2, rs1, vm  # vector-scalar
+```
+
+<image>
+
+A vector of floating-point values can be negated using a sign-injection instruction with both source operands set to the same vector operand. An assembly pseudoinstruction is provided: vfneg.v vd,vs = vfsgnjn.vv vd,vs,vs .
+
+<image>
+
+The  absolute  value  of  a  vector  of  floating-point  elements  can  be  calculated  using  a  signinjection instruction with both source operands set to the same vector operand. An assembly pseudoinstruction is provided: vfabs.v vd,vs = vfsgnjx.vv vd,vs,vs .
+
+## 31.13.13. Vector Floating-Point Compare Instructions
+
+These vector FP compare instructions compare two source operands and write the comparison result to a mask  register.  The  destination  mask  vector  is  always  held  in  a  single  vector  register,  with  a  layout  of elements as described in Section 31.4.5. The destination mask vector register may be the same as the source vector  mask  register  ( v0 ).  Compares  write  mask  registers,  and  so  always  operate  under  a  tail-agnostic policy.
+
+The compare instructions follow  the  semantics  of  the  scalar  floating-point  compare  instructions. vmfeq and vmfne raise  the  invalid  operation  exception  only  on  signaling  NaN  inputs. vmflt , vmfle , vmfgt ,  and vmfge raise the invalid operation exception on both signaling and quiet NaN inputs. vmfne writes 1 to the destination element when either operand is NaN, whereas the other compares write 0 when either operand is NaN.
+
+```
+# Compare equal vmfeq.vv vd, vs2, vs1, vm  # Vector-vector vmfeq.vf vd, vs2, rs1, vm  # vector-scalar # Compare not equal vmfne.vv vd, vs2, vs1, vm  # Vector-vector vmfne.vf vd, vs2, rs1, vm  # vector-scalar # Compare less than vmflt.vv vd, vs2, vs1, vm  # Vector-vector vmflt.vf vd, vs2, rs1, vm  # vector-scalar # Compare less than or equal vmfle.vv vd, vs2, vs1, vm  # Vector-vector vmfle.vf vd, vs2, rs1, vm  # vector-scalar # Compare greater than vmfgt.vf vd, vs2, rs1, vm  # vector-scalar # Compare greater than or equal vmfge.vf vd, vs2, rs1, vm  # vector-scalar
+```
+
+```
+Comparison      Assembler Mapping             Assembler pseudoinstruction va < vb         vmflt.vv vd, va, vb, vm va <= vb        vmfle.vv vd, va, vb, vm va > vb         vmflt.vv vd, vb, va, vm    vmfgt.vv vd, va, vb, vm va >= vb        vmfle.vv vd, vb, va, vm    vmfge.vv vd, va, vb, vm va < f          vmflt.vf vd, va, f, vm va <= f         vmfle.vf vd, va, f, vm va > f          vmfgt.vf vd, va, f, vm va >= f         vmfge.vf vd, va, f, vm va, vb vector register groups f      scalar floating-point register
+```
+
+<image>
+
+Providing all forms is necessary to correctly handle unordered compares for NaNs.
+
+<image>
+
+C99 floating-point quiet compares can be implemented by masking the signaling compares when either input is NaN, as follows. When the comparand is a non-NaN constant, the middle two instructions can be omitted.
+
+```
+# Example of implementing isgreater() vmfeq.vv v0, va, va        # Only set where A is not NaN. vmfeq.vv v1, vb, vb        # Only set where B is not NaN. vmand.mm v0, v0, v1        # Only set where A and B are ordered, vmfgt.vv v0, va, vb, v0.t  #  so only set flags on ordered values.
+```
+
+<image>
+
+In  the  above  sequence, it  is  tempting  to  mask  the  second vmfeq instruction  and remove the vmand instruction,  but  this  more  efficient  sequence  incorrectly  fails  to  raise  the  invalid exception when an element of va contains a quiet NaN and the corresponding element in vb contains a signaling NaN.
+
+## 31.13.14. Vector Floating-Point Classify Instruction
+
+This is a unary vector-vector instruction that operates in the same way as the scalar classify instruction.
+
+```
+vfclass.v vd, vs2, vm   # Vector-vector
+```
+
+The 10-bit mask produced by this instruction is placed in the least-significant bits of the result elements. The upper (SEW-10) bits of the result are filled with zeros. The instruction is only defined for SEW=16b and above, so the result will always fit in the destination elements.
+
+## 31.13.15. Vector Floating-Point Merge Instruction
+
+A  vector-scalar  floating-point  merge  instruction  is  provided,  which  operates  on  all  body  elements  from vstart up to the current vector length in vl regardless of mask value.
+
+The vfmerge.vfm instruction is encoded as a masked instruction ( vm=0 ). At elements where the mask value is  zero,  the  first  vector  operand  is  copied  to  the  destination  element,  otherwise  a  scalar  floating-point register value is copied to the destination element.
+
+```
+vfmerge.vfm vd, vs2, rs1, v0  # vd[i] = v0.mask[i] ? f[rs1] : vs2[i]
+```
+
+## 31.13.16. Vector Floating-Point Move Instruction
+
+The vector floating-point move instruction splats a floating-point scalar operand to a vector register group. The  instruction  copies  a  scalar f register  value  to  all  active  elements  of  a  vector  register  group.  This instruction is encoded as an unmasked instruction ( vm=1 ). The instruction must have the vs2 field set to v0 , with all other values for vs2 reserved.
+
+```
+vfmv.v.f vd, rs1  # vd[i] = f[rs1]
+```
+
+<image>
+
+The vfmv.v.f instruction  shares  the  encoding  with  the vfmerge.vfm instruction,  but  with vm=1 and vs2=v0 .
+
+## 31.13.17. Single-Width Floating-Point/Integer Type-Convert Instructions
+
+Conversion operations are provided to convert to and from floating-point values and unsigned and signed integers, where both source and destination are SEW wide.
+
+```
+vfcvt.xu.f.v vd, vs2, vm       # Convert float to unsigned integer. vfcvt.x.f.v  vd, vs2, vm       # Convert float to signed integer. vfcvt.rtz.xu.f.v vd, vs2, vm   # Convert float to unsigned integer, truncating. vfcvt.rtz.x.f.v  vd, vs2, vm   # Convert float to signed integer, truncating. vfcvt.f.xu.v vd, vs2, vm       # Convert unsigned integer to float. vfcvt.f.x.v  vd, vs2, vm       # Convert signed integer to float.
+```
+
+The conversions follow the same rules on exceptional conditions as the scalar conversion instructions. The conversions use the dynamic rounding mode in frm , except for the rtz variants, which round towards zero.
+
+<image>
+
+The rtz variants  are  provided  to  accelerate  truncating  conversions  from  floating-point  to integer, as is common in languages like C and Java.
+
+## 31.13.18. Widening Floating-Point/Integer Type-Convert Instructions
+
+A  set  of  conversion  instructions  is  provided  to  convert  between  narrower  integer  and  floating-point datatypes to a type of twice the width.
+
+```
+vfwcvt.xu.f.v vd, vs2, vm       # Convert float to double-width unsigned integer. vfwcvt.x.f.v  vd, vs2, vm       # Convert float to double-width signed integer.
+```
+
+| vfwcvt.rtz.xu.f.v vd, vs2, vm integer, truncating. vfwcvt.rtz.x.f.v vd, vs2, vm   | # Convert   | float to double-width unsigned                |
+|-----------------------------------------------------------------------------------|-------------|-----------------------------------------------|
+| truncating.                                                                       | #           | Convert float to double-width signed integer, |
+| vfwcvt.f.xu.v vd, vs2, vm                                                         | #           | Convert unsigned integer to double-width      |
+| float. vfwcvt.f.x.v vd, vs2, vm                                                   | #           | Convert signed integer to double-width float. |
+| vfwcvt.f.f.v vd, vs2, vm float.                                                   | #           | Convert single-width float to double-width    |
+
+These instructions have the same constraints on vector register overlap as other widening instructions (see Section 31.10.2).
+
+<image>
+
+A double-width IEEE floating-point value can always represent a single-width integer exactly.
+
+<image>
+
+<image>
+
+A double-width IEEE floating-point value can always represent a single-width IEEE floatingpoint value exactly.
+
+A full set of floating-point widening conversions is not supported as single instructions, but any widening conversion can be implemented as several doubling steps with equivalent results and no additional exception flags raised.
+
+## 31.13.19. Narrowing Floating-Point/Integer Type-Convert Instructions
+
+A set of conversion instructions is provided to convert wider integer and floating-point datatypes to a type of half the width.
+
+| vfncvt.xu.f.w vd, vs2, vm integer.                 | # Convert double-width float to unsigned        |
+|----------------------------------------------------|-------------------------------------------------|
+| vfncvt.x.f.w vd, vs2, vm                           | # Convert double-width float to signed integer. |
+| vfncvt.rtz.xu.f.w vd, vs2, vm integer, truncating. | # Convert double-width float to unsigned        |
+| vfncvt.rtz.x.f.w vd, vs2, vm truncating.           | # Convert double-width float to signed integer, |
+| vfncvt.f.xu.w vd, vs2, vm float.                   | # Convert double-width unsigned integer to      |
+| vfncvt.f.x.w vd, vs2, vm                           | # Convert double-width signed integer to float. |
+| vfncvt.f.f.w vd, vs2, vm float.                    | # Convert double-width float to single-width    |
+| vfncvt.rod.f.f.w vd, vs2, vm float,                | # Convert double-width float to single-width    |
+|                                                    | # rounding towards odd.                         |
+
+These instructions have the same constraints on vector register overlap as other narrowing instructions (see Section 31.10.3).
+
+<image>
+
+A  full  set  of  floating-point  narrowing  conversions  is  not  supported  as  single  instructions. Conversions  can  be  implemented  in  a  sequence  of  halving  steps.  Results  are  equivalently rounded and the same exception flags are raised if all but the last halving step use roundtowards-odd ( vfncvt.rod.f.f.w ). Only the final step should use the desired rounding mode.
+
+<image>
+
+For vfncvt.rod.f.f.w ,  a  finite  value  that  exceeds  the  range  of  the  destination  format  is converted to the destination format's largest finite value with the same sign.
+
+## 31.14. Vector Reduction Operations
+
+Vector reduction operations take a vector register group of elements and a scalar held in element 0 of a vector register, and perform a reduction using some binary operator, to produce a scalar result in element 0  of  a  vector  register.  The  scalar  input  and  output  operands  are  held  in  element  0  of  a  single  vector register, not a vector register group, so any vector register can be the scalar source or destination of a vector reduction regardless of LMUL setting.
+
+The destination vector register can overlap the source operands, including the mask register.
+
+<image>
+
+Vector  reductions  read  and  write  the  scalar  operand  and  result  into  element  0  of  a  vector register instead of a scalar register to avoid a loss of decoupling with the scalar processor, and to support future polymorphic use with future types not supported in the scalar unit.
+
+Inactive elements from the source vector register group are excluded from the reduction, but the scalar operand is always included regardless of the mask values.
+
+The other elements in the destination vector register ( 0 < index < VLEN/SEW) are considered the tail and are managed with the current tail agnostic/undisturbed policy.
+
+If vl =0, no operation is performed and the destination register is not updated.
+
+<image>
+
+This choice of behavior for vl =0 reduces implementation complexity as it is consistent with other operations on vector register state. For the common case that the source and destination scalar operand are the same vector register, this behavior also produces the expected result. For the uncommon case that the source and destination scalar operand are in different vector registers, this instruction will not copy the source into the destination when vl =0. However, it is expected that in most of these cases it will be statically known that vl is not zero. In other cases, a check for vl =0 will have to be added to ensure that the source scalar is copied to the destination (e.g., by explicitly setting vl =1 and performing a register-register copy).
+
+Traps on vector reduction instructions are always reported with a vstart of 0. Vector reduction operations raise an illegal-instruction exception if vstart is non-zero.
+
+The assembler syntax for a reduction operation is vredop.vs , where the .vs suffix denotes the first operand is a vector register group and the second operand is a scalar stored in element 0 of a vector register.
+
+## 31.14.1. Vector Single-Width Integer Reduction Instructions
+
+All operands and results of single-width reduction instructions have the same SEW width. Overflows wrap around on arithmetic sums.
+
+```
+# Simple reductions, where [*] denotes all active elements: vredsum.vs  vd, vs2, vs1, vm   # vd[0] =  sum( vs1[0] , vs2[*] ) vredmaxu.vs vd, vs2, vs1, vm   # vd[0] = maxu( vs1[0] , vs2[*] ) vredmax.vs  vd, vs2, vs1, vm   # vd[0] =  max( vs1[0] , vs2[*] ) vredminu.vs vd, vs2, vs1, vm   # vd[0] = minu( vs1[0] , vs2[*] ) vredmin.vs  vd, vs2, vs1, vm   # vd[0] =  min( vs1[0] , vs2[*] ) vredand.vs  vd, vs2, vs1, vm   # vd[0] =  and( vs1[0] , vs2[*] ) vredor.vs   vd, vs2, vs1, vm   # vd[0] =   or( vs1[0] , vs2[*] ) vredxor.vs  vd, vs2, vs1, vm   # vd[0] =  xor( vs1[0] , vs2[*] )
+```
+
+## 31.14.2. Vector Widening Integer Reduction Instructions
+
+The  unsigned vwredsumu.vs instruction  zero-extends  the  SEW-wide  vector  elements  before  summing them, then adds the 2*SEW-width scalar element, and stores the result in a 2*SEW-width scalar element.
+
+The vwredsum.vs instruction sign-extends the SEW-wide vector elements before summing them.
+
+For both vwredsumu.vs and vwredsum.vs , overflows wrap around.
+
+```
+# Unsigned sum reduction into double-width accumulator vwredsumu.vs vd, vs2, vs1, vm   # 2*SEW = 2*SEW + sum(zero-extend(SEW)) # Signed sum reduction into double-width accumulator vwredsum.vs  vd, vs2, vs1, vm   # 2*SEW = 2*SEW + sum(sign-extend(SEW))
+```
+
+## 31.14.3. Vector Single-Width Floating-Point Reduction Instructions
+
+```
+# Simple reductions. vfredosum.vs vd, vs2, vs1, vm # Ordered sum vfredusum.vs vd, vs2, vs1, vm # Unordered sum vfredmax.vs  vd, vs2, vs1, vm # Maximum value vfredmin.vs  vd, vs2, vs1, vm # Minimum value
+```
+
+<image>
+
+Older assembler mnemonic vfredsum is retained as alias for vfredusum .
+
+## 31.14.3.1. Vector Ordered Single-Width Floating-Point Sum Reduction
+
+The vfredosum instruction must sum the floating-point values in element order, starting with the scalar in vs1[0] --that is, it performs the computation:
+
+```
+vd[0] = (((vs1[0] + vs2[0]) + vs2[1]) + ...) + vs2[vl-1]
+```
+
+where  each  addition  operates  identically  to  the  scalar  floating-point  instructions  in  terms  of  raising exception flags and generating or propagating special values.
+
+<image>
+
+The  ordered  reduction  supports  compiler  auto-vectorization,  while  the  unordered  FP  sum allows for faster implementations.
+
+When the operation is masked ( vm=0 ),  the  masked-off elements do not affect the result or the exception flags.
+
+<image>
+
+If no elements are active, no additions are performed, so the scalar in vs1[0] is simply copied to  the  destination  register,  without  canonicalizing  NaN  values  and  without  setting  any exception flags. This behavior preserves the handling of NaNs, exceptions, and rounding when auto-vectorizing a scalar summation loop.
+
+## 31.14.3.2. Vector Unordered Single-Width Floating-Point Sum Reduction
+
+The  unordered  sum  reduction  instruction, vfredusum ,  provides  an  implementation  more  freedom  in performing the reduction.
+
+The implementation must produce a result equivalent to a reduction tree composed of binary operator nodes, with the inputs being elements from the source vector register group ( vs2 )  and  the  source  scalar value ( vs1[0] ).  Each operator in the tree accepts two inputs and produces one result. Each operator first computes  an  exact  sum  as  a  RISC-V  scalar  floating-point  addition  with  infinite  exponent  range  and precision, then converts this exact sum to a floating-point format with range and precision each at least as great as the element floating-point format indicated by SEW, rounding using the currently active floatingpoint dynamic rounding mode and raising exception flags as necessary. A different floating-point range and precision may be chosen for the result of each operator. A node where one input is derived only from elements masked-off or beyond the active vector length may either treat that input as the additive identity of the appropriate EEW or simply copy the other input to its output. The rounded result from the root node in the tree is converted (rounded again, using the dynamic rounding mode) to the standard floating-point format indicated by SEW. An implementation is allowed to add an additional additive identity to the final result.
+
+The additive identity is +0.0 when rounding down (towards -∞) or -0.0 for all other rounding modes.
+
+The reduction tree structure must be deterministic for a given value in vtype and vl .
+
+<image>
+
+As  a  consequence  of  this  definition,  implementations  need  not  propagate  NaN  payloads through the reduction tree when no elements are active. In particular, if no elements are active and the scalar input is NaN, implementations are permitted to canonicalize the NaN and, if the  NaN  is  signaling,  set  the  invalid  exception  flag.  Implementations  are  alternatively permitted to pass through the original NaN and set no exception flags, as with vfredosum .
+
+<image>
+
+The vfredosum instruction is a valid implementation of the vfredusum instruction.
+
+## 31.14.3.3. Vector Single-Width Floating-Point Max and Min Reductions
+
+The vfredmin and vfredmax instructions reduce the scalar argument in vs1[0] and active elements in vs2 using the minimumNumber and maximumNumber operations, respectively.
+
+<image>
+
+Floating-point max and min reductions should return the same final value and raise the same exception flags regardless of operation order.
+
+<image>
+
+If  no  elements  are  active,  the  scalar  in vs1[0] is  simply  copied  to  the  destination  register, without canonicalizing NaN values and without setting any exception flags.
+
+## 31.14.4. Vector Widening Floating-Point Reduction Instructions
+
+Widening forms of the sum reductions are provided that read and write a double-width reduction result.
+
+```
+# Simple reductions. vfwredosum.vs vd, vs2, vs1, vm # Ordered sum vfwredusum.vs vd, vs2, vs1, vm # Unordered sum
+```
+
+<image>
+
+Older assembler mnemonic vfwredsum is retained as alias for vfwredusum .
+
+The reduction of  the  SEW-width  elements  is  performed  as  in  the  single-width  reduction  case,  with  the elements in vs2 promoted to 2*SEW bits before adding to the 2*SEW-bit accumulator.
+
+<image>
+
+vfwredosum.vs handles inactive elements and NaN payloads analogously to vfredosum.vs ; vfwredusum.vs does so analogously to vfredusum.vs .
+
+## 31.15. Vector Mask Instructions
+
+
+
+Final instruction for VLE32FF.V: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

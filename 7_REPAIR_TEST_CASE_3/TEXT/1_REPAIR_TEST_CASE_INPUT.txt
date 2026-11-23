@@ -1,0 +1,157 @@
+# 316 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: C.LD
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 9: C.LD writes the doubleword read from memory into register t0.
+##### ASSEMBLY #####
+la s0, data
+ld s1, 0(s0)
+mv t0, s1
+.section .rodata
+data:
+.quad 0x1122334455667788
+# Result: t0 = 0x1122334455667788
+.data
+.quad 0x1122334455667788
+
+# 472 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: C.SDSP
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 10: C.SDSP must be subject to the pointer-masking mechanism, so its effective address is transformed according to the current privilege mode's pointer-masking settings unless the MXR setting disables masking.
+##### ASSEMBLY #####
+li sp, 0
+li ra, 0x1122334455667788
+sd ra, 8(sp)
+ld t0, 8(sp)
+mv sp, t0
+# Result: sp = 0x1122334455667788
+.bss
+buf: .skip 16
+
+# 1148 # Extension Must Be Active: D
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FLI.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: If the D extension is implemented, executing the FLI.D instruction loads a double-precision floating-point value into the destination floating-point register rd.
+##### ASSEMBLY #####
+fli.d ft0, 0x1000000000000
+fmv.x.d a1, ft0
+# Result: a1 = 0x0010000000000000
+
+# 1198 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FLQ
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: When MXR is in effect in the effective privilege mode for a FLQ execution, pointer masking MUST NOT be applied to the address used by FLQ.
+##### ASSEMBLY #####
+li ra, 0x80000000
+csrrw x0, mstatus, ra
+.section .data
+.word 0x12345678
+# Result: t2 = 0x12345678
+.section .data
+.word 0x12345678
+
+# 1240 # Extension Must Be Active: Q
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FMAXM.Q
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: The FMAXM.Q instruction must implement the IEEE 754-2019 maximum operation for quad-precision operands.
+##### ASSEMBLY #####
+one: .double 1.0
+la a0, one
+fld ft0, 0(a0)
+fadd.d ft1, ft0, ft0
+fmax.d ft2, ft1, ft0
+fclass.d t0, ft2
+# Result: t0 = 0x40
+.float128 1.0
+
+# 1486 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: HSV.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: The HS-level sstatus.SUM field is ignored for the address translation performed by HSV.D.
+##### ASSEMBLY #####
+li t0, 0x40000
+csrs mstatus, t0
+li t0, 0xdeadbeefdeadbeef
+addi sp, sp, -8
+sd t0, 0(sp)
+ld t1, 0(sp)
+# Result: t1 = 0xdeadbeefdeadbeef
+.data
+.quad 0
+
+# 1574 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: LD
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 28: When MXR is set in the effective privilege mode at which an LD is performed, pointer masking must not be applied to that LD.
+##### ASSEMBLY #####
+.text
+li t0,0x1122334455667788
+la t1,data
+sd t0,0(t1)
+csrrs t2, mstatus, x0
+li s0,0x80000
+or t2,t2,s0
+csrrw x0, mstatus, t2
+ld s1,0(t1)
+.data
+.align 3
+data:
+.quad 0
+# Result: s1 = 0x1122334455667788
+.data
+.quad 0
+
+# 1602 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: LHU
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 19: When MXR is active in the effective privilege mode that performs the LHU memory access, pointer masking does not apply to that LHU access.
+##### ASSEMBLY #####
+.text
+li t1, 0x80000
+csrrs x0, mstatus, t1
+la t2, data
+lhu t0, 0(t2)
+.data
+data:
+.short 0xABCD
+# Result: t0 = 0xABCD
+.data
+.half 0xABCD
+
+# 3335 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VMSLE.VV
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: VMSLE.VV always operates under a tail-agnostic policy, meaning that elements beyond the current vector length are treated as inactive and do not affect the result.
+##### ASSEMBLY #####
+.text
+li t0, 2
+vsetvli x0, t0, e64, m1, ta, ma
+la a0, vec2
+vle64.v v2, (a0)
+la a0, vec1
+vle64.v v1, (a0)
+li t0, 1
+vsetvli x0, t0, e64, m1, ta, ma
+vmsle.vv v3, v2, v1
+vmv.x.s a0, v3
+.data
+vec2:
+.quad 0x1
+.quad 0x0
+vec1:
+.quad 0x0
+.quad 0xffffffffffffffff
+# Result: a0 = 0
+.data
+.dword 0x1
+.dword 0x0
+.dword 0x0
+.dword 0xffffffffffffffff

@@ -1,0 +1,35 @@
+## 20.5. CSR controls for CMO instructions
+
+The xenvcfg registers control CBO instruction execution based on the current privilege mode and the state of the appropriate CSRs, as detailed below.
+
+A CBO.INVAL instruction executes or raises either an illegal-instruction exception or a virtual-instruction exception based on the state of the xenvcfg.CBIE fields:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && (menvcfg.CBIE == 00 )) || ((priv_mode == U) && (senvcfg.CBIE == 00 ))) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && (henvcfg.CBIE == 00 )) || ((priv_mode == VU) && ((henvcfg.CBIE == 00 ) || (senvcfg.CBIE == 00 )))) { <raise virtual-instruction exception>
+```
+
+```
+} // execute instruction else { if (((priv_mode != M) && (menvcfg.CBIE == 01 )) || ((priv_mode == U) && (senvcfg.CBIE == 01 )) || ((priv_mode == VS) && (henvcfg.CBIE == 01 )) || ((priv_mode == VU) && ((henvcfg.CBIE == 01 ) || (senvcfg.CBIE == 01 )))) { <execute CBO.INVAL and perform flush operation> } else { <execute CBO.INVAL and perform invalidate operation> } }
+```
+
+Until a modified cache block has updated memory, a CBO.INVAL instruction may expose stale data values in memory if the CSRs are programmed to perform an invalidate operation. This behavior may result in a security hole if lower privileged level software performs an invalidate operation and accesses sensitive information in memory.
+
+<image>
+
+To  avoid  such  holes,  higher  privileged  level  software  must  perform  either  a  clean  or  flush operation on the cache block before permitting lower privileged level software to perform an invalidate operation on the block. Alternatively, higher privileged level software may program the CSRs so that CBO.INVAL either traps or performs a flush operation in a lower privileged level.
+
+A CBO.CLEAN or CBO.FLUSH instruction  executes  or  raises  an  illegal-instruction  or  virtual-instruction exception based on the state of the xenvcfg.CBCFE bits:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && !menvcfg.CBCFE) || ((priv_mode == U) && !senvcfg.CBCFE)) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && !henvcfg.CBCFE) || ((priv_mode == VU) && !(henvcfg.CBCFE && senvcfg.CBCFE))) { <raise virtual-instruction exception> } // execute instruction else { <execute CBO.CLEAN or CBO.FLUSH> }
+```
+
+Finally,  a CBO.ZERO instruction  executes  or  raises  an  illegal-instruction  or  virtual-instruction  exception based on the state of the xenvcfg.CBZE bits:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && !menvcfg.CBZE) || ((priv_mode == U) && !senvcfg.CBZE)) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && !henvcfg.CBZE) || ((priv_mode == VU) && !(henvcfg.CBZE && senvcfg.CBZE))) { <raise virtual-instruction exception> } // execute instruction else { <execute CBO.ZERO> }
+```
+
+The CBIE/CBCFE/CBZE fields in each xenvcfg register  do  not  affect  the  read  and  write  behavior of the same fields in the other xenvcfg registers.
+
+Each xenvcfg register is WARL; however, software should determine the legal values from the execution environment discovery mechanism.

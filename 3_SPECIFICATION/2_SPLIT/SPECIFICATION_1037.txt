@@ -1,0 +1,15 @@
+## 3.2. Reset Control
+
+There  are  two  methods  that  allow  a  debugger  to  reset  harts.  ndmreset  resets  all  the  harts  in  the hardware platform, as well as all other parts of the hardware platform except for the Debug Modules, Debug  Transport  Modules,  and  Debug  Module  Interface.  Exactly  what  is  affected  by  this  reset  is implementation  dependent,  but  it  must  be  possible  to  debug  programs  from  the  first  instruction executed. hartreset resets all the currently selected harts. In this case an implementation may reset more harts than just the ones that are selected. The debugger can discover which other harts are reset (if any) by selecting them and checking anyhavereset and allhavereset.
+
+To perform either of these resets, the debugger first asserts the bit, and then clears it. The actual reset may start as soon as the bit is asserted, but may start an arbitrarily long time after the bit is deasserted. The reset itself may also take an arbitrarily long time. While the reset is on-going, harts are either in the running state, indicating it's possible to perform some abstract commands during this time, or in the unavailable state, indicating it's not possible to perform any abstract commands during this time. Once a hart's reset is complete, havereset becomes set. When a hart comes out of reset and haltreq or resethaltreq are set, the hart will immediately enter Debug Mode (halted state). Otherwise, if the hart was initially  running  it  will  execute  normally  (running  state)  and  if  the  hart  was  initially  halted  it should now be running but may be halted.
+
+<image>
+
+There is no general, reliable way for the debugger to know when reset has actually begun.
+
+The Debug Module's own state and registers should only be reset at power-up and while dmactive in dmcontrol is 0. If there is another mechanism to reset the DM, this mechanism must also reset all the harts accessible to the DM.
+
+Due to clock and power domain crossing issues, it might not be possible to perform arbitrary DMI accesses  across  hardware  platform  reset.  While  ndmreset  or  any  external  reset  is  asserted,  the  only supported DM operations are reading/writing dmcontrol and reading ndmresetpending. The behavior of other accesses is undefined.
+
+When harts have been reset, they must set a sticky havereset state  bit.  The  conceptual havereset state bits can be read for selected harts in anyhavereset and allhavereset in dmstatus. These bits must be set regardless of the cause of the reset. The havereset bits for the selected harts can be cleared by writing  1  to  ackhavereset  in  dmcontrol.  The havereset bits  might  or  might  not  be  cleared  when dmactive is low.

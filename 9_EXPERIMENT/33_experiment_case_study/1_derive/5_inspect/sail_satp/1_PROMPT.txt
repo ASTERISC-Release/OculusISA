@@ -1,0 +1,389 @@
+You are given multiple execution paths for one RISC-V architectural target.
+
+Task:
+Convert each given path into exactly one atomic architectural rule.
+
+Input format:
+Each path may contain fields such as:
+
+* Path number
+* Target
+* Source entry or semantic entry
+* Path condition
+* Source behavior or semantic behavior
+* Architectural outcome
+* Observable oracle
+* Feasibility
+* Natural language path summary
+
+Important:
+Use ONLY the given paths and path summaries.
+Do NOT use external knowledge.
+Do NOT use the RISC-V specification unless it is explicitly included in the given path.
+Do NOT use known bugs.
+Do NOT infer unrelated behavior.
+Do NOT merge paths.
+Do NOT skip paths.
+Do NOT deduplicate paths.
+Do NOT collapse multiple similar paths into one rule.
+If the input contains N paths, the output must contain exactly N rules.
+Each path must produce exactly one rule.
+Preserve the path number from the input.
+Base each rule only on the explicit condition and outcome stated in the corresponding path.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, encoding, syntax, formatting, source-code structure, or implementation commentary.
+Each rule must describe architectural cause -> effect semantics, meaning condition/event -> architectural outcome.
+Each rule must include the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap cause, CSR state, register state, memory state, address-translation behavior, or trap versus no trap behavior.
+Each rule must begin with the word `RULE`.
+Each rule must preserve the path number from the input.
+Each rule must be clear and detailed.
+Do not mention source file names, function names, helper names, or model-internal names unless they are necessary to express the architectural condition or outcome.
+Do not include implementation details unless they directly determine an architecturally visible outcome.
+If a path contains both source/model behavior and architectural outcome, write the rule using the architectural outcome.
+If a path contains feasibility information, do not output the feasibility field; use it only to avoid inventing unsupported behavior.
+If a path is marked source-incomplete, produce a rule only from the explicit behavior that is present in the path and do not invent the missing behavior.
+If a path is marked infeasible, still output one rule for that path, but phrase it only as the explicit condition -> outcome relationship stated by the path.
+
+Output format:
+Output only the rules.
+Do not give any introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <path number>: <one atomic testable architectural rule>
+
+Example output:
+RULE 1: When a CY, IR, or HPMn bit in the mcountinhibit register is clear, the corresponding mcycle, minstret, or mhpmcountern register increments as usual.
+RULE 2: When a CY, IR, or HPMn bit in the mcountinhibit register is set, the corresponding mcycle, minstret, or mhpmcountern register does not increment.
+
+Now convert the following paths into rule form:
+
+PATH 1:
+Target: satp
+Semantic entry: is_CSR_accessible(0x180, priv, _) / satp_accessible(priv)
+Path condition: priv == Machine and hartSupports(Ext_S)
+Semantic behavior: satp_accessible returns true.
+Architectural outcome: satp CSR access is permitted from Machine privilege.
+Observable oracle: Execute a satp CSR read or write in Machine privilege on a hart supporting Ext_S; the access is allowed by this rule.
+Feasibility: feasible
+PATH 2:
+Target: satp
+Semantic entry: is_CSR_accessible(0x180, priv, _) / satp_accessible(priv)
+Path condition: priv == Machine and not hartSupports(Ext_S)
+Semantic behavior: satp_accessible returns false.
+Architectural outcome: satp CSR access is not permitted from Machine privilege when the hart does not support Ext_S.
+Observable oracle: Execute a satp CSR read or write in Machine privilege on a hart without Ext_S; the access is rejected by CSR accessibility.
+Feasibility: feasible
+PATH 3:
+Target: satp
+Semantic entry: is_CSR_accessible(0x180, priv, _) / satp_accessible(priv)
+Path condition: priv == Supervisor and mstatus[TVM] == 0b0
+Semantic behavior: satp_accessible returns true.
+Architectural outcome: satp CSR access is permitted from Supervisor privilege.
+Observable oracle: Execute a satp CSR read or write in Supervisor privilege with mstatus.TVM clear; the access is allowed by this rule.
+Feasibility: feasible
+PATH 4:
+Target: satp
+Semantic entry: is_CSR_accessible(0x180, priv, _) / satp_accessible(priv)
+Path condition: priv == Supervisor and mstatus[TVM] != 0b0
+Semantic behavior: satp_accessible returns false.
+Architectural outcome: satp CSR access is not permitted from Supervisor privilege when mstatus.TVM is set.
+Observable oracle: Execute a satp CSR read or write in Supervisor privilege with mstatus.TVM set; the access is rejected by CSR accessibility.
+Feasibility: feasible
+PATH 5:
+Target: satp
+Semantic entry: is_CSR_accessible(0x180, priv, _) / satp_accessible(priv)
+Path condition: priv == VirtualSupervisor or priv == User or priv == VirtualUser
+Semantic behavior: satp_accessible returns false.
+Architectural outcome: satp CSR access is not permitted from these privilege modes.
+Observable oracle: Execute a satp CSR read or write in VirtualSupervisor, User, or VirtualUser privilege; the access is rejected by CSR accessibility.
+Feasibility: feasible
+PATH 6:
+Target: satp
+Semantic entry: is_CSR_exception_virtual(0x180, _, _)
+Path condition: Any satp CSR exception-virtual query for CSR address 0x180.
+Semantic behavior: The clause returns true.
+Architectural outcome: satp is classified by this rule as a CSR whose exception is virtualizable.
+Observable oracle: Cause a satp CSR access exception in a context that observes CSR exception virtualization behavior; the model reports the CSR exception-virtual predicate as true.
+Feasibility: feasible
+PATH 7:
+Target: satp
+Semantic entry: csr_name_map
+Path condition: CSR number is 0x180.
+Semantic behavior: CSR address 0x180 maps to the CSR name "satp".
+Architectural outcome: CSR operations targeting address 0x180 target satp.
+Observable oracle: Execute CSR instructions using CSR number 0x180 and observe satp read/write behavior.
+Feasibility: feasible
+PATH 8:
+Target: satp
+Semantic entry: read_CSR(0x180)
+Path condition: A satp CSR read is performed after CSR accessibility permits the access.
+Semantic behavior: Returns the current satp register value.
+Architectural outcome: Destination register receives the current xlenbits value of satp; satp state is unchanged by this read rule.
+Observable oracle: Write a known legal value to satp, then read CSR 0x180 and compare the destination register with the stored satp value.
+Feasibility: feasible
+PATH 9:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 32, architecture(Supervisor) == RV32, written Satp32.Mode bit decodes as Bare, and currentlyEnabled(Ext_Svbare)
+Semantic behavior: legalize_satp accepts the written Satp32 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV32 with Ext_Svbare enabled, write satp with Mode == 0 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 10:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 32, architecture(Supervisor) == RV32, written Satp32.Mode bit decodes as Sv32, and currentlyEnabled(Ext_Sv32)
+Semantic behavior: legalize_satp accepts the written Satp32 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV32 with Ext_Sv32 enabled, write satp with Mode == 1 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 11:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 32 and either the written mode does not decode to an implemented accepted mode or the decoded mode’s required extension is not currently enabled.
+Semantic behavior: legalize_satp returns prev_value and write_CSR assigns satp = previous satp.
+Architectural outcome: satp remains unchanged; write_CSR returns Ok(previous satp).
+Observable oracle: In RV32, write satp with Mode == 0 while Ext_Svbare is disabled, or Mode == 1 while Ext_Sv32 is disabled, then read satp and observe that it retained its previous value.
+Feasibility: feasible
+PATH 12:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 64, architecture(Supervisor) == RV64, written Satp64.Mode decodes as Bare, and currentlyEnabled(Ext_Svbare)
+Semantic behavior: legalize_satp accepts the written Satp64 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV64 with Ext_Svbare enabled, write satp with Mode == 0 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 13:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 64, architecture(Supervisor) == RV64, written Satp64.Mode decodes as Sv39, and currentlyEnabled(Ext_Sv39)
+Semantic behavior: legalize_satp accepts the written Satp64 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV64 with Ext_Sv39 enabled, write satp with Mode == 8 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 14:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 64, architecture(Supervisor) == RV64, written Satp64.Mode decodes as Sv48, and currentlyEnabled(Ext_Sv48)
+Semantic behavior: legalize_satp accepts the written Satp64 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV64 with Ext_Sv48 enabled, write satp with Mode == 9 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 15:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 64, architecture(Supervisor) == RV64, written Satp64.Mode decodes as Sv57, and currentlyEnabled(Ext_Sv57)
+Semantic behavior: legalize_satp accepts the written Satp64 value and write_CSR assigns satp = written_value.
+Architectural outcome: satp is updated to the written xlenbits value; write_CSR returns Ok(satp).
+Observable oracle: In RV64 with Ext_Sv57 enabled, write satp with Mode == 10 and a chosen ASID/PPN payload, then read satp and observe the written value.
+Feasibility: feasible
+PATH 16:
+Target: satp
+Semantic entry: write_CSR(0x180, value) / legalize_satp
+Path condition: A satp CSR write is performed with xlen == 64 and either the written mode does not decode to an implemented accepted mode or the decoded mode’s required extension is not currently enabled.
+Semantic behavior: legalize_satp returns prev_value and write_CSR assigns satp = previous satp.
+Architectural outcome: satp remains unchanged; write_CSR returns Ok(previous satp).
+Observable oracle: In RV64, write satp with an unsupported Mode value, or with Mode == 0/8/9/10 while the corresponding extension is disabled, then read satp and observe that it retained its previous value.
+Feasibility: feasible
+PATH 17:
+Target: satp
+Semantic entry: legalize_satp
+Path condition: legalize_satp is invoked with xlen not equal to 32 and not equal to 64.
+Semantic behavior: The function calls internal_error("Unsupported xlen" ...).
+Architectural outcome: No architectural satp behavior is defined by the provided source for this xlen.
+Observable oracle: Not architecturally testable from the supported xlen paths in the provided source.
+Feasibility: infeasible
+PATH 18:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv == Machine.
+Semantic behavior: translationMode returns Bare without reading satp mode bits.
+Architectural outcome: Effective Machine privilege uses Bare translation mode regardless of satp contents.
+Observable oracle: Perform address translation for a Machine-effective access with satp set to a non-Bare value; translation proceeds as Bare by this rule.
+Feasibility: feasible
+PATH 19:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV32, and satp[31] decodes as Bare through 0b000 @ Mk_Satp32(satp[31..0])[Mode].
+Semantic behavior: translationMode returns Bare.
+Architectural outcome: Non-Machine effective privilege uses Bare translation mode.
+Observable oracle: In RV32 non-Machine effective privilege, set satp Mode == 0 and translate an address; the Bare translation path is used.
+Feasibility: feasible
+PATH 20:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV32, and satp[31] decodes as Sv32 through 0b000 @ Mk_Satp32(satp[31..0])[Mode].
+Semantic behavior: translationMode returns Sv32.
+Architectural outcome: Non-Machine effective privilege uses Sv32 translation mode.
+Observable oracle: In RV32 non-Machine effective privilege, set satp Mode == 1 and translate an address; the Sv32 page-translation path is used.
+Feasibility: feasible
+PATH 21:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV64, xlen >= 64, and Mk_Satp64(satp)[Mode] decodes as Bare.
+Semantic behavior: translationMode returns Bare.
+Architectural outcome: Non-Machine effective privilege uses Bare translation mode.
+Observable oracle: In RV64 non-Machine effective privilege, set satp Mode == 0 and translate an address; the Bare translation path is used.
+Feasibility: feasible
+PATH 22:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV64, xlen >= 64, and Mk_Satp64(satp)[Mode] decodes as Sv39.
+Semantic behavior: translationMode returns Sv39.
+Architectural outcome: Non-Machine effective privilege uses Sv39 translation mode.
+Observable oracle: In RV64 non-Machine effective privilege, set satp Mode == 8 and translate an address; the Sv39 page-translation path is used.
+Feasibility: feasible
+PATH 23:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV64, xlen >= 64, and Mk_Satp64(satp)[Mode] decodes as Sv48.
+Semantic behavior: translationMode returns Sv48.
+Architectural outcome: Non-Machine effective privilege uses Sv48 translation mode.
+Observable oracle: In RV64 non-Machine effective privilege, set satp Mode == 9 and translate an address; the Sv48 page-translation path is used.
+Feasibility: feasible
+PATH 24:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV64, xlen >= 64, and Mk_Satp64(satp)[Mode] decodes as Sv57.
+Semantic behavior: translationMode returns Sv57.
+Architectural outcome: Non-Machine effective privilege uses Sv57 translation mode.
+Observable oracle: In RV64 non-Machine effective privilege, set satp Mode == 10 and translate an address; the Sv57 page-translation path is used.
+Feasibility: feasible
+PATH 25:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine, architecture(Supervisor) == RV128.
+Semantic behavior: The function calls internal_error("RV128 not supported").
+Architectural outcome: No architectural satp translation-mode behavior is defined by the provided source for RV128.
+Observable oracle: Not architecturally testable from the supported architecture paths in the provided source.
+Feasibility: infeasible
+PATH 26:
+Target: satp
+Semantic entry: translationMode(priv)
+Path condition: priv != Machine and satp mode bits do not decode through satpMode_of_bits for the selected Supervisor architecture.
+Semantic behavior: The function calls internal_error("invalid translation mode in satp").
+Architectural outcome: No architectural translation behavior is defined for an invalid in-register satp mode.
+Observable oracle: Not architecturally reachable through write_CSR legalize_satp, because invalid writes preserve the previous satp value.
+Feasibility: infeasible
+PATH 27:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: effectivePrivilege(access, mstatus, cur_privilege) selects a satp translation mode of Bare, access is not a shadow-stack access that triggers the dedicated shadow-stack fault path.
+Semantic behavior: translateAddr returns Ok(Physaddr(zero_extend(bits_of(vAddr))), PBMT_PMA, init_ext_ptw).
+Architectural outcome: Address translation is bypassed; the physical address is the zero-extended virtual address bits.
+Observable oracle: With effective translation mode Bare, perform a non-shadow-stack memory access and observe direct virtual-to-physical address behavior.
+Feasibility: feasible
+PATH 28:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: is_shadow_stack_access(access), effective translation mode from satp is Bare, and effective privilege is not Machine.
+Semantic behavior: translateAddr returns Err(E_SAMO_Access_Fault(), init_ext_ptw) before the normal Bare translation return.
+Architectural outcome: Shadow-stack access raises a store/AMO access-fault exception when effective privilege is below Machine and satp translation mode is Bare.
+Observable oracle: In non-Machine effective privilege with satp Mode Bare, perform a shadow-stack access and observe a store/AMO access-fault result rather than normal Bare address translation.
+Feasibility: feasible
+PATH 29:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: is_shadow_stack_access(access) and effective privilege is Machine.
+Semantic behavior: translateAddr returns Err(E_SAMO_Access_Fault(), init_ext_ptw).
+Architectural outcome: Shadow-stack access in Machine-effective privilege raises a store/AMO access-fault exception.
+Observable oracle: Perform a shadow-stack access with Machine effective privilege and observe a store/AMO access-fault result.
+Feasibility: feasible
+PATH 30:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: effective translation mode from satp is Sv32, Sv39, Sv48, or Sv57; access does not take the earlier shadow-stack fault path; and bits_of(vAddr) != sign_extend(bits_of(vAddr)[sv_width - 1 .. 0]), where sv_width is 32, 39, 48, or 57 respectively.
+Semantic behavior: translateAddr returns Err(translationException(access, PTW_Invalid_Addr()), init_ext_ptw).
+Architectural outcome: Address translation fails with the translation exception corresponding to access type because the virtual address is not canonical for the selected satp mode width.
+Observable oracle: Set satp to a paged mode and access a virtual address whose high bits are not a sign extension of bit sv_width - 1; observe the access-type-specific translation exception.
+Feasibility: feasible
+PATH 31:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: effective translation mode from satp is Sv32, Sv39, Sv48, or Sv57; access does not take the earlier shadow-stack fault path; bits_of(vAddr) == sign_extend(bits_of(vAddr)[sv_width - 1 .. 0]); and translate(...) returns Ok(ppn, pbmt, ext_ptw).
+Semantic behavior: satp ASID and PPN are extracted from the SXLEN satp value; translate(...) is invoked with sv_width, zero_extend(asid), base_ppn, VPN bits, access, effective privilege, MXR, SUM, and init_ext_ptw; on success, page offset bits from vAddr are appended to ppn and zero-extended into Physaddr.
+Architectural outcome: Address translation succeeds; the physical address is the translated PPN concatenated with the original page offset, with PBMT and external page-table-walk state returned from translate.
+Observable oracle: Configure satp ASID/PPN and page tables so translate succeeds for a canonical virtual address; observe the resulting physical address and memory access behavior.
+Feasibility: feasible
+PATH 32:
+Target: satp
+Semantic entry: translateAddr(vAddr, access)
+Path condition: effective translation mode from satp is Sv32, Sv39, Sv48, or Sv57; access does not take the earlier shadow-stack fault path; bits_of(vAddr) == sign_extend(bits_of(vAddr)[sv_width - 1 .. 0]); and translate(...) returns Err(f, ext_ptw).
+Semantic behavior: satp ASID and PPN are extracted from the SXLEN satp value; translate(...) is invoked with sv_width, zero_extend(asid), base_ppn, VPN bits, access, effective privilege, MXR, SUM, and init_ext_ptw; on failure, translateAddr returns Err(translationException(access, f), ext_ptw).
+Architectural outcome: Address translation fails with the access-type-specific translation exception derived from the page-table-walk failure.
+Observable oracle: Configure satp ASID/PPN and page tables so translate fails for a canonical virtual address; observe the resulting load, store/AMO, or instruction translation exception according to access type.
+Feasibility: feasible
+PATH 33:
+Target: satp
+Semantic entry: satp_to_asid(satp_val)
+Path condition: satp_to_asid is used with a 32-bit satp value, including the Sv32 translation path.
+Semantic behavior: Extracts Mk_Satp32(satp_val)[Asid], bits 30..22.
+Architectural outcome: The ASID supplied to address translation is the 9-bit Satp32 ASID field.
+Observable oracle: In a 32-bit satp translation path, vary bits 30..22 of satp while holding other fields fixed and observe ASID-dependent translation behavior where the page-table-walk machinery distinguishes ASIDs.
+Feasibility: feasible
+PATH 34:
+Target: satp
+Semantic entry: satp_to_asid(satp_val)
+Path condition: satp_to_asid is used with a 64-bit satp value, including Sv39, Sv48, or Sv57 translation paths.
+Semantic behavior: Extracts Mk_Satp64(satp_val)[Asid], bits 59..44.
+Architectural outcome: The ASID supplied to address translation is the 16-bit Satp64 ASID field.
+Observable oracle: In a 64-bit satp translation path, vary bits 59..44 of satp while holding other fields fixed and observe ASID-dependent translation behavior where the page-table-walk machinery distinguishes ASIDs.
+Feasibility: feasible
+PATH 35:
+Target: satp
+Semantic entry: satp_to_ppn(satp_val)
+Path condition: satp_to_ppn is used with a 32-bit satp value, including the Sv32 translation path.
+Semantic behavior: Extracts Mk_Satp32(satp_val)[PPN], bits 21..0.
+Architectural outcome: The root page-table base PPN supplied to address translation is the 22-bit Satp32 PPN field.
+Observable oracle: In a 32-bit satp translation path, vary bits 21..0 of satp and observe that page-table walking uses the changed root PPN.
+Feasibility: feasible
+PATH 36:
+Target: satp
+Semantic entry: satp_to_ppn(satp_val)
+Path condition: satp_to_ppn is used with a 64-bit satp value, including Sv39, Sv48, or Sv57 translation paths.
+Semantic behavior: Extracts Mk_Satp64(satp_val)[PPN], bits 43..0.
+Architectural outcome: The root page-table base PPN supplied to address translation is the 44-bit Satp64 PPN field.
+Observable oracle: In a 64-bit satp translation path, vary bits 43..0 of satp and observe that page-table walking uses the changed root PPN.
+Feasibility: feasible
+PATH 37:
+Target: satp
+Semantic entry: get_satp(sv_width)
+Path condition: sv_width == 32.
+Semantic behavior: get_satp returns satp[31..0].
+Architectural outcome: Sv32 translation consumes the low 32 bits of satp as the SXLEN satp value.
+Observable oracle: In an Sv32 translation path, vary fields within satp[31..0] and observe translation changes; upper bits outside satp[31..0] are not consumed by this helper.
+Feasibility: feasible
+PATH 38:
+Target: satp
+Semantic entry: get_satp(sv_width)
+Path condition: sv_width != 32 and is an Sv mode width supported by satp_mode_width, with xlen == 64 asserted.
+Semantic behavior: get_satp returns the full satp value.
+Architectural outcome: Sv39, Sv48, and Sv57 translation consume the 64-bit satp value.
+Observable oracle: In Sv39, Sv48, or Sv57 translation, vary Satp64 ASID or PPN fields and observe translation changes.
+Feasibility: feasible
+PATH 39:
+Target: satp
+Semantic entry: transform_effective_address(vaddr, access)
+Path condition: translationMode(effectivePrivilege(access, mstatus, cur_privilege)) returns Bare.
+Semantic behavior: transform_effective_address computes pmlen and returns pm_transform_PA(vaddr, pmlen).
+Architectural outcome: Effective address transformation uses physical-address pointer-mask transformation when satp translation mode is Bare.
+Observable oracle: With effective translation mode Bare, configure PMM state and observe that effective address transformation follows the PA transformation path.
+Feasibility: feasible
+PATH 40:
+Target: satp
+Semantic entry: transform_effective_address(vaddr, access)
+Path condition: translationMode(effectivePrivilege(access, mstatus, cur_privilege)) returns Sv32, Sv39, Sv48, or Sv57.
+Semantic behavior: transform_effective_address computes pmlen and returns pm_transform_VA(vaddr, pmlen).
+Architectural outcome: Effective address transformation uses virtual-address pointer-mask transformation when satp translation mode is paged.
+Observable oracle: With satp selecting Sv32, Sv39, Sv48, or Sv57, configure PMM state and observe that effective address transformation follows the VA transformation path.
+Feasibility: feasible

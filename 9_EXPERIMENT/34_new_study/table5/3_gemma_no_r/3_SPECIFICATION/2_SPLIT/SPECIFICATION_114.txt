@@ -1,0 +1,92 @@
+## 21.6. Single-Precision Floating-Point Computational Instructions
+
+Floating-point arithmetic instructions with one or two source operands use the R-type format with the OPFP major opcode. FADD.S and FMUL.S perform single-precision floating-point addition and multiplication respectively,  between rs1 and rs2 .  FSUB.S  performs the single-precision floating-point subtraction of rs2 from rs1 . FDIV.S performs the single-precision floating-point division of rs1 by rs2 . FSQRT.S computes the square root of rs1 . In each case, the result is written to rd .
+
+The  2-bit  floating-point  format  field fmt is  encoded  as  shown  in  Table  26.  It  is  set  to S (00)  for  all instructions in the F extension.
+
+Table 26. Format field encoding
+
+|   fmt field | Mnemonic   | Meaning                 |
+|-------------|------------|-------------------------|
+|          00 | S          | 32-bit single-precision |
+|          01 | D          | 64-bit double-precision |
+|          10 | H          | 16-bit half-precision   |
+|          11 | Q          | 128-bit quad-precision  |
+
+All floating-point operations that perform rounding can select the rounding mode using the rm field with the encoding shown in Table 24.
+
+Floating-point  minimum-number  and  maximum-number  instructions  FMIN.S  and  FMAX.S  write, respectively, the smaller or larger of rs1 and rs2 to rd . For the purposes of these instructions only, the value -0.0 is considered to be less than the value +0.0. If both inputs are NaNs, the result is the canonical NaN. If  only  one  operand  is  a  NaN,  the  result  is  the  non-NaN  operand.  Signaling  NaN  inputs  set  the  invalid operation exception flag, even when the result is not NaN.
+
+<image>
+
+Note  that  in  version  2.2  of  the  F  extension,  the  FMIN.S  and  FMAX.S  instructions  were amended  to  implement  the  proposed  IEEE  754-201x minimumNumber and maximumNumber operations,  rather  than  the  IEEE  754-2008  minNum  and  maxNum  operations.  These operations differ in their handling of signaling NaNs.
+
+<image>
+
+Floating-point  fused  multiply-add  instructions  require  a  new  standard  instruction  format.  R4-type instructions specify three source registers ( rs1 , rs2 ,  and rs3 ) and a destination register ( rd ).  This format is only used by the floating-point fused multiply-add instructions.
+
+FMADD.S multiplies  the  values  in rs1 and rs2 ,  adds  the  value  in rs3 ,  and  writes  the  final  result  to rd . FMADD.S computes (rs1 × rs2)+rs3 .
+
+FMSUB.S multiplies the values in rs1 and rs2 ,  subtracts the value in rs3 ,  and writes the final result to rd . FMSUB.S computes (rs1 × rs2) -rs3 .
+
+FNMSUB.S multiplies the values in rs1 and rs2 ,  negates the product, adds the value in rs3 ,  and writes the final result to rd . FNMSUB.S computes -(rs1 × rs2)+rs3 .
+
+FNMADD.S multiplies the values in rs1 and rs2 , negates the product, subtracts the value in rs3 , and writes the final result to rd . FNMADD.S computes -(rs1 × rs2) -rs3 .
+
+<image>
+
+The FNMSUB and FNMADD instructions are counterintuitively named, owing to the naming of the corresponding instructions in MIPS-IV. The MIPS instructions were defined to negate the sum, rather than negating the product as the RISC-V instructions do, so the naming scheme was more rational at the time. The two definitions differ with respect to signed-zero results. The  RISC-V  definition  matches  the  behavior  of  the  x86  and  ARM  fused  multiply-add instructions,  but  unfortunately  the  RISC-V  FNMSUB  and  FNMADD  instruction  names  are swapped as compared to x86, whereas the RISC-V FMSUB and FNMSUB instruction names are swapped as compared to ARM.
+
+<image>
+
+<image>
+
+The  fused  multiply-add  (FMA)  instructions  consume  a  large  part  of  the  32-bit  instruction encoding  space.  Some  alternatives  considered  were  to  restrict  FMA  to  only  use  dynamic rounding modes, but static rounding modes are useful in code that exploits the lack of product rounding. Another alternative would have been to use rd to provide rs3, but this would require additional  move  instructions  in  some  common  sequences.  The  current  design  still  leaves  a large portion of the 32-bit encoding space open while avoiding having FMA be non-orthogonal.
+
+The fused multiply-add instructions must set the invalid operation exception flag when the multiplicands are Infinity and zero, even when the addend is a quiet NaN.
+
+The IEEE 754-2008 standard permits, but does not require, raising the invalid exception for the operation Infinity multiply by zero + qNaN.
+
+Floating-point-to-integer and integer-to-floating-point conversion instructions are encoded in the OP-FP major opcode space. FCVT.W.S or FCVT.L.S converts a floating-point number in floating-point register rs1 to a signed 32-bit or 64-bit integer, respectively, in integer register rd . FCVT.S.W or FCVT.S.L converts a 32bit  or  64-bit  signed  integer,  respectively,  in  integer  register rs1 into  a  floating-point  number in floatingpoint  register rd .  FCVT.WU.S,  FCVT.LU.S,  FCVT.S.WU,  and  FCVT.S.LU  variants  convert  to  or  from unsigned  integer  values.  For  XLEN>32,  FCVT.W[U].S  sign-extends  the  32-bit  result  to  the  destination register  width.  FCVT.L[U].S  and  FCVT.S.L[U]  are  RV64-only  instructions.  If  the  rounded  result  is  not representable in the destination format, it is clipped to the nearest value and the invalid flag is set. Table 27 gives the range of valid inputs for FCVT. int .S and the behavior for invalid inputs.
+
+All floating-point to integer and integer to floating-point conversion instructions round according to the rm field. A floating-point register can be initialized to floating-point positive zero using FCVT.S.W rd , x0 , which will never set any exception flags.
+
+Table 27. Domains of float-to-integer conversions and behavior for invalid inputs
+
+|                                        | FCVT.W.S   | FCVT.WU.S   | FCVT.L.S   | FCVT.LU.S   |
+|----------------------------------------|------------|-------------|------------|-------------|
+| Minimum valid input (after rounding)   | - 2 31     | 0           | - 2 63     | 0           |
+| Maximum valid input (after rounding)   | 2 31 - 1   | 2 32 - 1    | 2 63 - 1   | 2 64 - 1    |
+| Output for out-of-range negative input | - 2 31     | 0           | - 2 63     | 0           |
+| Output for -∞                          | - 2 31     | 0           | - 2 63     | 0           |
+
+|                                        | FCVT.W.S   | FCVT.WU.S   | FCVT.L.S   | FCVT.LU.S   |
+|----------------------------------------|------------|-------------|------------|-------------|
+| Output for out-of-range positive input | 2 31 - 1   | 2 32 - 1    | 2 63 - 1   | 2 64 - 1    |
+| Output for +∞ or NaN                   | 2 31 - 1   | 2 32 - 1    | 2 63 - 1   | 2 64 - 1    |
+
+All floating-point conversion instructions set the Inexact exception flag if the rounded result differs from the operand value and the Invalid exception flag is not set.
+
+<image>
+
+Floating-point to floating-point sign-injection instructions, FSGNJ.S, FSGNJN.S, and FSGNJX.S, produce a result  that  takes  all  bits  except  the  sign  bit  from rs1 .  For  FSGNJ,  the  result's  sign  bit  is rs2 's  sign  bit;  for FSGNJN, the result's sign bit is the opposite of rs2 's sign bit; and for FSGNJX, the sign bit is the XOR of the sign bits of rs1 and rs2 .  Sign-injection instructions do not set floating-point exception flags, nor do they canonicalize  NaNs.  Note,  FSGNJ.S rx,  ry,  ry moves ry to rx (assembler  pseudoinstruction  FMV.S rx,  ry ); FSGNJN.S rx,  ry,  ry moves  the  negation  of ry to rx (assembler  pseudoinstruction  FNEG.S rx,  ry );  and FSGNJX.S rx, ry, ry moves the absolute value of ry to rx (assembler pseudoinstruction FABS.S rx, ry ).
+
+<image>
+
+<image>
+
+The  sign-injection instructions  provide  floating-point  MV,  ABS,  and  NEG,  as  well  as supporting  a  few  other operations,  including  the  IEEE copySign operation  and  sign manipulation  in  transcendental  math  function  libraries.  Although  MV,  ABS,  and  NEG  only need  a  single  register  operand,  whereas  FSGNJ  instructions  need  two,  it  is  unlikely  most microarchitectures  would  add  optimizations  to  benefit  from  the  reduced  number  of  register reads for these relatively  infrequent  instructions.  Even  in  this  case,  a  microarchitecture  can simply detect when both source registers are the same for FSGNJ instructions and only read a single copy.
+
+Instructions are provided to move bit patterns between the floating-point and integer registers. FMV.X.W moves the single-precision value in floating-point register rs1 represented in IEEE 754-2008 encoding to the  lower  32  bits  of  integer  register rd .  The  bits  are  not  modified  in  the  transfer,  and  in  particular,  the payloads of non-canonical NaNs are preserved. For RV64, the higher 32 bits of the destination register are filled with copies of the floating-point number's sign bit.
+
+FMV.W.X moves the single-precision value encoded in IEEE 754-2008 standard encoding from the lower 32 bits of integer register rs1 to the floating-point register rd . The bits are not modified in the transfer, and in particular, the payloads of non-canonical NaNs are preserved.
+
+<image>
+
+The FMV.W.X and FMV.X.W instructions were previously called FMV.S.X and FMV.X.S. The use of  W  is  more  consistent  with  their  semantics  as  an  instruction  that  moves  32  bits  without interpreting them. This became clearer after defining NaN-boxing. To avoid disturbing existing code, both the W and S versions will be supported by tools.
+
+<image>
+
+<image>
+
+The base floating-point ISA was defined so as to allow implementations to employ an internal recoding of the floating-point format in registers to simplify handling of subnormal values and possibly  to  reduce  functional  unit  latency.  To  this  end,  the  F  extension  avoids  representing integer values in the floating-point registers by defining  conversion  and  comparison operations that read and write the integer register file directly. This also removes many of the common cases where explicit moves between integer and floating-point registers are required, reducing instruction count and critical paths for common mixed-format code sequences.

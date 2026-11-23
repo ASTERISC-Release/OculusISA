@@ -1,0 +1,39 @@
+RULE 1: satp is an SXLEN-bit read/write CSR that holds supervisor-mode address-translation and protection state.
+RULE 2: When satp.MODE is Bare, supervisor virtual addresses are equal to supervisor physical addresses.
+RULE 3: When satp.MODE is Bare, no additional memory protection beyond the physical memory protection scheme applies to supervisor memory accesses.
+RULE 4: When SXLEN=32 and satp.MODE is Sv32, supervisor address translation uses the Sv32 page-based 32-bit virtual-memory scheme.
+RULE 5: When SXLEN=64 and satp.MODE is Sv39, supervisor address translation uses the Sv39 page-based 39-bit virtual-memory scheme.
+RULE 6: When SXLEN=64 and satp.MODE is Sv48, supervisor address translation uses the Sv48 page-based 48-bit virtual-memory scheme.
+RULE 7: When SXLEN=64 and satp.MODE is Sv57, supervisor address translation uses the Sv57 page-based 57-bit virtual-memory scheme.
+RULE 8: When satp.MODE selects a non-Bare translation scheme, the page-table walk begins from the root page table whose physical page number is satp.PPN.
+RULE 9: When satp.MODE selects a non-Bare translation scheme, the root page table physical address is satp.PPN multiplied by 4096.
+RULE 10: A write to satp specifying an unsupported MODE has no effect and modifies no field of satp.
+RULE 11: The number of implemented ASID bits in satp.ASID may be zero.
+RULE 12: Implemented bits of satp.ASID are allocated starting from the least-significant bit.
+RULE 13: If satp.ASID has at least one implemented bit, the least-significant implemented ASID bits of satp.ASID are writable.
+RULE 14: When satp.MODE is Sv32, the number of implemented ASID bits in satp.ASID is at most 9.
+RULE 15: When satp.MODE is Sv39, Sv48, or Sv57, the number of implemented ASID bits in satp.ASID is at most 16.
+RULE 16: A satp.ASID value has hart-local meaning and may identify different address spaces on different harts.
+RULE 17: An address-translation cache entry may satisfy a subsequent implicit page-table read for the current satp only if the entry's ASID matches satp.ASID or the entry is associated with a global mapping.
+RULE 18: When V=0, satp is active when the effective privilege mode is S-mode or U-mode.
+RULE 19: Execution of the address-translation algorithm may begin using a given value of satp only when satp is active.
+RULE 20: When V=1, an instruction that reads satp accesses vsatp instead.
+RULE 21: When V=1, an instruction that writes satp accesses vsatp instead.
+RULE 22: When V=1, the HS-level satp value does not affect address translation or protection because vsatp substitutes for it.
+RULE 23: When V=1, a write to satp specifying an unsupported MODE is ignored and does not modify vsatp.
+RULE 24: When V=1 and hstatus.VTVM=1, an attempt in VS-mode to access satp raises a virtual-instruction exception.
+RULE 25: An attempt to access satp from U-mode when V=0 raises an illegal-instruction exception.
+RULE 26: When V=1 and executing in VU-mode, an attempt to access satp that would be allowed in HS-mode assuming mstatus.TVM=0 raises a virtual-instruction exception.
+RULE 27: When mstatus.TVM=1, a read access to satp while executing in S-mode raises an illegal-instruction exception.
+RULE 28: When mstatus.TVM=1, a write access to satp while executing in S-mode raises an illegal-instruction exception.
+RULE 29: When mstatus.TVM=0, a read access to satp while executing in S-mode is permitted.
+RULE 30: When mstatus.TVM=0, a write access to satp while executing in S-mode is permitted.
+RULE 31: Changing satp.MODE from Bare to a non-Bare mode takes effect immediately without requiring an SFENCE.VMA.
+RULE 32: Changing satp.MODE from a non-Bare mode to Bare takes effect immediately without requiring an SFENCE.VMA.
+RULE 33: Changing satp.ASID takes effect immediately without requiring an SFENCE.VMA.
+RULE 34: A write to satp does not imply ordering constraints between page-table updates and subsequent address translations.
+RULE 35: A write to satp does not imply invalidation of address-translation caches.
+RULE 36: If satp.MODE is read-only zero, sstatus.SUM is read-only zero.
+RULE 37: To ensure that updates to address-translation data structures are observed by subsequent implicit reads by the same hart, an SFENCE.VMA must be used.
+RULE 38: After satp becomes inactive, a translation that began while satp was active is not required to complete or terminate unless an SFENCE.VMA matching the address and ASID is executed.
+RULE 39: When satp.MODE selects a non-Bare translation scheme, satp.ASID is used as the ASID for the current supervisor address space during supervisor address translation.

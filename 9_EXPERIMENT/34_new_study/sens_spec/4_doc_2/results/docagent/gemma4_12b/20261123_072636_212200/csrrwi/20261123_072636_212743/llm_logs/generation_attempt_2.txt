@@ -1,0 +1,25 @@
+Based on the documentation provided, here is the explanation for the **SRET** instruction and its behavior when the **SDT** bit is set:
+
+### **1. The SRET Instruction Definition**
+The `SRET` instruction is used to return from a trap handler into supervisor mode. According to Section 3.3.2, `SRET` performs the following actions:
+*   **Privilege Mode Update:** It determines the new privilege mode based on the values in the `hstatus` and `sstatus` registers (specifically the `SPV` and `SPP` fields).
+*   **Interrupt Enable Update:** It sets the Supervisor Interrupt Enable (`SIE`) bit to the value of the Supervisor Interrupt Enable (`SPIE`) bit and then sets `SPIE` to 1.
+*   **Program Counter Update:** It sets the `pc` to the value stored in the Supervisor Exception Program Counter (`sepc`).
+
+### **2. The SDT Bit and Double Trap Behavior**
+The **SDT (S-mode-disable-trap)** bit is an extension (Ssdbltrp) described in Section 12.1.1.5. Its purpose is to manage "double traps"—scenarios where a trap occurs while the processor is already in the middle of handling a previous trap (specifically during the "tail phase" where it is restoring critical state).
+
+### **3. Behavior when SDT is set to 1**
+If the `SDT` bit is set to **1**, the following logic applies to `SRET`:
+
+*   **Standard Trap Return:** If the hart is currently in supervisor mode and the trap was taken from a lower privilege mode (like U-mode), `SRET` will behave normally: it will set the privilege mode and `pc` as usual, and then **automatically clear the SDT bit to 0**.
+*   **Double Trap Detection:** If `SRET` is executed while the **SDT bit is already set to 1**, the hardware recognizes this as an "unexpected trap" (a double trap).
+*   **Action on Double Trap:** In this specific case, the processor will not complete the return to supervisor mode. Instead, it will deliver a **double-trap exception into machine mode**.
+*   **Reasoning:** This mechanism ensures that if a critical error (like a page fault during the restoration of a privileged state) occurs at the very last moment of a trap return, the system catches it in machine mode rather than allowing the processor to enter an unstable or insecure state in supervisor mode.
+
+**Summary Table for SRET (when SDT=1):**
+
+| Current State | Action | Resulting State |
+| :--- | :--- | :--- |
+| **SDT = 0** | `SRET` executes | Returns to S-mode; **SDT becomes 0** |
+| **SDT = 1** | `SRET` executes | **Double Trap** is taken into M-mode |

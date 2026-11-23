@@ -1,0 +1,121 @@
+# Test Case Rule: RULE 221: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrs mstatus, t0
+call machine_to_supervisor
+# Result: mstatus[1] = 1
+
+# Test Case Rule: RULE 222: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrs mstatus, t0
+call machine_to_supervisor
+# Result: mstatus[0] = 1
+
+# Test Case Rule: RULE 223: When returning from a trap, the MPV field in mstatus is ignored if the MPP field in mstatus equals 3.
+##### ASSEMBLY #####
+li t0, 0x3
+csrs mstatus, t0
+call machine_to_supervisor
+# Result: mstatus[0] = 3
+
+# Test Case Rule: RULE 224: When the MRET instruction is executed, the new privilege mode is determined from the values of the MPP and MPV fields in mstatus or mstatush as specified by the architecture.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+mret
+
+# Result: mstatus[0] = 0
+
+# Test Case Rule: RULE 225: When the MRET instruction is executed, the MPV field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+mret
+# Result: mstatus[1] = 0
+
+# Test Case Rule: RULE 226: When the MRET instruction is executed, the MPP field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+mret
+# Result: mstatus[0] = 0
+
+# Test Case Rule: RULE 227: When the MRET instruction is executed, the MIE field in mstatus or mstatush is written with the current value of the MPIE field.
+##### ASSEMBLY #####
+li t0, 5
+li t1, 5
+csrs mstatus, t0
+csrs mstatus, t1
+call machine_to_supervisor
+mret
+# Result: mstatus[2] = 5
+
+# Test Case Rule: RULE 228: When the MRET instruction is executed, the MPIE field in mstatus or mstatush is set to 1.
+##### ASSEMBLY #####
+csrs mstatus, 0
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+mret
+# Result: mstatus[3] = 1
+
+# Test Case Rule: RULE 229: The SPELP bit in mstatus can be accessed through the sstatus CSR.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+csrr t1, sstatus
+# SPELP is bit 12 of sstatus
+# Result: sstatus[12] = 1
+
+# Test Case Rule: RULE 230: When a trap is taken into privilege mode x, the x PELP bit in mstatus is set to the current ELP value.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume trap occurs into S-mode, checking S-mode PELP bit (bit 1)
+# Result: mstatus[1] = 1
+
+# Test Case Rule: RULE 231: When a trap is taken into privilege mode x, the ELP field in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+li t0, 0
+csrs mstatus, t0
+call machine_to_supervisor
+# Assume trap occurs into S-mode, checking ELP field
+# Result: mstatus[2] = 0
+
+# Test Case Rule: RULE 232: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to the value of the x PELP bit in mstatus if the LPE bit of privilege mode y is 1.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+li t1, 1
+csrs mstatus, t1
+call machine_to_supervisor
+# Assume MRET/SRET returns to U-mode (LPE=1), and x PELP bit (mstatus[1]) is 1. ELP should be 1.
+mret
+# Result: mstatus[2] = 1
+
+# Test Case Rule: RULE 233: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to NO_LP_EXPECTED if the LPE bit of privilege mode y is 0.
+##### ASSEMBLY #####
+li t0, 0
+csrs mstatus, t0
+li t1, 0
+csrs mstatus, t1
+call machine_to_supervisor
+# Assume MRET/SRET returns to U-mode (LPE=1, checking case where LPE=0 fails)
+# We test the case where LPE=0 dictates NO_LP_EXPECTED.
+# If we assume the architecture allows testing the LPE=0 path:
+# If LPE=0, ELP should be 0.
+mret
+# Result: mstatus[2] = 0
+
+# Test Case Rule: RULE 234: When executing an MRET or SRET instruction, the x PELP bit in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+li t0, 0
+csrs mstatus, t0
+call machine_to_supervisor
+mret
+# Result: mstatus[1] = 0

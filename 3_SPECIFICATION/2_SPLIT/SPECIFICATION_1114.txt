@@ -1,0 +1,26 @@
+## 5.5.3. Cache Operations
+
+Cache operations are infrequently performed, and code that uses them can have hard-to-find bugs. For the purposes of debug triggers, two classes of cache operations must match as stores:
+
+1. Cache  operations  that  enable  software  to  maintain  coherence  between  otherwise  non-coherent implicit and explicit memory accesses.
+2. Cache operations that perform block writes of constant data.
+
+Only triggers with size=0 and select=0 will match. Since cache operations affect multiple addresses, there are multiple possible values to compare against. Implementations must implement one of the following options. From most desirable to least desirable, they are:
+
+1. Every  address  from  the  effective  address  rounded  down  to  the  nearest  cache  block  boundary (inclusive) to the effective address rounded up to the nearest cache block boundary (exclusive) is a compare value.
+
+2. The effective address rounded down to the nearest cache block boundary is a compare value.
+
+3. The effective address of the instruction is a compare value.
+
+Cache operations encoded as HINTs do not match debug triggers.
+
+The  above  language  intends  to  capture  the  trigger  behavior  with  respect  to  the  cache operations to be introduced in a forthcoming I/D consistency extension.
+
+<image>
+
+For  RISC-V  Base  Cache  Management  Operation  ISA  Extensions  1.0.1,  this  means  the following:
+
+1. cbo.clean , cbo.flush ,  and cbo.inval match  as  if  they  are  stores  because  they affect consistency.
+2. cbo.zero matches as if it is a store because it performs a block write of constant data.
+3. The prefetch instructions don't match at all.

@@ -1,0 +1,39 @@
+You are comparing generated RISC-V architectural rules against a ground truth rule set.
+
+    Target: scounteren
+
+    Generated rules:
+    RULE 1: The scounteren CSR is implemented as a supervisor CSR accessible in S-mode or a higher privilege mode.
+RULE 2: If scounteren.CY is clear, an attempt to read cycle while executing in U-mode raises an illegal-instruction exception.
+RULE 3: If scounteren.TM is clear, an attempt to read time while executing in U-mode raises an illegal-instruction exception.
+RULE 4: If scounteren.IR is clear, an attempt to read instret while executing in U-mode raises an illegal-instruction exception.
+RULE 5: For any hpmcountern with n in 3 through 31, if scounteren.HPMn is clear, an attempt to read hpmcountern while executing in U-mode raises an illegal-instruction exception.
+RULE 6: If scounteren.CY and mcounteren.CY are both set, a read of cycle in U-mode is permitted.
+RULE 7: If scounteren.TM and mcounteren.TM are both set, a read of time in U-mode is permitted.
+RULE 8: If scounteren.IR and mcounteren.IR are both set, a read of instret in U-mode is permitted.
+RULE 9: For any hpmcountern with n in 3 through 31, if scounteren.HPMn and mcounteren.HPMn are both set, a read of hpmcountern in U-mode is permitted.
+RULE 10: In U-mode, if the corresponding scounteren bit is set but the corresponding mcounteren bit is clear, a read of that counter raises an illegal-instruction exception.
+RULE 11: The value of a bit in mcounteren does not affect whether the corresponding bit in scounteren is writable.
+RULE 12: For each writable counter-enable bit in scounteren, a write of an unsupported value does not itself raise an illegal-instruction exception and a subsequent read returns a legal value.
+RULE 13: If a scounteren counter-enable bit is implemented as read-only zero, writes to that bit are ignored and the bit reads as zero.
+RULE 14: While V=1, scounteren continues its counter-enable function with VU-mode substituting for U-mode.
+RULE 15: While V=1, an access to scounteren from VS-mode accesses scounteren and is not redirected to a separate VS CSR.
+RULE 16: In VU-mode, if the corresponding scounteren bit is clear and the corresponding mcounteren bit is set, an attempt to access a non-high-half counter CSR raises a virtual-instruction exception.
+RULE 17: In VU-mode with XLEN=32, if the corresponding scounteren bit is clear and the corresponding mcounteren bit is set, an attempt to access a high-half counter CSR raises a virtual-instruction exception.
+RULE 18: In VU-mode, a read of a counter is permitted only when the corresponding bits in both hcounteren and scounteren are set.
+
+    Ground truth rules in this batch:
+    RULE 21: In M-mode, setting scounteren.HPM7 (bit 7) should be reflected on the readback (# Result: a2 = 0x80) [# Extension Must Be Active: NONE; li a0, 0x80; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x80].
+RULE 22: In M-mode, setting scounteren.HPM6 (bit 6) should be reflected on the readback (# Result: a2 = 0x40) [# Extension Must Be Active: NONE; li a0, 0x40; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40].
+RULE 23: In M-mode, setting scounteren.HPM5 (bit 5) should be reflected on the readback (# Result: a2 = 0x20) [# Extension Must Be Active: NONE; li a0, 0x20; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20].
+RULE 24: In M-mode, setting scounteren.HPM4 (bit 4) should be reflected on the readback (# Result: a2 = 0x10) [# Extension Must Be Active: NONE; li a0, 0x10; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x10].
+RULE 25: In M-mode, setting scounteren.HPM3 (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8].
+RULE 26: In M-mode, setting scounteren.IR (bit 2) should be reflected on the readback (# Result: a2 = 0x4) [# Extension Must Be Active: NONE; li a0, 0x4; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4].
+RULE 27: In M-mode, setting scounteren.TM (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2].
+RULE 28: In M-mode, setting scounteren.CY (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1].
+RULE 29: In M-mode, writing -1 to the scounteren register must not set it to -1 or 0xffffffff (scounteren != -1 & scounteren != 0xffffffff).
+
+    Determine all semantically qualifying matches. A generated rule covers a ground truth rule only if it expresses the same architectural behavior or fully includes the ground truth rule's required condition and outcome. Do not count a partial match. Use only the given rule texts. Do not use external knowledge or infer behavior that is not explicitly stated. Return candidate pairs for each qualifying match, including alternative candidates when more than one pair qualifies. A separate deterministic algorithm will select one-to-one matches from these candidates. Omit unmatched rules. Use only IDs present in the inputs.
+
+    Return only JSON:
+    {"mapping": [{"generated_id": <generated rule ID>, "gt_id": <ground truth rule ID>}]}

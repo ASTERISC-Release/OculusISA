@@ -1,0 +1,2654 @@
+# 1 # Extension Must Be Active: NONE
+CSRRWI x0, mstatus, 5
+# Result: mstatus[0] = 1
+
+# 2 # Extension Must Be Active: NONE
+nop # Skipped because CSR read side effects are not deterministically observable for the standard CSRs provided in the kernel info.
+# Result: x0 = 0
+
+# 3 # Extension Must Be Active: NONE
+CSRRWI x0, mstatus, 1
+# Result: mstatus = 1
+
+# 4 # Extension Must Be Active: NONE
+csrrwi t0, mstatus, 0x15
+# Result: t0 = 0x3c00
+
+# 5 # Extension Must Be Active: NONE
+
+# 6 # Extension Must Be Active: NONE
+
+# 7 # Extension Must Be Active: NONE
+
+# 8 # Extension Must Be Active: NONE
+nop # Skipped because TVM bit position is not provided in the background information
+# Result: x0 = 0
+
+# 9 # Extension Must Be Active: NONE
+nop # Skipped because SFENCE.VMA does not modify any registers or CSRs, making its permitted execution (lack of trap) non-observable through architectural state.
+# Result: x0 = 0
+
+# 10 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li x1, 0
+sfence.vma x1, x0
+# Result: mcause = 0
+
+# 11 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr t0, satp
+li t1, 1
+slli t1, t1, 60
+or t0, t0, t1
+csrw satp, t0
+# Result: satp[60] = 1
+
+# 12 # Extension Must Be Active: NONE
+call machine_to_user
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 13 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+sll t1, t1, 20
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 14 # Extension Must Be Active: NONE
+
+# 15 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 20
+csrs hstatus, t0
+call machine_to_virtual
+sfence.vma x1, x2
+# Result: mcause = 12
+
+# 16 # Extension Must Be Active: NONE
+li t0, 1
+csrr t1, hstatus
+or t1, t1, t0
+csrw hstatus, t1
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause = 10
+
+# 17 # Extension Must Be Active: NONE
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause = 12
+
+# 18 # Extension Must Be Active: NONE
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause = 22
+
+# 19 # Extension Must Be Active: NONE
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mtval = 0x80000006
+
+# 20 # Extension Must Be Active: NONE
+nop # Skipped because it is not possible to deterministically trigger multiple synchronous exceptions for SFENCE.VMA within the provided environment.
+# Result: x0 = 0
+
+# 21 # Extension Must Be Active: V
+li x10, 0
+vle32ff.v v0, (x10)
+# Result: mcause = 12
+
+# 22 # Extension Must Be Active: NONE
+vsetvli t0, 10, e32, m1
+li t1, 0
+VLE32FF.V v0, (t1), m1
+# Result: vl = 10
+
+# 23 # Extension Must Be Active: NONE
+nop # Skipped because the rule requires a deterministic memory exception on an element index greater than 0, which cannot be guaranteed without knowledge of the specific memory map.
+# Result: x0 = 0
+
+# 24 # Extension Must Be Active: NONE
+nop # Skipped because non-idempotent memory locations cannot be simulated in this test environment.
+# Result: x0 = 0
+
+# 25 # Extension Must Be Active: NONE
+vsetvli v0, 1, e32, m1
+li x10, 0
+csrrw x10, vstart, x10
+li x11, 0x80001000
+sd x0, 0(x11)
+vle32ff.v v1, (x11), v0
+# Result: vl = 0
+
+# 26 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 768
+csrw mseccfg, t0
+li t2, 768
+csrw mseccfg, t2
+csrr t3, mseccfg
+and t4, t3, t1
+# Result: t4 = 0
+
+# 27 # Extension Must Be Active: NONE
+li t0, 768
+csrr t1, mseccfg
+or t1, t1, t0
+csrw mseccfg, t1
+csrr t2, mseccfg
+li t3, 768
+and t2, t2, t3
+# Result: t2 = 768
+
+# 28 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+# Result: mseccfg[0] = 1
+
+# 29 # Extension Must Be Active: NONE
+li t0, 0
+csrrw mseccfg, t0
+call machine_to_user
+csrr t0, seed
+# Result: mcause = 2
+
+# 30 # Extension Must Be Active: NONE
+li t0, 1 << 8
+csrr t1, mseccfg
+or t1, t1, t0
+csrrw mseccfg, t1, t1
+li t0, 1 << 8
+csrr t1, mseccfg
+xor t1, t1, t0
+csrrw mseccfg, t1, t1
+call machine_to_user
+csrrw seed, x1, x1
+# Result: mcause = 2
+
+# 31 # Extension Must Be Active: NONE
+nop # Skipped because Zkr extension and U-mode are both implemented
+# Result: x0 = 0
+
+# 32 # Extension Must Be Active: NONE
+li t0, 0
+csrw mseccfg, t0
+call machine_to_supervisor
+csrr t1, seed
+# Result: mcause = 2
+
+# 33 # Extension Must Be Active: NONE
+li t0, 512
+csrs mseccfg, t0
+call machine_to_user
+csrr t1, seed
+# Result: mcause = 2
+
+# 34 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, (1 << 9)
+or t0, t0, t1
+csrw mseccfg, t0
+csrr t2, mseccfg
+and t3, t2, t1
+# Result: t3 = 0
+
+# 35 # Extension Must Be Active: H
+call machine_to_supervisor
+csrr t0, seed
+# Result: mcause = 2
+
+# 36 # Extension Must Be Active: NONE
+csrr t0, seed
+# Result: mcause = 2
+
+# 37 # Extension Must Be Active: NONE
+li t0, 0
+csrw mseccfg, t0
+call machine_to_user
+csrr t1, seed
+# Result: mcause = 2
+
+# 38 # Extension Must Be Active: NONE
+li t0, 1
+sll t0, t0, 8
+csrr t1, mseccfg
+or t1, t1, t0
+csrwx mseccfg, t1
+call machine_to_user
+li t3, 1
+csrwx seed, t3
+csrr t2, seed
+# Result: t2 = 1
+
+# 39 # Extension Must Be Active: NONE
+li t0, 0
+csrw mseccfg, t0
+call machine_to_supervisor
+csrr t0, seed
+# Result: mcause = 2
+
+# 40 # Extension Must Be Active: NONE
+li t0, 1
+sll t0, t0, 9
+csrs mseccfg, t0
+call machine_to_supervisor
+li t1, 0x123
+csrw seed, t1
+csrr t2, seed
+# Result: t2 = 0x123
+
+# 41 # Extension Must Be Active: NONE
+csrrw t0, mseccfg, x0
+call machine_to_virtual
+csrr t1, seed
+# Result: mcause = 2
+
+# 42 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, (1 << 9)
+or t0, t0, t1
+csrw mseccfg, t0, 0
+call machine_to_virtual
+csrr t1, 0x15
+# Result: mcause = 13
+
+# 43 # Extension Must Be Active: NONE
+li t0, (1 << 63)
+csrs pmpcfg, t0
+li t1, (1 << 2)
+csrr t2, mseccfg
+or t2, t2, t1
+csrw mseccfg, t2
+csrr t3, mseccfg
+li t4, (1 << 2)
+and t3, t3, t4
+# Result: t3 = 0
+
+# 44 # Extension Must Be Active: NONE
+li t0, 2
+csrw mseccfg, t0
+li t1, 0x80000000
+ld x2, 0(t1)
+# Result: mcause = 12
+
+# 45 # Extension Must Be Active: NONE
+nop # Skipped because the interpretation of pmpcfg.L bit is not directly observable through architectural state changes.
+# Result: x0 = 0
+
+# 46 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 4
+csrw mseccfg, t1
+csrr t2, mseccfg
+li t3, 4
+and t4, t2, t3
+# Result: t4 = 0
+
+# 47 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+csrr t1, mseccfg
+# Result: mcause = 2
+
+# 48 # Extension Must Be Active: NONE
+nop # Skipped because memory access permissions are not directly observable through architectural registers.
+# Result: x0 = 0
+
+# 49 # Extension Must Be Active: NONE
+nop # Skipped because the Shared-Region rule and its interaction with PMP configuration are not deterministically observable without specific PMP CSR addresses and memory region definitions.
+# Result: x0 = 0
+
+# 50 # Extension Must Be Active: NONE
+nop # Skipped because the PMP permission behavior described in the rule requires a mode switch to observe and cannot be deterministically verified in a single assembly block.
+# Result: x0 = 0
+
+# 51 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+csrrw t1, pmpcfg, x0
+li t2, 9
+csrrw t3, pmpcfg, t2
+csrr t4, pmpcfg
+# Result: t4 = 0
+
+# 52 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80000000
+csrw pmpaddr0, t1
+li t2, 399
+csrw pmpcfg0, t2
+nop
+# Result: mcause = 1
+
+# 53 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 3
+slli t1, t1, 32
+li t2, 3
+slli t2, t2, 32
+not t2, t2
+and t0, t0, t2
+or t0, t0, t1
+csrw mseccfg, t0
+csrr t0, mseccfg
+li t1, 3
+slli t1, t1, 32
+and t0, t0, t1
+srli t0, t0, 32
+# Result: t0 = 3
+
+# 54 # Extension Must Be Active: NONE
+li t0, 1
+li t1, 1 << 32
+or t0, t0, t1
+csrw mseccfg, t0
+csrr t2, mseccfg
+li t3, 3
+srli t4, t2, 32
+and t5, t4, t3
+# Result: t5 = 0
+
+# 55 # Extension Must Be Active: Zicfilp
+csrr t0, mseccfg
+li t1, (1 << 10)
+or t0, t0, t1
+csrw mseccfg, t0
+# Result: mseccfg[10] = 1
+
+# 56 # Extension Must Be Active: NONE
+nop # Skipped because ELP state and NO_LP_EXPECTED are internal/non-observable states
+# Result: x0 = 0
+
+# 57 # Extension Must Be Active: NONE
+li t0, 0
+csrw mseccfg, t0
+li x10, 0
+lpad 0x12345
+# Result: x10 = 0
+
+# 58 # Extension Must Be Active: Zicfilp
+csrr t0, mseccfg
+# Result: mseccfg[10] = 0
+
+# 59 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+# Result: mseccfg[0] = 0
+
+# 60 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 2
+and t2, t0, t1
+# Result: t2 = 0
+
+# 61 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 1
+sll t1, t1, 2
+and t2, t0, t1
+# Result: t2 = 0
+
+# 62 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80001000
+csrw pmpaddr0, t1
+li t2, 0
+csrw pmpcfg0, t2
+li x10, 0x80001000
+ld x11, 0(x10)
+# Result: mcause = 13
+
+# 63 # Extension Must Be Active: NONE
+nop # Skipped because the specific mcause code for an "Access Exception" (PMP violation) is implementation-dependent and not defined in the standard RISC-V ISA.
+# Result: x0 = 0
+
+# 64 # Extension Must Be Active: NONE
+csrrw x1, mseccfg, 0
+li x1, 1
+csrw x1, mseccfg
+li x2, 0x80000000
+csrw x2, pmpaddr0
+li x3, 8
+csrw x3, pmpcfg0
+li x4, 0x80000040
+ld x5, 0(x4)
+# Result: mcause = 13
+
+# 65 # Extension Must Be Active: NONE
+nop # Skipped because the rule "permitted as execute-only" refers to the behavior of the Fetch (X) bit, and its distinction from "no access" (where Fetch also traps) cannot be deterministically observed in this harness without jumping to a specific memory address that is guaranteed to contain executable code.
+# Result: x0 = 0
+
+# 66 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 4
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+li t3, 1
+sd t3, 0(t2)
+ld t4, 0(t2)
+# Result: t4 = 1
+
+# 67 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80000000
+csrw pmpaddr0, t1
+li t1, 4
+csrw pmpcfg0, t1
+call machine_to_supervisor
+li t1, 0x80000000
+li t2, 1
+sd t2, 0(t1)
+# Result: mcause = 2
+
+# 68 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 0x1000
+csrw pmpaddr0, t1
+li t2, 12
+csrw pmpcfg0, t2
+li t3, 42
+sd t3, 0(t1)
+ld t4, 0(t1)
+# Result: t4 = 42
+
+# 69 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 12
+csrw pmpcfg, t1
+li t2, 2147483648
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t3, 1
+sd t3, 0(t2)
+ld t4, 0(t2)
+# Result: t4 = 1
+
+# 70 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 0x11
+csrw pmpcfg0, t1
+li t2, 0x80001000
+csrw pmpaddr0, t2
+ld t3, 0(t2)
+# Result: mcause = 15
+
+# 71 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t0, 4
+csrw pmpcfg0, t0
+auipc t0, %pc
+addi t0, t0, -10
+csrw pmpaddr0, t0
+auipc t1, %pc
+sd x0, 0(t1)
+call machine_to_user
+ld t1, 0(t1)
+# Result: t1 = 0
+
+# 72 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 7
+csrw pmpcfg0, t1
+li t2, 0x80001000
+csrw pmpaddr0, t2
+sd x0, 0(t2)
+# Result: mcause = 3
+
+# 73 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes a permission that permits access, which does not produce a measurable change in architectural state unless a trap occurs. Since the rule specifies a condition where access is permitted, no trap will occur, and there is no deterministic register change to observe without constructing a complex memory state that is restricted by the provided assembly constraints.
+# Result: x0 = 0
+
+# 74 # Extension Must Be Active: NONE
+slli t1, x0, 31
+add t1, t1, 1024
+csrw pmpaddr0, t1
+addi t0, x0, 6
+csrw pmpcfg, t0
+addi t2, x0, 1
+csrw mseccfg, t2
+ld t3, 0(t1)
+# Result: mcause = 2
+
+# 75 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 28
+csrw pmpcfg, t1
+li t2, 0x80001000
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t3, 0x55
+sd t3, 0(t2)
+ld t4, 0(t2)
+# Result: t4 = 0x55
+
+# 76 # Extension Must Be Active: NONE
+li t0, 0x80000000
+csrw pmpaddr0, t0
+li t1, 0xE6
+csrw pmpcfg0, t1
+li t2, 1
+csrs mseccfg, t2
+li t3, 0x80000000
+ld x4, 0(x3)
+# Result: mcause = 13
+
+# 77 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80000000
+csrw pmpaddr0, t1
+li t2, 7
+csrw marchpmp0, t2
+call machine_to_supervisor
+li t3, 0x80000000
+li t4, 1
+sd t4, 0(t3)
+ld t4, 0(t3)
+# Result: t4 = 1
+
+# 78 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 1
+or t0, t0, t1
+csrw mseccfg, t0
+li t0, 0x80001000
+csrw pmpaddr0, t0
+li t1, 1
+csrw pmpcfg0, t1
+li t2, 0x80001000
+ld x3, 0(t2)
+# Result: mcause = 12
+
+# 79 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80000000
+csrw pmpaddr0, t1
+li t0, 1
+csrw pmpcfg0, t0
+call machine_to_supervisor
+li t1, 0x80000000
+ld t2, 0(t1)
+# Result: mcause = 13
+
+# 80 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 1
+or t0, t0, t1
+csrw mseccfg, t0
+csrw pmpaddr0, 0x80000000
+csrw pmpcfg, 0x90
+addi x1, x0, 1
+# Result: x1 = 1
+
+# 81 # Extension Must Be Active: NONE
+csrrwi mseccfg, 0, 1
+li t0, 0x80000000
+csrw PMPADDR0, t0
+li t1, 9
+csrw PMP0_RWMX, t1
+call machine_to_supervisor
+li t2, 0x80000000
+ld x5, 0(t2)
+# Result: mcause = 6
+
+# 82 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80001000
+csrw pmpaddr0, t1
+li t2, 5
+csrw pmpcfg0, t2
+li t3, 0x80001000
+sd x0, 0(t3)
+# Result: mcause = 3
+
+# 83 # Extension Must Be Active: NONE
+auipc t0
+addi t1, t0, -3514
+addi t2, t1, 256
+csrw pmpaddr0, t2
+li t3, 5
+csrw pmpcfg, t3
+li t4, 1
+csrs mseccfg, t4
+call machine_to_supervisor
+ld x4, 0(t2)
+# Result: mcause = 5
+
+# 84 # Extension Must Be Active: NONE
+csrw pmpaddr0, 0x80000000
+csrw pmpcfg0, 14
+csrs mseccfg, mseccfg, (1 << 0)
+li t0, 0x80000000
+ld t1, 0(t0)
+# Result: mcause = 0
+
+# 85 # Extension Must Be Active: NONE
+li t0, 0x80000000
+csrw pmpaddr0, t0
+li t1, 0x803
+csrw pmpcfg0, t1
+li t2, 1
+csrs mseccfg, t2, 0
+call machine_to_user
+li t3, 0x80000000
+sd x0, 0(t3)
+# Result: mcause = 15
+
+# 86 # Extension Must Be Active: NONE
+csrr t0, mseccfg
+li t1, 1
+or t0, t0, t1
+csrw mseccfg, t0
+li t1, 7
+csrw pmpcfg, t1
+li t2, 0x80001000
+csrw pmpaddr0, t2
+li t3, 0x12345678
+sd t3, 0(t2)
+li t1, 3
+csrw pmpcfg, t1
+ld t4, 0(t2)
+# Result: t4 = 0x12345678
+
+# 87 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 3
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t3, 0x80000000
+ld x10, 0(t3)
+# Result: mcause = 12
+
+# 88 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes a "permitted" access, which is the absence of a trap and thus not directly observable as a change in architectural state unless contrasted against a trapping condition, and the PMP address cannot be set to the required code region without `lui`.
+# Result: x0 = 0
+
+# 89 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 13
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li a0, 0x80000000
+ld t1, 0(a0)
+# Result: mcause = 13
+
+# 90 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t1, 0x80000100
+csrw pmpaddr0, t1
+li t2, 7
+csrw pmpcfg0, t2
+li t3, 1
+sd t3, 0(t1)
+ld t4, 0(t1)
+# Result: t4 = 1
+
+# 91 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 7
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t3, 1
+sd t3, 0(t2)
+# Result: mcause = 3
+
+# 92 # Extension Must Be Active: NONE
+li t0, 1
+csrw mseccfg, t0
+li t1, 15
+csrw pmpcfg0, t1
+li t2, 2147483648
+csrw pmpaddr0, t2
+sd x0, 0(t2)
+# Result: mcause = 2
+
+# 93 # Extension Must Be Active: NONE
+li t0, 1
+csrs mseccfg, t0
+li t0, 0x80001000
+csrw mpaddr, t0
+li t0, 0x40F
+csrw pmpcfg, t0
+call machine_to_supervisor
+li t1, 0x80001000
+li x1, 1
+sd x1, 0(t1)
+# Result: mcause = 13
+
+# 94 # Extension Must Be Active: NONE
+nop # Skipped because CMO instruction permission is not deterministically observable without a defined memory map.
+# Result: x0 = 0
+
+# 95 # Extension Must Be Active: NONE
+nop # Skipped because CMO instruction is not a standard RISC-V instruction and its opcode is not provided.
+# Result: x0 = 0
+
+# 96 # Extension Must Be Active: NONE
+nop # Skipped because CMO instruction cache access permissions are implementation-specific and not deterministically observable.
+# Result: x0 = 0
+
+# 97 # Extension Must Be Active: NONE
+csrl mstatus, (1 << 18)
+call machine_to_user
+cbo.clean x1
+# Result: mcause = 2
+
+# 98 # Extension Must Be Active: NONE
+li t0, (1 << 19)
+csrr t1, mstatus
+or t1, t1, t0
+csrrw t1, mstatus, t1
+cbo.flush
+# Result: mcause = 2
+
+# 99 # Extension Must Be Active: Zfinx
+csrr t0, mstatus
+li t1, 0x6000
+and t0, t0, t1
+srli t0, t0, 13
+# Result: t0 = 0
+
+# 100 # Extension Must Be Active: Zfinx
+li t1, 1
+slli t1, t1, 13
+li t2, 1
+slli t2, t2, 14
+or t1, t1, t2
+not t1, t1
+csrr t0, mstatus
+and t0, t0, t1
+csrw mstatus, t0
+li t0, 1
+fcvt.s.w f1, t0
+li t1, 1
+fcvt.s.w f0, t1
+fadd.s f2, f0, f1
+fcvt.w.s ft0, f2
+# Result: ft0 = 2
+
+# 101 # Extension Must Be Active: V
+csrr t0, mstatus
+li t1, 3
+slli t1, t1, 9
+xori t0, t0, t1
+csrw mstatus, t0
+vsetvli t0, 64, 0, 0
+# Result: mcause = 2
+
+# 102 # Extension Must Be Active: V
+li t0, 0
+csrw mstatus, t0
+vsetvli t1, 64, 1, 1
+csrr t2, mstatus
+li t3, 0x600
+and t2, t2, t3
+# Result: t2 = 0x400
+
+# 103 # Extension Must Be Active: NONE
+vadd.vv v0, v1, v2
+# Result: mstatus[63] = 1
+
+# 104 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x600
+xor t0, t0, t1
+csrw t0, mstatus
+vsetvli t0, 64, e32, m1
+# Result: mcause = 2
+
+# 105 # Extension Must Be Active: V
+vsetvli t0, 1, 1
+vsetvli t1, 1, 1
+csrr t2, mstatus
+li t3, 3
+srl t2, t2, 9
+and t2, t2, t3
+# Result: t2 = 3
+
+# 106 # Extension Must Be Active: NONE
+li t0, (3 << 9)
+csrs mstatus, t0
+# Result: mstatus[63] = 1
+
+# 107 # Extension Must Be Active: NONE
+jal x0, 0x12345678
+# Result: mstatus[63] = 0
+
+# 108 # Extension Must Be Active: NONE
+li t0, (1 << 14) | (1 << 13)
+csrrc mstatus, t0
+vfadd.vv v1, v2, v3
+# Result: mcause = 2
+
+# 109 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x3000
+xor t0, t0, t1
+csrw mstatus, t0
+vsetvli t1, 64, e32, m1
+li x1, 1
+vfmv.vf v1, x1
+li x2, 3
+vfmv.vf v2, x2
+vfdiv.vv v0, v1, v2
+# Result: mstatus[14:13] = 3
+
+# 110 # Extension Must Be Active: NONE
+li t0, 0x600
+csrs mstatus, t0
+vfmadd.vv v0, v1, v2
+# Result: mcause = 2
+
+# 111 # Extension Must Be Active: NONE
+li t0, 0
+csrrw x0, mstatus, t0
+vfadd.vv v0, v1, v2
+# Result: mcause = 2
+
+# 112 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, (1 << 39)
+or t0, t0, t1
+csrw mstatus, t0
+csrr t0, mstatus
+li t1, 0x6000
+xor t0, t0, t1
+csrw mstatus, t0
+vfm.s.vv v0, v1, v2
+csrr t0, mstatus
+li t1, 0x6000
+and t0, t0, t1
+# Result: t0 = 3
+
+# 113 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus[10] = 1
+
+# 114 # Extension Must Be Active: NONE
+li x1, 1
+csrs mstatus, x1, 3
+# Result: mstatus[3] = 1
+
+# 115 # Extension Must Be Active: NONE
+li t0, 8
+csrw mstatus, t0
+# Result: mstatus[3] = 1
+
+# 116 # Extension Must Be Active: NONE
+li t0, 8
+csrs mstatus, t0
+li t1, 8
+csrrs mstatus, t1
+# Result: mstatus[3] = 0
+
+# 117 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes a behavioral property of how interrupts are handled based on the current privilege mode, which is not observable by reading the mstatus register directly.
+# Result: x0 = 0
+
+# 118 # Extension Must Be Active: NONE
+nop # Skipped because mstatus is not accessible in lower privilege modes
+# Result: x0 = 0
+
+# 119 # Extension Must Be Active: NONE
+nop # Skipped because supervisor mode is implemented
+# Result: x0 = 0
+
+# 120 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x1900
+xor t2, t0, t1
+li t3, 0x1000
+li t4, 0x100
+or t2, t2, t3
+or t2, t2, t4
+csrw mstatus, t2
+csrr t0, mstatus
+# Result: mstatus[12:11] = 2
+
+# 121 # Extension Must Be Active: NONE
+csrs mstatus, 8
+ecall
+# Result: mstatus[7] = 1
+
+# 122 # Extension Must Be Active: NONE
+li t0, (3 << 10)
+csrs mstatus, t0
+li t1, (1 << 7)
+csrc mstatus, t1
+li t2, (1 << 3)
+csrc mstatus, t2
+li t3, (1 << 17)
+csrs mstatus, t3
+mret
+csrr t4, mstatus
+li t5, (1 << 3)
+and t6, t4, t5
+srli t6, t6, 3
+li t7, (1 << 7)
+and t8, t4, t7
+srli t8, t8, 7
+li t9, (3 << 10)
+and t10, t4, t9
+srli t10, t10, 10
+li t11, (1 << 17)
+and t12, t4, t11
+srli t12, t12, 17
+# Result: t6 = 0 && t8 = 1 && t10 = 0 && t12 = 1
+
+# 123 # Extension Must Be Active: NONE
+li t0, 0x800
+csrw mstatus, t0
+csrr t1, mstatus
+li t2, 0x3
+srli t1, t1, 11
+and t1, t1, t2
+# Result: t1 = 1
+
+# 124 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 3
+and t2, t0, t1
+xor t0, t0, t2
+li t1, 1
+slli t1, t1, 11
+or t0, t0, t1
+csrw mstatus, t0
+csrr t3, mstatus
+li t1, 3
+and t2, t3, t1
+srli t2, t2, 11
+# Result: t2 = 1
+
+# 125 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is implemented
+# Result: x0 = 0
+
+# 126 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus[42] = 1
+
+# 127 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 3
+csrs mstatus, t0
+li t1, 1
+slli t1, t1, 42
+csrs mstatus, t1
+# Result: mstatus[3] = 0
+
+# 128 # Extension Must Be Active: NONE
+li t0, 4398046511112
+csrw mstatus, t0
+# Result: mstatus[3] = 0
+
+# 129 # Extension Must Be Active: NONE
+li t0, (1 << 42)
+csrs mstatus, t0
+li t1, (1 << 3) | (1 << 42)
+csrw mstatus, t1
+# Result: mstatus[3] = 0
+
+# 130 # Extension Must Be Active: NONE
+ecall
+# Result: mstatus[42] = 1
+
+# 131 # Extension Must Be Active: NONE
+nop # Skipped because RNMI is an asynchronous hardware interrupt/trap and cannot be deterministically triggered by software instructions.
+# Result: x0 = 0
+
+# 132 # Extension Must Be Active: NONE
+li t0, (1 << 42)
+csrs mstatus, t0
+mret
+# Result: mstatus[42] = 0
+
+# 133 # Extension Must Be Active: NONE
+li t0, 1
+sll t0, t0, 42
+csrr t1, mstatus
+or t1, t1, t0
+csrw mstatus, t1
+sret
+# Result: mstatus[42] = 0
+
+# 134 # Extension Must Be Active: NONE
+li t0, (1 << 42)
+csrrs mstatus, t0
+li t1, (1 << 11)
+csrrs mstatus, t1
+mnret
+# Result: mstatus[42] = 0
+
+# 135 # Extension Must Be Active: NONE
+nop # Skipped because the rule's effect on sstatus.SDT (bit 63) is not observable as the instruction transitions to a privilege mode (U, VS, or VU) from which sstatus is not accessible.
+# Result: x0 = 0
+
+# 136 # Extension Must Be Active: NONE
+nop # Skipped because vsstatus.SDT field is not defined in the provided vsstatus register description
+# Result: x0 = 0
+
+# 137 # Extension Must Be Active: NONE
+li t0, (1 << 63)
+csrrw sstatus, t0, t0
+li t1, (1 << 42)
+csrrw mstatus, t1, t1
+mnret
+# Result: mstatus[42] = 0 && sstatus[63] = 0
+
+# 138 # Extension Must Be Active: NONE
+li t0, 1
+csrrw mstatus, 42, 1
+li t1, 1
+csrrw vsstatus, 63, 1
+call machine_to_virtual_user
+# Result: vsstatus[63] = 0
+
+# 139 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+slli t1, t1, 32
+or t0, t0, t1
+csrw mstatus, t0
+# Result: mstatus[33..32] = 1
+
+# 140 # Extension Must Be Active: NONE
+li t0, 0x4000000000000000
+csrs misa, t0
+csrr t1, mstatus
+srli t1, t1, 34
+li t2, 3
+and t1, t1, t2
+# Result: t1 = 1
+
+# 141 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is supported
+# Result: x0 = 0
+
+# 142 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 3
+srli t0, t0, 34
+and t0, t0, t1
+# Result: t0 = 1
+
+# 143 # Extension Must Be Active: NONE
+nop # Skipped because U-mode is supported
+# Result: x0 = 0
+
+# 144 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 3
+slli t1, t1, 32
+and t2, t0, t1
+srli t2, t2, 32
+sub t0, t0, t2
+add t0, t0, t1
+csrw mstatus, t0
+csrr t1, mstatus
+li t2, 3
+slli t2, t2, 32
+and t1, t1, t2
+srli t1, t1, 32
+# Result: mstatus[33:32] = 3
+
+# 145 # Extension Must Be Active: NONE
+li t0, 0x180000000
+csrw mstatus, t0
+# Result: mcause = 2
+
+# 146 # Extension Must Be Active: NONE
+li t0, (1 << 32)
+csrs mstatus, t0
+call machine_to_user
+li x10, 0x1111111111111111
+add x11, x10, x0
+# Result: x11 = 0x11111111
+
+# 147 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0xC0000000000
+and t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+li x1, 0x180000000
+jalr x0, 0(x1)
+# Result: sepc = 0xFFFFFFFF80000000
+
+# 148 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+slli t1, t1, 35
+or t0, t0, t1
+li t2, 1
+slli t2, t2, 33
+or t0, t0, t2
+li t3, 1
+slli t3, t3, 32
+or t0, t0, t3
+csrw mstatus, t0
+csrr t1, mstatus
+li t2, 0xF
+slli t2, t2, 32
+sub t2, x0, t2
+and t1, t1, t2
+srl t1, t1, 32
+# Result: t1 = 11
+
+# 149 # Extension Must Be Active: NONE
+nop # Skipped because the behavior of memory access translation and protection mechanisms (MPRV) is not directly observable through deterministic architectural state without control over page tables.
+# Result: x0 = 0
+
+# 150 # Extension Must Be Active: NONE
+nop # Skipped because the effects of MPRV on memory translation, protection, and endianness are not deterministically observable without a pre-configured MMU, page tables, and specific memory mappings.
+# Result: x0 = 0
+
+# 151 # Extension Must Be Active: NONE
+nop # Skipped because the rule "Instruction address-translation and protection are unaffected by the setting of the MPRV bit in mstatus" describes an architectural invariant (the absence of an effect) that cannot be deterministically observed or verified as a state change without a baseline of the "affected" state or complex page table configuration.
+# Result: x0 = 0
+
+# 152 # Extension Must Be Active: NONE
+nop # Skipped because U-mode is supported
+# Result: x0 = 0
+
+# 153 # Extension Must Be Active: NONE
+nop # Skipped because the test environment prohibits the direct use of mret or sret for privilege mode transitions, making the rule's effect on mstatus[17] non-observable in standalone assembly.
+# Result: x0 = 0
+
+# 154 # Extension Must Be Active: NONE
+nop # Skipped because all XLENs (M, S, U, HS) are 64-bit, so the MPRV bit does not change the memory address interpretation.
+# Result: x0 = 0
+
+# 155 # Extension Must Be Active: NONE
+nop # Skipped because page table entries (PTEs) are not configurable in the test harness
+# Result: x0 = 0
+
+# 156 # Extension Must Be Active: NONE
+nop # Skipped because page table permissions (R/X bits) and MMU behavior are not configurable or observable in this environment
+# Result: x0 = 0
+
+# 157 # Extension Must Be Active: NONE
+nop # Skipped because the rule "MXR in mstatus has no effect when page-based virtual memory is not in effect" refers to the hardware's permission logic being bypassed, which is not directly observable through a change in the architectural state of the mstatus register itself.
+# Result: x0 = 0
+
+# 158 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is supported
+# Result: x0 = 0
+
+# 159 # Extension Must Be Active: NONE
+nop # Skipped because the rule depends on Page Table Entry (PTE) configurations (U-mode accessibility) which are not deterministically observable or controllable in this environment.
+# Result: x0 = 0
+
+# 160 # Extension Must Be Active: NONE
+nop # Skipped because S-mode access to a U-mode page cannot be deterministically tested without a pre-configured MMU page table.
+# Result: x0 = 0
+
+# 161 # Extension Must Be Active: NONE
+nop # Skipped because the SUM bit's effect is only observable when page-based virtual memory is in effect.
+# Result: x0 = 0
+
+# 162 # Extension Must Be Active: NONE
+nop # Skipped because the SUM bit's effect is dependent on the MMU's page table configuration and S-mode privilege transitions, which are not deterministically observable in this environment.
+# Result: x0 = 0
+
+# 163 # Extension Must Be Active: NONE
+csrw satp, x0
+csrr t0, mstatus
+li t1, 1 << 18
+or t0, t0, t1
+csrw mstatus, t0
+csrr t0, mstatus
+li t1, 1 << 18
+and t0, t0, t1
+# Result: t0 = 0
+
+# 164 # Extension Must Be Active: NONE
+nop # Skipped because PMA-induced access-faults are hardware-specific and cannot be deterministically triggered or observed.
+# Result: x0 = 0
+
+# 165 # Extension Must Be Active: NONE
+nop # Skipped because PMP configuration registers are not provided to trigger an access-fault.
+# Result: x0 = 0
+
+# 166 # Extension Must Be Active: NONE
+li sp, 0x80001000
+csrr t0, mstatus
+li t1, (1 << 17)
+not t1, t1
+and t0, t0, t1
+li t1, (1 << 37)
+not t1, t1
+and t0, t0, t1
+csrw mstatus, t0
+li t2, 0x0102030405060708
+sd t2, 0(sp)
+li t1, (1 << 37)
+csrr t3, mstatus
+or t3, t3, t1
+csrw mstatus, t3
+ld t1, 0(sp)
+# Result: t1 = 0x0807060504030201
+
+# 167 # Extension Must Be Active: NONE
+nop # Skipped because endianness of non-instruction-fetch memory accesses is not observable through ld/sd instructions as they are endian-consistent.
+# Result: x0 = 0
+
+# 168 # Extension Must Be Active: NONE
+nop # Skipped because the rule's effect on memory endianness is not deterministically observable without a provided memory map or a way to verify the byte-order of stored values in the given environment.
+# Result: x0 = 0
+
+# 169 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is supported in the kernel
+# Result: x0 = 0
+
+# 170 # Extension Must Be Active: NONE
+li s1, 0x80001000
+li t0, 0x0102030405060708
+csrr t1, mstatus
+li t2, (1 << 37)
+not t2, t2
+and t1, t1, t2
+li t3, (1 << 36)
+not t3, t3
+and t1, t1, t3
+li t4, (1 << 36)
+or t1, t1, t4
+csrw mstatus, t1
+sd t0, 0(s1)
+csrr t1, mstatus
+li t2, (1 << 36)
+or t1, t1, t2
+csrw mstatus, t1
+call machine_to_supervisor
+ld t0, 0(s1)
+# Result: t0 = 0x0807060504030201
+
+# 171 # Extension Must Be Active: NONE
+nop # Skipped because endianness is not directly observable without a writable memory region, which cannot be constructed without `lui` or `auipc` while ensuring writability.
+# Result: x0 = 0
+
+# 172 # Extension Must Be Active: NONE
+li t0, 0x01020304
+li t1, 0x80001000
+sw t0, 0(t1)
+li t2, (1 << 36)
+csrr t3, mstatus
+or t3, t3, t2
+csrw mstatus, t3
+call machine_to_supervisor
+lw x1, 0(t1)
+# Result: x1 = 0x04030201
+
+# 173 # Extension Must Be Active: NONE
+nop # Skipped because U-mode is supported
+# Result: x0 = 0
+
+# 174 # Extension Must Be Active: NONE
+li t0, 0x0000000000010204
+li t1, 0x80001000
+sd t0, 0(t1)
+li t2, 64
+csrs mstatus, t2
+call machine_to_user
+ld t0, 0(t1)
+# Result: t0 = 0x0403020100000000
+
+# 175 # Extension Must Be Active: NONE
+nop # Skipped because the endianness of memory accesses is an implementation-specific memory behavior and is not directly observable through deterministic architectural register state changes.
+# Result: x0 = 0
+
+# 176 # Extension Must Be Active: NONE
+li t0, 64
+csrrs mstatus, t0
+call machine_to_user
+li x10, 1
+li x11, 0x80001000
+sd x10, 0(x11)
+lb x12, 0(x11)
+# Result: x12 = 0
+
+# 177 # Extension Must Be Active: NONE
+nop # Skipped because the endianness of implicit memory-management data structure accesses is an internal hardware behavior during page table walks and is not directly observable via architectural state changes.
+# Result: x0 = 0
+
+# 178 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1048576
+or t0, t0, t1
+csrw mstatus, t0
+# Result: mstatus[20] = 0
+
+# 179 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 20
+csrs mstatus, t0
+call machine_to_supervisor
+csrr t1, satp
+# Result: mcause = 2
+
+# 180 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, (1 << 20)
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+csrw satp, x0
+# Result: mcause = 2
+
+# 181 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# 182 # Extension Must Be Active: NONE
+li t0, 1
+sll t0, t0, 20
+csrs mstatus, t0
+call machine_to_supervisor
+sinval.vma x5, x6
+# Result: mcause = 2
+
+# 183 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+not t0, t0
+csrr t1, mstatus
+and t1, t1, t0
+csrw mstatus, t1
+call machine_to_supervisor
+li t2, 1
+csrw satp, t2
+csrr t0, satp
+# Result: t0 = 1
+
+# 184 # Extension Must Be Active: NONE
+nop # Skipped because the SFENCE.VMA instruction does not modify any architectural registers or CSRs when executed successfully, making its "permitted" status non-observable through deterministic architectural state.
+# Result: x0 = 0
+
+# 185 # Extension Must Be Active: NONE
+li t0, 0x6600
+csrw mstatus, t0
+call machine_to_supervisor
+sinval.vma x10, x11
+addi x10, x0, 1
+# Result: x10 = 1
+
+# 186 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is supported
+# Result: x0 = 0
+
+# 187 # Extension Must Be Active: NONE
+li t0, 2097152
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus[21] = 0
+
+# 188 # Extension Must Be Active: NONE
+nop # Skipped because modes less privileged than M (S, U, HS, VS) are implemented and supported
+# Result: x0 = 0
+
+# 189 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+sll t1, t1, 22
+or t0, t0, t1
+csrw mstatus, t0
+# Result: mstatus[22] = 1
+
+# 190 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, (1 << 22)
+or t0, t0, t1
+csrs mstatus, t0
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# 191 # Extension Must Be Active: NONE
+nop # Skipped because the "permitted" behavior of SRET (absence of a trap) is not directly observable as a register change in this environment.
+# Result: x0 = 0
+
+# 192 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is supported
+# Result: x0 = 0
+
+# 193 # Extension Must Be Active: NONE
+li t0, 24576
+csrrc mstatus, t0
+li t1, 1536
+csrrc mstatus, t1
+li t2, 98304
+csrrs mstatus, t2
+csrr t3, mstatus
+srli t3, t3, 13
+li t4, 3
+and t3, t3, t4
+# Result: t3 = 0
+
+# 194 # Extension Must Be Active: NONE
+csrr t0, mstatus
+srl t0, t0, 63
+# Result: t0 = 1
+
+# 195 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, (1 << 63)
+or t0, t0, t1
+csrw mstatus, t0
+li t2, (1 << 14) | (1 << 13) | (1 << 10) | (1 << 9)
+xor t0, t0, t2
+csrw mstatus, t0
+# Result: mstatus[63] = 0
+
+# 196 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x6000
+sub t0, t0, t1
+li t2, 0x2000
+or t0, t0, t2
+csrw mstatus, t0
+csrr t0, mstatus
+li t1, 0x6000
+and t0, t0, t1
+# Result: t0 != 0
+
+# 197 # Extension Must Be Active: NONE
+nop # Skipped because S-mode is implemented
+# Result: x0 = 0
+
+# 198 # Extension Must Be Active: NONE
+nop # Skipped because F extension is implemented and the rule is implementation-defined.
+# Result: x0 = 0
+
+# 199 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 3
+slli t1, t1, 9
+sub t0, t0, t1
+li t1, 2
+slli t1, t1, 9
+or t0, t0, t1
+csrw mstatus, t0
+# Result: mstatus[10] = 1
+
+# 200 # Extension Must Be Active: NONE
+nop # Skipped because S-mode and v registers are implemented
+# Result: x0 = 0
+
+# 201 # Extension Must Be Active: NONE
+nop # Skipped because v registers are implemented in the kernel info
+# Result: x0 = 0
+
+# 202 # Extension Must Be Active: NONE
+li t0, 0x18000
+csrw mstatus, t0
+# Result: mstatus[16:15] = 0
+
+# 203 # Extension Must Be Active: NONE
+li x1, 1
+fmv.x.w f0, x1
+csrr t0, mstatus
+li t1, 0x6000
+not t1, t1
+and t0, t0, t1
+csrw mstatus, t0
+# Result: f0 = 1
+
+# 204 # Extension Must Be Active: NONE
+li t0, 1
+fmv.w.x f0, t0
+li t1, 0x4000
+csrc t1, mstatus
+li t1, 0x2000
+csrc t1, mstatus
+# Result: f0 = 1
+
+# 205 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x600
+xori t0, t0, t1
+li t1, 0x200
+or t0, t0, t1
+csrw mstatus, t0
+# Result: vtype = 0xd0
+
+# 206 # Extension Must Be Active: NONE
+li t0, 0x2000
+csrw mstatus, t0
+# Result: mstatus[14:13] = 1
+
+# 207 # Extension Must Be Active: NONE
+nop # Skipped because the sharing of FS, VS, and XS bits between Machine and Supervisor modes is a structural architectural property of the mstatus register. Since mstatus is not accessible in Supervisor mode, and the initial values of these bits (FS=3, VS=3, XS=0) do not allow for a deterministic observation of "sharing" (e.g., by setting a bit to 0 and observing a trap in S-mode) without the ability to clear bits in mstatus (which is not possible using only standard csrrs), the rule is not directly observable through deterministic standard architectural state.
+# Result: x0 = 0
+
+# 208 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x6600
+xor t0, t0, t1
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus[63] = 0
+
+# 209 # Extension Must Be Active: NONE
+li t0, 1
+li t1, 13
+csrl mstatus, t0, t1
+li t2, 3
+csrr t3, mstatus
+srli t3, t3, t1
+and t3, t3, t2
+# Result: t3 = 1
+
+# 210 # Extension Must Be Active: NONE
+li t0, 3
+slli t0, t0, 15
+csrs mstatus, t0
+csrr t1, mstatus
+li t2, 3
+slli t2, t2, 15
+and t1, t1, t2
+srli t1, t1, 15
+# Result: t1 = 3
+
+# 211 # Extension Must Be Active: NONE
+csrrs mstatus, x0
+fadd.s f0, f0, f0
+# Result: mcause = 2
+
+# 212 # Extension Must Be Active: V
+li t0, (3 << 9)
+csrc mstatus, t0
+vadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# 213 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1536
+xori t0, t0, t1
+csrw mstatus, t0
+vadd.vv v0, v1, v2
+# Result: mcause = 2
+
+# 214 # Extension Must Be Active: NONE
+li t0, 8192
+csrw mstatus, t0
+fadd.s fa0, fa0, fa0
+# Result: mstatus[14:13] = 3
+
+# 215 # Extension Must Be Active: NONE
+csrr t1, mstatus
+li t2, 1536
+sub t1, t1, t2
+li t3, 1024
+add t1, t1, t3
+csrw mstatus, t1
+vsetvli t0, 1, 1, 1
+# Result: mstatus[9] = 1
+
+# 216 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes the behavior of instructions that modify the floating-point (FS), vector (VS), or extension (XS) states, which are only available when the respective F, V, or other extensions are enabled; since these extensions are not explicitly mentioned in the rule, the instruction-level effect cannot be tested under the NONE extension requirement.
+# Result: x0 = 0
+
+# 217 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x600
+sub t0, t0, t1
+csrw mstatus, t0
+vsetvli t0, 0, 64
+# Result: mcause = 2
+
+# 218 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 2
+slli t1, t1, 10
+sub t0, t0, t1
+csrw mstatus, t0
+li t2, 0
+vsetvli t3, x0, t2
+csrr t4, mstatus
+li t5, 3
+and t4, t4, t5
+srli t4, t4, 9
+# Result: t4 = 1
+
+# 219 # Extension Must Be Active: NONE
+li t0, 0x6400
+csrw mstatus, t0
+li t1, 0x6000
+csrw mstatus, t1
+# Result: mstatus[10..9] = 1
+
+# 220 # Extension Must Be Active: NONE
+csrmw mstatus, 0, 0
+csrr t0, mstatus
+li t1, 3
+srl t0, t0, 13
+and t0, t0, t1
+# Result: t0 = 1
+
+# 221 # Extension Must Be Active: NONE
+li t0, 0
+csrs mstatus, t0
+# Result: mstatus[16:15] = 0
+
+# 222 # Extension Must Be Active: NONE
+csrrc mstatus, 13
+fsunset
+# Result: mstatus[14:13] = 0
+
+# 223 # Extension Must Be Active: NONE
+li t0, (1 << 14)
+csrrs mstatus, t0
+fsdp
+# Result: mstatus[14..13] = 0
+
+# 224 # Extension Must Be Active: NONE
+fscsr
+# Result: mstatus[14:13] = 0
+
+# 225 # Extension Must Be Active: NONE
+vsetvli t0, x0, x0
+csrr t1, mstatus
+li t2, 3
+srli t1, t1, 15
+and t1, t1, t2
+# Result: t1 = 1
+
+# 226 # Extension Must Be Active: V
+vadd.vv v0, v0, v0
+csrr t0, mstatus
+li t1, 3
+srl t0, t0, 10
+and t0, t0, t1
+# Result: t0 = 3
+
+# 227 # Extension Must Be Active: V
+csrr t0, mstatus
+li t1, 0x200
+sub t0, t0, t1
+csrw mstatus, t0
+vadd.vv v0, v0, v0
+# Result: mstatus[10..9] = 3
+
+# 228 # Extension Must Be Active: NONE
+li t0, (3 << 13)
+csrs mstatus, t0
+fadd.s fa0, fa0, fa0
+# Result: mstatus[14] = 0
+
+# 229 # Extension Must Be Active: NONE
+li t0, 1 << 41
+csrs mstatus, t0
+# Result: mstatus[41] = 1
+
+# 230 # Extension Must Be Active: NONE
+li t0, 2
+csrs medeleg, t0
+call machine_to_supervisor
+li t1, 0
+ld x2, 0(t1)
+# Result: mstatus[8] = 1
+
+# 231 # Extension Must Be Active: NONE
+li t0, 1
+csrs mstatus, t0
+li t1, (1 << 13)
+csrrw medeleg, t1
+li x1, 0
+jr x1
+# Result: mstatus[5] = 1
+
+# 232 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+or t0, t0, t1
+csrw mstatus, t0
+csrr t2, medeleg
+li t1, 1
+or t2, t2, t1
+csrw medeleg, t2
+jal x0, 0x0
+# Result: mstatus[1] = 0
+
+# 233 # Extension Must Be Active: NONE
+li t0, (1 << 11)
+csrs mstatus, t0
+li t1, (1 << 7)
+csrs mstatus, t1
+li t2, (1 << 3)
+csrrs mstatus, t2
+li t3, (1 << 7)
+csrw mideleg, t3
+ecall
+# Result: mstatus[12:11] = 1
+
+# 234 # Extension Must Be Active: NONE
+nop # Skipped because interrupts are asynchronous and cannot be deterministically triggered in this assembly environment.
+# Result: x0 = 0
+
+# 235 # Extension Must Be Active: NONE
+nop # Skipped because interrupts are asynchronous and cannot be triggered deterministically by assembly instructions
+# Result: x0 = 0
+
+# 236 # Extension Must Be Active: NONE
+nop # Skipped because the immediate evaluation of interrupt-trap conditions is an internal hardware logic behavior that cannot be observed through architectural state changes or by checking CSR values.
+# Result: x0 = 0
+
+# 237 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes the internal hardware timing of interrupt evaluation after an xRET instruction, which is not directly observable via architectural state.
+# Result: x0 = 0
+
+# 238 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 22
+csrr t1, mstatus
+or t1, t1, t0
+csrrw mstatus, t1
+sret
+# Result: mcause = 2
+
+# 239 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes a behavior (interrupt arrival) that cannot be deterministically triggered or observed using standard RISC-V assembly instructions in this environment.
+# Result: x0 = 0
+
+# 240 # Extension Must Be Active: NONE
+csrr t0, mstatus
+# Result: mstatus[3] = 0
+
+# 241 # Extension Must Be Active: NONE
+nop # Skipped because the PMP configuration is not provided, making the architectural effect of the rule (whether a memory access traps or not) non-deterministic.
+# Result: x0 = 0
+
+# 242 # Extension Must Be Active: NONE
+nop # Skipped because NMIE is not defined in the provided mstatus summary and its behavioral effect on MPRV cannot be observed without a memory protection setup.
+# Result: x0 = 0
+
+# 243 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 0x3FFC
+and t0, t0, t1
+li t1, 0x400
+add t0, t0, t1
+csrw mstatus, t0
+csrr t0, mstatus
+li t1, 1 << 17
+add t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: mstatus[17] = 0
+
+# 244 # Extension Must Be Active: NONE
+nop # Skipped because mstatus is inaccessible in S-mode, and the SPP bit is only updated during a transition to S-mode.
+# Result: x0 = 0
+
+# 245 # Extension Must Be Active: NONE
+call machine_to_user
+ecall
+# Result: mstatus[8] = 0
+
+# 246 # Extension Must Be Active: NONE
+nop # Skipped because the privilege mode change after sret makes the mstatus register inaccessible for verification.
+# Result: x0 = 0
+
+# 247 # Extension Must Be Active: NONE
+li t0, 32
+crls mstatus, t0
+li t1, 2
+csrs mstatus, t1
+li t2, 1024
+csrs mstatus, t2
+li t3, 0
+ld x4, 0(t3)
+# Result: mstatus[5] = 1 && mstatus[1] = 0
+
+# 248 # Extension Must Be Active: NONE
+csrrw x0, mstatus, 0x300, 5, 0
+csrrw x0, mstatus, 0x300, 1, 1
+sret
+# Result: mstatus[1] = 0
+
+# 249 # Extension Must Be Active: NONE
+li t0, 0
+csrw mstatus, t0
+li t1, (1 << 23)
+csrr t2, mstatus
+or t2, t2, t1
+csrw mstatus, t2
+# Result: mstatus[23] = 1
+
+# 250 # Extension Must Be Active: NONE
+nop # Skipped because the rule requires specific Page Table Entry (pte.u) configurations that cannot be deterministically set in this environment.
+# Result: x0 = 0
+
+# 251 # Extension Must Be Active: NONE
+nop # Skipped because the rule's effect on memory access permissions (pte.u) requires page table configuration which is not available.
+# Result: x0 = 0
+
+# 252 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 1
+slli t1, t1, 20
+or t0, t0, t1
+csrw mstatus, t0
+call machine_to_supervisor
+sinval.vma x1, x2
+# Result: mcause = 2
+
+# 253 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.w.inval
+li x1, 1
+add x0, x0, x1
+# Result: x0 = 1
+
+# 254 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 20
+csrs mstatus, t0
+sfence.w.inval
+# Result: mcause = 0
+
+# 255 # Extension Must Be Active: NONE
+nop # Skipped because the specific cause code for a virtual-instruction exception is not provided in the architectural information, making the trap outcome non-deterministic.
+# Result: x0 = 0
+
+# 256 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+csrw mstatus, t0
+call machine_to_supervisor
+csrr t1, hgatp
+# Result: mcause = 2
+
+# 257 # Extension Must Be Active: NONE
+csrs mstatus, zero
+li t0, 1
+csrw vsstatus, t0
+vsetvli t1, 1, v0, va0
+# Result: mcause = 2
+
+# 258 # Extension Must Be Active: V, H
+csrw mstatus, x0
+csrr t0, vsstatus
+li t1, 1
+sll t1, t1, 19
+or t0, t0, t1
+csrw vsstatus, t0
+li x11, 0x80000000
+li x2, 0x12345678
+sd x2, 0(x11)
+HLV x10, (x11)
+# Result: x10 = 0x12345678
+
+# 259 # Extension Must Be Active: NONE
+li sp, 0x80000000
+li t0, 1
+sd t0, 0(sp)
+li t1, (1 << 17)
+csrr t2, mstatus
+or t2, t2, t1
+csrw mstatus, t2
+li t3, (1 << 10)
+li t4, (1 << 9)
+or t3, t3, t4
+csrr t5, mstatus
+sub t5, t5, t3
+csrw mstatus, t5
+li t6, (1 << 9)
+csrr t7, vsstatus
+or t7, t7, t6
+csrw vsstatus, t7
+vle32.v v0, 0(sp)
+addi x1, x1, 1
+# Result: x1 = 1
+
+# 260 # Extension Must Be Active: NONE
+nop # Skipped because the MPRV bit affects microarchitectural behavior (memory unit path) and does not produce a different observable architectural state for a load or store instruction.
+# Result: x0 = 0
+
+# 261 # Extension Must Be Active: NONE
+csrr t0, mstatus
+li t1, 3
+li t2, 1 << 9
+or t1, t1, t2
+xori t0, t0, t1
+csrw mstatus, t0
+vle32.v v1, 0(x0)
+# Result: mcause = 2
+
+# 262 # Extension Must Be Active: NONE
+li t0, 1048576
+csrs mstatus, t0
+HFENCE.VVMA x0, x0
+li t1, 1
+# Result: t1 = 1
+
+# 263 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+csrs mstatus, t0
+call machine_to_supervisor
+hfence.gvma x0, x0
+# Result: mcause = 2
+
+# 264 # Extension Must Be Active: NONE
+nop # Skipped because the validity of an instruction that does not modify any architectural registers and whose only observable effect (the absence of a trap) cannot be verified without using mcause is not directly observable.
+# Result: x0 = 0
+
+# 265 # Extension Must Be Active: H
+li t0, 1
+slli t0, t0, 20
+csrs mstatus, t0
+call machine_to_supervisor
+hfence.gvma x0, x0
+# Result: mcause = 2
+
+# 266 # Extension Must Be Active: NONE
+call machine_to_virtual
+ebreak
+# Result: mstatus[39] = 1
+
+# 267 # Extension Must Be Active: NONE
+li t0, (1 << 39)
+csrr t1, mstatus
+or t1, t1, t0
+csrw mstatus, t1
+li t2, (3 << 11)
+csrr t3, mstatus
+or t3, t3, t2
+csrw mstatus, t3
+auipc t4, after_mret
+csrw mepc, t4
+mret
+after_mret:
+# Result: mstatus[39] = 0
+
+# 268 # Extension Must Be Active: NONE
+call machine_to_virtual
+li x6, 0x10000000
+lb x5, 0(x6)
+# Result: mstatus[38] = 1
+
+# 269 # Extension Must Be Active: NONE
+li t0, (1 << 38)
+csrs mstatus, mstatus, t0
+ecall
+# Result: mstatus[38] = 0
+
+# 270 # Extension Must Be Active: NONE
+nop # Skipped because "affects execution" is not a deterministic architectural state change without a specific instruction or side-effect provided in the rule.
+# Result: x0 = 0
+
+# 271 # Extension Must Be Active: NONE
+li t0, (1 << 20)
+csrr t1, mstatus
+or t1, t1, t0
+csrw mstatus, t1
+call machine_to_supervisor
+sfence.vma
+# Result: mcause = 2
+
+# 272 # Extension Must Be Active: NONE
+nop # Skipped because the "time warp" instruction affected by the TW bit is not part of the standard RISC-V ISA and no specific mnemonic is provided.
+# Result: x0 = 0
+
+# 273 # Extension Must Be Active: NONE
+addi t0, x0, 1
+slli t0, t0, 20
+csrs mstatus, t0
+call machine_to_supervisor
+HFENCE.GVMA x0, x0
+# Result: mcause != 0
+
+# 274 # Extension Must Be Active: NONE
+nop # Skipped because the "no effect" rule for HFENCE.VVMA, HINVAL.VVMA, and vsatp accesses is not directly observable as these operations do not produce a change in architectural state and the absence of a trap is the default behavior.
+# Result: x0 = 0
+
+# 275 # Extension Must Be Active: NONE
+li t0, 1
+csrs mstatus, mstatus, (1 << 20)
+call machine_to_virtual
+hfence.vvma x0, x0
+addi t1, x0, 1
+# Result: t1 = 1
+
+# 276 # Extension Must Be Active: NONE
+nop # Skipped because "normal" behavior is a qualitative architectural property of the MMU and cannot be deterministically observed as a specific register state change in a single test case without a comparative "abnormal" state.
+# Result: x0 = 0
+
+# 277 # Extension Must Be Active: NONE
+nop # Skipped because memory translation and protection logic depends on page table configuration, which is not deterministically observable.
+# Result: x0 = 0
+
+# 278 # Extension Must Be Active: NONE
+nop # Skipped because the effect on memory access translation and protection depends on the MMU configuration and page table entries, which are not deterministically observable or controllable in this environment.
+# Result: x0 = 0
+
+# 279 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes memory access translation and protection behavior, which is not directly observable through architectural register state.
+# Result: x0 = 0
+
+# 280 # Extension Must Be Active: NONE
+nop # Skipped because the effect of memory translation bypass (no translation) is dependent on the specific MMU configuration and page table state, which are not deterministically observable in this environment.
+# Result: x0 = 0
+
+# 281 # Extension Must Be Active: NONE
+nop # Skipped because memory translation and page protection behavior are not directly observable through architectural state.
+# Result: x0 = 0
+
+# 282 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes two-stage memory translation behavior which is not observable without a configured MMU and page tables.
+# Result: x0 = 0
+
+# 283 # Extension Must Be Active: NONE
+nop # Skipped because the effect of the MPRV bit on HLV, HLVX, and HSV instructions is not directly observable as a deterministic architectural state change without a specific memory layout and hypervisor configuration.
+# Result: x0 = 0
+
+# 284 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes a memory access privilege override that does not result in a detectable change in any register or CSR without a specific MMU configuration.
+# Result: x0 = 0
+
+# 285 # Extension Must Be Active: NONE
+li t0, (1 << 11)
+csrr t1, mstatus
+or t1, t1, t0
+csrw mstatus, t1
+li t0, 0
+csrw scounteren, t0
+call machine_to_user
+csrr x1, cycle
+# Result: mcause = 22
+
+# 286 # Extension Must Be Active: NONE
+nop # Skipped because the "ignored" behavior of TSR and TVM in VS-mode cannot be deterministically observed in a single test case without a baseline comparison from S-mode.
+# Result: x0 = 0
+
+# 287 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 39
+csrs mstatus, t0
+call machine_to_supervisor
+ecall
+# Result: mstatus[39] = 0
+
+# 288 # Extension Must Be Active: NONE
+nop # Skipped because the mret instruction behavior is not observable through the provided machine_to_supervisor call if it overwrites the MPP field.
+# Result: x0 = 0
+
+# 289 # Extension Must Be Active: NONE
+li t0, 8388608
+csrs mstatus, t0
+csrr t1, sstatus
+li t2, 8388608
+and t1, t1, t2
+# Result: t1 = 8388608
+
+# 290 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr t0, mstatus
+# Result: mstatus[41] = 1
+
+# 291 # Extension Must Be Active: NONE
+li t0, 1
+slli t0, t0, 41
+csrs mstatus, t0
+ecall
+# Result: mstatus[41] = 0
+
+# 292 # Extension Must Be Active: NONE
+nop # Skipped because the mret instruction changes the privilege mode to S-mode, and the mstatus register is inaccessible from S-mode.
+# Result: x0 = 0
+
+# 293 # Extension Must Be Active: NONE
+nop # Skipped because ELP field and LPE bit are not defined in the provided background information
+# Result: x0 = 0
+
+# 294 # Extension Must Be Active: NONE
+li t0, 1 << 41
+csrs mstatus, t0
+li t1, 0x80000d00
+csrw mepc, t1
+mret
+# Result: mstatus[41] = 0
+
+# 295 # Extension Must Be Active: NONE
+call machine_to_supervisor
+addi t0, x0, 1
+csrw satp, t0
+# Result: satp = 1
+
+# 296 # Extension Must Be Active: NONE
+nop # Skipped because the implicit read of the satp CSR is not directly observable through deterministic architectural state.
+# Result: x0 = 0
+
+# 297 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0
+csrw satp, t0
+li t1, 1
+slli t1, t1, 60
+csrr t2, satp
+or t2, t2, t1
+csrw satp, t2
+# Result: satp[60] = 0
+
+# 298 # Extension Must Be Active: NONE
+csrr t0, misa
+li t1, 1
+slli t1, t1, 3
+or t0, t0, t1
+csrrw misa, t0
+call machine_to_supervisor
+csrr t0, satp
+# Result: mcause = 2
+
+# 299 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 1
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 1
+
+# 300 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 8
+slli t0, t0, 60
+li t1, 0x4D2
+slli t1, t1, 44
+li t2, 0x162E
+add t3, t0, t1
+add t3, t3, t2
+csrw satp, t3
+csrr t4, satp
+li t5, 0xFFFF
+srli t4, t4, 44
+and t4, t4, t5
+# Result: t4 = 0x4D2
+
+# 301 # Extension Must Be Active: NONE
+nop # Skipped because WARL behavior is not directly observable through deterministic standard architectural state.
+# Result: x0 = 0
+
+# 302 # Extension Must Be Active: NONE
+nop # Skipped because the rule describes the functional behavior of address translation (virtual = physical) in Bare mode, which is a hardware mechanism and not a directly observable architectural state change.
+# Result: x0 = 0
+
+# 303 # Extension Must Be Active: NONE
+nop # Skipped because the lack of additional memory protection is a behavioral property that cannot be deterministically observed without a controlled memory access and a known page table configuration
+# Result: x0 = 0
+
+# 304 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 1
+slli t0, t0, 60
+csrw satp, t0
+li t1, 1
+csrw satp, t1
+# Result: satp = 0x1000000000000000
+
+# 305 # Extension Must Be Active: NONE
+nop # Skipped because the rule specifies an unspecified effect, which is non-deterministic and not directly observable.
+# Result: x0 = 0
+
+# 306 # Extension Must Be Active: NONE
+li t0, 1
+csrw satp, t0
+# Result: satp = 0
+
+# 307 # Extension Must Be Active: NONE
+li t0, 0xF000000000000001
+csrw satp, t0
+# Result: satp = 0
+
+# 308 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrw satp, x0
+li t0, 1
+slli t0, t0, 44
+li t1, 1
+slli t1, t1, 60
+or t1, t1, t0
+csrw satp, t1
+# Result: satp[44] = 1
+
+# 309 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 1
+csrw satp, t0
+csrr t1, satp
+li t2, 0xF
+srli t1, t1, 60
+and t1, t1, t2
+# Result: t1 = 0
+
+# 310 # Extension Must Be Active: NONE
+li t0, 8
+slli t0, t0, 60
+csrw satp, t0
+# Result: satp = 0
+
+# 311 # Extension Must Be Active: NONE
+
+# 312 # Extension Must Be Active: NONE
+csrr t0, satp
+li t1, 9
+slli t1, t1, 60
+or t0, t0, t1
+csrw satp, t0
+csrr t0, satp
+li t1, 0xF
+srli t0, t0, 60
+and t0, t0, t1
+# Result: t0 = 9
+
+# 313 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 10
+sll t0, t0, 60
+csrw satp, t0
+csrr t1, satp
+srli t1, t1, 60
+li t2, 15
+and t1, t1, t2
+# Result: t1 = 10
+
+# 314 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 11
+sll t0, t0, 60
+csrw satp, t0
+csrr t1, satp
+srli t1, t1, 60
+li t2, 15
+and t1, t1, t2
+# Result: t1 = 11
+
+# 315 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrw satp, x0
+li t0, 12
+slli t0, t0, 60
+csrw satp, t0
+# Result: satp = 0
+
+# 316 # Extension Must Be Active: NONE
+li t0, 14
+sll t0, t0, 60
+csrw satp, t0
+csrr t1, satp
+srli t1, t1, 60
+li t2, 0xF
+and t1, t1, t2
+# Result: t1 = 14
+
+# 317 # Extension Must Be Active: NONE
+nop # Skipped because the effect of satp.MODE changes on TLB translation and the lack of a requirement for SFENCE.VMA are not directly observable through architectural registers.
+# Result: x0 = 0
+
+# 318 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 8
+slli t0, t0, 60
+li t1, 0x123
+slli t1, t1, 44
+li t2, 1
+add t0, t0, t1
+add t0, t0, t2
+csrw satp, t0
+csrr t3, satp
+srli t3, t3, 44
+li t4, 0xFFFF
+and t3, t3, t4
+# Result: t3 = 0x123
+
+# 319 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 1
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 1
+
+# 320 # Extension Must Be Active: NONE
+nop # Skipped because the specific mcause exception code for a virtual-instruction exception is not provided and cannot be derived deterministically.
+# Result: x0 = 0
+
+# 321 # Extension Must Be Active: NONE
+li t0, 8
+slli t0, t0, 60
+csrw satp, t0
+li t1, 1
+slli t1, t1, 60
+csrw satp, t1
+csrr t2, satp
+li t3, 60
+srl t4, t2, t3
+li t5, 0xf
+and t4, t4, t5
+# Result: t4 = 8
+
+# 322 # Extension Must Be Active: NONE
+nop # Skipped because the V bit and its location in the status register are not defined in the provided background information, making the condition V=1 non-deterministic.
+# Result: x0 = 0
+
+# 323 # Extension Must Be Active: NONE
+li t0, 4
+slli t0, t0, 60
+csrw vsatp, t0
+csrr t1, vsatp
+# Result: t1 = 0
+
+# 324 # Extension Must Be Active: NONE
+call machine_to_virtual
+csrr t0, satp
+li t1, 15
+slli t1, t1, 60
+csrw satp, t1
+csrr t2, satp
+csrr t3, vsatp
+# Result: satp = 0 && vsatp = 0
+
+# 325 # Extension Must Be Active: NONE
+lui t1, 0x100
+csrr t0, hstatus
+or t0, t0, t1
+csrw hstatus, t0
+call machine_to_virtual
+csrr t0, satp
+# Result: mcause = 11
+
+# 326 # Extension Must Be Active: Zicss
+li t0, 0
+csrw satp, t0
+call machine_to_supervisor
+ssi
+# Result: mcause = 4
+
+# 327 # Extension Must Be Active: NONE
+nop # Skipped because the ignore transformation is an internal hardware address calculation and is not directly observable through architectural state.
+# Result: x0 = 0
+
+# 328 # Extension Must Be Active: NONE
+nop # Skipped because the ignore transformation's effect on physical addresses is not directly observable through the satp register without knowledge of the PMLEN value.
+# Result: x0 = 0
+
+# 329 # Extension Must Be Active: NONE
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 330 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 331 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, satp
+# Result: mcause = 2
+
+# 332 # Extension Must Be Active: NONE
+li a0, 0x1000000000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x0
+
+# 333 # Extension Must Be Active: NONE
+li a0, 0x100000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x100000000000
+
+# 334 # Extension Must Be Active: NONE
+li a0, 0x1
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# 335 # Extension Must Be Active: NONE
+li a0, 0xffffffffffffffff
+csrw 0x180, a0
+csrr a1, 0x180
+# Result: a1 != 0xffffffff && a1 != 0xffffffffffffffff
+
+# 336 # Extension Must Be Active: Svade
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 337 # Extension Must Be Active: Svadu
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 338 # Extension Must Be Active: Svnapot
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 339 # Extension Must Be Active: Svpbmt
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 340 # Extension Must Be Active: NONE
+li x10, 1
+call machine_to_supervisor
+csrw scounteren, x10
+csrr x11, scounteren
+# Result: x11 = 1
+
+# 341 # Extension Must Be Active: NONE
+call machine_to_supervisor
+li t0, 0
+csrw scounteren, t0
+call supervisor_to_user
+csrr t1, cycle
+# Result: mcause = 2
+
+# 342 # Extension Must Be Active: NONE
+li t0, 1
+csrs mcounteren, t0
+csrw scounteren, x0
+call machine_to_user
+csrr x10, cycle
+# Result: mcause = 2
+
+# 343 # Extension Must Be Active: NONE
+
+# 344 # Extension Must Be Active: NONE
+li t0, 1
+csrs scounteren, t0
+li t0, 0
+csrs hcounteren, t0
+call machine_to_virtual_user
+csrr t1, cycle
+# Result: mcause = 2
+
+# 345 # Extension Must Be Active: NONE
+li t0, 0
+csrw mstatus, t0
+li t1, (1 << 9)
+csrs mstatus, t1
+li t2, 0
+csrw scounteren, t2
+call machine_to_user
+ccount
+# Result: mcause = 22
+
+# 346 # Extension Must Be Active: NONE
+csrr a0, scounteren
+# Result: mcause = 0x0
+
+# 347 # Extension Must Be Active: NONE
+call machine_to_supervisor
+csrr a0, 0x106
+# Result: mcause = 0x0
+
+# 348 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 0x2
+
+# 349 # Extension Must Be Active: NONE
+li a0, 0x40000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40000
+
+# 350 # Extension Must Be Active: NONE
+li a0, 0x20000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20000
+
+# 351 # Extension Must Be Active: NONE
+li a0, 0x10000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10000
+
+# 352 # Extension Must Be Active: NONE
+li a0, 0x8000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8000
+
+# 353 # Extension Must Be Active: NONE
+li a0, 0x4000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4000
+
+# 354 # Extension Must Be Active: NONE
+li a0, 0x2000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2000
+
+# 355 # Extension Must Be Active: NONE
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1000
+
+# 356 # Extension Must Be Active: NONE
+li a0, 0x800
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x800
+
+# 357 # Extension Must Be Active: NONE
+li a0, 0x400
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x400
+
+# 358 # Extension Must Be Active: NONE
+li a0, 0x200
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x200
+
+# 359 # Extension Must Be Active: NONE
+li a0, 0x100
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x100
+
+# 360 # Extension Must Be Active: NONE
+li a0, 0x80
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x80
+
+# 361 # Extension Must Be Active: NONE
+li a0, 0x40
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40
+
+# 362 # Extension Must Be Active: NONE
+li a0, 0x20
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20
+
+# 363 # Extension Must Be Active: NONE
+li a0, 0x10
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10
+
+# 364 # Extension Must Be Active: NONE
+li a0, 0x8
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a1, a0
+# Result: a2 = 0x8
+
+# 365 # Extension Must Be Active: NONE
+li a0, 0x4
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4
+
+# 366 # Extension Must Be Active: NONE
+li a0, 0x2
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2
+
+# 367 # Extension Must Be Active: NONE
+li a0, 1
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a1, a0
+# Result: a2 = 0x1
+
+# 368 # Extension Must Be Active: NONE
+addi t0, x0, -1
+csrw scounteren, t0
+# Result: scounteren != -1 && scounteren != 0xffffffff

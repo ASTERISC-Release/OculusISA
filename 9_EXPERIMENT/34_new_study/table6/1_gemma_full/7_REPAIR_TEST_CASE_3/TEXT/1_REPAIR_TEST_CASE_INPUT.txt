@@ -1,0 +1,130 @@
+# 7 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: FCVT.W.D must raise the floating-point exception flags that correspond to converting its double-precision source operand to a signed 32-bit integer, and the set of flags raised is identical to those that would be raised for FCVTMOD.W.D with the same operand.
+##### ASSEMBLY #####
+li t0, 0x7ff8000000000000
+fmv.d.x fa0, t0
+fsrw fcsr, zero
+fcvt.w.d t1, fa0, rne
+csrr t2, fcsr
+li t3, 0x10
+and t4, t2, t3
+# Result: t4 = 16
+
+# 24 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+li t0, 0x1000
+vsetvli x0, x0, 32, e32, m1, ta, ma
+vle32.v v1, (t0)
+vmv.x.s t2, v1
+# Result: t2 = 0
+
+# 25 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: If vstart = 0 and vl > 0 for VLE32FF.V, then at least one element MUST be processed.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw vl, t0
+csrw vstart, x0
+la t1, data
+vle32.v v1, (t1)
+vsetivli t2, 1, e32, m1
+vmv.v.x v2, t2
+vsrl.vi v1, v1, 0
+# Result: t2 != 0
+.data
+data: .word 0x12345678
+
+# 176 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 93: When mstatus.UBE = 0, explicit load and store memory accesses from U-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x12345678
+li t1, 0x80000000
+sd t0, 0(t1)
+li t2, 0x0
+csrr t3, mstatus
+li t4, 0x40
+and t3, t3, t4
+beq t3, x0, 1
+j 2
+li t2, 0x0
+ld t2, 0(t1)
+# Result: t2 = 0x12345678
+
+# 226 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 143: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+srli t2, t2, 0
+li t3, 0x2000
+or t2, t2, t3
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+li t3, 0x2000
+or t2, t2, t3
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+li t3, 0x2000
+or t2, t2, t3
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+csrr t3, mstatus
+li t4, 0x4000
+li t5, 0x2000
+or t4, t4, t5
+and t5, t3, t4
+csrr a1, mstatus
+srli a0, a1, 13
+andi a0, a0, 3
+# Result: a0 = 0
+# 227 # Extension Must Be Active: NONE
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+or t2, t2, (1 << 13)
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+csrr t3, mstatus
+# Result: t3[14:13] = 0
+
+# 288 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 210: When the V bit in mstatus is 1, a virtual-instruction exception with code 22 is raised instead of an illegal-instruction exception if the attempted instruction is HS-qualified and execution is prevented because of insufficient privilege or because the instruction is expressly disabled by a supervisor or hypervisor CSR such as scounteren or hcounteren.
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mstatus, t0
+# Target: HS-qualified instruction (e.g., an HS-extension instruction)
+# To trigger RULE 210, execute an HS-qualified instruction in a mode where it is prevented.
+# For simplicity, we use an instruction that requires a specific privilege/CSR enable.
+# We assume the environment is in M-mode but V=1.
+# Use a dummy HS-qualified instruction (e.g., from the H-extension).
+# Since we cannot rely on a specific H-extension opcode being present in all RISC-V tools,
+# we simulate the trigger of the virtual-instruction exception (code 22).
+# We use a known HS-qualified instruction opcode (e.g., hfence.gvma).
+hfence.gvma 0, x0, x0
+# Result: mcause = 22

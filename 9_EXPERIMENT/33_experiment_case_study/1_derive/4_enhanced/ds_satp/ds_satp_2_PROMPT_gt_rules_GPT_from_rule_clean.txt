@@ -1,0 +1,152 @@
+You are comparing a generated RISC-V architectural rule set against a ground truth rule set.
+
+Target name:
+satp
+
+Generated rules:
+RULE 1: If S-mode is implemented, the satp CSR exists at address 0x180 and is SXLEN bits wide.
+RULE 2: If the current privilege mode is S-mode and mstatus.TVM is 1, an attempt to read or write satp raises an illegal-instruction exception.
+RULE 3: If the current privilege mode is S-mode and mstatus.TVM is 0, read and write accesses to satp are permitted.
+RULE 4: If the current privilege mode is VS-mode (V=1) and hstatus.VTVM is 1, an attempt to access satp (which accesses vsatp) raises a virtual-instruction exception.
+RULE 5: If the current privilege mode is VS-mode and hstatus.VTVM is 0, access to satp (i.e., vsatp) is permitted.
+RULE 6: If a write to satp specifies an unsupported MODE value, the entire write has no effect and no fields in satp are modified.
+RULE 7: The number of implemented ASID bits (ASIDLEN) can be determined by writing all ones to the ASID field of satp and reading back; the bits that read as one indicate implemented writable bits, with the least-significant bits implemented first.
+RULE 8: The maximum ASIDLEN is 9 when the MODE field is Sv32, and 16 when the MODE field is Sv39, Sv48, or Sv57.
+RULE 9: The satp register is considered active when the effective privilege mode is S-mode or U-mode.
+RULE 10: Executions of the address-translation algorithm may only begin using a given value of satp when satp is active.
+RULE 11: Changing satp.MODE from Bare to a paged mode or vice versa takes effect immediately, without requiring an SFENCE.VMA instruction.
+RULE 12: Changing satp.ASID takes effect immediately, without requiring an SFENCE.VMA instruction.
+RULE 13: When V=1, the vsatp CSR substitutes for satp; instructions that normally read or modify satp access vsatp instead.
+RULE 14: When V=0, vsatp does not directly affect the behavior of the machine, unless a virtual-machine load/store (HLV, HLVX, HSV) or the MPRV feature in mstatus is used to execute a load or store as though V=1.
+RULE 15: When V=1, a write to satp (i.e., vsatp) with an unsupported MODE value is ignored; no write to vsatp is effected.
+RULE 16: vsatp is considered active for the purposes of the address-translation algorithm unless the effective privilege mode is U and hstatus.HU=0.
+RULE 17: Even when vsatp is active, VS-stage page-table entries' A bits must not be set as a result of speculative execution, unless the effective privilege mode is VS or VU.
+RULE 18: When satp.MODE is a paged mode (Sv32, Sv39, Sv48, or Sv57), the satp.PPN field provides the physical page number of the root page table, which is aligned to a 4 KiB boundary.
+RULE 19: When satp.MODE is Bare, supervisor virtual addresses equal supervisor physical addresses, and no additional memory protection beyond PMP is applied.
+
+
+
+Ground truth rules:
+RULE 1: The satp register has the privilege SRW.
+RULE 2: Unless otherwise specified, the value returned by an implicit read of the satp CSR is the same value that would have been returned by an explicit read of the satp CSR, using a CSR-access instruction in a sufficient privilege mode.
+RULE 3: If S-mode is not supported or satp.MODE is read-only 0, the SUM (permit Supervisor User Memory access) bit is read-only 0.
+RULE 4: When TVM=1, attempts to read or write the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+RULE 5: When TVM=0, attempts to read or write the satp CSR are permitted in S-mode.
+RULE 6: If S-mode is not supported or if satp.MODE is read-only zero and always Bare, the implementation may make FIOM read-only zero.
+RULE 7: The SUM bit is read-only 0 if the MODE field of the satp register is read-only 0.
+RULE 8: If satp.MODE is read-only zero (always Bare), FIOM may be made read-only zero.
+RULE 9: When SXLEN is 64, the satp register is formatted with a 4-bit MODE field, a 16-bit ASID field, and a 44-bit PPN field.
+RULE 10: When SXLEN is 64, the MODE, ASID, and PPN fields in the satp register exhibit WARL behavior.
+RULE 11: When the MODE field in the satp register is set to Bare, supervisor virtual addresses are equal to supervisor physical addresses.
+RULE 12: When the MODE field in the satp register is set to Bare, there is no additional memory protection beyond the physical memory protection scheme.
+RULE 13: To select MODE=Bare in the satp register, software must write zero to bits 59 through 0 when SXLEN is 64.
+RULE 14: Attempting to select MODE=Bare in the satp register with a nonzero pattern in the remaining fields has an UNSPECIFIED effect on the value that the remaining fields assume.
+RULE 15: Attempting to select MODE=Bare in the satp register with a nonzero pattern in the remaining fields has an UNSPECIFIED effect on address translation and protection behavior.
+RULE 16: When SXLEN is 64, all satp encodings corresponding to MODE=Bare are reserved for future standard use.
+RULE 17: The remaining MODE settings in the satp register are reserved for future use and may define different interpretations of the other fields in the satp register.
+RULE 18: If the satp register is written with an unsupported MODE, the entire write has no effect and no fields in the satp register are modified.
+RULE 19: The number of ASID bits in the satp register is UNSPECIFIED and may be zero.
+RULE 20: The number of implemented ASID bits in the satp register, termed ASIDLEN, may be determined by writing one to every bit position in the ASID field and then reading back the value in the satp register to see which bit positions hold a one.
+RULE 21: The least-significant bits of the ASID field in the satp register are implemented first, such that if ASIDLEN is greater than 0, ASID[ASIDLEN-1:0] is writable.
+RULE 22: The maximal value of ASIDLEN in the satp register, termed ASIDMAX, is 9 for Sv32.
+RULE 23: The maximal value of ASIDLEN in the satp register, termed ASIDMAX, is 16 for Sv39, Sv48, and Sv57.
+RULE 24: When SXLEN is 64, the satp MODE field value of 0 is named Bare and means no translation or protection.
+RULE 25: When SXLEN is 64, the satp MODE field values from 1 to 7 are reserved for standard use.
+RULE 26: When SXLEN is 64, the satp MODE field value of 8 is named Sv39 and means page-based 39-bit virtual addressing.
+RULE 27: When SXLEN is 64, the satp MODE field value of 9 is named Sv48 and means page-based 48-bit virtual addressing.
+RULE 28: When SXLEN is 64, the satp MODE field value of 10 is named Sv57 and means page-based 57-bit virtual addressing.
+RULE 29: When SXLEN is 64, the satp MODE field value of 11 is named Sv64 and is reserved for page-based 64-bit virtual addressing.
+RULE 30: When SXLEN is 64, the satp MODE field values from 12 to 13 are reserved for standard use.
+RULE 31: When SXLEN is 64, the satp MODE field values from 14 to 15 are designated for custom use.
+RULE 32: The satp CSR is considered active when the effective privilege mode is S-mode or U-mode.
+RULE 33: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+RULE 34: Changes to satp.ASID take effect immediately.
+RULE 35: The `satp` register MUST be active, meaning the effective privilege mode MUST be S-mode or U-mode.
+RULE 36: When VTVM=1, an attempt in VS-mode to access CSR satp raises a virtual-instruction exception.
+RULE 37: A write to satp with an unsupported MODE value is ignored.
+RULE 38: When V=1, `vsatp` substitutes for the usual `satp`, so instructions that normally read or modify `satp` actually access `vsatp` instead.
+RULE 39: When V=0, a write to `vsatp` with an unsupported MODE value is either ignored as it is for `satp`, or the fields of `vsatp` are treated as WARL in the normal way.
+RULE 40: When V=1, a write to `satp` with an unsupported MODE value is ignored and no write to `vsatp` is effected.
+RULE 41: A virtual-instruction exception is raised when in VS-mode there is an attempt to access satp and hstatus.VTVM=1.
+RULE 42: If `satp.MODE` (or `vsatp.MODE` when `V=1`) is set to `Bare` and the effective privilege mode is less than `M`, shadow stack instructions raise a store/AMO access-fault exception.
+RULE 43: The ignore transformation replaces the upper PMLEN bits of a physical address, including guest-physical addresses, with 0 in all cases except when the active satp register's MODE field is not Bare.
+RULE 44: The cases where the ignore transformation replaces the upper PMLEN bits of a physical address with 0 include both running in M-mode and running in other privilege modes with the active satp register's MODE field set to Bare address translation mode.
+RULE 45: In M-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 46: In S-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 47: In U-mode, accessing satp register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x180; # Result: mcause = 0x2].
+RULE 48: In M-mode, setting satp.MODE (bit 60) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x1000000000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 49: In M-mode, setting satp.ASID (bit 44) should be reflected on the readback (# Result: a2 = 0x100000000000) [# Extension Must Be Active: NONE; li a0, 0x100000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x100000000000].
+RULE 50: In M-mode, setting satp.PPN (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x1].
+RULE 51: In M-mode, writing 0xffffffffffffffff to the satp register should not set it to 0xffffffff or 0xffffffffffffffff (# Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff) [# Extension Must Be Active: NONE; li a0, 0xffffffffffffffff; csrw 0x180, a0; csrr a1, 0x180; # Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff].
+RULE 52: In M-mode, accessing satp register while Svade extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svade; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 53: In M-mode, accessing satp register while Svadu extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svadu; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 54: In M-mode, accessing satp register while Svnapot extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svnapot; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 55: In M-mode, accessing satp register while Svpbmt extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svpbmt; csrr a0, 0x180; # Result: mcause = 0x0].
+
+
+Task:
+Determine which ground truth rules are covered by the generated rules using one-to-one matching.
+
+A generated rule covers a ground truth rule only if it clearly expresses the same architectural behavior, or a behavior that fully includes the ground truth rule's required condition and outcome.
+
+Important requirements:
+
+1. Use only the given generated rules and ground truth rules.
+2. Do not use external knowledge.
+3. Do not use known bugs.
+4. Do not infer behavior that is not explicitly stated.
+5. Be conservative and precise.
+6. Do not count a ground truth rule as covered if the generated rule only partially matches it.
+7. Use one-to-one matching only.
+8. Each generated rule may cover at most one ground truth rule.
+9. Each ground truth rule may be covered by at most one generated rule.
+10. Do not allow one generated rule to cover multiple ground truth rules.
+11. Do not allow multiple generated rules to cover the same ground truth rule.
+12. If multiple generated rules could cover the same ground truth rule, choose the best semantic match.
+13. If one generated rule could cover multiple ground truth rules, choose the best semantic match.
+14. If there is a tie, choose the match that maximizes the total number of covered ground truth rules.
+15. If there is still a tie, choose the lowest generated rule number.
+16. If there is still a tie, choose the lowest ground truth rule number.
+17. Duplicate generated rules do not increase coverage; only one duplicate may be matched.
+18. Use only rule numbers that appear in the input.
+
+Output two text files.
+
+First file name:
+coverage_summary.txt
+
+The first file must use this format:
+
+COVERAGE SUMMARY
+Covered ground truth rules: X / Y
+Coverage: Z%
+
+COVERED GT RULES
+GT RULE 1 -> covered by GENERATED RULE 4
+GT RULE 2 -> covered by GENERATED RULE 9
+GT RULE 3 -> NOT COVERED
+
+UNCOVERED GT RULES
+GT RULE 3
+GT RULE 8
+GT RULE 10
+
+Second file name:
+generated_rule_to_gt_mapping.txt
+
+The second file must use this format:
+
+GENERATED RULE TO GROUND TRUTH MAPPING
+GENERATED RULE 1 -> GT RULE 69
+GENERATED RULE 2 -> -
+GENERATED RULE 3 -> GT RULE 1
+
+Rules:
+
+* Use "-" when a generated rule does not cover any ground truth rule.
+* Keep generated rules in numeric order.
+* Keep ground truth rules in numeric order.
+* Do not add extra explanations unless needed for ambiguity.
+* Do not include any rule number that is not present in the input.
+* The mapping must be one-to-one: no generated rule may appear with more than one GT rule, and no GT rule may appear with more than one generated rule.
+* Please take your time, make sure you do this accurately and thoroughly.

@@ -1,0 +1,23 @@
+## 4.9.1. Addresses and data for outgoing MSIs
+
+To forward interrupts by MSIs, an APLIC must know the MSI target address for each hart. For any given system, these addresses are fixed and should be hardwired into the APLIC if possible. However, some APLIC implementations may require that software supply the MSI target addresses. In that case, the  root  domain's  registers mmsiaddrcfg , mmsiaddrcfgh , smsiaddrcfg ,  and smsiaddrcfgh (Section 4.5.3  and  Section  4.5.4)  may  be  used  to  configure  the  MSI  addresses  for  all  interrupt  domains. Alternatively MSI addresses may be configured by some custom means outside this standard. If MSI
+
+target addresses must be configured by software, this should be done only from a suitably privileged execution mode, typically just once, early after system reset.
+
+For a machine-level interrupt domain, if MSI target addresses are determined by mmsiaddrcfg and mmsiaddrcfgh ,  then  the  address  for  an  outgoing MSI for interrupt source is  computed from those registers and from the Hart Index field of register target[ ] as follows:
+
+```
+g = (Hart Index>>LHXW) & (2 HHXW - 1) h = Hart Index & (2 LHXW -1) MSI address = ( Base PPN | (g<<(HHXS+12)) | (h<<LHXS) )<<12
+```
+
+Here, and represent shifting left and right by bits,  an ampersand (&) represents bitwise logical AND, and a vertical bar (|) represents bitwise logical OR. Assuming the recommendations of Section 3.6 are followed for the arrangement of IMSIC interrupt files in the machine's address space, value is intended to be the number of a hart group (always zero if HHXW = 0), while is the number of the target hart within that group. Represented in the terms of Section 3.6, HHXW = , LHXW = , HHXS = , LHXS = , and Base PPN = >>12.
+
+For  a  supervisor-level  domain,  if  MSI  target  addresses  are  determined  by  the  root  domain's configuration registers ( smsiaddrcfg and others), then to construct the address for an outgoing MSI for interrupt source ,  the Hart Index from register target[ ] must first be converted into the index number that machine-level domains use for the same hart. (These numbers are often the same, but they  may  not  be.)  The  address  for  the  MSI  is  then  computed  using  this  machine-level  hart  index together with the Base PPN and LHXS values from smsiaddrcfg and smsiaddrcfgh ,  the  other fields (HHXW, LHXW, and HHXS) from mmsiaddrcfgh , and the Guest Index from target[ ] , as follows:
+
+```
+g = (machine-level hart index>>LHXW) & (2 HHXW - 1) h = machine-level hart index & (2 LHXW - 1) MSI address = (Base PPN | (g<<(HHXS + 12)) | (h<<LHXS) | Guest Index)<<12
+```
+
+Represented in the terms of Section 3.6, HHXW = ,  LHXW = ,  HHXS = ,  LHXS = ,  and Base PPN = >>12.
+
+The data for an outgoing MSI write is taken from the EIID field of target[ ] , zero-extended to 32 bits. An MSI's 32-bit  data  is  always  written  in  little-endian  byte  order,  regardless  of  the  BE  field  of  the domain's domaincfg register.

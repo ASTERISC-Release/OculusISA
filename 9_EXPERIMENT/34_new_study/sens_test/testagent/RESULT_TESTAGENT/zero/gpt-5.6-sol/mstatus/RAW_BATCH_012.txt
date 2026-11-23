@@ -1,0 +1,133 @@
+# Test Case Rule: RULE 221: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap-side MPV is not observable under the stop-on-trap harness
+# Result: x0 = 0
+
+# Test Case Rule: RULE 222: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap-side MPP is not observable under the stop-on-trap harness
+# Result: x0 = 0
+
+# Test Case Rule: RULE 223: When returning from a trap, the MPV field in mstatus is ignored if the MPP field in mstatus equals 3.
+##### ASSEMBLY #####
+li t0, 0x8000001800
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+li a0, 0
+mret
+1:
+csrr x0, mstatus
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 224: When the MRET instruction is executed, the new privilege mode is determined from the values of the MPP and MPV fields in mstatus or mstatush as specified by the architecture.
+##### ASSEMBLY #####
+nop # Skipped because the rule does not specify the MPP and MPV mode mapping
+# Result: x0 = 0
+
+# Test Case Rule: RULE 225: When the MRET instruction is executed, the MPV field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 0x8000001800
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+mret
+1:
+csrr a0, mstatus
+li t0, 0x8000000000
+and a0, a0, t0
+srli a0, a0, 39
+# Result: a0 = 0
+
+# Test Case Rule: RULE 226: When the MRET instruction is executed, the MPP field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+mret
+1:
+csrr a0, mstatus
+li t0, 0x1800
+and a0, a0, t0
+srli a0, a0, 11
+# Result: a0 = 0
+
+# Test Case Rule: RULE 227: When the MRET instruction is executed, the MIE field in mstatus or mstatush is written with the current value of the MPIE field.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrc x0, mstatus, t0
+li t0, 0x1880
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+mret
+1:
+csrr a0, mstatus
+li t0, 0x8
+and a0, a0, t0
+srli a0, a0, 3
+# Result: a0 = 1
+
+# Test Case Rule: RULE 228: When the MRET instruction is executed, the MPIE field in mstatus or mstatush is set to 1.
+##### ASSEMBLY #####
+li t0, 0x80
+csrrc x0, mstatus, t0
+li t0, 0x1800
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+mret
+1:
+csrr a0, mstatus
+li t0, 0x80
+and a0, a0, t0
+srli a0, a0, 7
+# Result: a0 = 1
+
+# Test Case Rule: RULE 229: The SPELP bit in mstatus can be accessed through the sstatus CSR.
+##### ASSEMBLY #####
+li t0, 0x800000
+csrrc x0, mstatus, t0
+csrrs x0, sstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+srli a0, a0, 23
+# Result: a0 = 1
+
+# Test Case Rule: RULE 230: When a trap is taken into privilege mode x, the x PELP bit in mstatus is set to the current ELP value.
+##### ASSEMBLY #####
+nop # Skipped because trap-side PELP is not observable under the stop-on-trap harness
+# Result: x0 = 0
+
+# Test Case Rule: RULE 231: When a trap is taken into privilege mode x, the ELP field in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+nop # Skipped because trap-side ELP is not observable under the stop-on-trap harness
+# Result: x0 = 0
+
+# Test Case Rule: RULE 232: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to the value of the x PELP bit in mstatus if the LPE bit of privilege mode y is 1.
+##### ASSEMBLY #####
+nop # Skipped because ELP is not directly observable with standard architectural state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 233: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to NO_LP_EXPECTED if the LPE bit of privilege mode y is 0.
+##### ASSEMBLY #####
+nop # Skipped because ELP is not directly observable with standard architectural state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 234: When executing an MRET or SRET instruction, the x PELP bit in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+li t0, 0x20000000000
+csrrs x0, mstatus, t0
+li t0, 0x1800
+csrrs x0, mstatus, t0
+la t1, 1f
+csrw mepc, t1
+mret
+1:
+csrr a0, mstatus
+li t0, 0x20000000000
+and a0, a0, t0
+srli a0, a0, 41
+# Result: a0 = 0

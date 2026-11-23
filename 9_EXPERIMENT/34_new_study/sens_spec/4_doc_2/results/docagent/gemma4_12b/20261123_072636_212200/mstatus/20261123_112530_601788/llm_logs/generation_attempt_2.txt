@@ -1,0 +1,43 @@
+Based on the provided text from the RISC-V Privileged Architecture Specification, here are the answers to your questions:
+
+### 1. What are the two possible values for the `MODE` field in the `stvec` register?
+The `stvec` register contains a `MODE` field (bits 1:0) that can have the following values:
+*   **0: Direct** – All traps into supervisor mode cause the pc to be set to the address in the `BASE` field.
+*   **1: Vectored** – All synchronous exceptions into supervisor mode cause the pc to be set to the address in the `BASE` field, whereas interrupts cause the pc to be set to the address in the `BASE` field plus four times the interrupt cause number.
+
+### 2. In the `mstatus` register, what is the purpose of the `MPV` field?
+The **`MPV` (Machine Previous Virtualization Mode)** bit is written by the implementation whenever a trap is taken into M-mode. It records the virtualization mode ($V$) of the hart at the time of the trap. This allows the machine-mode handler to know whether the interrupted context was running in a virtualized state.
+
+### 3. For the `mcounteren` register, what happens if the `CY` bit is clear?
+If the **`CY` (Cycle)** bit in the `mcounteren` register is clear, any attempt to read the `mcycle` register while executing in S-mode or U-mode will cause an **illegal-instruction exception**.
+
+### 4. What are the results of a trap into M-mode if the `MPV` bit is 1?
+If a trap is taken into M-mode while the virtualization mode is active ($V=1$), the **`MPV`** bit is set to **1**. Additionally, for the purposes of machine-mode instructions (like `HLV` or `HSV`), the effective privilege mode of the memory access is treated as **VU-level** (Virtual User-mode) because the `MPV` bit is set.
+
+### 5. In the `mstatus` register, what is the purpose of the `MPRV` bit?
+The **`MPRV` (Modify Privilege)** bit modifies the privilege with which loads access virtual memory. 
+*   When **`MPRV = 0`**, translation and protection behave normally (the current privilege mode applies).
+*   When **`MPRV = 1`**, explicit memory accesses are translated and protected as though the current virtualization mode were set to **`MPV`** and the current nominal privilege mode were set to **`MPP`**.
+
+### 6. Which field in the `mstatus` register indicates the privilege level at which a hart was executing before entering supervisor mode?
+The **`SPP`** field indicates the privilege level at which a hart was executing before entering supervisor mode. When a trap is taken into supervisor mode, `SPP` is set to **0** if the trap originated from user mode, or **1** otherwise.
+
+### 7. What does the `SUM` bit in the `sstatus` register do?
+The **`SUM` (permit Supervisor User Memory access)** bit modifies the privilege with which S-mode loads and stores access virtual memory. 
+*   When **`SUM = 0`**, S-mode memory accesses to pages that are accessible only by U-mode (marked with $U=1$ in the page table) will fault. 
+*   When **`SUM = 1`**, these accesses are permitted. 
+*   Regardless of the `SUM` bit, S-mode can never execute instructions from user pages.
+
+### 8. For the `stvel` register, what is the purpose of the `SI` bit?
+*(Note: The user query seems to have a typo; based on the text context, this likely refers to the **`SIE`** bit in the **`sstatus`** register or the **`SI`** bit in **`stvec`** (not present), but given the context of supervisor interrupts, the query likely refers to the **`SIE`** bit in **`sstatus`** or **`STIP`** in **`mip`**.)*
+
+Based on the standard behavior of the **`SIE` (Supervisor Interrupt Enable)** bit in the **`sstatus`** register:
+The `SIE` bit enables or disables all interrupts in supervisor mode. When `SIE` is clear, interrupts are not taken while in supervisor mode. When the hart is running in user mode, the value in `SIE` is ignored, and supervisor-level interrupts are enabled.
+
+### 9. What is the purpose of the `mstatus.TVM` bit?
+The **`TVM`** field of the `mstatus` register affects execution only in **HS-mode**. It prevents HS-mode from accessing the `hgatp` register or executing `HFENCE.GVMA` or `HINVAL.GVMA`. It is used to allow machine-level software to modify the address translations managed by a supervisor-level OS (e.g., by inserting a shadow page table) without the OS being aware.
+
+### 10. What are the two types of address translation and protection in the `satp` register?
+The `MODE` field in the `satp` register selects between the following schemes:
+*   **Bare**: No translation or protection. Supervisor virtual addresses are equal to supervisor physical addresses.
+*   **Sv32 / Sv39 / Sv48 / Sv57**: Page-based virtual-memory schemes where virtual addresses are translated into physical addresses via a radix-tree page table.

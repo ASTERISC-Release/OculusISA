@@ -1,0 +1,40 @@
+RULE 1: If SFENCE.VMA is executed in U-mode, it raises an illegal-instruction exception with exception code 2.
+RULE 2: If SFENCE.VMA is executed in S-mode or HS-mode while mstatus.TVM=1, it raises an illegal-instruction exception with exception code 2.
+RULE 3: If SFENCE.VMA is executed in S-mode or HS-mode while mstatus.TVM=0, mstatus.TVM does not prevent the instruction from executing.
+RULE 4: If SFENCE.VMA is executed in VS-mode while hstatus.VTVM=1, it raises a virtual-instruction exception with exception code 22.
+RULE 5: If SFENCE.VMA is executed in VS-mode while hstatus.VTVM=0, neither hstatus.VTVM nor mstatus.TVM prevents the instruction from executing.
+RULE 6: If SFENCE.VMA is executed in VU-mode, it raises a virtual-instruction exception with exception code 22.
+RULE 7: If SFENCE.VMA is executed in M-mode, neither mstatus.TVM nor hstatus.VTVM prevents the instruction from executing.
+RULE 8: If the applicable satp.MODE field is read-only zero, an implementation may raise an illegal-instruction exception when SFENCE.VMA is executed.
+RULE 9: When virtualization mode V=0, SFENCE.VMA interprets a non-x0 rs1 operand as an HS-level virtual address and a non-x0 rs2 operand value as an HS-level ASID.
+RULE 10: When virtualization mode V=0, SFENCE.VMA orders and invalidates only HS-level address-translation state.
+RULE 11: When virtualization mode V=1, SFENCE.VMA interprets a non-x0 rs1 operand as a guest virtual address and a non-x0 rs2 operand value as a VS-level ASID.
+RULE 12: When virtualization mode V=1, SFENCE.VMA orders and invalidates VS-stage address-translation state only for the virtual machine identified by the hgatp.VMID value present when the instruction executes.
+RULE 13: If rs1 is not x0 and its value is not a valid virtual address, SFENCE.VMA performs no ordering or address-translation-cache invalidation.
+RULE 14: If rs1 is not x0 and its value is not a valid virtual address, SFENCE.VMA raises no exception for the invalid address.
+RULE 15: If rs1 is x0 and rs2 is x0, SFENCE.VMA orders all previous stores already visible to the current hart before all subsequent implicit reads and writes by that hart to every level of page tables for all address spaces.
+RULE 16: If rs1 is x0 and rs2 is not x0, SFENCE.VMA orders all previous stores already visible to the current hart before subsequent implicit reads and writes by that hart to every level of page tables for the ASID held in rs2, excluding accesses to global mappings.
+RULE 17: If rs1 is not x0 and contains a valid virtual address and rs2 is x0, SFENCE.VMA orders all previous stores already visible to the current hart before subsequent implicit reads and writes by that hart to leaf PTEs corresponding to that virtual address for all address spaces.
+RULE 18: If rs1 is not x0 and contains a valid virtual address and rs2 is not x0, SFENCE.VMA orders all previous stores already visible to the current hart before subsequent implicit reads and writes by that hart to leaf PTEs corresponding to that virtual address for the ASID held in rs2, excluding accesses to global mappings.
+RULE 19: If rs1 is x0 and rs2 is x0, SFENCE.VMA invalidates all address-translation-cache entries on the current hart for all address spaces.
+RULE 20: If rs1 is x0 and rs2 is not x0, SFENCE.VMA invalidates address-translation-cache entries on the current hart that match the ASID held in rs2, except entries for global mappings.
+RULE 21: If rs1 is not x0 and contains a valid virtual address and rs2 is x0, SFENCE.VMA invalidates address-translation-cache entries on the current hart containing leaf PTEs corresponding to that virtual address for all address spaces.
+RULE 22: If rs1 is not x0 and contains a valid virtual address and rs2 is not x0, SFENCE.VMA invalidates address-translation-cache entries on the current hart containing leaf PTEs corresponding to that virtual address and matching the ASID held in rs2, except entries for global mappings.
+RULE 23: SFENCE.VMA orders only the executing hart’s implicit references to memory-management data structures.
+RULE 24: SFENCE.VMA does not invalidate address-translation-cache entries on other harts.
+RULE 25: If rs1 is x0 or contains a valid virtual address, an implementation may provide stronger ordering or invalidate more address-translation-cache entries than selected by rs1 and rs2.
+RULE 26: When rs2 is not x0, bits SXLEN-1:ASIDMAX of the value held in rs2 are ignored by SFENCE.VMA.
+RULE 27: When rs2 is not x0 and ASIDLEN is less than ASIDMAX, bits ASIDMAX-1:ASIDLEN of the value held in rs2 are ignored by SFENCE.VMA.
+RULE 28: If multiple translations for an address have been valid since the most recent SFENCE.VMA that subsumes that address and address space, a subsequent implicit translation read may use any such translation.
+RULE 29: SFENCE.VMA does not place implicit reads or writes of memory-management data structures into the global memory order under the standard RVWMO ordering rules.
+RULE 30: Executing SFENCE.VMA does not by itself guarantee that prior explicit memory accesses precede subsequent explicit memory accesses in the global memory order.
+RULE 31: Executing SFENCE.VMA does not require implicit page-table loads to obey normal program order with respect to prior loads or stores to the same address.
+RULE 32: If an in-progress speculative address translation would create an address-translation-cache entry invalidated by an SFENCE.VMA executed after that translation began, the speculative translation must not create that entry after the SFENCE.VMA.
+RULE 33: SFENCE.VMA does not order invalidate, clean, or flush operations produced by cache-block management instructions.
+RULE 34: Pointer masking is not applied to the virtual-address value supplied in rs1 for SFENCE.VMA.
+RULE 35: If page-based virtual memory is implemented and PMP settings are modified, executing SFENCE.VMA with rs1=x0 and rs2=x0 after the PMP writes synchronizes the current hart’s S-stage address-translation and PMP caches with the new PMP settings.
+RULE 36: If menvcfg.PBMTE is changed, executing SFENCE.VMA with rs1=x0 and rs2=x0 synchronizes the current hart’s S-stage address-translation caches with the changed interpretation of PTE PBMT fields.
+RULE 37: If menvcfg.ADUE is changed, executing SFENCE.VMA with rs1=x0 and rs2=x0 synchronizes the current hart’s S-stage address-translation caches with the changed interpretation of PTE A/D fields.
+RULE 38: If SBE is changed while supervisor-level memory-management data structures remain in use across the change, executing SFENCE.VMA with rs1=x0 and rs2=x0 after the change synchronizes the current hart with the new endianness interpretation of those structures.
+RULE 39: If the hypervisor extension is implemented, an SFENCE.VMA executed with virtualization mode V=0 does not by itself synchronize G-stage or VS-stage address-translation caches.
+RULE 40: If SFENCE.VMA raises a synchronous exception, the instruction does not retire and does not increment the instructions-retired counter.

@@ -1,0 +1,43 @@
+RULE 1: If the CSR address is 0x180, the name of the CSR is satp.
+RULE 2: If the CSR address is 0x180, the CSR is used for supervisor address translation and protection.
+RULE 3: If the CSR address is 0x180, the CSR is accessible for read and write operations at the supervisor privilege level (SRW).
+RULE 4: If the CSR address is 0x180, the CSR is accessible for read and write operations at all privilege levels higher than supervisor mode.
+RULE 5: All S-mode instruction fetches implicitly read the satp CSR.
+RULE 6: When mstatus.TVM=1, attempts to read the satp CSR while executing in S-mode shall raise an illegal-instruction exception.
+RULE 7: When mstatus.TVM=1, attempts to write the satp CSR while executing in S-mode shall raise an illegal-instruction exception.
+RULE 8: When mstatus.TVM=0, reads and writes to the satp CSR are permitted in S-mode.
+RULE 9: If S-mode is not supported or if satp.MODE is read-only 0, mstatus.SUM is read-only 0.
+RULE 10: If S-mode is not supported, or if satp.MODE is read-only zero, the implementation may make menvcfg.FIOM read-only zero.
+RULE 11: When menvcfg.PBMTE is set to 1, the Svpbmt extension is available for page tables pointed to by satp.
+RULE 12: When menvcfg.PBMTE is set to 0, the implementation behaves as though Svpbmt were not implemented for page tables pointed to by satp.
+RULE 13: When the effective privilege mode is S-mode or U-mode, the satp CSR is considered active.
+RULE 14: Executions of the address-translation algorithm may only begin using a given value of satp when satp is active.
+RULE 15: If SXLEN=32 and software writes zero to bits 30-0 of satp, the MODE is set to Bare.
+RULE 16: If SXLEN=64 and software writes zero to bits 59-0 of satp, the MODE is set to Bare.
+RULE 17: When satp.MODE is Bare, supervisor virtual addresses are equal to supervisor physical addresses.
+RULE 18: When satp.MODE is Bare, there is no additional memory protection beyond the physical memory protection scheme.
+RULE 19: If satp is written with a value where satp.MODE is Bare but the remaining fields (bits 30-0 for SXLEN=32 or bits 59-0 for SXLEN=64) are nonzero, the effect on the value of the remaining fields and on address translation and protection behavior is unspecified.
+RULE 20: If satp is written with an unsupported MODE, the entire write has no effect and no fields in satp are modified.
+RULE 21: The implemented ASID bits (ASIDLEN) are determined by writing one to every bit position in the ASID field and reading back the value in satp to see which bit positions hold a one.
+RULE 22: If ASIDLEN > 0, the bits satp.ASID[ASIDLEN-1:0] are writable.
+RULE 23: When SXLEN=32 and satp.MODE is Sv32, supervisor virtual addresses are translated into supervisor physical addresses via a two-level page table.
+RULE 24: When SXLEN=64 and satp.MODE is Sv39, supervisor virtual addresses are translated into supervisor physical addresses via a three-level page table.
+RULE 25: When SXLEN=64 and satp.MODE is Sv48, supervisor virtual addresses are translated into supervisor physical addresses via a four-level page table.
+RULE 26: When SXLEN=64 and satp.MODE is Sv57, supervisor virtual addresses are translated into supervisor physical addresses via a five-level page table.
+RULE 27: During the address-translation process, the root page table base address is determined by satp.PPN multiplied by PAGESIZE.
+RULE 28: Implementations must only perform implicit reads of the translation data structures pointed to by the current contents of the satp register or a subsequent valid translation data structure entry.
+RULE 29: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately without the need to execute an SFENCE.VMA instruction.
+RULE 30: Changes to satp.ASID take effect immediately without the need to execute an SFENCE.VMA instruction.
+RULE 31: If satp.MODE is read-only zero, the implementation may make senvcfg.FIOM read-only zero.
+RULE 32: If satp.MODE is read-only zero, attempts to execute an SFENCE.VMA instruction might raise an illegal-instruction exception.
+RULE 33: When V=1 and hstatus.VTVM=1, an attempt to access CSR satp raises a virtual-instruction exception.
+RULE 34: When V=1, instructions that normally read or modify satp actually access vsatp instead.
+RULE 35: When the effective privilege mode is not U or hstatus.HU is not 0, vsatp is considered active for the purposes of the address-translation algorithm.
+RULE 36: When vsatp is active and the effective privilege mode is neither VS nor VU, VS-stage page-table entries' A bits must not be set as a result of speculative execution.
+RULE 37: When V=0, a write to vsatp with an unsupported MODE value is either ignored or the fields of vsatp are treated as WARL.
+RULE 38: When V=1, a write to satp with an unsupported MODE value is ignored and no write to vsatp is effected.
+RULE 39: When V=0, vsatp does not directly affect the behavior of the machine, unless a virtual-machine load/store (HLV, HLVX, or HSV) instruction is used or the mstatus.MPRV feature is used to execute a load or store as though V=1.
+RULE 40: Whenever the current virtualization mode V is 1, the original virtual address is converted in the first stage by VS-level address translation as controlled by the vsatp register into a guest physical address.
+RULE 41: When V=1, if vsatp is zeroed, the VS-stage of two-stage address translation is effectively disabled.
+RULE 42: When V=1, an attempt to access satp in VS-mode while hstatus.VTVM=1 causes a virtual-instruction exception.
+RULE 43: When V=1 and vsatp.MODE is Bare, and the effective privilege mode is less than M, shadow stack instructions raise a store/AMO access-fault exception.

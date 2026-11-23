@@ -1,0 +1,57 @@
+RULE 1: When a hart is executing in privilege mode x, interrupts are globally enabled if mstatus.xIE=1.
+RULE 2: When a hart is executing in privilege mode x, interrupts are globally disabled if mstatus.xIE=0.
+RULE 3: Interrupts for privilege modes w < x are globally disabled when the hart is executing in privilege mode x, regardless of the setting of mstatus.wIE.
+RULE 4: Interrupts for privilege modes y > x are globally enabled when the hart is executing in privilege mode x, regardless of the setting of mstatus.yIE.
+RULE 5: If supervisor mode is not implemented, mstatus.SIE and mstatus.SPIE are read-only 0.
+RULE 6: When a trap is taken from privilege mode y into privilege mode x, mstatus.xPIE is set to the value of mstatus.xIE.
+RULE 7: When a trap is taken from privilege mode y into privilege mode x, mstatus.xIE is set to 0.
+RULE 8: When a trap is taken from privilege mode y into privilege mode x, mstatus.xPP is set to y.
+RULE 9: When an xRET instruction is executed and mstatus.xPP holds value y, mstatus.xIE is set to the value of mstatus.xPIE.
+RULE 10: When an xRET instruction is executed and mstatus.xPP holds value y, the privilege mode is changed to y.
+RULE 11: When an xRET instruction is executed and mstatus.xPP holds value y, mstatus.xPIE is set to 1.
+RULE 12: When an xRET instruction is executed and mstatus.xPP holds value y, mstatus.xPP is set to the least-privileged supported mode (U if U-mode is implemented, else M).
+RULE 13: When an xRET instruction is executed and the new privilege mode y is not M, mstatus.MPRV is set to 0.
+RULE 14: mstatus.xPP fields are WARL fields that can only hold privilege mode x and any implemented privilege mode lower than x.
+RULE 15: If privilege mode x is not implemented, mstatus.xPP is read-only 0.
+RULE 16: When mstatus.MDT is set to 1 by an explicit CSR write, mstatus.MIE is cleared to 0.
+RULE 17: For RV64, when mstatus.MDT is set to 1 by an explicit CSR write, mstatus.MIE is cleared to 0 regardless of the value written to mstatus.MIE by the same write.
+RULE 18: mstatus.MIE can be set to 1 by an explicit CSR write only if mstatus.MDT is 0 or, for RV64, mstatus.MDT is being set to 0 by the same write.
+RULE 19: When a trap is to be taken into M-mode and mstatus.MDT is 0, mstatus.MDT is set to 1.
+RULE 20: When MRET or SRET is executed in M-mode, mstatus.MDT is set to 0.
+RULE 21: When MRET or SRET is executed in M-mode and the new privilege mode is U, VS, or VU, mstatus.SDT is set to 0.
+RULE 22: When MRET or SRET is executed in M-mode and the new privilege mode is VU, vsstatus.SDT is set to 0.
+RULE 23: When MNRET is executed and the new privilege mode is not M, mstatus.MDT is set to 0.
+RULE 24: When MNRET is executed and the new privilege mode is U, VS, or VU, mstatus.SDT is set to 0.
+RULE 25: When MNRET is executed and the new privilege mode is VU, vsstatus.SDT is set to 0.
+RULE 26: When MXLEN=64 and S-mode is not supported, mstatus.SXL is read-only 0.
+RULE 27: When MXLEN=64 and U-mode is not supported, mstatus.UXL is read-only 0.
+RULE 28: If S-mode is implemented, the legal values of mstatus.UXL exclude those that would cause UXLEN to be greater than SXLEN.
+RULE 29: When mstatus.MPRV=0, explicit memory accesses use the translation and protection mechanisms of the current privilege mode.
+RULE 30: When mstatus.MPRV=1, load and store memory addresses are translated and protected as though the current privilege mode were set to mstatus.MPP.
+RULE 31: mstatus.MPRV is read-only 0 if U-mode is not supported.
+RULE 32: When mstatus.MXR=0, only loads from pages marked readable (R=1) succeed.
+RULE 33: When mstatus.MXR=1, loads from pages marked either readable (R=1) or executable (X=1) succeed.
+RULE 34: mstatus.MXR is read-only 0 if S-mode is not supported.
+RULE 35: When mstatus.SUM=0, S-mode memory accesses to pages accessible by U-mode (U=1) fault.
+RULE 36: When mstatus.SUM=1, S-mode memory accesses to pages accessible by U-mode (U=1) are permitted.
+RULE 37: mstatus.SUM is read-only 0 if S-mode is not supported or if satp.MODE is read-only 0.
+RULE 38: When mstatus.MBE=0, non-instruction-fetch memory accesses from M-mode (with mstatus.MPRV=0) are little-endian.
+RULE 39: When mstatus.MBE=1, non-instruction-fetch memory accesses from M-mode (with mstatus.MPRV=0) are big-endian.
+RULE 40: If S-mode is not supported, mstatus.SBE is read-only 0.
+RULE 41: When mstatus.SBE=0, explicit load and store memory accesses from S-mode are little-endian.
+RULE 42: When mstatus.SBE=1, explicit load and store memory accesses from S-mode are big-endian.
+RULE 43: If U-mode is not supported, mstatus.UBE is read-only 0.
+RULE 44: When mstatus.UBE=0, explicit load and store memory accesses from U-mode are little-endian.
+RULE 45: When mstatus.UBE=1, explicit load and store memory accesses from U-mode are big-endian.
+RULE 46: When mstatus.TVM=1, attempts to read or write the satp CSR or execute SFENCE.VMA or SINVAL.VMA in S-mode raise an illegal-instruction exception.
+RULE 47: When mstatus.TVM=0, attempts to read or write the satp CSR or execute SFENCE.VMA or SINVAL.VMA in S-mode are permitted.
+RULE 48: mstatus.TVM is read-only 0 when S-mode is not supported.
+RULE 49: When mstatus.TW=1 and WFI is executed in any less-privileged mode and does not complete within a bounded time limit, WFI causes an illegal-instruction exception.
+RULE 50: mstatus.TW is read-only 0 when there are no modes less privileged than M.
+RULE 51: When mstatus.TSR=1, attempts to execute SRET in S-mode raise an illegal-instruction exception.
+RULE 52: When mstatus.TSR=0, attempts to execute SRET in S-mode are permitted.
+RULE 53: mstatus.TSR is read-only 0 when S-mode is not supported.
+RULE 54: When mstatus.FS=0 (Off), any instruction attempting to read or write floating-point state causes an illegal-instruction exception.
+RULE 55: When mstatus.VS=0 (Off), any instruction attempting to read or write vector state causes an illegal-instruction exception.
+RULE 56: When mstatus.FS, mstatus.VS, and mstatus.XS are all read-only 0, mstatus.SD is always 0.
+RULE 57: mstatus.SD is set to 1 when either mstatus.FS, mstatus.VS, or mstatus.XS encode a Dirty state (0b11).

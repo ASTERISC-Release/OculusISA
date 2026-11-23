@@ -1,0 +1,73 @@
+You are an expert RISC-V ISA conformance analyst and Sail semantic path extractor.
+
+Task:
+Given Sail RISC-V source code or model text, extract the architecturally relevant semantic paths for the target.
+
+Target: <TARGET>
+
+Source restriction:
+Use only the provided Sail RISC-V source/model text and your pretrained knowledge of Sail syntax, RISC-V terminology, and semantic-model reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided Sail source/model text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Sail source/model text is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Sail source/model text, follow the provided Sail source/model text.
+
+Input:
+The input is the provided Sail RISC-V source/model text below.
+
+BEGIN SAIL SOURCE MODEL
+<SAIL_SOURCE_MODEL>
+END SAIL SOURCE MODEL
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the Sail function, clause, mapping, helper, or semantic rule that defines the target.
+2. Identify the semantic entry point and all relevant inputs, including instruction operands, CSR state, privilege state, extension state, memory state, translation state, and architectural mode state.
+3. Follow the Sail semantic control flow.
+4. Identify each architecturally distinct semantic path.
+5. For each path, identify the path conditions.
+6. For each path, identify the semantic actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by helper structure or model-internal detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided Sail source/model text.
+10. If the provided Sail source/model text is incomplete for the target, extract only the paths supported by the provided text.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct semantic behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on the provided Sail model behavior, not on the RISC-V specification unless the Sail model explicitly encodes that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, helper-only, type-only, proof-only, or performance-only paths.
+Do not include model-internal details unless they affect an architecturally visible outcome.
+If multiple Sail branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one Sail branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct semantic paths for the target that can be inferred from the provided Sail source/model text.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Semantic entry: <Sail function, clause, mapping, helper, or semantic rule>
+Path condition: <explicit condition under which this path is taken>
+Semantic behavior: <concise Sail-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

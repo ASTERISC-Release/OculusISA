@@ -1,0 +1,221 @@
+# Test Case Rule: RULE 1: The scounteren register has a privilege of SRW.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, 0x106
+# Result: mcause = 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 2: When the CY, TM, IR, or HPM n bit in the scounteren register is clear, attempts to read the cycle, time, instret, or hpmcountern register while executing in U-mode will cause an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 2
+
+# Test Case Rule: RULE 3: When one of the CY, TM, IR, or HPM n bits in the scounteren register is set, access to the corresponding register is permitted.
+##### ASSEMBLY #####
+li a0, 0x1
+csrs 0x106, a0
+call machine_to_user
+# Result: mcause = 0
+
+# Test Case Rule: RULE 4: U-mode may only access a counter if the corresponding bits in scounteren and mcounteren are both set.
+##### ASSEMBLY #####
+li a0, 0x1
+li a1, 0x1
+csrs 0x106, a0
+csrs 0x107, a1
+call machine_to_user
+# Result: mcause = 0
+
+# Test Case Rule: RULE 5: In VU-mode, a counter is not readable unless the applicable bits are set in both hcounteren and scounteren.
+##### ASSEMBLY #####
+li a0, 0x1
+li a1, 0x1
+csrs 0x106, a0
+csrs 0x107, a1
+call machine_to_virtual
+# Result: mcause = 2
+
+# Test Case Rule: RULE 6: When V=1, a virtual-instruction exception (code 22) is normally raised instead of an illegal-instruction exception if the attempted instruction is HS-qualified, which means it would be valid to execute in HS-mode assuming fields TSR and TVM of CSR mstatus are both zero, but is prevented from executing when V=1 either due to insufficient privilege or because the instruction is expressly disabled by a supervisor CSR such as scounteren.
+##### ASSEMBLY #####
+li a0, 0x1
+csrs 0x106, a0
+call machine_to_virtual
+# Result: mcause = 22
+
+# Test Case Rule: RULE 7: In M-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x106; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x106
+# Result: mcause = 0
+
+# Test Case Rule: RULE 8: In S-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x106; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, 0x106
+# Result: mcause = 0
+
+# Test Case Rule: RULE 9: In U-mode, accessing scounteren register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x106; # Result: mcause = 0x2].
+##### ASSEMBLY #####
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 2
+
+# Test Case Rule: RULE 10: In M-mode, setting scounteren.HPM18 (bit 18) should be reflected on the readback (# Result: a2 = 0x40000) [# Extension Must Be Active: NONE; li a0, 0x40000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40000].
+##### ASSEMBLY #####
+li a0, 0x40000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 40000
+
+# Test Case Rule: RULE 11: In M-mode, setting scounteren.HPM17 (bit 17) should be reflected on the readback (# Result: a2 = 0x20000) [# Extension Must Be Active: NONE; li a0, 0x20000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20000].
+##### ASSEMBLY #####
+li a0, 0x20000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 20000
+
+# Test Case Rule: RULE 12: In M-mode, setting scounteren.HPM16 (bit 16) should be reflected on the readback (# Result: a2 = 0x1000) [# Extension Must Be Active: NONE; li a0, 0x1000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1000].
+##### ASSEMBLY #####
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 1000
+
+# Test Case Rule: RULE 13: In M-mode, setting scounteren.HPM15 (bit 15) should be reflected on the readback (# Result: a2 = 0x8000) [# Extension Must Be Active: NONE; li a0, 0x8000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8000].
+##### ASSEMBLY #####
+li a0, 0x8000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 8000
+
+# Test Case Rule: RULE 14: In M-mode, setting scounteren.HPM14 (bit 14) should be reflected on the readback (# Result: a2 = 0x4000) [# Extension Must Be Active: NONE; li a0, 0x4000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4000].
+##### ASSEMBLY #####
+li a0, 0x4000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 4000
+
+# Test Case Rule: RULE 15: In M-mode, setting scounteren.HPM13 (bit 13) should be reflected on the readback (# Result: a2 = 0x2000) [# Extension Must Be Active: NONE; li a0, 0x2000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2000].
+##### ASSEMBLY #####
+li a0, 0x2000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 2000
+
+# Test Case Rule: RULE 16: In M-mode, setting scounteren.HPM12 (bit 12) should be reflected on the readback (# Result: a2 = 0x1000) [# Extension Must Be Active: NONE; li a0, 0x1000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1000].
+##### ASSEMBLY #####
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 1000
+
+# Test Case Rule: RULE 17: In M-mode, setting scounteren.HPM11 (bit 11) should be reflected on the readback (# Result: a2 = 0x800) [# Extension Must Be Active: NONE; li a0, 0x800; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x800].
+##### ASSEMBLY #####
+li a0, 0x800
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 800
+
+# Test Case Rule: RULE 18: In M-mode, setting scounteren.HPM10 (bit 10) should be reflected on the readback (# Result: a2 = 0x400) [# Extension Must Be Active: NONE; li a0, 0x400; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x400].
+##### ASSEMBLY #####
+li a0, 0x400
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 400
+
+# Test Case Rule: RULE 19: In M-mode, setting scounteren.HPM9 (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x200].
+##### ASSEMBLY #####
+li a0, 0x200
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 200
+
+# Test Case Rule: RULE 20: In M-mode, setting scounteren.HPM8 (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x100].
+##### ASSEMBLY #####
+li a0, 0x100
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 100
+
+# Test Case Rule: RULE 21: In M-mode, setting scounteren.HPM7 (bit 7) should be reflected on the readback (# Result: a2 = 0x80)
+##### ASSEMBLY #####
+li a0, 0x80
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 80
+
+# Test Case Rule: RULE 22: In M-mode, setting scounteren.HPM6 (bit 6) should be reflected on the readback (# Result: a2 = 0x40)
+##### ASSEMBLY #####
+li a0, 0x40
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 40
+
+# Test Case Rule: RULE 23: In M-mode, setting scounteren.HPM5 (bit 5) should be reflected on the readback (# Result: a2 = 0x20)
+##### ASSEMBLY #####
+li a0, 0x20
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 20
+
+# Test Case Rule: RULE 24: In M-mode, setting scounteren.HPM4 (bit 4) should be reflected on the readback (# Result: a2 = 0x10)
+##### ASSEMBLY #####
+li a0, 0x10
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 10
+
+# Test Case Rule: RULE 25: In M-mode, setting scounteren.HPM3 (bit 3) should be reflected on the readback (# Result: a2 = 0x8)
+##### ASSEMBLY #####
+li a0, 0x8
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 8
+
+# Test Case Rule: RULE 26: In M-mode, setting scounteren.IR (bit 2) should be reflected on the readback (# Result: a2 = 0x4)
+##### ASSEMBLY #####
+li a0, 0x4
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 4
+
+# Test Case Rule: RULE 27: In M-mode, setting scounteren.TM (bit 1) should be reflected on the readback (# Result: a2 = 0x2)
+##### ASSEMBLY #####
+li a0, 0x2
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 2
+
+# Test Case Rule: RULE 28: In M-mode, setting scounteren.CY (bit 0) should be reflected on the readback (# Result: a2 = 0x1)
+##### ASSEMBLY #####
+li a0, 0x1
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 1
+
+# Test Case Rule: RULE 29: In M-mode, writing -1 to the scounteren register must not set it to -1 or 0xffffffff (scounteren != -1 & scounteren != 0xffffffff).
+##### ASSEMBLY #####
+li a0, 0xffffffffffffffff
+csrs 0x106, a0
+csrr a1, 0x106
+ne a2, a1, 0xffffffffffffffff
+# Result: a2 != 0xffffffffffffffff

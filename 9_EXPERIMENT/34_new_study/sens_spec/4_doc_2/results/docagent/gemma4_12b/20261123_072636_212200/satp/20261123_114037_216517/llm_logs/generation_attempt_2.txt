@@ -1,0 +1,63 @@
+Based on the provided text, here are the answers to your questions:
+
+### 1. What is the difference between `mstatus` and `sstatus`?
+*   **Structure:** `mstatus` is the machine-level status register, while `sstatus` is the supervisor-level version. In a straightforward implementation, reading or writing any field in `sstatus` is equivalent to reading or writing the homonymous field in `mstatus`.
+*   **Privilege Context:** `sstatus` tracks the processor's operating state specifically for supervisor mode. It includes fields like `SPP` (Previous Privilege), `SIE` (Interrupt Enable), and `SPIE` (Previous Interrupt Enable) relative to the supervisor level.
+*   **Specific Fields:** `sstatus` contains fields like `MXR` (Make eXecutable Readable), `SUM` (permit Supervisor User Memory access), `UBE` (Endianness), and `SDT` (S-mode-disable-trap).
+*   **Virtualization:** In systems with the hypervisor extension, `vsstatus` is a replica of `sstatus` used when the virtualization mode $V=1$.
+
+### 2. What are the three types of memory access?
+According to Section 3.6, the three types of memory access are:
+1.  **Read**
+2.  **Write**
+3.  **Execute**
+
+### 3. What are the three types of physical memory attributes (PMAs)?
+Section 3.6 describes the following types of physical memory attributes:
+1.  **Supported Access Type:** Specifies supported access widths (8-bit to multi-word burst) and whether misaligned accesses are supported.
+2.  **Atomicity:** Describes which atomic instructions (LR/SC and AMOs) are supported in the region.
+3.  **Reservability:** Indicates combinations of reservability and eventuality properties for LR/SC operations.
+
+### 4. What are the four types of memory-ordering attributes?
+Section 3.6.5 describes four types of memory-ordering attributes for memory regions:
+1.  **Main Memory:** Coherent main memory regions always have either the **RVWMO** or **RVTSO** memory model.
+2.  **Incoherent Main Memory:** Have an implementation-defined memory model.
+3.  **Relaxed I/O Ordering:** Generally observed by other harts in a manner similar to the ordering of accesses to an RVWMO memory region.
+4.  **Strong Ordering:** Generally observed by other harts and bus mastering devices in program order. (Can be local or global depending on the channel).
+
+### 5. What are the five types of memory-coherence attributes?
+Section 3.6.6 describes five types of memory-coherence attributes:
+1.  **Hardware-Incoherent:** Used for regions that do not have a cache-coherence scheme.
+2.  **Hardware Cache-Coherent:** Managed by a hardware cache-coherence controller.
+3.  **Read-Only (Coherent):** Naturally coherent as they are not written to.
+4.  **Privately Cached:** Accessible by a single agent without requiring a coherence scheme.
+5.  **Software-Coherent:** Coherence is implemented entirely in software (discouraged due to complexity).
+
+### 6. What are the two types of memory-idempotency attributes?
+Section 3.6.7 defines two types of memory-idempotency attributes:
+1.  **Idempotent:** Reads and writes to the region do not have side effects. Main memory regions are assumed to be idempotent.
+2.  **Non-Idempotent:** There is potentially a side effect on any read or write access.
+
+### 7. What are the two types of physical memory protection (PMP) methods?
+Section 3.7 describes two methods for protecting memory:
+1.  **PMP (Physical Memory Protection):** Provides per-hart machine-mode control registers to specify read, write, and execute privileges for each physical memory region.
+2.  **Paging (Page-Based Virtual Memory):** Uses page tables to map virtual addresses to physical addresses, where each page table entry (PTE) can specify permissions (R, W, X).
+
+### 8. What are the four types of address-matching modes in PMP?
+Table 23 in Section 3.7.1.1 lists the four modes:
+1.  **OFF:** Null region (disabled).
+2.  **TOR (Top of Range):** The preceding PMP address register forms the bottom of the range.
+3.  **NA4 (Naturally Aligned Four-Byte Region):** A naturally aligned four-byte region.
+4.  **NAPOT (Naturally Aligned Power-of-Two Region):** A naturally aligned power-of-two region, $\ge 8$ bytes.
+
+### 9. What are the two types of privilege-mode transitions for traps?
+Section 3.1.6.2 and Table 31 describe two types of transitions:
+1.  **Traps:** A transition from a higher or equal privilege mode to a lower privilege mode (or a trap to a higher privilege mode).
+2.  **Trap Returns:** A transition from a lower privilege mode back to a higher privilege mode.
+
+### 10. What are the four types of memory-management fence instructions?
+Section 12.2.1 and 22.3.2 describe the following fence instructions:
+1.  **SFENCE.VMA:** Orders stores to memory-management data structures and invalidates entries in the address-translation cache.
+2.  **HFENCE.VVMA:** A hypervisor-level fence that orders stores and invalidates entries in the VS-stage address-translation cache.
+3.  **HFENCE.GVMA:** A hypervisor-level fence that orders stores and invalidates entries in the G-stage address-translation cache.
+4.  **FENCE:** (General purpose) orders memory accesses, which can include the `aq` and `rl` bits for atomic instructions.

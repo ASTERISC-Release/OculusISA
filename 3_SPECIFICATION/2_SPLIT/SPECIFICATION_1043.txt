@@ -1,0 +1,38 @@
+## 3.6. Halt Groups, Resume Groups, and External Triggers
+
+An optional feature allows a debugger to place harts into two kinds of groups: halt groups and resume groups. It is also possible to add external triggers to a halt and resume groups. At any given time, each hart and each trigger is a member of exactly one halt group and exactly one resume group.
+
+In both halt and resume groups, group 0 is special. Harts in group 0 halt/resume as if groups aren't implemented at all.
+
+When any hart in a halt group halts:
+
+1. That hart halts normally, with cause reflecting the original cause of the halt.
+2. All the other harts in the halt group that are running will quickly halt. cause for those harts should be set to 6, but may be set to 3. Other harts in the halt group that are halted but have started the process of resuming must also quickly become halted, even if they do resume briefly.
+3. Any external triggers in that group are notified.
+
+Adding a hart to a halt group does not automatically halt that hart, even if other harts in the group are already halted.
+
+When an external trigger that's a member of the halt group fires:
+
+1. All the harts in the halt group that are running will quickly halt. cause for those harts should be set to 6, but may be set to 3. Other harts in the halt group that are halted but have started the process of resuming must also quickly become halted, even if they do resume briefly.
+
+When any hart in a resume group resumes:
+
+1. All  the  other  harts  in  that  group  that  are  halted  will  quickly  resume  as  soon  as  any  currently executing abstract commands have completed. Each hart in the group sets its resume ack bit as soon as it has resumed. Harts that are in the process of halting should complete that process and stay halted.
+2. Any external triggers in that group are notified.
+
+Adding a hart to a resume group does not automatically resume that hart, even if other harts in the group are currently running.
+
+When an external trigger that's a member of the resume group fires:
+
+1. All the harts in that group that are halted will quickly resume as soon as any currently executing abstract commands have completed. Each hart in the group sets its resume ack bit as soon as it has resumed. Harts that are in the process of halting should complete that process and stay halted.
+
+External triggers are abstract concepts that can signal the DM and/or receive signals from the DM. This  configuration  is  done  through  dmcs2,  where  external  triggers  are  referred  to  by  a  number. Commonly, external triggers are capable of sending a signal from the hardware platform into the DM, as  well  as  receiving  a  signal  from  the  DM  to  take  their  own  action  on.  It  is  also  allowable  for  an external trigger to be input-only or output-only. By convention external triggers 0-7 are bidirectional, triggers 8-11 are input-only, and triggers 12-15 are output-only but this is not required.
+
+<image>
+
+External triggers could be used to implement near simultaneous halting/resuming of all cores in a hardware platform, when not all cores are RISC-V cores.
+
+When the DM is reset, all harts must be placed in the lowest-numbered halt and resume groups that they can be in. (This will usually be group 0.)
+
+Some designs may choose to hardcode hart groups to a group other than group 0, meaning it is never possible to halt or resume just a single hart. This is explicitly allowed. In that case it must be possible to discover the groups by using dmcs2 even if it's not possible to change the configuration.

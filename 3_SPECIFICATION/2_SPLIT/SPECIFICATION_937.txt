@@ -1,0 +1,53 @@
+## 2.1. Machine-level CSRs
+
+Table 3 lists both the CSRs added for machine level and existing machine-level CSRs whose size is changed by the Advanced Interrupt Architecture. Existing CSRs mie , mip , and mideleg are widened to 64 bits to support a total of 64 interrupt causes.
+
+For RV32, the high-half CSRs listed in the table allow access to the upper 32 bits of registers mideleg , mie , mvien , mvip ,  and mip .  The  Advanced Interrupt Architecture requires that these high-half CSRs exist for RV32, but the bits they access may all be merely read-only zeros.
+
+CSRs miselect and mireg provide a window for accessing multiple registers beyond the CSRs in Table 3. The value of miselect determines which register is currently accessible through alias CSR mireg . miselect is  a WARL register,  and  it  must  support  a  minimum  range  of  values  depending  on  the implemented features. When an IMSIC is not implemented, miselect must be able to hold at least any 6-bit value in the range 0 to 0 x3F . When an IMSIC is implemented, miselect must be able to hold any 8-bit value in the range 0 to 0 xFF . The Advanced Interrupt Architecture makes use of these subranges of values for miselect :
+
+0x30-0x3F major interrupt priorities
+
+0x70-0xFF external interrupts (only with an IMSIC)
+
+Table 3. Machine-level CSRs added or widened by the Advanced Interrupt Architecture.
+
+| Number                                                | Privilege                                             | Width                                                 | Name                                                  | Description                                                                                               |
+|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| Machine-Level Window to Indirectly Accessed Registers | Machine-Level Window to Indirectly Accessed Registers | Machine-Level Window to Indirectly Accessed Registers | Machine-Level Window to Indirectly Accessed Registers | Machine-Level Window to Indirectly Accessed Registers                                                     |
+| 0x350 0x351                                           | MRW MRW                                               | XLEN XLEN                                             | miselect mireg                                        | Machine indirect register select Machine indirect register alias                                          |
+| Machine-Level Interrupts                              | Machine-Level Interrupts                              | Machine-Level Interrupts                              | Machine-Level Interrupts                              | Machine-Level Interrupts                                                                                  |
+| 0x304 0x344                                           | MRW MRW                                               | 64 64                                                 | mie mip mtopei                                        | Machine interrupt-enable bits Machine interrupt-pending bits Machine top external interrupt (only with an |
+| 0x35C                                                 | MRW                                                   | MXLEN                                                 |                                                       | IMSIC)                                                                                                    |
+| 0xFB0                                                 | MRO                                                   | MXLEN                                                 | mtopi                                                 | Machine top interrupt                                                                                     |
+| Delegated and Virtual Interrupts for Supervisor Level | Delegated and Virtual Interrupts for Supervisor Level | Delegated and Virtual Interrupts for Supervisor Level | Delegated and Virtual Interrupts for Supervisor Level | Delegated and Virtual Interrupts for Supervisor Level                                                     |
+| 0x303                                                 | MRW                                                   | 64                                                    | mideleg                                               | Machine interrupt delegation Machine virtual interrupt                                                    |
+| 0x308                                                 | MRW                                                   | 64                                                    | mvien                                                 | enables                                                                                                   |
+| 0x309                                                 | MRW                                                   | 64                                                    | mvip                                                  | Machine virtual interrupt-pending bits                                                                    |
+| Machine-Level High-Half CSRs (RV32 only)              | Machine-Level High-Half CSRs (RV32 only)              | Machine-Level High-Half CSRs (RV32 only)              | Machine-Level High-Half CSRs (RV32 only)              | Machine-Level High-Half CSRs (RV32 only)                                                                  |
+
+| Number   | Privilege   |   Width | Name     | Description                                 |
+|----------|-------------|---------|----------|---------------------------------------------|
+| 0x313    | MRW         |      32 | midelegh | Upper 32 bits of mideleg (only with S-mode) |
+| 0x314    | MRW         |      32 | mieh     | Upper 32 bits of mie                        |
+| 0x318    | MRW         |      32 | mvienh   | Upper 32 bits of mvien (only with S-mode)   |
+| 0x319    | MRW         |      32 | mviph    | Upper 32 bits of mvip (only with S-mode)    |
+| 0x354    | MRW         |      32 | miph     | Upper 32 bits of mip                        |
+
+Values of miselect with the most-significant bit set (bit XLEN - 1 = 1 ) are designated for custom use, presumably for accessing custom registers through mireg . If XLEN changes, the most-significant bit of miselect moves  to  the  new  position,  retaining  its  value  from  before.  An  implementation  is  not required to support any custom values for miselect .
+
+Other miselect values are reserved for other RISC-V extensions.
+
+<image>
+
+RISC-V  extension  Smcsrind  generalizes  the  mechanism  of  indirect  register  access provided by miselect and mireg .
+
+Normally,  the  range  for  external  interrupts,  0x70-0xFF,  is  populated  only  when  an  IMSIC  is implemented;  else,  attempts  to  access mireg when miselect is  in  this  range  cause  an  illegal instruction exception. The contents of the external-interrupts region are documented in Chapter 3 on the IMSIC.
+
+CSR mtopei also exists only when an IMSIC is implemented, so is documented in Chapter 3 along with the indirectly accessed IMSIC registers.
+
+CSR mtopi reports  the  highest-priority  interrupt  that  is  pending  and  enabled  for  machine  level,  as specified in Section 5.2.2.
+
+When S-mode is implemented, CSRs mvien and mvip support interrupt filtering and virtual interrupts for supervisor level. These facilities are explained in Section 5.3.
+
+If extension Smcsrind is also implemented, then when miselect has a value in the range 0x30-0x3F or  0x70-0xFF,  attempts  to  access  alias  CSRs mireg2 through mireg6 raise  an  illegal  instruction exception.

@@ -1,0 +1,283 @@
+# Test Case Rule: RULE 121: In harts without additional user extensions requiring new state, the XS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+li t, 0x18000
+csrs mstatus, t
+csrr t1, mstatus
+srli a0, t1, 15
+li t, 3
+and a0, a0, t
+# Result: a0 = 0
+
+# Test Case Rule: RULE 122: Changing the setting of the FS field in mstatus has no effect on the contents of the floating-point register state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x3ff00000
+fmv.w.x f0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.x.w a0, f0
+li t1, 0x3ff00000
+sub a0, a0, t1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 123: Setting the FS field in mstatus to Off does not destroy the floating-point state, and setting the FS field to Initial does not clear the floating-point contents.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x40400000
+fmv.w.x f0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.x.w a0, f0
+li t1, 0x40400000
+sub a0, a0, t1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 124: Changing the setting of the VS field in mstatus has no effect on the contents of the vector register state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+li t1, 7
+vmv.v.i v0, 7
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+vmv.x.s a0, v0
+li t1, 7
+sub a0, a0, t1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 125: The FS field in mstatus is set directly by privileged code when resuming a user context, while the XS field in mstatus is set indirectly by writing to the status register of the individual extensions.
+##### ASSEMBLY #####
+nop # Skipped because no concrete extension status register is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 126: Machine mode and Supervisor mode share a single copy of the FS, VS, and XS bits in mstatus.
+##### ASSEMBLY #####
+li t0, 0x6600
+csrs mstatus, t0
+csrr t1, sstatus
+srli a1, t1, 13
+li t2, 3
+and a1, a1, t2
+srli a2, t1, 9
+and a2, a2, t2
+slli a2, a2, 2
+or a0, a1, a2
+# Result: a0 = 15
+
+# Test Case Rule: RULE 127: The SD bit in mstatus is read-only and is set when either the FS, VS, or XS bits in mstatus encode a Dirty state (i.e., SD = (FS==0b11 OR VS==0b11 OR XS==0b11)).
+##### ASSEMBLY #####
+li t0, 0x8000000000000000
+csrs mstatus, t0
+li t0, 0x6000
+csrs mstatus, t0
+li t0, 0x8000000000000000
+csrc mstatus, t0
+csrr t1, mstatus
+srli a0, t1, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 128: In mstatus, the encoding 0 for FS and VS means Off, 1 means Initial, 2 means Clean, and 3 means Dirty.
+##### ASSEMBLY #####
+li a0, 0
+li t2, 3
+li t0, 0x6000
+csrc mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 13
+and t1, t1, t2
+or a0, a0, t1
+li t0, 0x2000
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 13
+and t1, t1, t2
+addi t1, t1, -1
+or a0, a0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 13
+and t1, t1, t2
+addi t1, t1, -2
+or a0, a0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x6000
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 13
+and t1, t1, t2
+addi t1, t1, -3
+or a0, a0, t1
+li t0, 0x600
+csrc mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 9
+and t1, t1, t2
+or a0, a0, t1
+li t0, 0x200
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 9
+and t1, t1, t2
+addi t1, t1, -1
+or a0, a0, t1
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x400
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 9
+and t1, t1, t2
+addi t1, t1, -2
+or a0, a0, t1
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x600
+csrs mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 9
+and t1, t1, t2
+addi t1, t1, -3
+or a0, a0, t1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 129: In mstatus, the encoding 0 for XS means All off, 1 means None dirty or clean with some on, 2 means None dirty with some clean, and 3 means Some dirty.
+##### ASSEMBLY #####
+nop # Skipped because XS is read-only zero in this configuration
+# Result: x0 = 0
+
+# Test Case Rule: RULE 130: When an extension's status field in mstatus is set to Off, any instruction that attempts to read or write the corresponding state causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.w.x f0, t0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 131: If the FS, VS, or XS field in mstatus is Off, executing an instruction that reads the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.x.w a0, f0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 132: If the FS, VS, or XS field in mstatus is Off, executing an instruction that may modify the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+# Result: mcause = 2
+
+# Test Case Rule: RULE 133: If the FS, VS, or XS field in mstatus is Initial, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+li t1, 0x3f800000
+fmv.w.x f0, t1
+csrr t2, mstatus
+srli a0, t2, 13
+li t2, 3
+and a0, a0, t2
+# Result: a0 = 3
+
+# Test Case Rule: RULE 134: If the FS, VS, or XS field in mstatus is Clean, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+li t1, 0x3f800000
+fmv.w.x f0, t1
+csrr t2, mstatus
+srli a0, t2, 13
+li t2, 3
+and a0, a0, t2
+# Result: a0 = 3
+
+# Test Case Rule: RULE 135: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction that may modify the corresponding state leaves the field in the Dirty state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x3f800000
+fmv.w.x f0, t1
+csrr t2, mstatus
+srli a0, t2, 13
+li t2, 3
+and a0, a0, t2
+# Result: a0 = 3
+
+# Test Case Rule: RULE 136: If the FS, VS, or XS field in mstatus is Off, executing an instruction to unconfigure the unit causes an exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t1, 1
+li t2, -1
+vsetvl x0, t1, t2
+# Result: mcause = 2
+
+# Test Case Rule: RULE 137: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to unconfigure the unit leaves the field in the Initial state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+li t1, 1
+li t2, -1
+vsetvl x0, t1, t2
+csrr t3, mstatus
+srli a0, t3, 9
+li t3, 3
+and a0, a0, t3
+# Result: a0 = 1
+
+# Test Case Rule: RULE 138: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x400
+csrs mstatus, t0
+li t1, 1
+li t2, -1
+vsetvl x0, t1, t2
+csrr t3, mstatus
+srli a0, t3, 9
+li t3, 3
+and a0, a0, t3
+# Result: a0 = 1
+
+# Test Case Rule: RULE 139: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+li t2, -1
+vsetvl x0, t1, t2
+csrr t3, mstatus
+srli a0, t3, 9
+li t3, 3
+and a0, a0, t3
+# Result: a0 = 1
+
+# Test Case Rule: RULE 140: If the FS, VS, or XS field in mstatus is Off, executing an instruction to disable the unit leaves the field in the Off state.
+##### ASSEMBLY #####
+nop # Skipped because the disable instruction is not specified by the rule
+# Result: x0 = 0

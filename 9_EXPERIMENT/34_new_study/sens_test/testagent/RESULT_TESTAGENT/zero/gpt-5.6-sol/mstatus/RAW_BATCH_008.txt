@@ -1,0 +1,172 @@
+# Test Case Rule: RULE 141: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+li t1, 0x2000
+csrrs x0, mstatus, t1
+csrrc x0, mstatus, t0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 142: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+li t1, 0x4000
+csrrs x0, mstatus, t1
+csrrc x0, mstatus, t0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 143: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrs x0, mstatus, t0
+csrrc x0, mstatus, t0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 144: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Off transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+li t1, 0x2000
+csrrs x0, mstatus, t1
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 145: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Initial leaves the field in the Initial state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+li t1, 0x2000
+csrrs x0, mstatus, t1
+csrrs x0, mstatus, t1
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 146: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Clean transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+li t1, 0x4000
+csrrs x0, mstatus, t1
+csrr t2, mstatus
+li t3, 0xffffffffffff9fff
+and t2, t2, t3
+li t4, 0x2000
+or t2, t2, t4
+csrrw x0, mstatus, t2
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 147: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Dirty transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrs x0, mstatus, t0
+csrr t2, mstatus
+li t3, 0xffffffffffff9fff
+and t2, t2, t3
+li t4, 0x2000
+or t2, t2, t4
+csrrw x0, mstatus, t2
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 148: Each xPELP field (SPELP or MPELP) in mstatus encodes the value 0 as NO_LP_EXPECTED, meaning no landing pad instruction is expected, and encodes the value 1 as LP_EXPECTED, meaning a landing pad instruction is expected.
+##### ASSEMBLY #####
+nop # Skipped because the encoding meaning has no independently specified observable effect
+# Result: x0 = 0
+
+# Test Case Rule: RULE 149: When a trap is delegated to S-mode, the SPP field of mstatus is written with the active privilege mode at the time of the trap.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop execution prevents checking SPP after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 150: When a trap is delegated to S-mode, the SPIE field of mstatus is written with the value of the SIE field at the time of the trap.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop execution prevents checking SPIE after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 151: When a trap is delegated to S-mode, the SIE field of mstatus is cleared.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop execution prevents checking SIE after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 152: When a trap is delegated to S-mode, the MPP and MPIE fields of mstatus are not written.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop execution prevents checking unchanged fields after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 153: If the current privilege mode is M and the MIE bit in mstatus is set, an interrupt i will trap to M-mode, causing the privilege mode to change to M-mode.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrc x0, mstatus, t0
+li t1, 0x2
+csrrc x0, mideleg, t1
+csrrc x0, mip, t1
+csrrs x0, mie, t1
+csrrs x0, mip, t1
+csrrs x0, mstatus, t0
+# Result: mcause = 0x8000000000000001
+
+# Test Case Rule: RULE 154: If the current privilege mode has less privilege than M-mode, an interrupt i will trap to M-mode, causing the privilege mode to change to M-mode regardless of the MIE bit in mstatus.
+##### ASSEMBLY #####
+li t0, 0x88
+csrrc x0, mstatus, t0
+li t1, 0x2
+csrrc x0, mideleg, t1
+csrrc x0, mip, t1
+csrrs x0, mie, t1
+csrrs x0, mip, t1
+call machine_to_supervisor
+# Result: mcause = 0x8000000000000001
+
+# Test Case Rule: RULE 155: After an explicit write to any CSR on which the interrupt-trap conditions expressly depend, including mstatus, the interrupt-trap conditions must be evaluated immediately.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrc x0, mstatus, t0
+li t1, 0x2
+csrrc x0, mideleg, t1
+csrrc x0, mip, t1
+csrrs x0, mie, t1
+csrrs x0, mip, t1
+csrrs x0, mstatus, t0
+csrrc x0, mip, t1
+# Result: mcause = 0x8000000000000001
+
+# Test Case Rule: RULE 156: After execution of an xRET instruction, the interrupt-trap conditions, which depend on mstatus, must be evaluated immediately.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrc x0, mstatus, t0
+li t1, 0x1880
+csrrs x0, mstatus, t1
+li t2, 0x2
+csrrc x0, mideleg, t2
+csrrc x0, mip, t2
+csrrs x0, mie, t2
+csrrs x0, mip, t2
+la t3, after_mret
+csrw mepc, t3
+mret
+after_mret:
+csrrc x0, mip, t2
+# Result: mcause = 0x8000000000000001
+
+# Test Case Rule: RULE 157: If the TSR bit in the mstatus register is 1, execution of the SRET instruction should raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x400000
+csrrs x0, mstatus, t0
+li t1, 0x4
+csrrc x0, medeleg, t1
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# Test Case Rule: RULE 158: A hart must resume execution when a locally enabled interrupt becomes pending even if the MIE or SIE bits in mstatus are 0.
+##### ASSEMBLY #####
+nop # Skipped because testing resume requires the prohibited wfi instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 159: Implementations should honor individual interrupt enable bits in mstatus such as MTIE and should avoid resuming the hart if an interrupt is pending but its individual enable bit is not set.
+##### ASSEMBLY #####
+nop # Skipped because the behavior is advisory and testing non-resumption could hang
+# Result: x0 = 0
+
+# Test Case Rule: RULE 160: Upon reset, the mstatus fields MIE and MPRV are reset to 0.
+##### ASSEMBLY #####
+nop # Skipped because reset cannot be initiated or observed directly by this test
+# Result: x0 = 0

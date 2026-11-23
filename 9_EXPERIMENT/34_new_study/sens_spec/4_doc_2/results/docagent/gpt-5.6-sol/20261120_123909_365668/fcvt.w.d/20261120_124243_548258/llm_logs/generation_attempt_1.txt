@@ -1,0 +1,53 @@
+RULE 1: When FCVT.W.D executes under the standard D extension, it interprets the value in floating-point register f[rs1] as a double-precision floating-point operand.
+RULE 2: When FLEN is 64, FCVT.W.D uses all 64 bits of f[rs1] as the double-precision operand.
+RULE 3: When FLEN is greater than 64 and all bits above bit 63 of f[rs1] are 1, FCVT.W.D uses bits 63:0 of f[rs1] as the double-precision operand.
+RULE 4: When FLEN is greater than 64 and any bit above bit 63 of f[rs1] is 0, FCVT.W.D treats the operand as a double-precision canonical NaN.
+RULE 5: When FCVT.W.D executes under Zdinx on RV64, it interprets all 64 bits of x[rs1] as the double-precision operand.
+RULE 6: When FCVT.W.D executes under Zdinx on RV32, it interprets x[rs1] as bits 31:0 and x[rs1+1] as bits 63:32 of the double-precision operand.
+RULE 7: When FCVT.W.D executes under RV32 Zdinx with rs1=x0, the entire double-precision operand is zero and x1 is not read.
+RULE 8: When FCVT.W.D executes under Zdinx, the value of mstatus.FS does not affect whether the instruction traps.
+RULE 9: When FCVT.W.D executes under Zdinx with virtualization active, the value of vsstatus.FS does not affect whether the instruction traps.
+RULE 10: When standard D-extension FCVT.W.D is attempted while mstatus.FS is Off, an illegal-instruction exception is raised.
+RULE 11: When standard D-extension FCVT.W.D is attempted with virtualization active while vsstatus.FS is Off, an illegal-instruction exception is raised.
+RULE 12: When FCVT.W.D executes under Zdinx in a privilege mode less privileged than M-mode while the controlling mstateen0.FCSR bit is 0, an illegal-instruction exception is raised.
+RULE 13: When FCVT.W.D executes under Zdinx in VS-mode or VU-mode while mstateen0.FCSR is 1 and hstateen0.FCSR is 0, a virtual-instruction exception is raised.
+RULE 14: When FCVT.W.D executes under Zdinx in U-mode while the controlling sstateen0.FCSR bit is 0, an illegal-instruction exception is raised.
+RULE 15: When FCVT.W.D executes under Zdinx in VU-mode while mstateen0.FCSR and hstateen0.FCSR are 1 but the controlling sstateen0.FCSR bit is 0, an illegal-instruction exception is raised.
+RULE 16: When the instruction rm field is RNE, FCVT.W.D rounds to the nearest integer, choosing the even integer on a tie.
+RULE 17: When the instruction rm field is RTZ, FCVT.W.D rounds toward zero.
+RULE 18: When the instruction rm field is RDN, FCVT.W.D rounds toward negative infinity.
+RULE 19: When the instruction rm field is RUP, FCVT.W.D rounds toward positive infinity.
+RULE 20: When the instruction rm field is RMM, FCVT.W.D rounds to the nearest integer, choosing the integer with greater magnitude on a tie.
+RULE 21: When the instruction rm field is DYN and frm contains RNE, RTZ, RDN, RUP, or RMM, FCVT.W.D uses the rounding mode selected by frm.
+RULE 22: For a finite operand, FCVT.W.D applies the selected rounding mode before testing whether the resulting integer is representable as a signed 32-bit integer.
+RULE 23: If the rounded finite result is in the inclusive range −2^31 through 2^31−1, the 32-bit conversion result is that signed integer.
+RULE 24: If the rounded finite result is in the inclusive range −2^31 through 2^31−1, FCVT.W.D does not raise the Invalid Operation exception flag.
+RULE 25: If the rounded finite result is less than −2^31, the 32-bit conversion result is −2^31.
+RULE 26: If the rounded finite result is less than −2^31, FCVT.W.D raises the Invalid Operation exception flag.
+RULE 27: If the rounded finite result is greater than 2^31−1, the 32-bit conversion result is 2^31−1.
+RULE 28: If the rounded finite result is greater than 2^31−1, FCVT.W.D raises the Invalid Operation exception flag.
+RULE 29: If the operand is negative infinity, the 32-bit conversion result is −2^31.
+RULE 30: If the operand is negative infinity, FCVT.W.D raises the Invalid Operation exception flag.
+RULE 31: If the operand is positive infinity, the 32-bit conversion result is 2^31−1.
+RULE 32: If the operand is positive infinity, FCVT.W.D raises the Invalid Operation exception flag.
+RULE 33: If the operand is any signaling or quiet NaN, the 32-bit conversion result is 2^31−1.
+RULE 34: If the operand is any signaling or quiet NaN, FCVT.W.D raises the Invalid Operation exception flag.
+RULE 35: If a finite conversion does not raise Invalid Operation and the rounded integer differs numerically from the operand, FCVT.W.D raises the Inexact exception flag.
+RULE 36: If a finite conversion does not raise Invalid Operation and the rounded integer equals the operand numerically, FCVT.W.D does not raise the Inexact exception flag.
+RULE 37: If FCVT.W.D raises the Invalid Operation exception flag, it does not also raise the Inexact exception flag for that conversion.
+RULE 38: FCVT.W.D never raises the Divide by Zero exception flag.
+RULE 39: FCVT.W.D never raises the Overflow exception flag.
+RULE 40: FCVT.W.D never raises the Underflow exception flag.
+RULE 41: On RV32, a successfully executing FCVT.W.D with rd≠x0 writes the 32-bit conversion result to x[rd].
+RULE 42: On RV64, a successfully executing FCVT.W.D with rd≠x0 sign-extends the 32-bit conversion result to 64 bits and writes it to x[rd].
+RULE 43: When rd=x0, FCVT.W.D discards the integer result but still accrues any floating-point exception flags generated by the conversion.
+RULE 44: When FCVT.W.D generates NV or NX, the generated flag is ORed into fflags and previously accrued exception flags remain set.
+RULE 45: When FCVT.W.D generates NV or NX, the generated floating-point exception does not by itself cause a trap.
+RULE 46: When standard D-extension FCVT.W.D changes the contents of fflags with virtualization inactive, mstatus.FS becomes Dirty.
+RULE 47: When standard D-extension FCVT.W.D changes the contents of fflags with virtualization active, mstatus.FS becomes Dirty.
+RULE 48: When standard D-extension FCVT.W.D changes the contents of fflags with virtualization active, vsstatus.FS becomes Dirty.
+RULE 49: When FCVT.W.D executes successfully, it does not modify any floating-point data register.
+RULE 50: When FCVT.W.D executes successfully, it performs no explicit memory access.
+RULE 51: If FCVT.W.D raises a synchronous exception, it does not retire and does not increment the instructions-retired counter.
+RULE 52: When rm=DYN, FCVT.W.D uses the frm value produced by any preceding program-ordered instruction that modifies frm.
+RULE 53: When FCVT.W.D updates fflags, a following program-ordered explicit read of fflags observes the updated accrued flags.

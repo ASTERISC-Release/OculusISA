@@ -1,0 +1,45 @@
+## 5.4.2. Supervisor top interrupt CSR ( stopi )
+
+Supervisor-level  CSR stopi is  read-only  with  width  SXLEN.  A  read  of stopi returns  information about the highest-priority pending-and-enabled interrupt for supervisor level, in this format:
+
+```
+bits 27:16 IID bits 7:0 IPRIO
+```
+
+All other bits of stopi are reserved and read as zeros.
+
+The value of stopi is zero unless: (a) there is an interrupt that is both pending in sip and enabled in sie ,  or,  if  the  H  extension  is  implemented,  both  pending  in hip and  enabled  in hie ;  and  (b)  the interrupt is not delegated to a less-privileged level (by hideleg ,  if  the  H  extension is implemented). When  there  is  a  pending-and-enabled  major  interrupt  for  supervisor  level,  field  IID  is  the  major identity number of the highest-priority interrupt, and field IPRIO indicates its priority.
+
+If all bytes of the supervisor-level iprio array are read-only zeros, a simplified implementation of field IPRIO is allowed in which its value is always 1 whenever stopi is not zero.
+
+Otherwise, when stopi is not zero, if the priority number for the reported interrupt is in the range 1 to 255, IPRIO is simply that number. If the interrupt's priority number is zero or greater than 255, IPRIO is set to either 0 or 255 as follows:
+
+- If  the  interrupt's  priority  number  is  greater  than  255,  then  IPRIO  is  255  (lowest  representable priority).
+- If  the interrupt's priority number is zero and interrupt number IID has a default priority higher than a supervisor external interrupt, then IPRIO is 0 (highest priority).
+- If  the  interrupt's  priority  number  is  zero  and  interrupt  number  IID  has  a  default  priority  lower than a supervisor external interrupt, then IPRIO is 255 (lowest representable priority).
+
+<image>
+
+To  ensure  that stopi is  never  zero  when  an  interrupt  is  pending  and  enabled  for supervisor level, if major interrupt 0 can trap to S-mode, it must have a default priority lower than a supervisor external interrupt.
+
+The value of stopi is not affected by the global interrupt enable SIE in CSR sstatus .
+
+The RISC-V Privileged Architecture ensures that, when the value of stopi is not zero, a trap is taken to S-mode  for  the  interrupt  indicated  by  field  IID  if  either  the  current  privilege  mode  is  S  and sstatus .SIE is one, or the current privilege mode has less privilege than S-mode. The trap itself does not cause the value of stopi to change.
+
+The  following  pseudocode  shows  how  a  supervisor-level  trap  handler  might  read stopi to  avoid redundant restoring and saving of processor registers when an interrupt arrives during the handling of another trap (either a synchronous exception or an earlier interrupt):
+
+```
+save processor registers i = read CSR scause
+```
+
+```
+if (i >= 0 ) { handle synchronous exception i restore sstatus if necessary } if (sstatus.SPIE == 1 ) { loop { i = read CSR stopi if (i == 0 ) exit loop i = i>> 16 call the interrupt handler for major interrupt i } } restore processor registers return from trap
+```
+
+(This example can be further optimized, but with an increase in complexity.)
+
+In order for this algorithm to function correctly, sstatus .SPIE must be set to 1 before executing an SRET that changes the privilege mode.
+
+<image>
+
+Assuming sstatus is saved and restored by trap handlers at entry and exit as is common, it is sufficient to set sstatus .SPIE = 1 only once, before the first use of SRET that changes privilege mode. After an SRET, a trap back to S-mode will restore sstatus .SPIE = 1; and if the trap handler preserves sstatus , it will still be true before the next SRET that ends the handler.

@@ -1,0 +1,13 @@
+## 3.2. MSI encoding
+
+Established  standards  (in  particular,  for  PCI  and  PCI  Express)  dictate  that  an  individual  messagesignaled interrupt (MSI) from a device takes the form of a naturally aligned 32-bit write by the device, with the address and value both configured at the device (or device controller) by software. Depending on  the  versions  of  the  standards  to  which  a  device  or  controller  conforms,  the  address  might  be restricted to the lower 4-GiB (32-bit) range, and the value written might be limited to a 16-bit range, with the upper 16 bits always being zeros.
+
+When RISC-V harts have IMSICs, an MSI from a device is normally sent directly to an individual hart that  was  selected  by  software  to  handle  the  interrupt  (presumably  based  on  some  interrupt  affinity policy).  An  MSI  is  directed  to  a  specific  privilege  level,  or  to  a  specific  virtual  hart,  via  the corresponding interrupt file that exists  in  the  receiving  hart's  IMSIC.  The  MSI  write  address  is  the physical address of a particular word-size register that is physically connected to the target interrupt file.  The  MSI  write  data  is  simply  the  identity  number  of  the  interrupt  to  be  made  pending  in  that interrupt file (becoming eventually the minor identity for an external interrupt to the attached hart).
+
+By configuring an MSI's address and data at a device, system software fully controls: (a) which hart receives a particular device interrupt, (b) the target privilege level or virtual hart, and (c) the identity number that represents the MSI in the target interrupt file. Elements a and b are determined by which interrupt file is targeted by the MSI address, while element c is communicated by the MSI data.
+
+<image>
+
+As the maximum interrupt identity number an IMSIC can support is 2047, a 16-bit limit on MSI data values presents no problem.
+
+When the H extension is implemented and a device is being managed directly by a guest operating system, MSI addresses from the device are initially guest physical addresses, as they are configured at the  device  by  the  guest  OS.  These  guest  addresses  must  be  translated  by  an  IOMMU,  which  gets configured by the hypervisor to redirect those MSIs to the interrupt files for the correct guest external interrupts. For more on this topic, see Chapter 8.

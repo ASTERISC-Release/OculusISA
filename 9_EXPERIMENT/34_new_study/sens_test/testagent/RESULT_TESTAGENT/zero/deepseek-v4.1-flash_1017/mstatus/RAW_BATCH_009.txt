@@ -1,0 +1,162 @@
+# Test Case Rule: RULE 161: If little-endian memory accesses are supported, then upon reset the mstatus or mstatush field MBE is reset to 0.
+##### ASSEMBLY #####
+csrr t0, mstatus
+# Result: mstatus[37] = 0
+
+# Test Case Rule: RULE 162: If the MPRV bit in mstatus is set and the MPP field in mstatus contains the value S or U, then PMP checks are applied to data accesses performed while the processor is in M-mode.
+##### ASSEMBLY #####
+li t0, 0
+csrw satp, t0
+auipc t1, 0
+srli t0, t1, 2
+addi t0, t0, 1
+csrw pmpaddr0, t0
+li t0, 0x08
+csrw pmpcfg0, t0
+li t0, 0x20800
+csrw mstatus, t0
+lw t2, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 163: When NMIE is 0, the hart behaves as though the MPRV field of mstatus is cleared, regardless of the actual setting of mstatus.MPRV.
+##### ASSEMBLY #####
+li t0, 0x20800
+csrw mstatus, t0
+li t0, 0x3fffffffffffff
+csrw pmpaddr0, t0
+li t0, 0x08
+csrw pmpcfg0, t0
+li t0, 0x8
+csrrc x0, 0x744, t0
+auipc t1, 0
+lw t2, 0(t1)
+# Result: t2 != 0
+
+# Test Case Rule: RULE 164: If the MNRET instruction changes the privilege mode to a mode less privileged than M, then mstatus.MPRV MUST be set to 0.
+##### ASSEMBLY #####
+nop # Skipped because MNRET privilege transition and mstatus.MPRV post-state are not directly observable without custom NMI handling
+# Result: x0 = 0
+
+# Test Case Rule: RULE 165: The SPP bit in mstatus indicates the privilege level at which a hart was executing before entering supervisor mode.
+##### ASSEMBLY #####
+nop # Skipped because SPP value after a trap into supervisor mode is not observable when execution stops at the trapping instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 166: When a trap is taken, the SPP bit in mstatus is set to 0 if the trap originated from user mode, otherwise it is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because post-trap mstatus.SPP update is not observable when execution stops at the trapping instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 167: When an SRET instruction is executed, the privilege level is set to user mode if the SPP bit in mstatus is 0, otherwise to supervisor mode if the SPP bit in mstatus is 1, and then the SPP bit in mstatus is set to 0.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li t0, 0x100
+csrrs x0, sstatus, t0
+la t0, after_sret
+csrw sepc, t0
+sret
+after_sret:
+csrr t1, sstatus
+# Result: sstatus[8] = 0
+
+# Test Case Rule: RULE 168: When a trap is taken into supervisor mode, the SPIE bit in mstatus is set to the value of the SIE bit in mstatus, and the SIE bit in mstatus is set to 0.
+##### ASSEMBLY #####
+nop # Skipped because post-trap sstatus.SPIE and sstatus.SIE updates are not observable when execution stops at the trapping instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 169: When an SRET instruction is executed, the SIE bit in mstatus is set to the value of the SPIE bit in mstatus, then the SPIE bit in mstatus is set to 1.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li t0, 0x100
+csrrs x0, sstatus, t0
+li t0, 0x20
+csrrs x0, sstatus, t0
+li t0, 0x2
+csrrc x0, sstatus, t0
+la t0, after_sret
+csrw sepc, t0
+sret
+after_sret:
+csrr t1, sstatus
+# Result: sstatus[1] = 1
+
+# Test Case Rule: RULE 170: In a straightforward implementation, reading or writing any field in sstatus is equivalent to reading or writing the homonymous field in mstatus.
+##### ASSEMBLY #####
+li t0, 0x40000
+csrrc x0, mstatus, t0
+csrrs x0, mstatus, t0
+csrr t1, sstatus
+# Result: sstatus[18] = 1
+
+# Test Case Rule: RULE 171: When the V bit is zero, any access to the SPELP field defined by the Zicfilp extension accesses the homonymous fields of the mstatus register.
+##### ASSEMBLY #####
+nop # Skipped because Zicfilp SPELP field availability is not guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 172: The SUM field of the mstatus register is consulted when determining whether a requested memory access is allowed by the pte.u bit.
+##### ASSEMBLY #####
+nop # Skipped because SUM/PTE page-permission testing requires page-table setup and a trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 173: The MXR field of the mstatus register is consulted when determining whether a requested memory access is allowed by the pte.u bit.
+##### ASSEMBLY #####
+nop # Skipped because MXR/PTE page-permission testing requires page-table setup and a trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 174: If the decision, which uses the current privilege mode and the SUM and MXR fields of the mstatus register, determines that the access is not allowed, the implementation MUST stop and raise a page-fault exception corresponding to the original access type.
+##### ASSEMBLY #####
+nop # Skipped because deterministic page-fault testing requires page-table setup and a trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 175: If mstatus.TVM=1, an attempt to execute SINVAL.VMA or HINVAL.GVMA in S-mode or HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrrs x0, mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 176: SFENCE.W.INVAL and SFENCE.INVAL.IR are unaffected by the mstatus.TVM field and therefore are always permitted in S-mode and VS-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrrs x0, mstatus, t0
+call machine_to_supervisor
+sfence.w.inval
+sfence.inval.ir
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 177: When mstatus.TVM=1 (or hstatus.VTVM=1), SFENCE.W.INVAL and SFENCE.INVAL.IR instructions do not need to be trapped because they have only ordering effects and no visible side effects.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrrs x0, mstatus, t0
+call machine_to_supervisor
+sfence.w.inval
+sfence.inval.ir
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 178: The mstatus fields TSR, TW, and TVM have corresponding hstatus fields VTSR, VTW, and VTVM that are defined analogously but affect execution only in VS-mode and cause virtual-instruction exceptions instead of illegal-instruction exceptions.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrrs x0, hstatus, t0
+call machine_to_virtual
+sinval.vma x0, x0
+# Result: mcause = 22
+
+# Test Case Rule: RULE 179: When the TVM field of mstatus equals 1, attempts to read or write hgatp while executing in HS-mode must raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrrs x0, mstatus, t0
+call machine_to_supervisor
+csrr t1, hgatp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 180: When the V field in mstatus is 0, vsstatus does not directly affect the behavior of the machine.
+##### ASSEMBLY #####
+li t0, 0x2
+csrrc x0, sstatus, t0
+li t0, 0x2
+csrw 0x200, t0
+csrr t1, sstatus
+# Result: sstatus[1] = 0

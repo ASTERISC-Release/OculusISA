@@ -1,0 +1,576 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: mseccfg
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V register semantics strictly from the provided rules.
+
+Register: mseccfg
+
+Rules (subset):
+RULE 1: Software may discover whether access to the seed CSR can be enabled in U and S modes by writing 1 to the mseccfg [s,u]seed fields and reading back the result.
+RULE 2: If an instruction reads or writes mseccfg below M-mode, it raises an illegal-instruction exception; in M-mode, reads and writes are permitted and readback follows mseccfg’s defined field semantics.
+RULE 3: A write to mseccfg updates its writable fields, and a subsequent read returns the updated values subject to each field’s architectural write constraints.
+RULE 4: If any implemented extension adds a field to mseccfg, then an M-mode read of mseccfg returns its CSR value rather than raising an illegal-instruction exception for an unimplemented CSR.
+RULE 5: When mseccfg.USEED is 0, any access to the seed CSR from U-mode raises an illegal-instruction exception.
+RULE 6: When mseccfg.USEED is 1, read-write access to the seed CSR from U-mode is allowed.
+RULE 7: When mseccfg.USEED is 1, an access to the seed CSR from U-mode other than a read-write access raises an illegal-instruction exception.
+RULE 8: When mseccfg.SSEED is 0, any access to the seed CSR from S-mode or HS-mode raises an illegal-instruction exception.
+RULE 9: When mseccfg.SSEED is 1, read-write access to the seed CSR from S-mode or HS-mode is allowed.
+RULE 10: When mseccfg.SSEED is 1, an access to the seed CSR from S-mode or HS-mode other than a read-write access raises an illegal-instruction exception.
+RULE 11: Regardless of mseccfg.SSEED and mseccfg.USEED, the seed CSR is always available in M-mode through a CSR read-write instruction.
+RULE 12: When mseccfg.RLB is 1, locked PMP rules may be removed, modified, or edited.
+RULE 13: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any PMP rule or entry, including a disabled entry, mseccfg.RLB remains 0 until a PMP reset.
+RULE 14: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any PMP rule or entry, including a disabled entry, further modifications to mseccfg.RLB are ignored until a PMP reset.
+RULE 15: mseccfg.MMWP is a sticky bit that cannot be unset after being set until a PMP reset.
+RULE 16: When mseccfg.MMWP is set, the default PMP policy for M-mode access to a memory region without a matching PMP rule is denied instead of ignored.
+RULE 17: mseccfg.MML is a sticky bit that cannot be unset after being set until a PMP reset.
+RULE 18: When mseccfg.MML is set, a set pmpcfg.L bit marks a PMP rule as M-mode-only instead of marking it as locked and enforced in all modes.
+RULE 19: When mseccfg.MML is set, an unset pmpcfg.L bit marks a PMP rule as S/U-mode-only.
+RULE 20: If mseccfg.MML=1 and a PMP entry has pmpcfg.R=0 and pmpcfg.W=1, accesses matching that entry use Shared-Region semantics; the RW=01 encoding is not treated as reserved.
+RULE 21: If mseccfg.MML=1 and a matching PMP entry has L=R=W=X=1, loads, stores, and instruction fetches are allowed or fault according to Shared-Region permissions, not ordinary locked RWX permissions.
+RULE 22: If mseccfg.MML=1 and an M-mode instruction fetch, load, or store violates an applicable M-mode-only PMP rule, the access raises the corresponding instruction, load, or store access-fault exception.
+RULE 23: When mseccfg.MML is set, an M-mode-only PMP rule denies access from S-mode and U-mode.
+RULE 24: When mseccfg.MML is set, an M-mode-only PMP rule remains locked so that modifications to its associated configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+RULE 25: If mseccfg.MML=1 and an S-mode or U-mode instruction fetch, load, or store violates an applicable S/U-mode-only PMP rule, the access raises the corresponding instruction, load, or store access-fault exception.
+RULE 26: When mseccfg.MML is set, an S/U-mode-only PMP rule denies access from M-mode.
+RULE 27: If mseccfg.MML=1 and an access from any privilege mode, including M-mode, violates a Shared-Region PMP rule, the access raises the corresponding instruction, load, or store/AMO access-fault exception.
+RULE 28: When mseccfg.MML is set, a Shared-Region PMP rule encoded with pmpcfg.RW=01 and an unset pmpcfg.L bit is not executable.
+RULE 29: When mseccfg.MML is set, M-mode has read/write access to a Shared-Region PMP rule encoded with pmpcfg.RW=01 and an unset pmpcfg.L bit.
+RULE 30: When mseccfg.MML is set, S-mode and U-mode have read access to a Shared-Region PMP rule encoded with pmpcfg.RW=01, an unset pmpcfg.L bit, and an unset pmpcfg.X bit.
+RULE 31: When mseccfg.MML is set, S-mode and U-mode have read/write access to a Shared-Region PMP rule encoded with pmpcfg.RW=01, an unset pmpcfg.L bit, and a set pmpcfg.X bit.
+RULE 32: When mseccfg.MML is set, a Shared-Region PMP rule encoded with pmpcfg.RW=01 and a set pmpcfg.L bit is not writable.
+RULE 33: When mseccfg.MML is set, M-mode, S-mode, and U-mode have execute access to a Shared-Region PMP rule encoded with pmpcfg.RW=01 and a set pmpcfg.L bit.
+RULE 34: When mseccfg.MML is set, M-mode also has read access to a Shared-Region PMP rule encoded with pmpcfg.RW=01 and set pmpcfg.L and pmpcfg.X bits.
+RULE 35: When mseccfg.MML is set, a Shared-Region PMP rule encoded with pmpcfg.RW=01 and a set pmpcfg.L bit remains locked so that modifications to its associated configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+RULE 36: When mseccfg.MML is set, M-mode, S-mode, and U-mode have only read-only access to a Shared-Region PMP rule encoded with pmpcfg.LRWX=1111.
+RULE 37: When mseccfg.MML is set, a Shared-Region PMP rule encoded with pmpcfg.LRWX=1111 remains locked so that modifications to its associated configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+RULE 38: When mseccfg.MML is set, adding an executable M-mode-only PMP rule or an executable locked Shared-Region PMP rule is not possible unless mseccfg.RLB is set.
+RULE 39: When mseccfg.MML is set and mseccfg.RLB is not set, a pmpcfg write that attempts to add an executable M-mode-only PMP rule or an executable locked Shared-Region PMP rule is ignored and leaves pmpcfg unchanged.
+RULE 40: If mseccfg.MML=1 and mseccfg.RLB=0, an attempt to add an executable M-mode-only PMP rule or an executable locked Shared-Region PMP rule does not install that rule, as observed in PMP CSR readback; setting RLB=1 temporarily allows the same otherwise-valid rule to be installed.
+RULE 41: When mseccfg.MML is set, executing code with M-mode privileges is possible only from a memory region with a matching M-mode-only PMP rule or a matching locked Shared-Region PMP rule with executable privileges.
+RULE 42: When mseccfg.MML is set, executing code with M-mode privileges from a memory region without a matching PMP rule is denied.
+RULE 43: When mseccfg.MML is set, executing code with M-mode privileges from a memory region with a matching S/U-mode-only PMP rule is denied.
+RULE 44: If the Smmpm extension is not implemented, mseccfg.PMM is read-only zero.
+RULE 45: The mseccfg.PMM value 10 enables pointer masking with PMLEN equal to XLEN - 57, which is 7 on RV64.
+RULE 46: If mseccfg.PMM is set to 11, pointer masking uses PMLEN = XLEN − 48; on RV64, bits 63:48 of each affected pointer are ignored when forming the address.
+RULE 47: If mseccfg.MLPE is 1 and M-mode execution violates a Zicfilp landing-pad requirement, a software-check exception is raised.
+RULE 48: If mseccfg.MLPE is 0, an indirect control transfer executed in M-mode does not raise a software-check exception solely because its target lacks a valid Zicfilp landing pad.
+RULE 49: If mseccfg.MLPE is 0, then executing any instruction in M-mode leaves the ELP state unchanged at NO_LP_EXPECTED.
+RULE 50: When mseccfg.MLPE is 0, the LPAD instruction operates as a no-op in M-mode.
+RULE 51: When XLEN=64, mseccfgh does not exist as an alias of mseccfg.
+RULE 52: Upon reset, if the Zicfilp extension is implemented, the mseccfg.MLPE field is reset to 0.
+RULE 53: When mseccfg.MML is set to 1 and pmpcfg.L, pmpcfg.R, pmpcfg.W, and pmpcfg.X are all 0, the region is inaccessible in M-mode and the M-mode result is an access exception.
+RULE 54: When mseccfg.MML is set to 1 and pmpcfg.L, pmpcfg.R, pmpcfg.W, and pmpcfg.X are all 0, the region is inaccessible in S/U-mode and the S/U-mode result is an access exception.
+RULE 55: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.W are 0, and pmpcfg.X is 1, the M-mode result is an access exception.
+RULE 56: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.W are 0, and pmpcfg.X is 1, the region is execute-only in S/U-mode.
+RULE 57: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 0, pmpcfg.W is 1, and pmpcfg.X is 0, the region is a shared data region with read/write access in M-mode.
+RULE 58: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 0, pmpcfg.W is 1, and pmpcfg.X is 0, the region is a shared data region with read-only access in S/U-mode.
+RULE 59: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 0, and pmpcfg.W and pmpcfg.X are 1, the region is a shared data region with read/write access in M-mode.
+RULE 60: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 0, and pmpcfg.W and pmpcfg.X are 1, the region is a shared data region with read/write access in S/U-mode.
+RULE 61: When mseccfg.MML is set to 1, pmpcfg.L is 0, pmpcfg.R is 1, and pmpcfg.W and pmpcfg.X are 0, the M-mode result is an access exception.
+RULE 62: When mseccfg.MML is set to 1, pmpcfg.L is 0, pmpcfg.R is 1, and pmpcfg.W and pmpcfg.X are 0, the region is read-only in S/U-mode.
+RULE 63: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.W are 0, and pmpcfg.R and pmpcfg.X are 1, the M-mode result is an access exception.
+RULE 64: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.W are 0, and pmpcfg.R and pmpcfg.X are 1, the region permits read and execute access in S/U-mode.
+RULE 65: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.X are 0, and pmpcfg.R and pmpcfg.W are 1, the M-mode result is an access exception.
+RULE 66: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.X are 0, and pmpcfg.R and pmpcfg.W are 1, the region permits read and write access in S/U-mode.
+RULE 67: When mseccfg.MML is set to 1, pmpcfg.L is 0, and pmpcfg.R, pmpcfg.W, and pmpcfg.X are 1, the M-mode result is an access exception.
+RULE 68: When mseccfg.MML is set to 1, pmpcfg.L is 0, and pmpcfg.R, pmpcfg.W, and pmpcfg.X are 1, the region permits read, write, and execute access in S/U-mode.
+RULE 69: When mseccfg.MML is set to 1, pmpcfg.L is 1, and pmpcfg.R, pmpcfg.W, and pmpcfg.X are 0, the region is a locked inaccessible region in M-mode and the M-mode result is an access exception.
+RULE 70: When mseccfg.MML is set to 1, pmpcfg.L is 1, and pmpcfg.R, pmpcfg.W, and pmpcfg.X are 0, the region is a locked inaccessible region in S/U-mode and the S/U-mode result is an access exception.
+RULE 71: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.X are 1, and pmpcfg.R and pmpcfg.W are 0, the region is a locked execute-only region in M-mode.
+RULE 72: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.X are 1, and pmpcfg.R and pmpcfg.W are 0, the S/U-mode result is an access exception.
+RULE 73: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.W are 1, and pmpcfg.R and pmpcfg.X are 0, the region is a locked shared code region with execute-only access in M-mode.
+RULE 74: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.W are 1, and pmpcfg.R and pmpcfg.X are 0, the region is a locked shared code region with execute-only access in S/U-mode.
+RULE 75: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.W, and pmpcfg.X are 1, and pmpcfg.R is 0, the region is a locked shared code region with read and execute access in M-mode.
+RULE 76: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.W, and pmpcfg.X are 1, and pmpcfg.R is 0, the region is a locked shared code region with execute-only access in S/U-mode.
+RULE 77: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 1, and pmpcfg.W and pmpcfg.X are 0, the region is a locked read-only region in M-mode.
+RULE 78: When mseccfg.MML is set to 1, pmpcfg.L and pmpcfg.R are 1, and pmpcfg.W and pmpcfg.X are 0, the S/U-mode result is an access exception.
+RULE 79: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.X are 1, and pmpcfg.W is 0, the region is a locked read/execute region in M-mode.
+RULE 80: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.X are 1, and pmpcfg.W is 0, the S/U-mode result is an access exception.
+RULE 81: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.W are 1, and pmpcfg.X is 0, the region is a locked read/write region in M-mode.
+RULE 82: When mseccfg.MML is set to 1, pmpcfg.L, pmpcfg.R, and pmpcfg.W are 1, and pmpcfg.X is 0, the S/U-mode result is an access exception.
+RULE 83: When mseccfg.MML is set to 1 and pmpcfg.L, pmpcfg.R, pmpcfg.W, and pmpcfg.X are all 1, the region is a locked shared data region with read-only access in M-mode.
+RULE 84: When mseccfg.MML is set to 1 and pmpcfg.L, pmpcfg.R, pmpcfg.W, and pmpcfg.X are all 1, the region is a locked shared data region with read-only access in S/U-mode.
+RULE 85: When S-mode is implemented and execution is in M-mode, mseccfg.MLPE is the effective xLPE control: if MLPE=1, a Zicfilp landing-pad violation raises a software-check exception; if MLPE=0, the same transfer is not rejected by Zicfilp landing-pad enforcement.
+RULE 86: In M-mode, accessing mseccfg register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x747; # Result: mcause = 0x0].
+RULE 87: In S-mode, accessing mseccfg register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x747; # Result: mcause = 0x2].
+RULE 88: In U-mode, accessing mseccfg register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x747; # Result: mcause = 0x2].
+RULE 89: In M-mode, setting mseccfg.SSEED (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x200].
+RULE 90: In M-mode, setting mseccfg.USEED (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x100].
+RULE 91: In M-mode, setting mseccfg.RLB (bit 2) should be reflected on the readback (# Result: a2 = 0x4) [# Extension Must Be Active: NONE; li a0, 0x4; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x4].
+RULE 92: In M-mode, setting mseccfg.MMWP (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x2].
+RULE 93: In M-mode, accessing mseccfg register while Smepmp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smepmp; csrr a0, 0x747; # Result: mcause = 0x0].
+RULE 94: In M-mode, accessing mseccfg register while Smmpm extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smmpm; csrr a0, 0x747; # Result: mcause = 0x0].
+RULE 95: In M-mode, accessing mseccfg register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x747; # Result: mcause = 0x0].
+RULE 96: In M-mode, accessing mseccfg register while Zkr extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zkr; csrr a0, 0x747; # Result: mcause = 0x0].
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+mseccfg is an M-mode security-configuration CSR controlling seed-CSR availability, enhanced PMP behavior, pointer masking, and M-mode landing-pad enforcement. mseccfg is readable and writable in M-mode subject to field-specific constraints, while any S-mode or U-mode access raises an illegal-instruction exception; SSEED and USEED permit only read-write seed accesses in lower modes, with M-mode seed access always available. RLB controls modification of locked PMP entries, MMWP changes the unmatched M-mode PMP policy to deny, and sticky MML enables mode-specific and Shared-Region PMP semantics; PMM selects pointer masking when implemented, and MLPE enables M-mode landing-pad enforcement. Disallowed seed accesses raise illegal-instruction exceptions, PMP permission violations raise the corresponding access-fault exception, and MLPE-enabled landing-pad violations raise software-check exceptions.
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 2
+NAME: mstatus
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V register semantics strictly from the provided rules.
+
+Register: mstatus
+
+Rules (subset):
+RULE 1: If mstatus.TW=1 and WRS.NTO is executed outside M-mode but does not complete within the implementation-specific bounded time limit, then WRS.NTO raises an illegal-instruction exception.
+RULE 2: The vector context status field mstatus.VS occupies mstatus[10:9].
+RULE 3: The mstatus.VS field is shadowed in sstatus[10:9].
+RULE 4: When mstatus.VS is Off, an attempt to execute any vector instruction or access any vector CSR raises an illegal-instruction exception.
+RULE 5: When mstatus.VS is Initial or Clean, executing any instruction that changes vector state, including an instruction that changes a vector CSR, changes mstatus.VS to Dirty.
+RULE 6: When mstatus.VS is Dirty, mstatus.SD is 1.
+RULE 7: When mstatus.VS is not Dirty, mstatus.VS makes no Dirty-state contribution to mstatus.SD.
+RULE 8: When V=1, an attempt to execute any vector instruction raises an illegal-instruction exception if either vsstatus.VS or mstatus.VS is set to Off.
+RULE 9: When V=1, an attempt to access any vector CSR raises an illegal-instruction exception if either vsstatus.VS or mstatus.VS is set to Off.
+RULE 10: When V=1 and neither vsstatus.VS nor mstatus.VS is set to Off, executing any instruction that changes vector state, including an instruction that changes the vector CSRs, changes both mstatus.VS and vsstatus.VS to Dirty.
+RULE 11: If mstatus.VS is Dirty, mstatus.SD is 1.
+RULE 12: If mstatus.VS is not Dirty, mstatus.SD reads as 0 unless another condition defined to set mstatus.SD is present, in which case it reads as 1.
+RULE 13: If mstatus.FS is Off, any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+RULE 14: Any vector floating-point instruction that modifies floating-point extension state, comprising floating-point CSRs or f registers, must set mstatus.FS to Dirty.
+RULE 15: If the hypervisor extension is implemented, V=1, and either vsstatus.FS or mstatus.FS is Off, any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+RULE 16: If the hypervisor extension is implemented and V=1, any vector floating-point instruction that modifies floating-point extension state, comprising floating-point CSRs or f registers, must set both mstatus.FS and vsstatus.FS to Dirty.
+RULE 17: The mstatus register is a machine-level read/write CSR.
+RULE 18: Reading mstatus returns only bits [MXLEN−1:0]; no architectural mstatus bits exist at positions MXLEN or above.
+RULE 19: The mstatus register is read/write.
+RULE 20: If CSRRSI or CSRRCI targets an implemented global xIE bit in the low-order bits of mstatus, that single instruction atomically sets or clears the bit, and a subsequent mstatus read returns the updated value.
+RULE 21: Each xPP field in mstatus is a WARL field that can hold only privilege mode x and any implemented privilege mode lower than x.
+RULE 22: Reading mstatus and extracting the MPP field yields a two-bit value in the range 0–3.
+RULE 23: After writing mstatus, reading it back reports SPP as a single-bit value, either 0 or 1.
+RULE 24: When a trap is taken from privilege mode y into privilege mode x, the xPIE field in mstatus is set to the value of the xIE field in mstatus.
+RULE 25: When a trap is taken from privilege mode y into privilege mode x, the xIE field in mstatus is set to 0.
+RULE 26: When a trap is taken from privilege mode y into privilege mode x, the xPP field in mstatus is set to y.
+RULE 27: When an xRET instruction executes with the xPP field in mstatus holding privilege mode y, the xIE field in mstatus is set to the value of the xPIE field in mstatus.
+RULE 28: When an xRET instruction executes with the xPP field in mstatus holding privilege mode y, the privilege mode is changed to y.
+RULE 29: When an xRET instruction executes with the xPP field in mstatus holding privilege mode y, the xPIE field in mstatus is set to 1.
+RULE 30: When an xRET instruction executes with the xPP field in mstatus holding privilege mode y, the xPP field is set to the least-privileged supported mode, which is U if U-mode is implemented and M otherwise.
+RULE 31: When an xRET instruction executes with the xPP field in mstatus holding a privilege mode y where y != M, the MPRV field in mstatus is also set to 0.
+RULE 32: M-mode software can determine whether a privilege mode is implemented by writing that privilege mode to the MPP field in mstatus and then reading MPP back.
+RULE 33: Upon reset, the MDT field represented in mstatus or mstatush is set to 1.
+RULE 34: When an explicit CSR write sets the MDT bit in mstatus or mstatush to 1, the MIE bit in mstatus is cleared to 0.
+RULE 35: On RV64, when an explicit CSR write sets mstatus.MDT to 1, mstatus.MIE is cleared to 0 regardless of the value written, if any, to mstatus.MIE by the same write.
+RULE 36: An explicit CSR write can set mstatus.MIE to 1 only if the MDT bit in mstatus or mstatush is already 0 or, on RV64, the same write sets mstatus.MDT to 0.
+RULE 37: When a trap is to be taken into M-mode and the MDT bit in mstatus or mstatush is currently 0, the MDT bit is set to 1.
+RULE 38: If a trap targets M-mode while the MDT bit in mstatus or mstatush is 0, the hart takes the trap normally and transfers control to the M-mode trap handler.
+RULE 39: When MRET is executed in M-mode, it sets the MDT bit in mstatus or mstatush to 0.
+RULE 40: When SRET is executed in M-mode, it sets the MDT bit in mstatus or mstatush to 0.
+RULE 41: On an RV64 hart, after entering S-mode, instructions execute with the XLEN encoded by the read-back value of mstatus.SXL; if SXL selects 32 bits, operand bits 63:32 are ignored and register results are sign-extended from bit 31, whereas if SXL selects 64 bits, all 64 operand and result bits are used.
+RULE 42: On an RV64 hart, after writing and reading back mstatus.UXL, U-mode instructions execute with the XLEN encoded by the read-back UXL value.
+RULE 43: For an RV64 hart, the encoding of the SXL field of mstatus is the same as the encoding of the MXL field of misa.
+RULE 44: For an RV64 hart, the encoding of the UXL field of mstatus is the same as the encoding of the MXL field of misa.
+RULE 45: When MXLEN=64 and S-mode is supported, reading mstatus returns an SXL field whose value encodes the current SXLEN.
+RULE 46: When MXLEN=64 and U-mode is supported, the UXL field of mstatus encodes the current value of UXLEN.
+RULE 47: If S-mode is implemented and mstatus.UXL is written with a value that would make UXLEN greater than SXLEN, a subsequent read of mstatus.UXL returns a legal value for which UXLEN is no greater than SXLEN.
+RULE 48: When mstatus.MPRV=0, protection for explicit memory accesses uses the protection mechanisms of the current privilege mode.
+RULE 49: When mstatus.MPRV=1, loads and stores are protected as though the current privilege mode were the privilege mode encoded in mstatus.MPP.
+RULE 50: When mstatus.MPRV=1, endianness is applied to loads and stores as though the current privilege mode were the privilege mode encoded in mstatus.MPP.
+RULE 51: An MRET instruction that changes the privilege mode to a mode less privileged than M-mode also sets mstatus.MPRV=0.
+RULE 52: An SRET instruction that changes the privilege mode to a mode less privileged than M-mode also sets mstatus.MPRV=0.
+RULE 53: The mstatus.MXR mechanism has no impact on whether access-fault exceptions are raised due to PMAs or PMP.
+RULE 54: The mstatus.SUM bit has no effect when page-based virtual memory is not in effect.
+RULE 55: The mstatus.SUM bit is read-only 0 if satp.MODE is read-only 0.
+RULE 56: The mstatus.SUM mechanism has no impact on whether access-fault exceptions are raised due to PMAs or PMP.
+RULE 57: For non-instruction-fetch memory accesses in M-mode, S-mode, and U-mode, the corresponding MBE, SBE, or UBE field in mstatus or mstatush selects the byte order used by loads, stores, and other data-memory accesses; changing these fields does not change instruction-fetch byte order.
+RULE 58: For non-instruction-fetch memory accesses made from M-mode while mstatus.MPRV=0, an MBE value of 0 in mstatus or mstatush selects little-endian accesses.
+RULE 59: For non-instruction-fetch memory accesses made from M-mode while mstatus.MPRV=0, an MBE value of 1 in mstatus or mstatush selects big-endian accesses.
+RULE 60: When S-mode is supported, an SBE value of 0 in mstatus or mstatush selects little-endian explicit load and store accesses made from S-mode.
+RULE 61: When S-mode is supported, an SBE value of 1 in mstatus or mstatush selects big-endian explicit load and store accesses made from S-mode.
+RULE 62: When U-mode is supported, a UBE value of 0 in mstatus or mstatush selects little-endian explicit load and store accesses made from U-mode.
+RULE 63: When U-mode is supported, a UBE value of 1 in mstatus or mstatush selects big-endian explicit load and store accesses made from U-mode.
+RULE 64: If MBE and the SBE and UBE fields for supported modes are read-only 1, attempts to clear those fields leave their readback values at 1, and all multibyte data memory accesses in the corresponding modes use big-endian byte order; instruction fetches are unaffected.
+RULE 65: When mstatus.TVM=1, an attempt to read the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+RULE 66: When mstatus.TVM=1, an attempt to write the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+RULE 67: When mstatus.TVM=1, an attempt to execute an SFENCE.VMA instruction while executing in S-mode will raise an illegal-instruction exception.
+RULE 68: When mstatus.TVM=1, an attempt to execute a SINVAL.VMA instruction while executing in S-mode will raise an illegal-instruction exception.
+RULE 69: When mstatus.TVM=0, reading the satp CSR is permitted in S-mode.
+RULE 70: When mstatus.TVM=0, writing the satp CSR is permitted in S-mode.
+RULE 71: When mstatus.TVM=0, executing SFENCE.VMA is permitted in S-mode.
+RULE 72: When mstatus.TVM=0, executing SINVAL.VMA is permitted in S-mode.
+RULE 73: When mstatus.TSR=1, an attempt to execute SRET while executing in S-mode will raise an illegal-instruction exception.
+RULE 74: When mstatus.TSR=0, executing SRET is permitted in S-mode.
+RULE 75: The mstatus FS[1:0] field is WARL.
+RULE 76: The mstatus VS[1:0] field is WARL.
+RULE 77: The mstatus XS[1:0] field is read-only.
+RULE 78: Reading mstatus.FS returns the encoded status of the floating-point architectural state comprising registers f0–f31 and the fcsr, frm, and fflags CSRs.
+RULE 79: Reading mstatus.VS reports the status of the vector-extension state comprising vector registers v0–v31 and the vcsr, vxrm, vxsat, vstart, vl, vtype, and vlenb CSRs.
+RULE 80: If an mstatus read returns 0 in the FS or VS field, the corresponding floating-point or vector state is encoded as Off.
+RULE 81: If an mstatus read returns 1 in the FS or VS field, that field is in the Initial state.
+RULE 82: If mstatus.FS or mstatus.VS reads as 2, the corresponding extension state is encoded as Clean.
+RULE 83: If mstatus.FS or mstatus.VS is Dirty, reading that field returns 3; a readback value of 3 denotes Dirty.
+RULE 84: Reading mstatus.XS returns 2 exactly when no additional user-mode extension is Dirty and at least one is Clean; otherwise, mstatus.XS does not return 2.
+RULE 85: If the F extension is implemented, the mstatus FS field shall not be read-only zero.
+RULE 86: If the v registers are implemented, the mstatus VS field shall not be read-only zero.
+RULE 87: In a hart without additional user-mode extensions that require new state, the mstatus XS field is read-only zero.
+RULE 88: Reading mstatus returns XS equal to the highest state among all user-extension status fields, ordered Off < Initial < Clean < Dirty.
+RULE 89: The mstatus SD field is a read-only bit.
+RULE 90: The mstatus SD bit is set when FS equals 0b11, VS equals 0b11, or XS equals 0b11.
+RULE 91: When an extension status represented by mstatus is Off, any instruction that attempts to read or write the corresponding state causes an illegal-instruction exception.
+RULE 92: If an instruction changes extension state tracked by an mstatus extension-status field, that field is updated regardless of the instruction’s current privilege mode, as observable by subsequent mstatus readback.
+RULE 93: After an unconfigure operation leaves an mstatus extension status as Initial, the next configure operation would set the status to Dirty.
+RULE 94: If a user-mode instruction sets a unit’s associated mstatus status field to Off, any subsequent instruction that uses that unit before the status field is changed from Off raises an illegal-instruction exception.
+RULE 95: Changing the mstatus FS field has no effect on the contents of the floating-point register state.
+RULE 96: Setting mstatus FS to Off does not destroy the floating-point register state.
+RULE 97: Setting mstatus FS to Initial does not clear the contents of the floating-point register state.
+RULE 98: Changing the mstatus VS field has no effect on the contents of the vector register state.
+RULE 99: On an implementation that does not track floating-point dirtiness, the only valid mstatus FS states are Off and Dirty.
+RULE 100: On an implementation that does not track floating-point dirtiness, an attempt to set mstatus FS to Initial or Clean causes FS to be set to Dirty.
+RULE 101: Executing an instruction to read state while the corresponding mstatus FS, VS, or XS status is Off causes an exception and leaves the status Off.
+RULE 102: Executing an instruction to read state while the corresponding mstatus FS, VS, or XS status is Initial executes the instruction and leaves the status Initial.
+RULE 103: Executing an instruction to read state while the corresponding mstatus FS, VS, or XS status is Clean executes the instruction and leaves the status Clean.
+RULE 104: Executing an instruction to read state while the corresponding mstatus FS, VS, or XS status is Dirty executes the instruction and leaves the status Dirty.
+RULE 105: Executing an instruction that can modify state, including configuration, while the corresponding mstatus FS, VS, or XS status is Off causes an exception and leaves the status Off.
+RULE 106: Executing an instruction that can modify state, including configuration, while the corresponding mstatus FS, VS, or XS status is Initial executes the instruction and changes the status to Dirty.
+RULE 107: Executing an instruction that can modify state, including configuration, while the corresponding mstatus FS, VS, or XS status is Clean executes the instruction and changes the status to Dirty.
+RULE 108: Executing an instruction that can modify state, including configuration, while the corresponding mstatus FS, VS, or XS status is Dirty executes the instruction and leaves the status Dirty.
+RULE 109: If an instruction attempts to unconfigure a unit while its corresponding mstatus FS, VS, or XS field is Off, the instruction raises an exception and the field remains Off.
+RULE 110: If an instruction unconfigures a unit while its corresponding mstatus FS, VS, or XS field is Initial, then the instruction executes without trapping and the field reads back as Initial.
+RULE 111: Executing an instruction to unconfigure a unit while the corresponding mstatus FS, VS, or XS status is Clean executes the instruction and changes the status to Initial.
+RULE 112: Executing an instruction to unconfigure a unit while the corresponding mstatus FS, VS, or XS status is Dirty executes the instruction and changes the status to Initial.
+RULE 113: If an instruction disables a unit while the corresponding mstatus FS, VS, or XS field is already Off, the instruction completes normally without an exception, and reading mstatus afterward shows that field remains Off.
+RULE 114: Executing an instruction to disable a unit while the corresponding mstatus FS, VS, or XS status is Initial executes the instruction and changes the status to Off.
+RULE 115: Executing an instruction to disable a unit while the corresponding mstatus FS, VS, or XS status is Clean executes the instruction and changes the status to Off.
+RULE 116: Executing an instruction to disable a unit while the corresponding mstatus FS, VS, or XS status is Dirty executes the instruction and changes the status to Off.
+RULE 117: Executing an instruction to enable a unit while the corresponding mstatus FS, VS, or XS status is Off executes the instruction and changes the status to Initial.
+RULE 118: Executing an instruction to enable a unit while the corresponding mstatus FS, VS, or XS status is Initial executes the instruction and leaves the status Initial.
+RULE 119: Executing an instruction to enable a unit while the corresponding mstatus FS, VS, or XS status is Clean executes the instruction and changes the status to Initial.
+RULE 120: Executing an instruction to enable a unit while the corresponding mstatus FS, VS, or XS status is Dirty executes the instruction and changes the status to Initial.
+RULE 121: Machine mode and Supervisor mode share a single copy of the mstatus FS, VS, and XS fields.
+RULE 122: When a trap is taken into S-mode, mstatus.SPELP contains the ELP value that was active immediately before the trap.
+RULE 123: After a trap is taken into M-mode, reading mstatus.MPELP returns the ELP state that was active immediately before the trap.
+RULE 124: When a trap is taken into S-mode, mstatus.SPELP is set to the pre-trap ELP value; executing SRET restores ELP from mstatus.SPELP and then sets mstatus.SPELP to NO_LP_EXPECTED.
+RULE 125: When a trap is taken into M-mode, mstatus.MPELP is set to the ELP state immediately before the trap, and a subsequent read of mstatus.MPELP returns that saved value.
+RULE 126: If mstatus.SPELP is 0 when SRET executes, the return target is not required to be a landing-pad instruction, and no landing-pad exception is raised solely because the target is not a landing pad.
+RULE 127: If mstatus.MPELP reads as 0, the architectural state is NO_LP_EXPECTED, indicating that no landing-pad instruction is expected.
+RULE 128: If mstatus.SPELP is 1 (LP_EXPECTED) and the next instruction executed is not a landing pad instruction, a software-check exception is raised.
+RULE 129: If mstatus.MPELP is 1 (LP_EXPECTED) and the expected landing pad instruction is not executed, a software-check exception is raised.
+RULE 130: When a trap is delegated to S-mode, the SPP field of mstatus is written with the active privilege mode at the time of the trap.
+RULE 131: When a trap is delegated to S-mode, the SPIE field of mstatus is written with the value of the SIE field at the time of the trap.
+RULE 132: When a trap is delegated to S-mode, the SIE field of mstatus is cleared.
+RULE 133: When a trap is delegated to S-mode, the MPP field of mstatus is not written.
+RULE 134: When a trap is delegated to S-mode, the MPIE field of mstatus is not written.
+RULE 135: Interrupt i will trap to M-mode and cause the privilege mode to change to M-mode if all of the following are true: either the current privilege mode is M-mode and the MIE bit in mstatus is set, or the current privilege mode has less privilege than M-mode; bit i is set in both mip and mie; and, if mideleg exists, bit i is not set in mideleg.
+RULE 136: The conditions for interrupt i to trap to M-mode, including the condition that either the current privilege mode is M-mode and the MIE bit in mstatus is set or the current privilege mode has less privilege than M-mode, MUST be evaluated immediately following the execution of an xRET instruction.
+RULE 137: The conditions for interrupt i to trap to M-mode, including the condition that either the current privilege mode is M-mode and the MIE bit in mstatus is set or the current privilege mode has less privilege than M-mode, MUST be evaluated immediately following an explicit write to any CSR on which the interrupt-trap conditions expressly depend.
+RULE 138: Because the conditions for interrupt i to trap to M-mode expressly depend on mie and include the condition that either the current privilege mode is M-mode and the MIE bit in mstatus is set or the current privilege mode has less privilege than M-mode, the conditions MUST be evaluated immediately following an explicit write to mie.
+RULE 139: Because the conditions for interrupt i to trap to M-mode expressly depend on mstatus through the condition that either the current privilege mode is M-mode and the MIE bit in mstatus is set or the current privilege mode has less privilege than M-mode, the conditions MUST be evaluated immediately following an explicit write to mstatus.
+RULE 140: When the TSR field is 1 in mstatus, SRET should raise an illegal-instruction exception.
+RULE 141: Upon reset, the MIE field of mstatus is reset to 0.
+RULE 142: Upon reset, the MPRV field of mstatus is reset to 0.
+RULE 143: Upon reset, if little-endian memory accesses are supported, the MBE field of mstatus or mstatush is reset to 0.
+RULE 144: For data accesses in M-mode, PMP checks are applied when the MPRV bit in mstatus is set and the MPP field in mstatus contains S or U.
+RULE 145: In a straightforward implementation, if sstatus and mstatus are read with no intervening architectural state change, every field visible in sstatus has the same readback value as the homonymous field in mstatus.
+RULE 146: In a straightforward implementation, writing any sstatus field produces the same architectural state and readback value in the homonymous mstatus field as writing that field directly through mstatus.
+RULE 147: When V=0, an access to the SPELP field added by Zicfilp accesses the homonymous SPELP field of mstatus.
+RULE 148: When mstatus.TVM=1, an attempt to execute SINVAL.VMA in S-mode raises an illegal-instruction exception.
+RULE 149: When mstatus.TVM=1, an attempt to execute SINVAL.VMA in HS-mode raises an illegal-instruction exception.
+RULE 150: When mstatus.TVM=1, an attempt to execute HINVAL.GVMA in S-mode raises an illegal-instruction exception.
+RULE 151: When mstatus.TVM=1, an attempt to execute HINVAL.GVMA in HS-mode raises an illegal-instruction exception.
+RULE 152: The mstatus.TVM field does not affect SFENCE.W.INVAL.
+RULE 153: SFENCE.W.INVAL is always permitted in S-mode regardless of the value of mstatus.TVM.
+RULE 154: The mstatus.TVM field does not affect SFENCE.INVAL.IR.
+RULE 155: SFENCE.INVAL.IR is always permitted in S-mode regardless of the value of mstatus.TVM.
+RULE 156: mstatus.TVM does not cause HFENCE.VVMA to trap.
+RULE 157: HFENCE.GVMA is valid in HS-mode only when mstatus.TVM=0.
+RULE 158: HFENCE.GVMA is valid in M-mode irrespective of mstatus.TVM.
+RULE 159: Attempting to execute HFENCE.GVMA in HS-mode when mstatus.TVM=1 causes an illegal-instruction exception.
+RULE 160: Whenever a trap is taken into M-mode, mstatus.MPP is set to the nominal privilege mode at the time of the trap.
+RULE 161: If mstatus.TW=1 and WFI executed in any mode other than M-mode does not complete within an implementation-defined bounded time, WFI raises an illegal-instruction exception; mstatus.TW does not affect WFI execution in M-mode.
+RULE 162: If mstatus.TVM=1 and HS-mode executes HFENCE.GVMA, an illegal-instruction exception is raised.
+RULE 163: If HS-mode executes HINVAL.GVMA while mstatus.TVM=1, an illegal-instruction exception is raised.
+RULE 164: Setting mstatus.TVM=1 has no effect on HFENCE.VVMA.
+RULE 165: Setting mstatus.TVM=1 has no effect on HINVAL.VVMA.
+RULE 166: Setting mstatus.TVM=1 does not cause traps for execution of HFENCE.VVMA.
+RULE 167: Setting mstatus.TVM=1 does not cause traps for execution of HINVAL.VVMA.
+RULE 168: When mstatus.MPRV=0, the current privilege mode applies regardless of MPV and mstatus.MPP.
+RULE 169: When mstatus.MPRV=1, endianness is applied to explicit memory accesses as though the current virtualization mode were MPV and the current nominal privilege mode were mstatus.MPP.
+RULE 170: When mstatus.MPRV=1, MPV=0, and mstatus.MPP=0, the effect is U-level access.
+RULE 171: When mstatus.MPRV=1 and mstatus.MPP=3, the effect is M-level access regardless of MPV.
+RULE 172: When a trap is taken from U-mode into M-mode, the MPV and MPP fields in mstatus or mstatush, as applicable, are set to 0 and 0, respectively.
+RULE 173: When a trap is taken from HS-mode into M-mode, the MPV and MPP fields in mstatus or mstatush, as applicable, are set to 0 and 1, respectively.
+RULE 174: When a trap is taken from M-mode into M-mode, the MPV and MPP fields in mstatus or mstatush, as applicable, are set to 0 and 3, respectively.
+RULE 175: When a trap is taken into M-mode, the post-trap GVA field in mstatus on RV64, or mstatush on RV32, contains the GVA value recorded for that trap.
+RULE 176: After a trap is taken into M-mode, the MPIE field in mstatus or mstatush, as applicable, contains the value of MIE immediately before the trap.
+RULE 177: If a trap is taken into M-mode, the MIE field in mstatus or mstatush, as applicable, reads as 0 after trap entry.
+RULE 178: Upon trap return, the MPV field in mstatus or mstatush, as applicable, is ignored when the MPP field in mstatus is 3.
+RULE 179: After MRET executes, the current privilege mode is the mode selected by the pre-execution values of MPP and MPV in mstatus or mstatush.
+RULE 180: MRET sets MPV to 0 in mstatus or mstatush.
+RULE 181: MRET sets MPP to 0 in mstatus or mstatush.
+RULE 182: MRET sets MIE in mstatus or mstatush to the value of MPIE in mstatus or mstatush.
+RULE 183: MRET sets MPIE to 1 in mstatus or mstatush.
+RULE 184: After updating mstatus or mstatush, MRET sets the privilege mode to the mode determined from the earlier values of MPP and MPV in mstatus or mstatush.
+RULE 185: The SPELP bit in mstatus can be accessed through the sstatus CSR.
+RULE 186: If a synchronous exception with priority higher than a software-check exception having xtval set to "landing pad fault (code=2)" causes a trap to be delivered to the same or a higher privilege mode after completion of JALR, C.JALR, or C.JR but before decoding the instruction at the indirect call or jump target, trap delivery must preserve the previous ELP in mstatus.MPELP for M-mode or mstatus.SPELP for S/HS-mode so that ELP can be restored on trap return.
+RULE 187: When a trap is taken into M-mode, mstatus.MPELP is set to the value of ELP.
+RULE 188: When a trap is taken into S/HS-mode, mstatus.SPELP is set to the value of ELP.
+RULE 189: When a trap is taken into M-mode, ELP is set to NO_LP_EXPECTED as part of the trap operation that stores the previous ELP in mstatus.MPELP.
+RULE 190: When a trap is taken into S/HS-mode, ELP is set to NO_LP_EXPECTED as part of the trap operation that stores the previous ELP in mstatus.SPELP.
+RULE 191: When an MRET instruction executes and the new privilege mode is y with yLPE equal to 1, ELP is set to the value of mstatus.MPELP.
+RULE 192: After SRET changes the privilege mode to y, if yLPE is 1, then ELP contains the value of mstatus.SPELP.
+RULE 193: If MRET enters privilege mode y and yLPE is not 1, then ELP is set to NO_LP_EXPECTED regardless of mstatus.MPELP.
+RULE 194: When an SRET instruction executes and the new privilege mode is y with yLPE not equal to 1, ELP is set to NO_LP_EXPECTED regardless of the value of mstatus.SPELP.
+RULE 195: When an MRET instruction executes, mstatus.MPELP is set to NO_LP_EXPECTED.
+RULE 196: When an SRET instruction executes, mstatus.SPELP is set to NO_LP_EXPECTED.
+RULE 197: In M-mode, accessing mstatus register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 198: In S-mode, accessing mstatus register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x300; # Result: mcause = 0x2].
+RULE 199: In U-mode, accessing mstatus register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x300; # Result: mcause = 0x2].
+RULE 200: In M-mode, setting mstatus.SD (bit 63) should be reflected on the readback (# Result: a2 = 0x8000000000000000) [# Extension Must Be Active: NONE; li a0, 0x8000000000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x8000000000000000].
+RULE 201: In M-mode, setting mstatus.MDT (bit 42) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x40000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 202: In M-mode, setting mstatus.MPELP (bit 41) should be reflected on the readback (# Result: a2 = 0x20000000000) [# Extension Must Be Active: NONE; li a0, 0x20000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x20000000000].
+RULE 203: In M-mode, setting mstatus.MPV (bit 39) should be reflected on the readback (# Result: a2 = 0x8000000000) [# Extension Must Be Active: NONE; li a0, 0x8000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x8000000000].
+RULE 204: In M-mode, setting mstatus.GVA (bit 38) should be reflected on the readback (# Result: a2 = 0x4000000000) [# Extension Must Be Active: NONE; li a0, 0x4000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x4000000000].
+RULE 205: In M-mode, setting mstatus.MBE (bit 37) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x2000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 206: In M-mode, setting mstatus.SBE (bit 36) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x1000000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 207: In M-mode, setting mstatus.SXL (bit 34) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x400000000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 208: In M-mode, setting mstatus.SPELP (bit 23) should be reflected on the readback (# Result: a2 = 0x800000) [# Extension Must Be Active: NONE; li a0, 0x800000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x800000].
+RULE 209: In M-mode, setting mstatus.TSR (bit 22) should be reflected on the readback (# Result: a2 = 0x400000) [# Extension Must Be Active: NONE; li a0, 0x400000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x400000].
+RULE 210: In M-mode, setting mstatus.TW (bit 21) should be reflected on the readback (# Result: a2 = 0x200000) [# Extension Must Be Active: NONE; li a0, 0x200000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x200000].
+RULE 211: In M-mode, setting mstatus.TVM (bit 20) should be reflected on the readback (# Result: a2 = 0x100000) [# Extension Must Be Active: NONE; li a0, 0x100000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x100000].
+RULE 212: In M-mode, setting mstatus.MXR (bit 19) should be reflected on the readback (# Result: a2 = 0x80000) [# Extension Must Be Active: NONE; li a0, 0x80000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x80000].
+RULE 213: In M-mode, setting mstatus.SUM (bit 18) should be reflected on the readback (# Result: a2 = 0x40000) [# Extension Must Be Active: NONE; li a0, 0x40000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x40000].
+RULE 214: In M-mode, setting mstatus.MPRV (bit 17) should be reflected on the readback (# Result: a2 = 0x20000) [# Extension Must Be Active: NONE; li a0, 0x20000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x20000].
+RULE 215: In M-mode, setting mstatus.XS (bit 15) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x8000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 216: In M-mode, setting mstatus.FS (bit 13) should be reflected on the readback (# Result: a2 = 0x2000) [# Extension Must Be Active: NONE; li a0, 0x2000; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x2000].
+RULE 217: In M-mode, setting mstatus.MPP (bit 11) should be reflected on the readback (# Result: a2 = 0x800) [# Extension Must Be Active: NONE; li a0, 0x800; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x800].
+RULE 218: In M-mode, setting mstatus.VS (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x200].
+RULE 219: In M-mode, setting mstatus.SPP (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x100].
+RULE 220: In M-mode, setting mstatus.MPIE (bit 7) should be reflected on the readback (# Result: a2 = 0x80) [# Extension Must Be Active: NONE; li a0, 0x80; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x80].
+RULE 221: In M-mode, setting mstatus.UBE (bit 6) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x40; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 222: In M-mode, setting mstatus.SPIE (bit 5) should be reflected on the readback (# Result: a2 = 0x20) [# Extension Must Be Active: NONE; li a0, 0x20; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x20].
+RULE 223: In M-mode, setting mstatus.MIE (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x8].
+RULE 224: In M-mode, setting mstatus.SIE (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x2].
+RULE 225: In M-mode, writing 0xffffffffffffffff to the mstatus register should not set it to 0xffffffff or 0xffffffffffffffff (# Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff) [# Extension Must Be Active: NONE; li a0, 0xffffffffffffffff; csrw 0x300, a0; csrr a1, 0x300; # Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff].
+RULE 226: In M-mode, accessing mstatus register while D extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: D; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 227: In M-mode, accessing mstatus register while F extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: F; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 228: In M-mode, accessing mstatus register while H extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: H; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 229: In M-mode, accessing mstatus register while Q extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Q; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 230: In M-mode, accessing mstatus register while Smdbltrp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smdbltrp; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 231: In M-mode, accessing mstatus register while Smrnmi extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smrnmi; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 232: In M-mode, accessing mstatus register while Ssdbltrp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Ssdbltrp; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 233: In M-mode, accessing mstatus register while Svinval extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svinval; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 234: In M-mode, accessing mstatus register while V extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: V; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 235: In M-mode, accessing mstatus register while Zawrs extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zawrs; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 236: In M-mode, accessing mstatus register while Zfinx extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zfinx; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 237: In M-mode, accessing mstatus register while Zicboz extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicboz; csrr a0, 0x300; # Result: mcause = 0x0].
+RULE 238: In M-mode, accessing mstatus register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x300; # Result: mcause = 0x0].
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+mstatus is the machine-level read/write status CSR controlling privilege, interrupts, trap return, memory-access behavior, virtualization, and extension state; direct access is permitted in M-mode, while S-mode or U-mode access raises an illegal-instruction exception. Trap entry saves prior privilege and interrupt-enable state and disables the target mode's interrupts, while xRET restores privilege and interrupt state and clears MPRV when returning below M-mode. FS, VS, and XS encode extension state as Off, Initial, Clean, or Dirty, with SD summarizing dirty state; accessing disabled state traps, while modifying enabled state generally marks it Dirty, including both machine and virtual-supervisor state where applicable. MPRV/MPP, endian, and XLEN fields govern effective data-access privilege, byte order, and lower-mode width, while TVM, TSR, and TW can cause specified translation operations, SRET, WFI, or WRS.NTO outside M-mode to raise illegal-instruction exceptions.
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 3
+NAME: satp
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V register semantics strictly from the provided rules.
+
+Register: satp
+
+Rules (subset):
+RULE 1: A CSR instruction targeting address 0x180 in S-mode or M-mode reads or writes satp according to CSR instruction semantics; if executed in U-mode, it raises an illegal-instruction exception.
+RULE 2: When TVM=1, an attempt to read the satp CSR while executing in S-mode raises an illegal-instruction exception.
+RULE 3: When TVM=1, an attempt to write the satp CSR while executing in S-mode raises an illegal-instruction exception.
+RULE 4: When TVM=0, an attempt to read the satp CSR while executing in S-mode is permitted.
+RULE 5: When TVM=0, an attempt to write the satp CSR while executing in S-mode is permitted.
+RULE 6: A read-only-zero satp.MODE field is always Bare.
+RULE 7: Writing satp updates its SXLEN-bit contents, and a subsequent read of satp returns those contents as an SXLEN-bit value.
+RULE 8: If satp.PPN differs from the intended root page table’s supervisor physical address divided by 4096, address translation uses satp.PPN << 12 as the root page-table base address instead.
+RULE 9: When SXLEN=64, satp.PPN is the 44-bit WARL field in bits 43:0; after any write, reading satp returns a legal implementation-defined PPN value in bits 43:0, which may differ from an unsupported written value.
+RULE 10: If satp is written with an unsupported satp.MODE value, the entire write has no effect and no satp field is modified.
+RULE 11: ASIDLEN may be determined by writing one to every bit position in satp.ASID and then reading satp to determine which satp.ASID bit positions hold one.
+RULE 12: After writing all ones to satp.ASID, the readback value contains a contiguous run of implemented 1 bits starting at bit 0, with all more-significant unimplemented bits reading as 0.
+RULE 13: If ASIDLEN is greater than zero, satp.ASID[ASIDLEN-1:0] is writable.
+RULE 14: When satp.MODE is Sv39, Sv48, or Sv57, writing all ones to satp.ASID and reading it back exposes no more than 16 writable ASID bits.
+RULE 15: For the address space identified by the satp value loaded for the translation, implicit reads of NAPOT page-table entries may create address-translation cache entries mapping a + j * PTESIZE to a copy of pte in which pte.ppn[i][pte.napot_bits-1:0] is replaced by vpn[i][pte.napot_bits-1:0], for any or all j such that j >> napot_bits = vpn[i] >> napot_bits.
+RULE 16: A write to satp with an unsupported MODE value is ignored.
+RULE 17: When V=1, a write to satp with an unsupported MODE value is ignored.
+RULE 18: If mstatus.TVM=1 and an instruction executing in S-mode attempts to read or write satp, the instruction raises an illegal-instruction exception, allowing M-mode to intercept the access.
+RULE 19: When the ignore transformation is applied to a physical address, including a guest-physical address, while running in M-mode or while running in another privilege mode with the active satp register's MODE field set to Bare, it replaces the upper PMLEN bits with 0 and produces transformed_effective_address = {{PMLEN{0}}, effective_address[XLEN-PMLEN-1:0]}.
+RULE 20: When the active satp register's MODE field is not Bare and the ignore transformation is applied to a virtual address, it replaces the upper PMLEN bits with the sign extension of the PMLEN+1st bit and produces transformed_effective_address = {{PMLEN{effective_address[XLEN-PMLEN-1]}}, effective_address[XLEN-PMLEN-1:0]}.
+RULE 21: In M-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 22: In HS-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 23: In U-mode, accessing satp register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x180; # Result: mcause = 0x2].
+RULE 24: In M-mode, setting satp.MODE (bit 60) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x1000000000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x0].
+RULE 25: In M-mode, setting satp.ASID (bit 44) should be reflected on the readback (# Result: a2 = 0x100000000000) [# Extension Must Be Active: NONE; li a0, 0x100000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x100000000000].
+RULE 26: In M-mode, setting satp.PPN (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x1].
+RULE 27: In M-mode, writing 0xffffffffffffffff to the satp register should not set it to 0xffffffff or 0xffffffffffffffff (# Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff) [# Extension Must Be Active: NONE; li a0, 0xffffffffffffffff; csrw 0x180, a0; csrr a1, 0x180; # Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff].
+RULE 28: In M-mode, accessing satp register while H extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: H; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 29: In M-mode, accessing satp register while Svade extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svade; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 30: In M-mode, accessing satp register while Svadu extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svadu; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 31: In M-mode, accessing satp register while Svnapot extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svnapot; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 32: In M-mode, accessing satp register while Svpbmt extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svpbmt; csrr a0, 0x180; # Result: mcause = 0x0].
+RULE 33: In M-mode, accessing satp register while Zicfiss extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfiss; csrr a0, 0x180; # Result: mcause = 0x0].
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+satp selects supervisor address-translation state, combining the translation MODE, address-space identifier (ASID), and root page-table physical page number (PPN). It is an SXLEN-bit CSR with implementation-defined WARL behavior for PPN and ASID; unsupported MODE writes are ignored entirely, and a read-only-zero MODE remains Bare. M-mode and S/HS-mode may access satp, but S-mode reads or writes raise an illegal-instruction exception when mstatus.TVM=1, and all U-mode accesses raise an illegal-instruction exception.
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 4
+NAME: scounteren
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V register semantics strictly from the provided rules.
+
+Register: scounteren
+
+Rules (subset):
+RULE 1: If U-mode attempts to read or write scounteren, an illegal-instruction exception is raised; S-mode and M-mode may read and write scounteren.
+RULE 2: When the CY bit in scounteren is clear, an attempt to read the cycle register while executing in U-mode will cause an illegal-instruction exception.
+RULE 3: When the CY bit in scounteren is set, U-mode access to the cycle register is permitted.
+RULE 4: When the TM bit in scounteren is clear, an attempt to read the time register while executing in U-mode will cause an illegal-instruction exception.
+RULE 5: When the TM bit in scounteren is set, U-mode access to the time register is permitted.
+RULE 6: When the IR bit in scounteren is clear, an attempt to read the instret register while executing in U-mode will cause an illegal-instruction exception.
+RULE 7: When the IR bit in scounteren is set, U-mode access to the instret register is permitted.
+RULE 8: When an HPMn bit in scounteren is clear, an attempt to read the corresponding hpmcountern register while executing in U-mode will cause an illegal-instruction exception.
+RULE 9: When an HPMn bit in scounteren is set, U-mode access to the corresponding hpmcountern register is permitted.
+RULE 10: If a CSR instruction accesses scounteren from S-mode or M-mode, the access completes as an implemented CSR and does not raise an illegal-instruction exception due to scounteren being unimplemented.
+RULE 11: A read-only-zero bit in scounteren indicates that reading the corresponding counter while executing in U-mode will cause an exception.
+RULE 12: Setting a bit in mcounteren does not affect whether the corresponding bit in scounteren is writable.
+RULE 13: If U-mode attempts to access a counter while the corresponding bit in either scounteren or mcounteren is clear, the access raises an illegal-instruction exception.
+RULE 14: In M-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x106; # Result: mcause = 0x0].
+RULE 15: In HS-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x106; # Result: mcause = 0x0].
+RULE 16: In U-mode, accessing scounteren register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x106; # Result: mcause = 0x2].
+RULE 17: In M-mode, setting scounteren.HPM18 (bit 18) should be reflected on the readback (# Result: a2 = 0x40000) [# Extension Must Be Active: NONE; li a0, 0x40000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40000].
+RULE 18: In M-mode, setting scounteren.HPM17 (bit 17) should be reflected on the readback (# Result: a2 = 0x20000) [# Extension Must Be Active: NONE; li a0, 0x20000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20000].
+RULE 19: In M-mode, setting scounteren.HPM16 (bit 16) should be reflected on the readback (# Result: a2 = 0x10000) [# Extension Must Be Active: NONE; li a0, 0x10000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x10000].
+RULE 20: In M-mode, setting scounteren.HPM15 (bit 15) should be reflected on the readback (# Result: a2 = 0x8000) [# Extension Must Be Active: NONE; li a0, 0x8000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8000].
+RULE 21: In M-mode, setting scounteren.HPM14 (bit 14) should be reflected on the readback (# Result: a2 = 0x4000) [# Extension Must Be Active: NONE; li a0, 0x4000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4000].
+RULE 22: In M-mode, setting scounteren.HPM13 (bit 13) should be reflected on the readback (# Result: a2 = 0x2000) [# Extension Must Be Active: NONE; li a0, 0x2000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2000].
+RULE 23: In M-mode, setting scounteren.HPM12 (bit 12) should be reflected on the readback (# Result: a2 = 0x1000) [# Extension Must Be Active: NONE; li a0, 0x1000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1000].
+RULE 24: In M-mode, setting scounteren.HPM11 (bit 11) should be reflected on the readback (# Result: a2 = 0x800) [# Extension Must Be Active: NONE; li a0, 0x800; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x800].
+RULE 25: In M-mode, setting scounteren.HPM10 (bit 10) should be reflected on the readback (# Result: a2 = 0x400) [# Extension Must Be Active: NONE; li a0, 0x400; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x400].
+RULE 26: In M-mode, setting scounteren.HPM9 (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x200].
+RULE 27: In M-mode, setting scounteren.HPM8 (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x100].
+RULE 28: In M-mode, setting scounteren.HPM7 (bit 7) should be reflected on the readback (# Result: a2 = 0x80) [# Extension Must Be Active: NONE; li a0, 0x80; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x80].
+RULE 29: In M-mode, setting scounteren.HPM6 (bit 6) should be reflected on the readback (# Result: a2 = 0x40) [# Extension Must Be Active: NONE; li a0, 0x40; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40].
+RULE 30: In M-mode, setting scounteren.HPM5 (bit 5) should be reflected on the readback (# Result: a2 = 0x20) [# Extension Must Be Active: NONE; li a0, 0x20; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20].
+RULE 31: In M-mode, setting scounteren.HPM4 (bit 4) should be reflected on the readback (# Result: a2 = 0x10) [# Extension Must Be Active: NONE; li a0, 0x10; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x10].
+RULE 32: In M-mode, setting scounteren.HPM3 (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8].
+RULE 33: In M-mode, setting scounteren.IR (bit 2) should be reflected on the readback (# Result: a2 = 0x4) [# Extension Must Be Active: NONE; li a0, 0x4; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4].
+RULE 34: In M-mode, setting scounteren.TM (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2].
+RULE 35: In M-mode, setting scounteren.CY (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1].
+RULE 36: In M-mode, accessing scounteren register while H extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: H; csrr a0, 0x106; # Result: mcause = 0x0].
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+scounteren controls U-mode access to the cycle, time, instret, and hardware performance-monitor counters through the CY, TM, IR, and corresponding HPMn fields. A U-mode counter read is permitted only when the corresponding bits in both scounteren and mcounteren are set; otherwise it raises an illegal-instruction exception, and a read-only-zero scounteren bit indicates such access will fail. The scounteren CSR is implemented and readable and writable from S/HS-mode and M-mode without exception, including when the H extension is active, whereas any U-mode access to scounteren itself raises an illegal-instruction exception. Setting a bit in mcounteren does not affect whether the corresponding scounteren bit is writable.
+======================================================= END - 4 ========================================================

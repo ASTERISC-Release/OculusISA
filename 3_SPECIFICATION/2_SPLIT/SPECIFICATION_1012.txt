@@ -1,0 +1,70 @@
+## 6.3.1. Configuring priorities of major interrupts at VS level
+
+Like  for  supervisor  level,  the  Advanced  Interrupt  Architecture  optionally  allows  major  VS-level interrupts to be configured by software to intermix in priority with VS-level external interrupts. As documented in Section 5.4, interrupt priorities for supervisor level are configured by the iprio array accessed indirectly through CSRs siselect and sireg .  The siselect addresses for the iprio array registers are 0x30 - 0x3F .
+
+VS  level  has  its  own vsiselect and vsireg ,  but  unlike  supervisor  level,  there  are  no  registers  at vsiselect addresses 0x30 - 0x3F . When vsiselect has a value in the range 0x30 - 0x3F , an attempt from VS-mode to access sireg (really vsireg ) causes a virtual instruction exception. To give a virtual hart the illusion of an array of iprio registers  accessed through siselect and sireg ,  a  hypervisor must emulate  the  VS-level iprio array  when  accesses  to sireg from  VS-mode  cause  virtual  instruction traps.
+
+Instead of a physical VS-level iprio array, a separate hardware mechanism is provided for configuring the priorities of a subset of interrupts for VS level, using hypervisor CSRs hviprio1 and hviprio2 . The subset of major interrupt numbers whose priority may be configured in hardware are these:
+
+- 1 Supervisor software interrupt
+- 5 Supervisor timer interrupt
+- 13 Counter overflow interrupt
+- 14-23 Reserved for standard local interrupts
+
+For interrupts directed to VS level, software-configurable priorities are not supported in hardware for standard local interrupts in the range 32-48.
+
+<image>
+
+For custom interrupts, priority configurability may be supported in hardware by custom CSRs, expanding upon hviprio1 and hviprio2 for standard interrupts.
+
+Registers hviprio1 and hviprio2 have these formats:
+
+## hviprio1 :
+
+## hviprio2 :
+
+bits 7:0
+
+Reserved for priority number for interrupt 0; reads as zero
+
+bits 15:8 Priority number for interrupt 1, supervisor software interrupt
+
+bits 23:16 Reserved for priority number for interrupt 4; reads as zero
+
+bits 31:24 Priority number for interrupt 5, supervisor timer interrupt
+
+bits 39:32 Reserved for priority number for interrupt 8; reads as zero
+
+bits 47:40 Priority number for interrupt 13, counter overflow interrupt
+
+bits 55:48 Priority number for interrupt 14
+
+bits 63:56 Priority number for interrupt 15
+
+bits 7:0 Priority number for interrupt 16
+
+bits 15:8 Priority number for interrupt 17
+
+bits 23:16 Priority number for interrupt 18
+
+bits 31:24 Priority number for interrupt 19
+
+bits 39:32 Priority number for interrupt 20
+
+bits 47:40 Priority number for interrupt 21
+
+bits 55:48 Priority number for interrupt 22
+
+bits 63:56 Priority number for interrupt 23
+
+Each priority number in hviprio1 and hviprio2 is a WARL unsigned integer field that is either readonly zero or implements a minimum of IPRIOLEN bits or 6 bits, whichever is larger, and preferably all 8 bits. Implementations may freely choose which priority number fields are read-only zeros, but all other  fields  must  implement  the  same  number  of  integer  bits.  A  minimal  implementation  of  these CSRs has them both be read-only zeros.
+
+A  hypervisor  can  choose  to  employ  registers hviprio1 and hviprio2 when  emulating  the  (virtual) supervisor-level iprio array accessed indirectly through siselect and sireg (really vsiselect and vsireg ) for a virtual hart. For interrupts not in the subset supported by hviprio1 and hviprio2 ,  the priority number bytes in the emulated iprio array can be read-only zeros.
+
+<image>
+
+Providing hardware support for configurable priority for only a subset of major interrupts at VS level is a compromise. The utility of being able to control interrupt priorities at VS level  is  arguably  illusory  when  all  traps  to  M-mode  and  HS-mode-both  interrupts  and synchronous exceptions-have absolute priority, and when each virtual hart may also be competing for resources against other virtual harts well beyond its control. Nevertheless, priority  configurability  has  been  made  possible  for  the  most  likely  subset  of  interrupts, while  minimizing  the  number  of  added  CSRs  that  must  be  swapped  on  a  virtual  hart switch.
+
+Major interrupts outside the priority-configurable subset can still be directed to VS level, but their priority will simply be the default order defined in Section 5.1.
+
+If  a  hypervisor  really  must  emulate  configurability  of  priority  for  interrupts  beyond  the  subset supported by hviprio1 and hviprio2 , it can do so with extra effort by setting bit VTI of CSR hvictl , described in the next subsection.

@@ -1,0 +1,64 @@
+PATH 1:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h
+Path condition: S extension is not enabled.
+Source behavior: require_extension('S') fails before any later checks or MMU.flush_tlb().
+Architectural outcome: Instruction traps before any address-translation invalidation occurs.
+Observable oracle: Execute SFENCE.VMA with S extension disabled; observe trap and no architecturally observable TLB/translation invalidation effect.
+Feasibility: feasible
+PATH 2:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h
+Path condition: S extension is enabled, but p->has_mmu() is false.
+Source behavior: require(p->has_mmu()) fails before privilege/virtualization checks and before MMU.flush_tlb().
+Architectural outcome: Instruction traps before any address-translation invalidation occurs.
+Observable oracle: Execute SFENCE.VMA on a Spike configuration without an MMU; observe trap and no architecturally observable TLB/translation invalidation effect.
+Feasibility: feasible
+PATH 3:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is true, and either STATE.prv == PRV_U or hstatus.VTVM is set.
+Source behavior: The virtualized-mode branch calls require_novirt() before MMU.flush_tlb().
+Architectural outcome: Instruction traps before any address-translation invalidation occurs.
+Observable oracle: Execute SFENCE.VMA with V=1 in U privilege, or with V=1 and hstatus.VTVM=1; observe trap and no architecturally observable TLB/translation invalidation effect.
+Feasibility: feasible
+PATH 4:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is false, mstatus.TVM is clear, and current privilege is less privileged than PRV_S.
+Source behavior: The non-virtualized branch calls require_privilege(PRV_S), which fails before MMU.flush_tlb().
+Architectural outcome: Instruction traps before any address-translation invalidation occurs.
+Observable oracle: Execute SFENCE.VMA with V=0, mstatus.TVM=0, and current privilege below S; observe trap and no architecturally observable TLB/translation invalidation effect.
+Feasibility: feasible
+PATH 5:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is false, mstatus.TVM is set, and current privilege is less privileged than PRV_M.
+Source behavior: The non-virtualized branch calls require_privilege(PRV_M), which fails before MMU.flush_tlb().
+Architectural outcome: Instruction traps before any address-translation invalidation occurs.
+Observable oracle: Execute SFENCE.VMA with V=0, mstatus.TVM=1, and current privilege below M; observe trap and no architecturally observable TLB/translation invalidation effect.
+Feasibility: feasible
+PATH 6:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h -> riscv/mmu.cc:mmu_t::flush_tlb()
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is true, STATE.prv != PRV_U, and hstatus.VTVM is clear.
+Source behavior: No privilege check is performed in the virtualized branch; MMU.flush_tlb() is executed, invalidating instruction, load, store, and PTE translation caches, then flushing the instruction cache.
+Architectural outcome: Instruction completes without trap; address-translation state cached by Spike is invalidated.
+Observable oracle: Execute SFENCE.VMA with V=1, privilege not U, and hstatus.VTVM=0; observe no trap and subsequent instruction/load/store translations behave as after a translation-cache flush.
+Feasibility: feasible
+PATH 7:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h -> riscv/mmu.cc:mmu_t::flush_tlb()
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is false, mstatus.TVM is clear, and current privilege is at least PRV_S.
+Source behavior: require_privilege(PRV_S) passes; MMU.flush_tlb() is executed, invalidating instruction, load, store, and PTE translation caches, then flushing the instruction cache.
+Architectural outcome: Instruction completes without trap; address-translation state cached by Spike is invalidated.
+Observable oracle: Execute SFENCE.VMA with V=0, mstatus.TVM=0, and privilege S or higher; observe no trap and subsequent instruction/load/store translations behave as after a translation-cache flush.
+Feasibility: feasible
+PATH 8:
+Target: SFENCE.VMA
+Source entry: riscv/insns/sfence_vma.h -> riscv/mmu.cc:mmu_t::flush_tlb()
+Path condition: S extension is enabled, p->has_mmu() is true, STATE.v is false, mstatus.TVM is set, and current privilege is PRV_M.
+Source behavior: require_privilege(PRV_M) passes; MMU.flush_tlb() is executed, invalidating instruction, load, store, and PTE translation caches, then flushing the instruction cache.
+Architectural outcome: Instruction completes without trap; address-translation state cached by Spike is invalidated.
+Observable oracle: Execute SFENCE.VMA with V=0, mstatus.TVM=1, and M privilege; observe no trap and subsequent instruction/load/store translations behave as after a translation-cache flush.
+Feasibility: feasible

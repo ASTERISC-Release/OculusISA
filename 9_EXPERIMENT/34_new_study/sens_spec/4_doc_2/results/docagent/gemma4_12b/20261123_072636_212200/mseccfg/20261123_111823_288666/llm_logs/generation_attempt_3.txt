@@ -1,0 +1,33 @@
+Based on the provided RISC-V Privileged Architecture specification, here are the answers to your questions:
+
+### 1. What is the purpose of the `mstatus` register?
+The `mstatus` register (Machine Status) is used to keep track of the processor's current operating state at the machine level. It contains several important fields:
+*   **Privilege Modes:** It tracks the current privilege mode and contains fields like `MPP` (Machine Previous Privilege) to store the mode before a trap.
+*   **Interrupt Control:** It contains the global interrupt enable bit (`MIE`) and other fields like `MPIE` (Machine Previous Interrupt Enable) to manage how and when interrupts are handled.
+*   **Extension Context:** It holds status bits for various extensions (e.g., `FS` for floating-point, `VS` for vector status, and `ELP` for landing pads).
+*   **Trap Behavior:** It contains fields like `TVM` (Trap View Mode) and `TSR` (Trap Status Register) which specifically affect how traps are handled in Hypervisor-extended (HS) mode.
+
+### 2. Explain the difference between `mepc` and `mcause` registers during a trap.
+These two registers are written by the hardware when a trap occurs to inform the software about what happened:
+*   **`mepc` (Machine Exception Program Counter):** This register captures the **address** of the instruction that was interrupted or the instruction that caused the exception. It tells the software *where* the trap happened so it can resume execution later.
+*   **`mcause` (Machine Cause):** This register captures the **reason** for the trap. It contains an "Interrupt" bit (indicating if the trap was an interrupt or a synchronous exception) and an "Exception Code" (identifying the specific event, such as a page fault, illegal instruction, or a specific timer interrupt).
+
+### 3. How are the `mcycle` and `minstret` registers used?
+These are hardware performance monitoring counters:
+*   **`mcycle`:** Counts the total number of clock cycles executed by the processor core.
+*   **`minstret`:** Counts the total number of instructions retired by the hart.
+*   **Precision:** Both registers have 64-bit precision on all RV32 and RV64 harts.
+*   **Usage:** They allow software to profile the performance of code, measure execution time, and determine the frequency of specific operations. They can be shared between harts or be restricted to specific privilege modes using the `mcounteren` register.
+
+### 4. Describe the "Vectored" mode in the `mtvec` register.
+When the `MODE` field in the `mtvec` register is set to **Vectored (Value 1)**:
+*   **Synchronous Exceptions:** All synchronous exceptions into machine mode cause the program counter (`pc`) to be set to the base address stored in the `BASE` field.
+*   **Asynchronous Interrupts:** Interrupts cause the `pc` to be set to the address in the `BASE` field **plus four times the interrupt cause number** ($BASE + 4 \times cause$).
+*   **Purpose:** This allows the hardware to automatically jump to different locations in a vector table based on which interrupt occurred, reducing the need for a large "switch" statement in the primary trap handler.
+
+### 5. What are the two primary types of memory protection provided by the PMP (Physical Memory Protection) unit?
+The PMP unit provides a mechanism to limit the physical addresses accessible by software. The two primary types of protection/rules are:
+*   **Read/Write/Execute (R, W, X) Permissions:** These bits define whether a specific memory region can be read from, written to, or executed. If an access violates these permissions, the hardware generates an access-fault exception.
+*   **Locked (L) and Address Matching (A) Rules:** 
+    *   **L (Locked):** When a PMP entry is locked, the permissions are enforced even for Machine-mode (M-mode) accesses. When unlocked, M-mode typically has full permissions regardless of the R/W/X bits.
+    *   **A (Address Matching):** This determines the "shape" of the protected region (e.g., **NA4** for a 4-byte region, **NAPOT** for a naturally aligned power-of-two region, or **TOR** for a "Top of Range" boundary).

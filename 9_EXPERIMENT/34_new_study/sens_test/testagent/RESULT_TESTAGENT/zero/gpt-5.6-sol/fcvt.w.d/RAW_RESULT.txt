@@ -1,0 +1,36 @@
+# Test Case Rule: RULE 1: FCVT.W.D converts the double-precision floating-point value in floating-point register rs1 to a signed 32-bit integer and writes the result to integer register rd.
+##### ASSEMBLY #####
+li t0, 0x4045000000000000
+fmv.d.x ft0, t0
+fcvt.w.d a0, ft0, rtz
+# Result: a0 = 42
+
+# Test Case Rule: RULE 2: FCVT.W.D rounds the conversion result according to the rounding mode specified in the rm field of the instruction.
+##### ASSEMBLY #####
+li t0, 0x3ff8000000000000
+fmv.d.x ft0, t0
+fcvt.w.d a0, ft0, rdn
+# Result: a0 = 1
+
+# Test Case Rule: RULE 3: When executed on an RV64 implementation, FCVT.W.D sign-extends the 32-bit integer result to produce a 64-bit value written to integer register rd.
+##### ASSEMBLY #####
+li t0, 0xbff0000000000000
+fmv.d.x ft0, t0
+fcvt.w.d a0, ft0, rtz
+# Result: a0 = 0xffffffffffffffff
+
+# Test Case Rule: RULE 4: FCVT.W.D must raise the floating-point exception flags that correspond to converting its double-precision source operand to a signed 32-bit integer, and the set of flags raised is identical to those that would be raised for FCVTMOD.W.D with the same operand.
+##### ASSEMBLY #####
+li t0, 0x3ff8000000000000
+fmv.d.x ft0, t0
+csrw fflags, x0
+fcvt.w.d a0, ft0, rtz
+csrr t1, fflags
+csrw fflags, x0
+fcvtmod.w.d a1, ft0, rtz
+csrr t2, fflags
+xor t3, t1, t2
+li t4, 1
+xor t1, t1, t4
+or a0, t3, t1
+# Result: a0 = 0

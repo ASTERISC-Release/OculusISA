@@ -1,0 +1,309 @@
+You are an expert RISC-V ISA conformance analyst and Sail semantic path extractor.
+
+Task:
+Given Sail RISC-V source code or model text, extract the architecturally relevant semantic paths for the target.
+
+Target: satp
+
+Source restriction:
+Use only the provided Sail RISC-V source/model text and your pretrained knowledge of Sail syntax, RISC-V terminology, and semantic-model reading.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided Sail source/model text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided Sail source/model text is the authoritative source. If your pretrained RISC-V knowledge conflicts with the provided Sail source/model text, follow the provided Sail source/model text.
+
+Input:
+The input is the provided Sail RISC-V source/model text below.
+
+BEGIN SAIL SOURCE MODEL
+
+// File: model/core/types.sail
+
+// supervisor-level address translation modes
+
+type satp_mode = bits(4)
+
+enum SATPMode = {Bare, Sv32, Sv39, Sv48, Sv57}
+
+function satpMode_of_bits(a : Architecture, m : satp_mode) -> option(SATPMode) =
+match (a, m) {
+(*,    0x0) => Some(Bare),
+(RV32, 0x1) => Some(Sv32),
+(RV64, 0x8) => Some(Sv39),
+(RV64, 0x9) => Some(Sv48),
+(RV64, 0xA) => Some(Sv57),
+(*, _)      => None()
+}
+
+// File: model/core/sys_regs.sail
+
+// S-mode address translation and protection (satp) layout.
+// The actual satp register is defined in an architecture-specific file.
+
+bitfield Satp64 : bits(64) = {
+Mode : 63 .. 60,
+Asid : 59 .. 44,
+PPN  : 43 .. 0
+}
+
+bitfield Satp32 : bits(32) = {
+Mode : 31,
+Asid : 30 .. 22,
+PPN  : 21 .. 0
+}
+
+// TODO: This currently assumes all ASID bits are implemented
+// and does not legalize the asid field if asidlen is not the maximum.
+function legalize_satp(
+arch : Architecture,
+prev_value : xlenbits,
+written_value : xlenbits,
+) -> xlenbits = {
+if xlen == 32 then {
+let s = Mk_Satp32(written_value);
+match satpMode_of_bits(arch, 0b000 @ s[Mode]) {
+None()  => prev_value,
+Some(Sv_mode) => match Sv_mode {
+Bare if currentlyEnabled(Ext_Svbare) => s.bits,
+Sv32 if currentlyEnabled(Ext_Sv32) => s.bits,
+_ => prev_value,
+}
+}
+} else if xlen == 64 then {
+let s = Mk_Satp64(written_value);
+match satpMode_of_bits(arch, s[Mode]) {
+None()  => prev_value,
+Some(Sv_mode) =>  match Sv_mode {
+Bare if currentlyEnabled(Ext_Svbare) => s.bits,
+Sv39 if currentlyEnabled(Ext_Sv39) => s.bits,
+Sv48 if currentlyEnabled(Ext_Sv48) => s.bits,
+Sv57 if currentlyEnabled(Ext_Sv57) => s.bits,
+_ => prev_value,
+}
+}
+} else {
+internal_error(**FILE**, **LINE**, "Unsupported xlen" ^ dec_str(xlen))
+}
+}
+
+// File: model/sys/vmem.sail
+
+private function satp_accessible(priv : Privilege) -> bool =
+match priv {
+Machine           => hartSupports(Ext_S),
+Supervisor        => mstatus[TVM]  == 0b0,
+VirtualSupervisor => false /* TODO: hstatus[VTVM] == 0b0 */,
+User              => false,
+VirtualUser       => false,
+}
+
+register satp : xlenbits
+
+mapping clause csr_name_map = 0x180 <-> "satp"
+
+function clause is_CSR_accessible(0x180, priv, _) = satp_accessible(priv)
+
+function clause is_CSR_exception_virtual(0x180, _, _) = true
+
+function clause read_CSR(0x180) = satp
+
+function clause write_CSR(0x180, value) = {
+satp = legalize_satp(architecture(Supervisor), satp, value);
+Ok(satp)
+}
+
+// ----------------
+// Fields of SATP
+
+// ASID is 9b in Sv32, 16b in Sv39/Sv48/Sv57
+private val satp_to_asid : forall 'n, 'n in {32, 64}. bits('n) -> bits(if 'n == 32 then 9 else 16)
+
+function satp_to_asid(satp_val) =
+if 'n == 32 then Mk_Satp32(satp_val)[Asid] else Mk_Satp64(satp_val)[Asid]
+
+private val satp_to_ppn : forall 'n, 'n in {32, 64}. bits('n) -> bits(if 'n == 32 then 22 else 44)
+
+function satp_to_ppn(satp_val) =
+if 'n == 32 then Mk_Satp32(satp_val)[PPN] else Mk_Satp64(satp_val)[PPN]
+
+// Compute address translation mode from SATP register
+
+private function translationMode(priv : Privilege) -> SATPMode = {
+if priv == Machine then Bare
+else {
+let arch = architecture(Supervisor);
+let mbits : satp_mode = match arch {
+RV64 => {
+// Can't have an effective architecture of RV64 on RV32.
+assert(xlen >= 64);
+Mk_Satp64(satp)[Mode]
+},
+RV32 => 0b000 @ Mk_Satp32(satp[31..0])[Mode],
+RV128 => internal_error(**FILE**, **LINE**, "RV128 not supported"),
+};
+match satpMode_of_bits(arch, mbits) {
+Some(m) => m,
+// The model does not support modifying SXL currently so this cannot happen.
+None()  => internal_error(**FILE**, **LINE**, "invalid translation mode in satp")
+}
+}
+}
+
+// Mapping the SATPMode to the width integer. Note there is also SvBare
+// and it's an error to call this with SvBare.
+
+mapping satp_mode_width : SATPMode <-> {32, 39, 48, 57} = {
+Sv32 <-> 32,
+Sv39 <-> 39,
+Sv48 <-> 48,
+Sv57 <-> 57,
+}
+
+private function get_satp forall 'v, is_sv_mode('v). (
+sv_width : int('v)
+) -> bits(if 'v == 32 then 32 else 64) = {
+// Cannot use Sv39+ on RV32.
+assert('v == 32 | xlen == 64);
+if sv_width == 32 then satp[31 .. 0] else satp
+}
+
+function translateAddr(
+vAddr : virtaddr,
+access : MemoryAccessType(mem_payload),
+) -> TR_Result(physaddr, ExceptionType) = {
+
+// Effective privilege takes into account mstatus.PRV, mstatus.MPP
+// See sys_control.sail for effectivePrivilege() and sys_regs.sail for cur_privilege.
+let effPriv = effectivePrivilege(access, mstatus, cur_privilege);
+
+let mode = translationMode(effPriv);
+
+// "If satp.MODE (or vsatp.MODE when V=1) is set to Bare and the
+// effective privilege mode is less than M, shadow stack
+// instructions raise a store/AMO access-fault exception."
+// "Use of Zicfiss in M-mode is not supported."
+if is_shadow_stack_access(access) then {
+if (mode == Bare & effPriv != Machine) | effPriv == Machine
+then return Err(E_SAMO_Access_Fault(), init_ext_ptw);
+};
+
+if mode == Bare then {
+return Ok(Physaddr(zero_extend(bits_of(vAddr))), PBMT_PMA, init_ext_ptw);
+};
+
+// Sv39 -> 39, etc.
+let sv_width = satp_mode_width(mode);
+
+// For Sv32 on RV64, satp is 32 bits (SXLEN), not XLEN.
+let satp_sxlen = get_satp(sv_width);
+
+// Cannot use Sv39+ on RV32.
+assert(sv_width == 32 | xlen == 64);
+
+let svAddr = bits_of(vAddr)[sv_width - 1 .. 0];
+
+if bits_of(vAddr) != sign_extend(svAddr) then {
+Err(translationException(access, PTW_Invalid_Addr()), init_ext_ptw)
+} else {
+let mxr    = mstatus[MXR] == 0b1;
+let do_sum = mstatus[SUM] == 0b1;
+let asid   = satp_to_asid(satp_sxlen);
+
+```
+// Step 1 of VATP.
+let base_ppn = satp_to_ppn(satp_sxlen);
+
+let res = translate(sv_width,
+                    zero_extend(asid),
+                    base_ppn,
+                    svAddr[sv_width - 1 .. pagesize_bits],
+                    access, effPriv, mxr, do_sum,
+                    init_ext_ptw);
+
+// Fixup result PA or exception
+match res {
+  Ok(ppn, pbmt, ext_ptw) => {
+    // Step 10 of VATP.
+    // Append the page offset. This is now a 34 or 56 bit address.
+    let paddr = ppn @ bits_of(vAddr)[pagesize_bits - 1 .. 0];
+
+    // On RV64 paddr can be 34 or 56 bits, so we zero extend to 64.
+    // On RV32 paddr can only be 34 bits. Sail knows this due to
+    // the assertion above.
+    Ok(Physaddr(zero_extend(paddr)), pbmt, ext_ptw)
+  },
+  Err(f, ext_ptw) => Err(translationException(access, f), ext_ptw)
+}
+```
+
+}
+}
+
+// File: model/sys/vmem_utils.sail
+
+// External API
+
+// Transforms the effective address based on PMM settings and the current translation mode.
+
+function transform_effective_address(vaddr : virtaddr, access : MemoryAccessType(mem_payload)) -> virtaddr = {
+let eff_privilege = effectivePrivilege(access, mstatus, cur_privilege);
+let pmlen = get_pmlen(access, eff_privilege);
+let mode = translationMode(eff_privilege);
+if mode == Bare then pm_transform_PA(vaddr, pmlen) else pm_transform_VA(vaddr, pmlen)
+}
+
+END SAIL SOURCE MODEL
+
+
+Reasoning requirement:
+Before producing the final paths, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate the Sail function, clause, mapping, helper, or semantic rule that defines the target.
+2. Identify the semantic entry point and all relevant inputs, including instruction operands, CSR state, privilege state, extension state, memory state, translation state, and architectural mode state.
+3. Follow the Sail semantic control flow.
+4. Identify each architecturally distinct semantic path.
+5. For each path, identify the path conditions.
+6. For each path, identify the semantic actions that affect architectural behavior.
+7. For each path, identify the architectural outcome, such as trap, no trap, CSR read result, CSR write effect, register result, memory effect, translation effect, or exception cause.
+8. Remove paths that differ only by helper structure or model-internal detail and have the same architectural condition and outcome.
+9. Do not invent paths that are not supported by the provided Sail source/model text.
+10. If the provided Sail source/model text is incomplete for the target, extract only the paths supported by the provided text.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final structured paths.
+
+Path requirements:
+Each path must describe one architecturally distinct semantic behavior.
+Each path must have explicit path conditions.
+Each path must have explicit architectural outcomes.
+Each path must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, memory state, or address-translation behavior.
+Each path must be based on the provided Sail model behavior, not on the RISC-V specification unless the Sail model explicitly encodes that behavior.
+Do not include naming-only, encoding-only, syntax-only, formatting-only, helper-only, type-only, proof-only, or performance-only paths.
+Do not include model-internal details unless they affect an architecturally visible outcome.
+If multiple Sail branches lead to the same architectural behavior, merge them into one path and list the combined condition.
+If one Sail branch has multiple independent architectural outcomes, split it into multiple paths.
+
+Completeness requirement:
+Generate the complete set of architecturally distinct semantic paths for the target that can be inferred from the provided Sail source/model text.
+
+Output format:
+Output only the paths.
+Do not give an introduction.
+Do not give headings outside the required path format.
+Do not include citations.
+Do not include explanations outside the path fields.
+Do not include blank lines between paths.
+
+Required path format:
+PATH <number>:
+Target: <target>
+Semantic entry: <Sail function, clause, mapping, helper, or semantic rule>
+Path condition: <explicit condition under which this path is taken>
+Semantic behavior: <concise Sail-level behavior relevant to architecture>
+Architectural outcome: <architecturally visible result>
+Observable oracle: <how this path can be tested architecturally>
+Feasibility: <feasible, infeasible, or source-incomplete>

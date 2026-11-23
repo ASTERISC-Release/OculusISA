@@ -1,0 +1,1068 @@
+# Test Case Rule: RULE 1: Implementations may implement mseccfg such that the [s,u]seed fields are a read-only constant value 0.
+##### ASSEMBLY #####
+nop # Skipped because optional implementation-defined read-only constant
+# Result: x0 = 0
+
+# Test Case Rule: RULE 2: When mseccfg is implemented with the [s,u]seed fields as a read-only constant value 0, those fields read as 0 and are read-only.
+##### ASSEMBLY #####
+nop # Skipped because conditional implementation-defined read-only zero
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: If software writes a 1 to the [s,u]seed fields in mseccfg and subsequently reads them back, the read-back value indicates whether access to the seed CSR is enabled in U and S mode.
+##### ASSEMBLY #####
+nop # Skipped because read-back enable value is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: The mseccfg CSR is readable and writable in Machine mode (MRW privilege).
+##### ASSEMBLY #####
+csrrs t0, 0x747, x0
+csrrw x0, 0x747, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 5: mseccfg is a 64-bit read/write register that controls security features and exists only if any extension that adds a field to mseccfg is implemented; otherwise it is reserved.
+##### ASSEMBLY #####
+nop # Skipped because conditional existence implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 6: When mseccfg.USED = 0, any access to the seed CSR in U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li a1, 0
+call machine_to_user
+csrrw a0, 0x015, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 7: When mseccfg.USED = 1, read-write access to the seed CSR from U-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 256
+csrrs x0, 0x747, t0
+li a1, 0
+csrrw x0, 0x015, a1
+li a0, 0
+call machine_to_user
+csrrw a1, 0x015, a1
+li a0, 1
+csrrs t1, 0x015, x0
+li a0, 0
+csrrs t2, 0x300, x0
+# Result: a0 = 1
+
+# Test Case Rule: RULE 8: If the Zkr extension or U-mode is not implemented, the USEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because conditional on absent Zkr or U-mode
+# Result: x0 = 0
+
+# Test Case Rule: RULE 9: When mseccfg.SSEED = 0, any access to the seed CSR from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li a1, 0
+call machine_to_supervisor
+csrrw a0, 0x015, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 10: When mseccfg.SSEED = 1, read-write access to the seed CSR from S-/HS-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 512
+csrrs x0, 0x747, t0
+li a1, 0
+csrrw x0, 0x015, a1
+li a0, 0
+call machine_to_supervisor
+csrrw a1, 0x015, a1
+li a0, 1
+csrrs t1, 0x015, x0
+li a0, 0
+csrrs t2, 0x300, x0
+# Result: a0 = 1
+
+# Test Case Rule: RULE 11: If the Zkr extension or S-mode is not implemented, the SSEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because conditional on absent Zkr or S-mode
+# Result: x0 = 0
+
+# Test Case Rule: RULE 12: When the H extension is also implemented, access to the seed CSR from an HS-qualified instruction leads to a virtual-instruction exception in VS and VU modes, and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 512
+csrrs x0, 0x747, t0
+li a1, 0
+call machine_to_virtual
+csrrw a0, 0x015, a1
+# Result: mcause = 22
+
+# Test Case Rule: RULE 13: In machine mode, the seed CSR is always available as normal regardless of the values of the fields in mseccfg, and an attempted read without a write raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+csrrs a0, 0x015, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 14: When mseccfg.USED = 0, any seed CSR access from U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li a1, 0
+call machine_to_user
+csrrw a0, 0x015, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When mseccfg.USED = 1, the seed CSR is accessible as normal from U-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li t0, 256
+csrrs x0, 0x747, t0
+li a1, 0
+csrrw x0, 0x015, a1
+li a0, 0
+call machine_to_user
+csrrw a1, 0x015, a1
+li a0, 1
+csrrs t2, 0x300, x0
+# Result: a0 = 1
+
+# Test Case Rule: RULE 16: When mseccfg.SSEED = 0, any seed CSR access from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li a1, 0
+call machine_to_supervisor
+csrrw a0, 0x015, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 17: When mseccfg.SSEED = 1, the seed CSR is accessible as normal from S-/HS-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li t0, 512
+csrrs x0, 0x747, t0
+li a1, 0
+csrrw x0, 0x015, a1
+li a0, 0
+call machine_to_supervisor
+csrrw a1, 0x015, a1
+li a0, 1
+csrrs t2, 0x300, x0
+# Result: a0 = 1
+
+# Test Case Rule: RULE 18: When mseccfg.SSEED = 0, any seed CSR access from VS or VU mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li a1, 0
+call machine_to_virtual
+csrrw a0, 0x015, a1
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: When mseccfg.SSEED = 1, a read-write seed CSR access from VS or VU mode raises a virtual-instruction exception and all other access conditions raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 512
+csrrs x0, 0x747, t0
+li a1, 0
+call machine_to_virtual
+csrrw a0, 0x015, a1
+# Result: mcause = 22
+
+# Test Case Rule: RULE 20: When mseccfg.RLB = 0 and any pmpcfg.L bit is 1 in any rule or entry (including disabled entries), mseccfg.RLB remains 0 and further modifications to mseccfg.RLB are ignored until a PMP reset.
+##### ASSEMBLY #####
+csrrw x0, 0x747, x0
+li t0, 0x80
+csrrw x0, 0x3a0, t0
+li t1, 1
+csrrs x0, 0x747, t1
+csrrs a0, 0x747, x0
+li t2, 1
+and a0, a0, t2
+# Result: a0 = 0
+
+# Test Case Rule: RULE 21: When mseccfg.MMWP is set, the default PMP policy for Machine mode for memory regions without a matching PMP rule changes to denied instead of ignored.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 1
+csrw 0x747, t0
+lw s3, 0(s2)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 22: When mseccfg.MML is set, the interpretation of pmpcfg.L changes so that a set pmpcfg.L marks a rule as M-mode-only and an unset pmpcfg.L marks a rule as S/U-mode-only.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+srli t0, s2, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x199d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+lw t2, 0(s2)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 23: When mseccfg.MML is set, the formerly reserved encoding pmpcfg.RW = 01 and the encoding pmpcfg.LRWX = 1111 encode a Shared-Region.
+##### ASSEMBLY #####
+auipc s0, 0
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x1000
+srli t0, t0, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 6
+csrw 0x747, t0
+li t0, 0x389d
+csrw 0x3a0, t0
+csrr a0, 0x3a0
+# Result: a0 = 0x389d
+
+# Test Case Rule: RULE 24: When mseccfg.MML is set, an M-mode-only rule is enforced on Machine mode, denied on Supervisor or User mode, and remains locked so that further modifications to its configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+auipc s0, 0
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+li t0, 0
+csrw 0x3a0, t0
+csrr a0, 0x3a0
+# Result: a0 = 0x9d
+
+# Test Case Rule: RULE 25: When mseccfg.MML is set, an S/U-mode-only rule is enforced on Supervisor and User modes and denied on Machine mode.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+srli t0, s2, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x199d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+lw t2, 0(s2)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 26: When mseccfg.MML is set and pmpcfg.L is not set, a Shared-Region rule can be used for sharing data between M-mode and S/U-mode, is not executable, provides read/write access to M-mode, and provides read access to S/U-mode if pmpcfg.X is not set or read/write access if pmpcfg.X is set.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+srli t0, s2, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x389d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+jalr x0, 0(s2)
+# Result: mcause = 1
+
+# Test Case Rule: RULE 27: When mseccfg.MML is set and pmpcfg.L is set, a Shared-Region rule can be used for sharing code between M-mode and S/U-mode, is not writable, provides execute access to both M-mode and S/U-mode, and provides additional read access to M-mode if pmpcfg.X is set.
+##### ASSEMBLY #####
+auipc s0, 0
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 6
+csrw 0x747, t0
+li t0, 0xbc
+csrw 0x3a0, t0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 28: When mseccfg.MML is set, the encoding pmpcfg.LRWX = 1111 can be used for sharing data between M-mode and S/U-mode where both modes have read-only access, and the rule remains locked unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+srli t0, s2, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 6
+csrw 0x747, t0
+li t0, 0x9f9d
+csrw 0x3a0, t0
+li t1, 0x1234
+sw t1, 0(s2)
+# Result: mcause = 7
+
+# Test Case Rule: RULE 29: When mseccfg.MML is set, adding a PMP rule with executable privileges that is either M-mode-only or a locked Shared-Region is not possible; such pmpcfg writes are ignored, leaving pmpcfg unchanged, and this restriction can be temporarily lifted by setting mseccfg.RLB.
+##### ASSEMBLY #####
+auipc s0, 0
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x1000
+srli t0, t0, 2
+or t0, t0, t1
+csrw 0x3b1, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+li t0, 0x9d9d
+csrw 0x3a0, t0
+csrr a0, 0x3a0
+# Result: a0 = 0x9d
+
+# Test Case Rule: RULE 30: When mseccfg.MML is set, executing code with Machine mode privileges is only possible from memory regions with a matching M-mode-only rule or a locked Shared-Region rule with executable privileges; executing code from a region without a matching rule or with a matching S/U-mode-only rule is denied.
+##### ASSEMBLY #####
+auipc s0, 0
+li s1, 0x1000
+add s2, s0, s1
+srli t0, s0, 2
+li t1, 0x1ff
+or t0, t0, t1
+csrw 0x3b0, t0
+li t0, 0x9d
+csrw 0x3a0, t0
+li t0, 2
+csrw 0x747, t0
+jalr x0, 0(s2)
+# Result: mcause = 1
+
+# Test Case Rule: RULE 31: When mseccfg.MML is not set, the combination pmpcfg.RW = 01 remains reserved for future standard use.
+##### ASSEMBLY #####
+li t0, 0x18
+csrw 0x3a0, t0
+li t0, 0x38
+csrw 0x3a0, t0
+csrr a0, 0x3a0
+# Result: a0 = 0x18
+
+# Test Case Rule: RULE 32: The PMM field in mseccfg enables or disables pointer masking for Machine mode.
+##### ASSEMBLY #####
+nop # Skipped because Smmpm implementation optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 33: If the Smmpm extension is not implemented, the PMM field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because Smmpm may be implemented
+# Result: x0 = 0
+
+# Test Case Rule: RULE 34: The PMM field in mseccfg is a WARL field whose legal values are 00 meaning pointer masking disabled (PMLEN = 0), 01 reserved, 10 meaning pointer masking enabled with PMLEN = XLEN-57 (7 on RV64), and 11 meaning pointer masking enabled with PMLEN = XLEN-48 (16 on RV64).
+##### ASSEMBLY #####
+li t0, 0x8
+csrw 0x747, t0
+csrr t0, 0x747
+srli t0, t0, 3
+li t1, 3
+and t0, t0, t1
+mv a0, t0
+# Result: a0 != 1
+
+# Test Case Rule: RULE 35: When mseccfg.MLPE = 1, the Zicfilp extension is enabled in Machine mode.
+##### ASSEMBLY #####
+nop # Skipped because Zicfilp implementation optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 36: When mseccfg.MLPE = 0, the Zicfilp extension is not enabled in Machine mode, the hart does not update the ELP state and it remains NO_LP_EXPECTED.
+##### ASSEMBLY #####
+nop # Skipped because Zicfilp/ELP state implementation optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 37: When mseccfg.MLPE = 0, the LPAD instruction operates as a no-op.
+##### ASSEMBLY #####
+nop # Skipped because LPAD instruction behavior optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 38: If the Zicfilp extension is implemented then the mseccfg.MLPE field MUST be reset to 0.
+##### ASSEMBLY #####
+csrr t0, 0x747
+srli t0, t0, 10
+li t1, 1
+and t0, t0, t1
+mv a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 39: The MML field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because platform may mandate different reset value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 40: The MMWP field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because platform may mandate different reset value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 41: The RLB field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because reset value may be platform-mandated
+# Result: x0 = 0
+
+# Test Case Rule: RULE 42: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in M-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x10
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 43: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_43
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_43
+srli t0, t0, 2
+csrw pmpaddr2, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x141410
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_43:
+j s_target_43
+s_target_43:
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 44: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x14
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 45: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in S-mode or U-mode to the region is permitted as execute-only.
+##### ASSEMBLY #####
+la t0, s_target_45
+srli t0, t0, 2
+csrw pmpaddr0, t0
+la t0, s_ret_45
+srli t0, t0, 2
+csrw pmpaddr1, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x1414
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_45:
+j s_target_45
+s_target_45:
+addi a0, x0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 46: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x12
+csrw pmpcfg0, t0
+li t2, 0x1234
+sw t2, 0(t1)
+lw a0, 0(t1)
+# Result: a0 = 0x1234
+
+# Test Case Rule: RULE 47: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in S-mode or U-mode to the region permits only read operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x1234
+sw t2, 0(t1)
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_47
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_47
+srli t0, t0, 2
+csrw pmpaddr2, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x141412
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_47:
+j s_target_47
+s_target_47:
+lw a0, 0(t1)
+# Result: a0 = 0x1234
+
+# Test Case Rule: RULE 48: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x16
+csrw pmpcfg0, t0
+li t2, 0x1234
+sw t2, 0(t1)
+lw a0, 0(t1)
+# Result: a0 = 0x1234
+
+# Test Case Rule: RULE 49: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in S-mode or U-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x5678
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_49
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_49
+srli t0, t0, 2
+csrw pmpaddr2, t0
+la t0, s_target2_49
+srli t0, t0, 2
+csrw pmpaddr3, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x14141416
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_49:
+j s_target_49
+s_target_49:
+sw t2, 0(t1)
+s_target2_49:
+lw a0, 0(t1)
+# Result: a0 = 0x5678
+
+# Test Case Rule: RULE 50: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x11
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 51: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in S-mode or U-mode to the region is permitted as a read-only region.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x1234
+sw t2, 0(t1)
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_51
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_51
+srli t0, t0, 2
+csrw pmpaddr2, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x141411
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_51:
+j s_target_51
+s_target_51:
+lw a0, 0(t1)
+# Result: a0 = 0x1234
+
+# Test Case Rule: RULE 52: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x15
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 53: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in S-mode or U-mode to the region permits both read and execute operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x1234
+sw t2, 0(t1)
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_53
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_53
+srli t0, t0, 2
+csrw pmpaddr2, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x141415
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_53:
+j s_target_53
+s_target_53:
+lw a0, 0(t1)
+# Result: a0 = 0x1234
+
+# Test Case Rule: RULE 54: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x13
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 55: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in S-mode or U-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x5678
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_55
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_55
+srli t0, t0, 2
+csrw pmpaddr2, t0
+la t0, s_target2_55
+srli t0, t0, 2
+csrw pmpaddr3, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x14141413
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_55:
+j s_target_55
+s_target_55:
+sw t2, 0(t1)
+s_target2_55:
+lw a0, 0(t1)
+# Result: a0 = 0x5678
+
+# Test Case Rule: RULE 56: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x17
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 57: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=1, an access in S-mode or U-mode to the region permits read, write, and execute operations.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+li t2, 0x5678
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_57
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_57
+srli t0, t0, 2
+csrw pmpaddr2, t0
+la t0, s_target2_57
+srli t0, t0, 2
+csrw pmpaddr3, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x14141417
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_57:
+j s_target_57
+s_target_57:
+sw t2, 0(t1)
+s_target2_57:
+lw a0, 0(t1)
+# Result: a0 = 0x5678
+
+# Test Case Rule: RULE 58: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=0, an access in M-mode to the region causes an Access Exception because the region is a locked inaccessible region.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x90
+csrw pmpcfg0, t0
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 59: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception because the region is a locked inaccessible region.
+##### ASSEMBLY #####
+li t1, -4
+and t1, sp, t1
+srli t0, t1, 2
+csrw pmpaddr0, t0
+la t0, s_ret_59
+srli t0, t0, 2
+csrw pmpaddr1, t0
+la t0, s_target_59
+srli t0, t0, 2
+csrw pmpaddr2, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x141490
+csrw pmpcfg0, t0
+call machine_to_supervisor
+s_ret_59:
+j s_target_59
+s_target_59:
+lw a0, 0(t1)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 60: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in M-mode to the region is permitted as a locked execute-only region.
+##### ASSEMBLY #####
+la t0, target60
+srli t0, t0, 2
+csrw pmpaddr0, t0
+li t0, 1
+csrw 0x747, t0
+li t0, 0x94
+csrw pmpcfg0, t0
+target60:
+addi a0, x0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 61: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F94
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+la ra, done
+jalr x0, 0(t0)
+done:
+nop
+# Result: mcause = 1
+
+# Test Case Rule: RULE 62: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in M-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x92
+csrw 0x3a0, t1
+la t0, target
+jalr ra, 0(t0)
+done:
+nop
+# Result: a0 = 0x123000
+
+# Test Case Rule: RULE 63: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in S-mode or U-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F92
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+jalr ra, 0(t0)
+done:
+nop
+# Result: a0 = 0x123000
+
+# Test Case Rule: RULE 64: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in M-mode to the region permits read and execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x96
+csrw 0x3a0, t1
+la t0, target
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0x123537
+
+# Test Case Rule: RULE 65: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in S-mode or U-mode to the region permits only execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F96
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+jalr ra, 0(t0)
+done:
+nop
+# Result: a0 = 0x123000
+
+# Test Case Rule: RULE 66: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in M-mode to the region is permitted as a locked read-only region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x91
+csrw 0x3a0, t1
+la t0, target
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0x123537
+
+# Test Case Rule: RULE 67: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F91
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+la ra, done
+jalr x0, 0(t0)
+done:
+nop
+# Result: mcause = 1
+
+# Test Case Rule: RULE 68: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in M-mode to the region is permitted as a locked read/execute region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x95
+csrw 0x3a0, t1
+la t0, target
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0x123537
+
+# Test Case Rule: RULE 69: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F95
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+la ra, done
+jalr x0, 0(t0)
+done:
+nop
+# Result: mcause = 1
+
+# Test Case Rule: RULE 70: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in M-mode to the region is permitted as a locked read/write region.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x93
+csrw 0x3a0, t1
+la t0, target
+li t3, 0xabc
+sw t3, 0(t0)
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0xabc
+
+# Test Case Rule: RULE 71: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F93
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+la ra, done
+jalr x0, 0(t0)
+done:
+nop
+# Result: mcause = 1
+
+# Test Case Rule: RULE 72: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in M-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t2, 1
+csrw 0x747, t2
+li t1, 0x97
+csrw 0x3a0, t1
+la t0, target
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0x123537
+
+# Test Case Rule: RULE 73: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in S-mode or U-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+jal ra, start
+target:
+lui a0, 0x123
+jalr x0, 0(ra)
+start:
+la t0, target
+srli t0, t0, 2
+csrw 0x3b0, t0
+li t1, 0x1FFFFFFF
+csrw 0x3b1, t1
+li t1, 1
+csrw 0x747, t1
+li t1, 0x1F97
+csrw 0x3a0, t1
+call machine_to_supervisor
+la t0, target
+lw a0, 0(t0)
+done:
+nop
+# Result: a0 = 0x123537

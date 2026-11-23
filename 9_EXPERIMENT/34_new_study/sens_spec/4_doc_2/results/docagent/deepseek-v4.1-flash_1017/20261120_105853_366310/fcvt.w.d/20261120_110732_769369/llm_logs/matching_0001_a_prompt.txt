@@ -1,0 +1,42 @@
+You are comparing generated RISC-V architectural rules against a ground truth rule set.
+
+    Target: fcvt.w.d
+
+    Generated rules:
+    RULE 1: FCVT.W.D converts the double-precision floating-point value held in floating-point register f[rs1] to a signed 32-bit integer result written to integer register x[rd].
+RULE 2: If the source double-precision value is finite and the value rounded to an integer according to the selected rounding mode is in the range -2^31 through 2^31-1 inclusive, FCVT.W.D writes that signed integer value to x[rd].
+RULE 3: On RV64, FCVT.W.D sign-extends its 32-bit integer result to XLEN before writing it to x[rd].
+RULE 4: If FCVT.W.D's rm field encodes one of RNE, RTZ, RDN, RUP, or RMM, FCVT.W.D uses that encoded static rounding mode.
+RULE 5: If FCVT.W.D's rm field is 111 and frm holds a supported rounding mode, FCVT.W.D uses the rounding mode held in frm.
+RULE 6: When the selected rounding mode for FCVT.W.D is RNE, FCVT.W.D rounds to nearest with ties to even.
+RULE 7: When the selected rounding mode for FCVT.W.D is RTZ, FCVT.W.D rounds toward zero.
+RULE 8: When the selected rounding mode for FCVT.W.D is RDN, FCVT.W.D rounds toward negative infinity.
+RULE 9: When the selected rounding mode for FCVT.W.D is RUP, FCVT.W.D rounds toward positive infinity.
+RULE 10: When the selected rounding mode for FCVT.W.D is RMM, FCVT.W.D rounds to nearest with ties to maximum magnitude.
+RULE 11: If the value of the source operand rounded to an integer according to the selected rounding mode is less than -2^31, FCVT.W.D writes -2^31 as the 32-bit result and sets the NV flag in fflags.
+RULE 12: If the value of the source operand rounded to an integer according to the selected rounding mode is greater than 2^31-1, FCVT.W.D writes 2^31-1 as the 32-bit result and sets the NV flag in fflags.
+RULE 13: If the source operand is -∞, FCVT.W.D writes -2^31 as the 32-bit result and sets the NV flag in fflags.
+RULE 14: If the source operand is +∞, FCVT.W.D writes 2^31-1 as the 32-bit result and sets the NV flag in fflags.
+RULE 15: If the source operand is NaN, FCVT.W.D writes 2^31-1 as the 32-bit result and sets the NV flag in fflags.
+RULE 16: If the rounded integer result is representable in the signed 32-bit destination range, differs from the source operand value, and NV is not set by FCVT.W.D, FCVT.W.D sets the NX flag in fflags.
+RULE 17: If the rounded integer result is representable in the signed 32-bit destination range and equals the source operand value, FCVT.W.D does not set the NX flag due to inexactness.
+RULE 18: If FCVT.W.D sets the NV flag, the inexactness condition does not set the NX flag for that execution of FCVT.W.D.
+RULE 19: FCVT.W.D does not set the DZ accrued exception flag.
+RULE 20: FCVT.W.D does not set the OF accrued exception flag.
+RULE 21: FCVT.W.D does not set the UF accrued exception flag.
+RULE 22: If FLEN is greater than 64 and the source f[rs1] contains a correctly NaN-boxed double-precision value, FCVT.W.D uses the low 64 bits of f[rs1] as its double-precision input operand.
+RULE 23: If FLEN is greater than 64 and the source f[rs1] is not correctly NaN-boxed as a double-precision value, FCVT.W.D treats the source operand as the double-precision canonical NaN.
+RULE 24: If mstatus.FS is Off, executing FCVT.W.D raises an illegal-instruction exception.
+RULE 25: If the hypervisor extension is implemented, V=1, and vsstatus.FS is Off, executing FCVT.W.D raises an illegal-instruction exception.
+RULE 26: If FCVT.W.D sets the NV or NX flag while mstatus.FS is Initial or Clean, mstatus.FS is changed to Dirty.
+RULE 27: If the hypervisor extension is implemented, V=1, neither mstatus.FS nor vsstatus.FS is Off, and FCVT.W.D sets the NV or NX flag, both mstatus.FS and vsstatus.FS are changed to Dirty.
+RULE 28: Setting NV or NX in fflags by FCVT.W.D does not itself cause a floating-point exception trap; the exception condition is reported through fflags.
+
+    Ground truth rules in this batch:
+    RULE 1: FCVT.W.D converts the double-precision floating-point value in floating-point register rs1 to a signed 32-bit integer and writes the result to integer register rd.
+RULE 2: FCVT.W.D rounds the conversion result according to the rounding mode specified in the rm field of the instruction.
+
+    Determine all semantically qualifying matches. A generated rule covers a ground truth rule only if it expresses the same architectural behavior or fully includes the ground truth rule's required condition and outcome. Do not count a partial match. Use only the given rule texts. Do not use external knowledge or infer behavior that is not explicitly stated. Return candidate pairs for each qualifying match, including alternative candidates when more than one pair qualifies. A separate deterministic algorithm will select one-to-one matches from these candidates. Omit unmatched rules. Use only IDs present in the inputs.
+
+    Return only JSON:
+    {"mapping": [{"generated_id": <generated rule ID>, "gt_id": <ground truth rule ID>}]}

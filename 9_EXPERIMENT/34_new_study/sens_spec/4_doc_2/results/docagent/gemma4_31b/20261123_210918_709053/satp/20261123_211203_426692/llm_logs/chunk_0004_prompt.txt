@@ -1,0 +1,1059 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `satp`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+er
+- ⚫ ‡ The instruction carries dependencies from source register(s) to destination register(s) as specified
+
+Table 13. RV32I Base Integer Instruction Set
+
+|       | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|-------|--------------------|-------------------------|---------------------|
+| LUI   |                    | rd                      |                     |
+| AUIPC |                    | rd                      |                     |
+| JAL   |                    | rd                      |                     |
+| JALR† | rs1                | rd                      |                     |
+| BEQ   | rs1 , rs2          |                         |                     |
+| BNE   | rs1 , rs2          |                         |                     |
+| BLT   | rs1 , rs2          |                         |                     |
+| BGE   | rs1 , rs2          |                         |                     |
+| BLTU  | rs1 , rs2          |                         |                     |
+| BGEU  | rs1 , rs2          |                         |                     |
+| LB †  | rs1 A              | rd                      |                     |
+| LH †  | rs1 A              | rd                      |                     |
+| LW†   | rs1 A              | rd                      |                     |
+| LBU † | rs1 A              | rd                      |                     |
+| LHU † | rs1 A              | rd                      |                     |
+| SB    | rs1 A , rs2 D      |                         |                     |
+| SH    | rs1 A , rs2 D      |                         |                     |
+| SW    | rs1 A , rs2 D      |                         |                     |
+| ADDI  | rs1                | rd                      |                     |
+| SLTI  | rs1                | rd                      |                     |
+| SLTIU | rs1                | rd                      |                     |
+| XORI  | rs1                | rd                      |                     |
+| ORI   | rs1                | rd                      |                     |
+| ANDI  | rs1                | rd                      |                     |
+| SLLI  | rs1                | rd                      |                     |
+| SRLI  | rs1                | rd                      |                     |
+| SRAI  | rs1                | rd                      |                     |
+
+|                                                                   | Source Registers                                                  | Destination Registers                                             | Accumulating CSRs                                                 |                                                                   |
+|-------------------------------------------------------------------|-------------------------------------------------------------------|-------------------------------------------------------------------|-------------------------------------------------------------------|-------------------------------------------------------------------|
+| ADD                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SUB                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SLL                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SLT                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SLTU                                                              | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| XOR                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SRL                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| SRA                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| OR                                                                | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| AND                                                               | rs1 , rs2                                                         | rd                                                                |                                                                   |                                                                   |
+| FENCE                                                             |                                                                   |                                                                   |                                                                   |                                                                   |
+| FENCE.I                                                           |                                                                   |                                                                   |                                                                   |                                                                   |
+| ECALL                                                             |                                                                   |                                                                   |                                                                   |                                                                   |
+| EBREAK                                                            |                                                                   |                                                                   |                                                                   |                                                                   |
+| CSRRW‡                                                            | rs1 , csr *                                                       | rd , csr                                                          |                                                                   | * unless rd = x0                                                  |
+| ‡ carries a dependency from rs1 to csr and from csr to rd         | ‡ carries a dependency from rs1 to csr and from csr to rd         | ‡ carries a dependency from rs1 to csr and from csr to rd         | ‡ carries a dependency from rs1 to csr and from csr to rd         | ‡ carries a dependency from rs1 to csr and from csr to rd         |
+| CSRRS‡                                                            | rs1 , csr                                                         | rd , csr *                                                        |                                                                   | * unless rs1 = x0                                                 |
+| CSRRC‡                                                            | rs1 , csr                                                         | rd , csr *                                                        |                                                                   | * unless rs1 = x0                                                 |
+| ‡ carries a dependency from csr and rs1 to csr and from csr to rd | ‡ carries a dependency from csr and rs1 to csr and from csr to rd | ‡ carries a dependency from csr and rs1 to csr and from csr to rd | ‡ carries a dependency from csr and rs1 to csr and from csr to rd | ‡ carries a dependency from csr and rs1 to csr and from csr to rd |
+| CSRRWI ‡                                                          | csr *                                                             | rd , csr                                                          |                                                                   | * unless rd = x0                                                  |
+| ‡ carries a dependency from csr to rd                             | ‡ carries a dependency from csr to rd                             | ‡ carries a dependency from csr to rd                             | ‡ carries a dependency from csr to rd                             | ‡ carries a dependency from csr to rd                             |
+| CSRRSI ‡                                                          | csr                                                               | rd , csr *                                                        |                                                                   | * unless uimm[4:0]=0                                              |
+| CSRRCI ‡                                                          | csr                                                               | rd , csr *                                                        |                                                                   | * unless uimm[4:0]=0                                              |
+| ‡ carries a dependency from csr to rd and csr                     | ‡ carries a dependency from csr to rd and csr                     | ‡ carries a dependency from csr to rd and csr                     | ‡ carries a dependency from csr to rd and csr                     | ‡ carries a dependency from csr to rd and csr                     |
+
+Table 14. RV64I Base Integer Instruction Set
+
+|       | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|-------|--------------------|-------------------------|---------------------|
+| LWU † | rs1 A              | rd                      |                     |
+| LD †  | rs1 A              | rd                      |                     |
+| SD    | rs1 A , rs2 D      |                         |                     |
+| SLLI  | rs1                | rd                      |                     |
+| SRLI  | rs1                | rd                      |                     |
+| SRAI  | rs1                | rd                      |                     |
+| ADDIW | rs1                | rd                      |                     |
+| SLLIW | rs1                | rd                      |                     |
+| SRLIW | rs1                | rd                      |                     |
+| SRAIW | rs1                | rd                      |                     |
+| ADDW  | rs1 , rs2          | rd                      |                     |
+| SUBW  | rs1 , rs2          | rd                      |                     |
+| SLLW  | rs1 , rs2          | rd                      |                     |
+
+|      | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|------|--------------------|-------------------------|---------------------|
+| SRLW | rs1 , rs2          | rd                      |                     |
+| SRAW | rs1 , rs2          | rd                      |                     |
+
+## Table 15. RV32M Standard Extension
+
+|        | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|--------|--------------------|-------------------------|---------------------|
+| MUL    | rs1 , rs2          | rd                      |                     |
+| MULH   | rs1 , rs2          | rd                      |                     |
+| MULHSU | rs1 , rs2          | rd                      |                     |
+| MULHU  | rs1 , rs2          | rd                      |                     |
+| DIV    | rs1 , rs2          | rd                      |                     |
+| DIVU   | rs1 , rs2          | rd                      |                     |
+| REM    | rs1 , rs2          | rd                      |                     |
+| REMU   | rs1 , rs2          | rd                      |                     |
+
+## Table 16. RV64M Standard Extension
+
+|       | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|-------|--------------------|-------------------------|---------------------|
+| MULW  | rs1 , rs2          | rd                      |                     |
+| DIVW  | rs1 , rs2          | rd                      |                     |
+| DIVUW | rs1 , rs2          | rd                      |                     |
+| REMW  | rs1 , rs2          | rd                      |                     |
+| REMUW | rs1 , rs2          | rd                      |                     |
+
+## Table 17. RV32A Standard Extension
+
+|            | Source Registers   | Destination Registers   | Accumulating CSRs   |                 |
+|------------|--------------------|-------------------------|---------------------|-----------------|
+| LR.W†      | rs1 A              | rd                      |                     |                 |
+| SC.W†      | rs1 A , rs2 D      | rd *                    |                     | * if successful |
+| AMOSWAP.W† | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOADD.W†  | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOXOR.W†  | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOAND.W†  | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOOR.W†   | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOMIN.W†  | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOMAX.W†  | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOMINU.W† | rs1 A , rs2 D      | rd                      |                     |                 |
+| AMOMAXU.W† | rs1 A , rs2 D      | rd                      |                     |                 |
+
+## Table 18. RV64A Standard Extension
+
+|            | Source Registers   | Destination Registers   | Accumulating CSRs   |                 |
+|------------|--------------------|-------------------------|---------------------|-----------------|
+| LR.D†      | rs1 A              | rd                      |                     |                 |
+| SC.D†      | rs1 A , rs2 D      | rd *                    |                     | * if successful |
+| AMOSWAP.D† | rs1 A , rs2 D      | rd                      |                     |                 |
+
+Table 19. RV32F Standard Extension
+
+|            | Source Registers   | Destination Registers   | Accumulating CSRs   |
+|------------|--------------------|-------------------------|---------------------|
+| AMOADD.D†  | rs1 A , rs2 D      | rd                      |                     |
+| AMOXOR.D†  | rs1 A , rs2 D      | rd                      |                     |
+| AMOAND.D†  | rs1 A , rs2 D      | rd                      |                     |
+| AMOOR.D†   | rs1 A , rs2 D      | rd                      |                     |
+| AMOMIN.D†  | rs1 A , rs2 D      | rd                      |                     |
+| AMOMAX.D†  | rs1 A , rs2 D      | rd                      |                     |
+| AMOMINU.D† | rs1 A , rs2 D      | rd                      |                     |
+| AMOMAXU.D† | rs1 A , rs2 D      | rd                      |                     |
+
+Table 20. RV64F Standard Extension
+
+|           | Source Registers        | Destination Registers   | Accumulating CSRs   |             |
+|-----------|-------------------------|-------------------------|---------------------|-------------|
+| FLW†      | rs1 A                   | rd                      |                     |             |
+| FSW       | rs1 A , rs2 D           |                         |                     |             |
+| FMADD.S   | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FMSUB.S   | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FNMSUB.S  | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FNMADD.S  | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FADD.S    | rs1 , rs2 , frm *       | rd                      | NV, OF,NX           | * if rm=111 |
+| FSUB.S    | rs1 , rs2 , frm *       | rd                      | NV, OF,NX           | * if rm=111 |
+| FMUL.S    | rs1 , rs2 , frm *       | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FDIV.S    | rs1 , rs2 , frm *       | rd                      | NV, DZ, OF, UF,NX   | * if rm=111 |
+| FSQRT.S   | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FSGNJ.S   | rs1 , rs2               | rd                      |                     |             |
+| FSGNJN.S  | rs1 , rs2               | rd                      |                     |             |
+| FSGNJX.S  | rs1 , rs2               | rd                      |                     |             |
+| FMIN.S    | rs1 , rs2               | rd                      | NV                  |             |
+| FMAX.S    | rs1 , rs2               | rd                      | NV                  |             |
+| FCVT.W.S  | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FCVT.WU.S | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FMV.X.W   | rs1                     | rd                      |                     |             |
+| FEQ.S     | rs1 , rs2               | rd                      | NV                  |             |
+| FLT.S     | rs1 , rs2               | rd                      | NV                  |             |
+| FLE.S     | rs1 , rs2               | rd                      | NV                  |             |
+| FCLASS.S  | rs1                     | rd                      |                     |             |
+| FCVT.S.W  | rs1 , frm *             | rd                      | NX                  | * if rm=111 |
+| FCVT.S.WU | rs1 , frm *             | rd                      | NX                  | * if rm=111 |
+| FMV.W.X   | rs1                     | rd                      |                     |             |
+
+|           | Source Registers   | Destination Registers   | Accumulating CSRs   |             |
+|-----------|--------------------|-------------------------|---------------------|-------------|
+| FCVT.L.S  | rs1 , frm *        | rd                      | NV,NX               | * if rm=111 |
+| FCVT.LU.S | rs1 , frm *        | rd                      | NV,NX               | * if rm=111 |
+| FCVT.S.L  | rs1 , frm *        | rd                      | NX                  | * if rm=111 |
+| FCVT.S.LU | rs1 , frm *        | rd                      | NX                  | * if rm=111 |
+
+## Table 21. RV32D Standard Extension
+
+|           | Source Registers        | Destination Registers   | Accumulating CSRs   |             |
+|-----------|-------------------------|-------------------------|---------------------|-------------|
+| FLD†      | rs1 A                   | rd                      |                     |             |
+| FSD       | rs1 A , rs2 D           |                         |                     |             |
+| FMADD.D   | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FMSUB.D   | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FNMSUB.D  | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FNMADD.D  | rs1 , rs2 , rs3 , frm * | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FADD.D    | rs1 , rs2 , frm *       | rd                      | NV, OF,NX           | * if rm=111 |
+| FSUB.D    | rs1 , rs2 , frm *       | rd                      | NV, OF,NX           | * if rm=111 |
+| FMUL.D    | rs1 , rs2 , frm *       | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FDIV.D    | rs1 , rs2 , frm *       | rd                      | NV, DZ, OF, UF,NX   | * if rm=111 |
+| FSQRT.D   | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FSGNJ.D   | rs1 , rs2               | rd                      |                     |             |
+| FSGNJN.D  | rs1 , rs2               | rd                      |                     |             |
+| FSGNJX.D  | rs1 , rs2               | rd                      |                     |             |
+| FMIN.D    | rs1 , rs2               | rd                      | NV                  |             |
+| FMAX.D    | rs1 , rs2               | rd                      | NV                  |             |
+| FCVT.S.D  | rs1 , frm *             | rd                      | NV, OF, UF,NX       | * if rm=111 |
+| FCVT.D.S  | rs1                     | rd                      | NV                  |             |
+| FEQ.D     | rs1 , rs2               | rd                      | NV                  |             |
+| FLT.D     | rs1 , rs2               | rd                      | NV                  |             |
+| FLE.D     | rs1 , rs2               | rd                      | NV                  |             |
+| FCLASS.D  | rs1                     | rd                      |                     |             |
+| FCVT.W.D  | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FCVT.WU.D | rs1 , frm *             | rd                      | NV,NX               | * if rm=111 |
+| FCVT.D.W  | rs1                     | rd                      |                     |             |
+| FCVT.D.WU | rs1                     | rd                      |                     |             |
+
+## Table 22. RV64D Standard Extension
+
+|           | Source Registers   | Destination Registers   | Accumulating CSRs   |             |
+|-----------|--------------------|-------------------------|---------------------|-------------|
+| FCVT.L.D  | rs1 , frm *        | rd                      | NV,NX               | * if rm=111 |
+| FCVT.LU.D | rs1 , frm *        | rd                      | NV,NX               | * if rm=111 |
+| FMV.X.D   | rs1                | rd                      |                     |             |
+| FCVT.D.L  | rs1 , frm *        | rd                      | NX                  | * if rm=111 |
+
+|           | Source Registers   | Destination Registers   | Accumulating CSRs   |             |
+|-----------|--------------------|-------------------------|---------------------|-------------|
+| FCVT.D.LU | rs1 , frm *        | rd                      | NX                  | * if rm=111 |
+| FMV.D.X   | rs1                | rd                      |                     |             |
+
+## Chapter 19. "Ztso" Extension for Total Store Ordering, Version 1.0
+
+This  chapter  defines  the  "Ztso"  extension  for  the  RISC-V  Total  Store  Ordering  (RVTSO)  memory consistency model. RVTSO is defined as a delta from RVWMO, which is defined in Section 18.1.
+
+<image>
+
+The Ztso extension is meant to facilitate the porting of code originally written for the x86 or SPARC  architectures,  both  of  which  use  TSO  by  default.  It  also  supports  implementations which inherently provide RVTSO behavior and want to expose that fact to software.
+
+RVTSO makes the following adjustments to RVWMO:
+
+- ⚫ All load operations behave as if they have an acquire-RCpc annotation
+- ⚫ All store operations behave as if they have a release-RCpc annotation.
+- ⚫ All AMOs behave as if they have both acquire-RCsc and release-RCsc annotations.
+
+These rules render all PPO rules except 4-7 redundant. They also make redundant any non-I/O fences that do not have both PW and SR set. Finally, they also imply that no memory operation will be reordered past an AMO in either direction.
+
+<image>
+
+In  the  context  of  RVTSO,  as  is  the  case  for  RVWMO,  the  storage  ordering  annotations  are concisely and completely defined by PPO rules 5-7. In both of these memory models, it is the Section 18.1.4.1 that allows a hart to forward a value from its store buffer to a subsequent (in program order) load-that is to say that stores can be forwarded locally before they are visible to other harts.
+
+Additionally, if the Ztso extension is implemented, then vector memory instructions in the V extension and Zve family of extensions follow RVTSO at the instruction level. The Ztso extension does not strengthen the ordering of intra-instruction element accesses.
+
+In spite of the fact that Ztso adds no new instructions to the ISA, code written assuming RVTSO will not run correctly on implementations not supporting Ztso. Binaries compiled to run only under Ztso should indicate as such via a flag in the binary, so that platforms which do not implement Ztso can simply refuse to run them.
+
+## Chapter 20. "CMO" Extensions for Base Cache Management Operation ISA, Version 1.0.0
+
+## 20.1. Pseudocode for instruction semantics
+
+The semantics of each instruction in the Instructions chapter is expressed in a SAIL-like syntax.
+
+## 20.2. Introduction
+
+Cache-management operation (or CMO )  instructions perform operations on copies of data in the memory hierarchy.  In  general,  CMO  instructions  operate  on  cached  copies  of  data,  but  in  some  cases,  a  CMO instruction  may  operate  on  memory  locations  directly.  Furthermore,  CMO  instructions  are  grouped  by operation into the following classes:
+
+- ⚫ A management instruction manipulates cached copies of data with respect to a set of agents that can access the data
+- ⚫ A zero instruction zeros out a range of memory locations, potentially allocating cached copies of data in one or more caches
+- ⚫ A prefetch instruction indicates to hardware that data at a given memory location may be accessed in the near future, potentially allocating cached copies of data in one or more caches
+
+This document introduces a base set of CMO ISA extensions that operate specifically on cache blocks or the memory locations corresponding to a cache block; these are known as cache-block operation (or CBO ) instructions. Each of the above classes of instructions represents an extension in this specification:
+
+- ⚫ The Zicbom extension  defines  a  set  of  cache-block  management  instructions: CBO.INVAL , CBO.CLEAN , and CBO.FLUSH
+- ⚫ The Zicboz extension defines a cache-block zero instruction: CBO.ZERO
+- ⚫ The Zicbop extension defines a set of cache-block prefetch instructions: PREFETCH.R , PREFETCH.W ,  and PREFETCH.I
+
+The execution behavior of the above instructions is also modified by CSR state added by this specification.
+
+The  remainder  of  this  document  provides  general  background  information  on  CMO  instructions  and describes each of the above ISA extensions.
+
+<image>
+
+The term CMO encompasses all operations on caches or resources related to caches. The term CBO represents a subset of CMOs that operate only on cache blocks. The first CMO extensions only define CBOs.
+
+## 20.3. Background
+
+This chapter provides information common to all CMO extensions.
+
+## 20.3.1. Memory and Caches
+
+A memory location is a physical resource in a system uniquely identified by a physical address . An agent is a logic block, such as a RISC-V hart, accelerator, I/O device, etc., that can access a given memory location.
+
+<image>
+
+A given agent may not be able to access all memory locations in a system, and two different
+
+agents may or may not be able to access the same set of memory locations.
+
+A load operation (or store operation )  is  performed by an agent to consume (or modify) the data at a given memory location. Load and store operations are performed as a result of explicit memory accesses to that memory location. Additionally, a read transfer from memory fetches the data at the memory location, while a write transfer to memory updates the data at the memory location.
+
+A cache is a structure that buffers copies of data to reduce average memory latency. Any number of caches may be interspersed between an agent and a memory location, and load and store operations from an agent may be satisfied by a cache instead of the memory location.
+
+<image>
+
+Load  and  store  operations  are  decoupled  from  read  and  write  transfers  by  caches.  For example, a load operation may be satisfied by a cache without performing a read transfer from memory, or a store operation may be satisfied by a cache that first performs a read transfer from memory.
+
+Caches organize copies of data into cache blocks , each of which represents a contiguous, naturally aligned power-of-two (or NAPOT )  range  of  memory  locations.  A  cache  block  is  identified  by  any  of  the  physical addresses corresponding to the underlying memory locations. The capacity and organization of a cache and the  size  of  a  cache  block  are  both implementation-specific ,  and  the  execution  environment  provides software a means to discover information about the caches and cache blocks in a system. In the initial set of CMO extensions, the size of a cache block shall be uniform throughout the system.
+
+<image>
+
+In future CMO extensions, the requirement for a uniform cache block size may be relaxed.
+
+Implementation  techniques  such  as  speculative  execution  or  hardware  prefetching  may  cause  a  given cache to allocate or deallocate a copy of a cache block at any time, provided the corresponding physical addresses are accessible according to the supported access type PMA and are cacheable according to the cacheability PMA. Allocating a copy of a cache block results in a read transfer from another cache or from memory, while deallocating a copy of a cache block may result in a write transfer to another cache or to memory depending on whether the data in the copy were modified by a store operation. Additional details are discussed in Coherent Agents and Caches.
+
+## 20.3.2. Cache-Block Operations
+
+A CBO instruction causes one or more operations to be performed on the cache blocks identified by the instruction. In general, a CBO instruction may identify one or more cache blocks; however, in the initial set of CMO extensions, CBO instructions identify a single cache block only.
+
+A cache-block management instruction performs one of the following operations, relative to the copy of a given cache block allocated in a given cache:
+
+- ⚫ An invalidate operation deallocates the copy of the cache block
+- ⚫ A clean operation performs a write transfer to another cache or to memory if the data in the copy of the cache block have been modified by a store operation
+- ⚫ A flush operation atomically performs a clean operation followed by an invalidate operation
+
+Additional  details,  including  the  actual  operation  performed  by  a  given  cache-block  management instruction, are described in Cache-Block Management Instructions.
+
+A  cache-block  zero  instruction  performs  a  set  of  store  operations  that  write  zeros  to  the  set  of  bytes corresponding to a cache block. Unless specified otherwise, the store operations generated by a cache-block zero  instruction  have  the  same  general  properties  and  behaviors  that  other  store  instructions  in  the architecture  have.  An  implementation  may  or  may  not  update  the  entire  set  of  bytes  atomically  with  a
+
+single store operation. Additional details are described in Cache-Block Zero Instructions.
+
+A cache-block prefetch instruction is a HINT to the hardware that software expects to perform a particular type  of  memory  access  in  the  near  future.  Additional  details  are  described  in  Cache-Block  Prefetch Instructions.
+
+## 20.4. Coherent Agents and Caches
+
+For a given memory location, a set of coherent agents consists of the agents for which all of the following hold:
+
+- ⚫ Store operations from all agents in the set appear to be serialized with respect to each other
+- ⚫ Store operations from all agents in the set eventually appear to all other agents in the set
+- ⚫ A load operation from an agent in the set returns data from a store operation from an agent in the set (or from the initial data in memory)
+
+The coherent agents within such a set shall access a given memory location with the same physical address and the same physical memory attributes; however, if the coherence PMA for a given agent indicates a given memory location is not coherent, that agent shall not be a member of a set of coherent agents with any  other  agent  for  that  memory  location  and  shall  be  the  sole  member  of  a  set  of  coherent  agents consisting of itself.
+
+An agent who is a member of a set of coherent agents is said to be coherent with respect to the other agents in the set. On the other hand, an agent who is not a member is said to be non-coherent with respect to the agents in the set.
+
+Caches introduce the possibility that multiple copies of a given cache block may be present in a system at the same time. An implementation-specific mechanism keeps these copies coherent with respect to the load and store operations from the agents in the set of coherent agents. Additionally, if a coherent agent in the set executes a CBO instruction that specifies the cache block, the resulting operation shall apply to any and all  of  the  copies  in  the  caches  that  can  be  accessed  by  the  load  and  store  operations  from  the  coherent agents.
+
+<image>
+
+An operation from a CBO instruction is defined to operate only on the copies of a cache block that are cached in the caches accessible by the explicit memory accesses performed by the set of  coherent  agents.  This  includes  copies  of  a  cache  block  in  caches  that  are  accessed  only indirectly by load and store operations, e.g. coherent instruction caches.
+
+The set of caches subject to the above mechanism form a set of coherent caches ,  and each coherent cache has  the  following  behaviors,  assuming  all  operations  are  performed  by  the  agents  in  a  set  of  coherent agents:
+
+- ⚫ A coherent cache is permitted to allocate and deallocate copies of a cache block and perform read and write transfers as described in Memory and Caches
+- ⚫ A coherent cache is permitted to perform a write transfer to memory provided that a store operation has modified the data in the cache block since the most recent invalidate, clean, or flush operation on the cache block
+- ⚫ At  least  one  coherent  cache  is  responsible  for  performing  a  write  transfer  to  memory  once  a  store operation has modified the data in the cache block until the next invalidate, clean, or flush operation on  the  cache  block,  after  which  no  coherent  cache  is  responsible  (or  permitted)  to  perform  a  write transfer to memory until the next store operation has modified the data in the cache block
+- ⚫ A coherent cache is required to perform a write transfer to memory if a store operation has modified
+
+the  data  in  the  cache  block  since  the  most  recent  invalidate,  clean,  or  flush  operation  on  the  cache block and if the next clean or flush operation requires a write transfer to memory
+
+<image>
+
+The above restrictions ensure that a "clean" copy of a cache block, fetched by a read transfer from memory and unmodified by a store operation, cannot later overwrite the copy of the cache block in memory updated by a write transfer to memory from a non-coherent agent.
+
+A  non-coherent  agent  may  initiate  a  cache-block  operation  that  operates  on  the  set  of  coherent  caches accessed  by  a  set  of  coherent  agents.  The  mechanism  to  perform  such  an  operation  is implementationspecific .
+
+## 20.4.1. Memory Ordering
+
+## 20.4.1.1. Preserved Program Order
+
+The preserved program order (abbreviated PPO ) rules are defined by the RVWMO memory ordering model. How the operations resulting from CMO instructions fit into these rules is described below.
+
+For cache-block management instructions, the resulting invalidate, clean, and flush operations behave as stores in the PPO rules subject to one additional overlapping address rule. Specifically, if a precedes b in program order, then a will precede b in the global memory order if:
+
+- ⚫ a is an invalidate, clean, or flush, b is a load, and a and b access overlapping memory addresses
+
+<image>
+
+The above rule ensures that a subsequent load in program order never appears in the global memory  order  before  a  preceding  invalidate,  clean,  or  flush  operation  to  an  overlapping address.
+
+Additionally, invalidate, clean, and flush operations are classified as W or O (depending on the physical memory attributes for the corresponding physical addresses) for the purposes of predecessor and successor sets  in FENCE instructions.  These  operations  are not ordered  by  other  instructions  that  order  stores,  e.g. FENCE.I and SFENCE.VMA .
+
+For cache-block zero instructions, the resulting store operations behave as stores in the PPO rules and are ordered by other instructions that order stores.
+
+Finally, for cache-block prefetch instructions, the resulting operations are not ordered by the PPO rules nor are they ordered by any other ordering instructions.
+
+## 20.4.1.2. Load Values
+
+An  invalidate  operation  may  change  the  set  of  values  that  can  be  returned  by  a  load.  In  particular,  an additional condition is added to the Load Value Axiom:
+
+- ⚫ If an invalidate operation i precedes a load r and operates on a byte x returned by r ,  and no store to x appears between i and r in  program  order  or  in  the  global  memory  order,  then r returns  any  of  the following values for x :
+1. If no clean or flush operations on x precede i in the global memory order, either the initial value of x or the value of any store to x that precedes i
+2. If no store to x precedes a clean or flush operation on x in the global memory order and if the clean or flush operation on x precedes i in  the  global memory order, either the initial value of x or  the value of any store to x that precedes i
+
+3. If a store to x precedes a clean or flush operation on x in the global memory order and if the clean or flush operation on x precedes i in the global memory order, either the value of the latest store to x that  precedes  the  latest  clean  or  flush  operation  on x or  the  value  of  any  store  to x that  both precedes i and succeeds the latest clean or flush operation on x that precedes i
+4. The value of any store to x by a non-coherent agent regardless of the above conditions
+
+<image>
+
+The first three bullets describe the possible load values at different points in the global memory order relative to clean or flush operations. The final bullet implies that the load value may be produced by a non-coherent agent at any time.
+
+## 20.4.2. Traps
+
+Execution of certain CMO instructions may result in traps due to CSR state, described in the Control and Status Register State section, or due to the address translation and protection mechanisms. The trapping behavior of CMO instructions is described in the following sections.
+
+## 20.4.2.1. Illegal-Instruction and Virtual-Instruction Exceptions
+
+Cache-block  management  instructions  and  cache-block  zero  instructions  may  raise  illegal-instruction exceptions or virtual-instruction exceptions depending on the current privilege mode and the state of the CMO control registers described in the Control and Status Register State section.
+
+Cache-block  prefetch  instructions  raise  neither  illegal-instruction  exceptions  nor  virtual-instruction exceptions.
+
+## 20.4.2.2. Page-Fault, Guest-Page-Fault, and Access-Fault Exceptions
+
+Similar  to  load  and  store  instructions,  CMO  instructions  are  explicit  memory  access  instructions  that compute an effective address. The effective address is ultimately translated into a physical address based on  the  privilege  mode  and  the  enabled  translation  mechanisms,  and  the  CMO  extensions  impose  the following constraints on the physical addresses in a given cache block:
+
+- ⚫ The PMP access control bits shall be the same for all physical addresses in the cache block, and if write permission is granted by the PMP access control bits, read permission shall also be granted
+- ⚫ The PMAs shall be the same for all physical addresses in the cache block, and if write permission is granted by the supported access type PMAs, read permission shall also be granted
+
+If the above constraints are not met, the behavior of a CBO instruction is UNSPECIFIED.
+
+<image>
+
+This specification assumes that the above constraints will typically be met for main memory regions and may be met for certain I/O regions.
+
+<image>
+
+The access size for CMO instructions is equal to the size of the cache block, however in some cases  that  access  can  be  decomposed  into  multiple  memory  operations.  PMP  checks  are applied to each memory operation independently. For example a 64-byte cbo.zero that spans two  32-byte  PMP  regions  would  succeed  if  it  was  decomposed  into  two  32-byte  memory operations (and the PMP access control bits are the same in both regions), but if performed as a single 64-byte memory operation it would cause an access fault.
+
+The  Zicboz  extension  introduces  an  additional  supported  access  type  PMA  for  cache-block  zero instructions.  Main  memory  regions  are  required  to  support  accesses  by  cache-block  zero  instructions; however, I/O regions may specify whether accesses by cache-block zero instructions are supported.
+
+A cache-block management instruction is permitted to access the specified cache block whenever a load instruction or store instruction is permitted to access the corresponding physical addresses. If neither a load instruction nor store instruction is permitted to access the physical addresses, but an instruction fetch is permitted to access the physical addresses, whether a cache-block management instruction is permitted to  access  the  cache  block  is  UNSPECIFIED.  If  access  to  the  cache  block  is  not  permitted,  a  cache-block management instruction raises a store page-fault or store guest-page-fault exception if address translation does not permit any access or raises a store access-fault exception otherwise. During address translation, the instruction also checks the accessed bit and may either raise an exception or set the bit as required.
+
+<image>
+
+The interaction between cache-block management instructions and instruction fetches will be specified in a future extension.
+
+As implied by omission, a cache-block management instruction does not check the dirty bit and neither raises an exception nor sets the bit.
+
+A cache-block zero instruction is permitted to access the specified cache block whenever a store instruction is permitted to access the corresponding physical addresses and when the PMAs indicate that cache-block zero instructions are a supported access type. If access to the cache block is not permitted, a cache-block zero instruction raises a store page-fault or store guest-page-fault exception if address translation does not permit  write  access  or  raises  a  store  access-fault  exception  otherwise.  During  address  translation,  the instruction  also  checks  the  accessed  and  dirty  bits  and  may  either  raise  an  exception  or  set  the  bits  as required.
+
+A  cache-block  prefetch  instruction  is  permitted  to  access  the  specified  cache  block  whenever  a  load instruction,  store  instruction,  or  instruction  fetch  is  permitted  to  access  the  corresponding  physical addresses. If access to the cache block is not permitted, a cache-block prefetch instruction does not raise any  exceptions  and  shall  not  access  any  caches  or  memory.  During  address  translation,  the  instruction does not check the accessed and dirty bits and neither raises an exception nor sets the bits.
+
+When a page-fault, guest-page-fault, or access-fault exception is taken, the relevant *tval CSR is written with the faulting effective address (i.e. the value of rs1 ).
+
+<image>
+
+Like a load or store instruction, a CMO instruction may or may not be permitted to access a cache block based on the states of the MPRV , MPV , and MPP bits in mstatus and the SUM and MXR bits in mstatus , sstatus , and vsstatus .
+
+This  specification  expects  that  implementations  will  process  cache-block  management instructions like store/AMO instructions, so store/AMO exceptions are appropriate for these instructions, regardless of the permissions required.
+
+## 20.4.2.3. Address-Misaligned Exceptions
+
+CMO instructions do not generate address-misaligned exceptions.
+
+## 20.4.2.4. Breakpoint Exceptions and Debug Mode Entry
+
+Unless  otherwise  defined  by  the  debug  architecture  specification,  the  behavior  of  trigger  modules  with respect to CMO instructions is UNSPECIFIED.
+
+For  the  Zicbom,  Zicboz,  and  Zicbop  extensions,  this  specification  recommends  the  following common trigger module behaviors:
+
+<image>
+
+- ⚫ Type 6 address match triggers, i.e. tdata1.type=6 and mcontrol6.select=0 ,  should be supported
+
+- ⚫ Type 2 address/data match triggers, i.e. tdata1.type=2 , should be unsupported
+- ⚫ The size of a memory access equals the size of the cache block accessed, and the compare values follow from the addresses of the NAPOT memory region corresponding to the cache block containing the effective address
+- ⚫ Unless an encoding for a cache block is added to the mcontrol6.size field,  an  address trigger should only match a memory access from a CBO instruction if mcontrol6.size=0
+
+If the Zicbom  extension  is implemented,  this specification  recommends  the  following additional trigger module behaviors:
+
+- ⚫ Implementing address match triggers should be optional
+- ⚫ Type  6  data  match  triggers,  i.e. tdata1.type=6 and mcontrol6.select=1 ,  should  be unsupported
+- ⚫ Memory  accesses  are  considered  to  be  stores,  i.e.  an  address  trigger  matches  only  if mcontrol6.store=1
+
+If the Zicboz extension is implemented, this specification recommends the following additional trigger module behaviors:
+
+- ⚫ Implementing address match triggers should be mandatory
+- ⚫ Type  6  data  match  triggers,  i.e. tdata1.type=6 and mcontrol6.select=1 ,  should  be supported, and implementing these triggers should be optional
+- ⚫ Memory  accesses  are  considered  to  be  stores,  i.e.  an  address  trigger  matches  only  if mcontrol6.store=1
+
+If the Zicbop extension is implemented, this specification recommends the following additional trigger module behaviors:
+
+- ⚫ Implementing address match triggers should be optional
+- ⚫ Type  6  data  match  triggers,  i.e. tdata1.type=6 and mcontrol6.select=1 ,  should  be unsupported
+- ⚫ Memory accesses may be considered to be loads or stores depending on the implementation,  i.e.  whether  an  address  trigger  matches  on  these  instructions  when mcontrol6.load=1 or mcontrol6.store=1 is implementation-specific
+
+This specification also recommends that the behavior of trigger modules with respect to the Zicboz extension should be defined in version 1.0 of the debug architecture specification. The behavior of trigger modules with respect to the Zicbom and Zicbop extensions is expected to be defined in future extensions.
+
+## 20.4.2.5. Hypervisor Extension
+
+For the purposes of writing the mtinst or htinst register on a trap, the following standard transformation is defined for cache-block management instructions and cache-block zero instructions:
+
+<image>
+
+The operation field corresponds to the 12 most significant bits of the trapping instruction.
+
+<image>
+
+As described in the hypervisor extension, a zero may be written into mtinst or htinst instead
+
+of the standard transformation defined above.
+
+## 20.4.3. Effects on Constrained LR/SC Loops
+
+The  following  event  is  added  to  the  list  of  events  that  satisfy  the  eventuality  guarantee  provided  by constrained LR/SC loops, as defined in the A extension:
+
+- ⚫ Some other hart executes a cache-block management instruction or a cache-block zero instruction to the reservation set of the LR instruction in H 's constrained LR/SC loop.
+
+The  above  event  has  been  added  to  accommodate  cache  coherence  protocols  that  cannot distinguish  between  invalidations  for  stores  and  invalidations  for  cache-block  management operations.
+
+<image>
+
+Aside from the above event, CMO instructions neither change the properties of constrained LR/SC loops nor modify the eventuality guarantee provided by them. For example, executing a CMO instruction may cause a constrained LR/SC loop on any hart to fail periodically or may cause  a  unconstrained  LR/SC  sequence  on  the  same  hart  to  fail  always.  Additionally, executing  a  cache-block  prefetch  instruction  does  not  impact  the  eventuality  guarantee provided by constrained LR/SC loops executed on any hart.
+
+## 20.4.4. Software Discovery
+
+The initial set of CMO extensions requires the following information to be discovered by software:
+
+- ⚫ The size of the cache block for management and prefetch instructions
+- ⚫ The size of the cache block for zero instructions
+- ⚫ CBIE support at each privilege level
+
+Other general cache characteristics may also be specified in the discovery mechanism.
+
+## 20.5. CSR controls for CMO instructions
+
+The xenvcfg registers control CBO instruction execution based on the current privilege mode and the state of the appropriate CSRs, as detailed below.
+
+A CBO.INVAL instruction executes or raises either an illegal-instruction exception or a virtual-instruction exception based on the state of the xenvcfg.CBIE fields:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && (menvcfg.CBIE == 00 )) || ((priv_mode == U) && (senvcfg.CBIE == 00 ))) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && (henvcfg.CBIE == 00 )) || ((priv_mode == VU) && ((henvcfg.CBIE == 00 ) || (senvcfg.CBIE == 00 )))) { <raise virtual-instruction exception>
+```
+
+```
+} // execute instruction else { if (((priv_mode != M) && (menvcfg.CBIE == 01 )) || ((priv_mode == U) && (senvcfg.CBIE == 01 )) || ((priv_mode == VS) && (henvcfg.CBIE == 01 )) || ((priv_mode == VU) && ((henvcfg.CBIE == 01 ) || (senvcfg.CBIE == 01 )))) { <execute CBO.INVAL and perform flush operation> } else { <execute CBO.INVAL and perform invalidate operation> } }
+```
+
+Until a modified cache block has updated memory, a CBO.INVAL instruction may expose stale data values in memory if the CSRs are programmed to perform an invalidate operation. This behavior may result in a security hole if lower privileged level software performs an invalidate operation and accesses sensitive information in memory.
+
+<image>
+
+To  avoid  such  holes,  higher  privileged  level  software  must  perform  either  a  clean  or  flush operation on the cache block before permitting lower privileged level software to perform an invalidate operation on the block. Alternatively, higher privileged level software may program the CSRs so that CBO.INVAL either traps or performs a flush operation in a lower privileged level.
+
+A CBO.CLEAN or CBO.FLUSH instruction  executes  or  raises  an  illegal-instruction  or  virtual-instruction exception based on the state of the xenvcfg.CBCFE bits:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && !menvcfg.CBCFE) || ((priv_mode == U) && !senvcfg.CBCFE)) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && !henvcfg.CBCFE) || ((priv_mode == VU) && !(henvcfg.CBCFE && senvcfg.CBCFE))) { <raise virtual-instruction exception> } // execute instruction else { <execute CBO.CLEAN or CBO.FLUSH> }
+```
+
+Finally,  a CBO.ZERO instruction  executes  or  raises  an  illegal-instruction  or  virtual-instruction  exception based on the state of the xenvcfg.CBZE bits:
+
+```
+// illegal-instruction exceptions if (((priv_mode != M) && !menvcfg.CBZE) || ((priv_mode == U) && !senvcfg.CBZE)) { <raise illegal-instruction exception> } // virtual-instruction exceptions else if (((priv_mode == VS) && !henvcfg.CBZE) || ((priv_mode == VU) && !(henvcfg.CBZE && senvcfg.CBZE))) { <raise virtual-instruction exception> } // execute instruction else { <execute CBO.ZERO> }
+```
+
+The CBIE/CBCFE/CBZE fields in each xenvcfg register  do  not  affect  the  read  and  write  behavior of the same fields in the other xenvcfg registers.
+
+Each xenvcfg register is WARL; however, software should determine the legal values from the execution environment discovery mechanism.
+
+## 20.6. Extensions
+
+CMO instructions are defined in the following extensions:
+
+- ⚫ Cache-Block Management Instructions
+- ⚫ Cache-Block Zero Instructions
+- ⚫ Cache-Block Prefetch Instructions
+
+## 20.6.1. Cache-Block Management Instructions
+
+Cache-block management  instructions enable software running on a set of coherent agents to communicate with a set of non-coherent agents by performing one of the following operations:
+
+- ⚫ An invalidate operation makes data from store operations performed by a set of non-coherent agents visible to the set of coherent agents at a point common to both sets by deallocating all copies of a cache block from the set of coherent caches up to that point
+- ⚫ A clean operation makes data from store operations performed by the set of coherent agents visible to a set of non-coherent agents at a point common to both sets by performing a write transfer of a copy of a cache block to that point provided a coherent agent performed a store operation that modified the data in the cache block since the previous invalidate, clean, or flush operation on the cache block
+- ⚫ A flush operation atomically performs a clean operation followed by an invalidate operation
+
+In the Zicbom extension, the instructions operate to a point common to all agents in the system. In other words, an invalidate operation ensures that store operations from all non-coherent agents visible to agents in  the  set  of  coherent  agents,  and  a  clean  operation  ensures  that  store  operations  from  coherent  agents visible to all non-coherent agents.
+
+<image>
+
+The  Zicbom  extension  does  not  prohibit  agents  that  fall  outside  of  the  above  architectural definition; however, software cannot rely on the defined cache operations to have the desired effects with respect to those agents.
+
+Future  extensions  may  define  different  sets  of  agents  for  the  purposes  of  performance optimization.
+
+These  instructions  operate  on  the  cache  block  whose  effective  address  is  specified  in rs1 .  The  effective address is translated into a corresponding physical address by the appropriate translation mechanisms.
+
+The following instructions comprise the Zicbom extension:
+
+| RV32   | RV64   | Mnemonic       | Instruction            |
+|--------|--------|----------------|------------------------|
+| ✓      | ✓      | cbo.clean base | Cache Block Clean      |
+| ✓      | ✓      | cbo.flush base | Cache Block Flush      |
+| ✓      | ✓      | cbo.inval base | Cache Block Invalidate |
+
+<image>
+
+Cache-block management instructions ignore cacheability attributes and operate on the cache block irrespective of the PMA cacheable attribute and any Page-Based Memory Type (PBMT) downgrade from cacheable to non-cacheable.
+
+## 20.6.2. Cache-Block Zero Instructions
+
+Cache-block  zero  instructions  store  zeros  to  the  set  of  bytes  corresponding  to  a  cache  block.  An implementation  may  update  the  bytes  in  any  order  and  with  any  granularity  and  atomicity,  including individual bytes.
+
+<image>
+
+Cache-block zero instructions store zeros independently of whether data from the underlying memory locations  are  cacheable.  In  addition,  this  specification  does  not  constrain  how  the bytes are written.
+
+These instructions operate on the cache block, or the memory locations corresponding to the cache block, whose effective address is specified in rs1 . The effective address is translated into a corresponding physical address by the appropriate translation mechanisms.
+
+The following instructions comprise the Zicboz extension:
+
+| RV32   | RV64   | Mnemonic      | Instruction      |
+|--------|--------|---------------|------------------|
+| ✓      | ✓      | cbo.zero base | Cache Block Zero |
+
+## 20.6.3. Cache-Block Prefetch Instructions
+
+Cache-block prefetch instructions are HINTs to the hardware to indicate that software intends to perform a particular type of memory access in the near future. The types of memory accesses are instruction fetch, data read (i.e. load), and data write (i.e. store).
+
+These  instructions  operate  on  the  cache  block  whose  effective  address  is  the  sum  of  the  base  address
+
+specified in rs1 and the sign-extended offset encoded in imm[11:0] , where imm[4:0] shall equal 0b00000 . The effective  address  is  translated  into  a  corresponding  physical  address  by  the  appropriate  translation mechanisms.
+
+<image>
+
+Cache-block prefetch instructions are encoded as ORI instructions with rd equal to 0b00000 ; however,  for  the  purposes  of  effective  address  calculation,  this  field  is  also  interpreted  as imm[4:0] like a store instruction.
+
+The following instructions comprise the Zicbop extension:
+
+| RV32   | RV64   | Mnemonic                   | Instruction                                |
+|--------|--------|----------------------------|--------------------------------------------|
+| ✓      | ✓      | prefetch.i offset ( base ) | Cache Block Prefetch for Instruction Fetch |
+| ✓      | ✓      | prefetch.r offset ( base ) | Cache Block Prefetch for Data Read         |
+| ✓      | ✓      | prefetch.w offset ( base ) | Cache Block Prefetch for Data Write        |
+
+## 20.7. Instructions
+
+## 20.7.1. cbo.clean
+
+## Synopsis
+
+Perform a clean operation on a cache block
+
+## Mnemonic
+
+cbo.clean offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A cbo.clean instruction performs a clean operation on the cache block whose effective address is the base  address  specified  in rs1 .  The  offset  operand  may  be  omitted;  otherwise,  any  expression  that computes  the  offset  shall  evaluate  to  zero.  The  instruction  operates  on  the  set  of  coherent  caches accessed by the agent executing the instruction.
+
+<image>
+
+When  executing  a cbo.clean instruction,  an  implementation  may  instead  perform  a  flush operation,  since  the  result  of  that  operation  is  indistinguishable  from  the  sequence  of performing a clean operation just before deallocating all cached copies in the set of coherent caches.
+
+## 20.7.2. cbo.flush
+
+## Synopsis
+
+Perform a flush operation on a cache block
+
+## Mnemonic
+
+cbo.flush offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A cbo.flush instruction performs a flush operation on the cache block whose that contains the address specified in rs1 . It is not required that rs1 is aligned to the size of a cache block. On faults, the faulting virtual address is considered to be the value in rs1, rather than the base address of the cache block. The instruction operates on the set of coherent caches accessed by the agent executing the instruction.
+
+The assembly offset operand may be omitted. If it isn't then any expression that computes the offset shall evaluate to zero.
+
+## 20.7.3. cbo.inval
+
+## Synopsis
+
+Perform an invalidate operation on a cache block
+
+## Mnemonic
+
+cbo.inval offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A cbo.inval instruction performs an invalidate operation on the cache block that contains the address specified in rs1 . It is not required that rs1 is aligned to the size of a cache block. On faults, the faulting virtual address is considered to be the value in rs1, rather than the base address of the cache block. The instruction operates on the set of coherent caches accessed by the agent executing the instruction.
+
+Depending on CSR programming, the instruction may perform a flush operation instead of an invalidate operation.
+
+The assembly offset operand may be omitted. If it isn't then any expression that computes the offset shall evaluate to zero.
+
+<image>
+
+When  executing  a cbo.inval instruction,  an  implementation  may  instead  perform  a  flush operation,  since  the  result  of  that  operation  is  indistinguishable  from  the  sequence  of performing a write transfer to memory just before performing an invalidate operation.
+
+## 20.7.4. cbo.zero
+
+## Synopsis
+
+Store zeros to the full set of bytes corresponding to a cache block
+
+## Mnemonic
+
+cbo.zero offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A cbo.zero instruction performs stores of zeros to the full set of bytes corresponding to the cache block that contains the address specified in rs1 . It is not required that rs1 is aligned to the size of a cache block. On faults, the faulting virtual address is considered to be the value in rs1, rather than the base address of the cache block. An implementation may or may not update the entire set of bytes atomically.
+
+The assembly offset operand may be omitted. If it isn't then any expression that computes the offset shall evaluate to zero.
+
+## 20.7.5. prefetch.i
+
+## Synopsis
+
+Provide a HINT to hardware that a cache block is likely to be accessed by an instruction fetch in the near future
+
+## Mnemonic
+
+prefetch.i offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A prefetch.i instruction indicates to hardware that the cache block whose effective address is the sum of the base address specified in rs1 and the sign-extended offset encoded in imm[11:0] , where imm[4:0] equals 0b00000 , is likely to be accessed by an instruction fetch in the near future.
+
+<image>
+
+An  implementation  may  opt  to  cache  a  copy  of  the  cache  block  in  a  cache  accessed  by  an instruction fetch in order to improve memory access latency, but this behavior is not required.
+
+## 20.7.6. prefetch.r
+
+## Synopsis
+
+Provide a HINT to hardware that a cache block is likely to be accessed by a data read in the near future
+
+## Mnemonic
+
+prefetch.r offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A prefetch.r instruction indicates to hardware that the cache block whose effective address is the sum of the base address specified in rs1 and the sign-extended offset encoded in imm[11:0] , where imm[4:0] equals 0b00000 , is likely to be accessed by a data read (i.e. load) in the near future.
+
+<image>
+
+An implementation may opt to cache a copy of the cache block in a cache accessed by a data read in order to improve memory access latency, but this behavior is not required.
+
+## 20.7.7. prefetch.w
+
+## Synopsis
+
+Provide a HINT to hardware that a cache block is likely to be accessed by a data write in the near future
+
+## Mnemonic
+
+prefetch.w offset ( base )
+
+## Encoding
+
+<image>
+
+## Description
+
+A prefetch.w instruction indicates to hardware that the cache block whose effective address is the sum of the base address specified in rs1 and the sign-extended offset encoded in imm[11:0] , where imm[4:0] equals 0b00000 , is likely to be accessed by a data write (i.e. store) in the near future.
+
+<image>
+
+An implementation may opt to cache a copy of the cache block in a cache accessed by a data write in order to improve memory access latency, but this behavior is not required.
+
+## Chapter 21. "F" Extension for Single-Precision FloatingPoint, Version 2.2
+
+This chapter describes the standard instruction-set extension for single-precision floating-point, which is named "F" and adds single-precision floating-point computational instructions compliant with the IEEE 754-2008  arithmetic  standard  [.citation]( ANSI/IEEE  Std  754-2008,  IEEE  Standard  for  Floating-Point Arithmetic , 2008). The F extension depends on the "Zicsr" extension for control and status register access.
+
+## 21.1. F Register State
+
+The F extension adds 32 floating-point registers, f0-f31 , each 32 bits wide, and a floating-point control and status  register fcsr ,  which  contains  the  operating  mode  and  exception  status  of  the  floating-point  unit. This additional state is shown in Table 23. We use the term FLEN to describe the width of the floatingpoint registers in the RISC-V ISA, and FLEN=32 for the F single-precision floating-point extension. Most floating-point  instructions  operate  on  values  in  the  floating-point  register  file.  Floating-point  load  and store  instructions  transfer  floating-point  values  between  registers  and  memory.  Instructions  to  transfer values to and from the integer register file are also provided.
+
+<image>
+
+We  considered  a  unified  register  file  for  both  integer  and  floating-point  values  as  this simplifies  software register allocation and calling conventions, and reduces total user state. However, a split organization increases the total number of registers accessible with a given instruction width, simplifies provision of enough register file ports for wide superscalar issue, supports decoupled floating-point-unit architectures, and simplifies use of internal floatingpoint  encoding  techniques.  Compiler  support  and  calling  conventions  for  split  register  file architectures are well understood, and using dirty bits on floating-point register file state can reduce context-switch overhead.
+
+Table 23. RISC-V standard F extension single-precision floating-point state
+
+| FLEN-1   |     |
+|----------|-----|
+|          | f0  |
+|          | f1  |
+|          | f2  |
+|          | f3  |
+|          | f4  |
+|          | f5  |
+|          | f6  |
+|          | f7  |
+|          | f8  |
+|          | f9  |
+|          | f10 |
+|          | f11 |
+|          | f12 |
+|          | f13 |
+|          | f14 |
+|          | f15 |
+|          | f16 |
+|          | f17 |
+|          | f18 |
+|          | f19 |
+
+<image>
+
+| FLEN-1   |      | 0   |
+|----------|------|-----|
+|          | f20  |     |
+|          | f21  |     |
+|          | f22  |     |
+|          | f23  |     |
+|          | f24  |     |
+|          | f25  |     |
+|          | f26  |     |
+|          | f27  |     |
+|          | f28  |     |
+|          | f29  |     |
+|          | f30  |     |
+|          | f31  |     |
+|          | FLEN |     |
+| 31       |      | 0   |
+|          | fcsr |     |
+|          | 32   |     |
+
+## 21.2. Floating-Point Control and Status Register
+
+The floating-point control and status register, fcsr , is a RISC-V control and status register (CSR). It is a 32bit  read/write  register  that  selects  the  dynamic  rounding  mode  for  floating-point  arithmetic  operations and holds the accrued exception flags, as shown in Floating-Point Control and Status Register.
+
+Figure 2. Floating-point control and status register
+
+<image>
+
+The fcsr register can be read and written with the FRCSR and FSCSR instructions, which are assembler pseudoinstructions built on the underlying CSR access instructions. FRCSR reads fcsr by copying it into integer register rd . FSCSR swaps the value in fcsr by copying the original value into integer register rd , and then writing a new value obtained from integer register rs1 into fcsr .
+
+The fields within the fcsr can also be accessed individually through different CSR addresses, and separate assembler pseudoinstructions are defined for these accesses. The FRRM instruction reads the Rounding Mode field frm ( fcsr bits 7-5) and copies it into the least-significant three bits of integer register rd , with zero in all other bits. FSRM swaps the value in frm by copying the original value into integer register rd , and then  writing  a  new  value  obtained  from  the  three  least-significant  bits  of  integer  register rs1 into frm . FRFLAGS and FSFLAGS are defined analogously for the Accrued Exception Flags field fflags ( fcsr bits 4-0).
+
+Bits  31-8  of  the fcsr are  reserved  for  other  standard  extensions.  If  these  extensions  are  not  present, implementations shall ignore writes to these bits and supply a zero value when read. Standard software should preserve the contents of these bits.
+
+Floating-point  operations  use  either  a  static  rounding  mode  encoded  in  the  instruction,  or  a  dynamic rounding  mode  held  in frm .  Rounding  modes  are  encoded  as  shown  in  Table  24.  A  value  of  111  in  the instruction's rm field  selects  the  dynamic  rounding  mode  held  in frm .  The  behavior  of  floating-point instructions  that  depend  on  rounding  mode  when  executed  with  a  reserved  rounding  mode  is reserved , including both static reserved rounding modes (101-110) and dynamic reserved rounding modes (101-111).
+
+Some instructions, including widening conversions, have the rm field but are nevertheless mathematically unaffected by the rounding mode; software should set their rm field  to  RNE (000) but implementations must treat the rm field as usual (in particular, with regard to decoding legal vs. reserved encodings).
+
+Table 24. Rounding mode encoding.
+
+|   Rounding Mode | Mnemoni c   | Meaning                                                                                         |
+|-----------------|-------------|-------------------------------------------------------------------------------------------------|
+|             000 | RNE         | Round to Nearest, ties to Even                                                                  |
+|             001 | RTZ         | Round towards Zero                                                                              |
+|             010 | RDN         | Round Down (towards - ∞)                                                                        |
+|             011 | RUP         | Round Up (towards +∞)                                                                           |
+|             100 | RMM         | Round to Nearest, ties to Max Magnitude                                                         |
+|             101 |             | Reserved for future use.                                                                        |
+|             110 |             | Reserved for future use.                                                                        |
+|             111 | DYN         | In instruction's rm field, selects dynamic rounding mode; In Rounding Mode register, reserved . |
+
+The C99 language standard effectively mandates the provision of a dynamic rounding mode register.  In  typical  implementations,  writes  to  the  dynamic  rounding  mode  CSR  state  will serialize  the  pipeline.  Static  rounding  modes  are  used  to  implement  specialized  arithmetic operations that often have to switch frequently between different rounding modes.
+
+<image>
+
+The ratified version of the F spec mandated that an illegal-instruction exception was raised when  an  instruction  was  executed  with  a  reserved  dynamic  rounding  mode.  This  has  been weakened  to  reserved,  which  matches  the  behavior  of  static  rounding-mode  instructions. Raising an illegal-instruction exception is still  valid  behavior  when  encountering  a  reserved encoding,  so  implementations  compatible  with  the  ratified  spec  are  compatible  with  the weakened spec.
+
+The  accrued  exception  flags  indicate  the  exception  conditions  that  have  arisen  on  any  floating-point arithmetic instruction since the field was last reset by software, as shown in Table 25. The base RISC-V ISA does not support generating a trap on the setting of a floating-point exception flag.
+
+Table 25. Accrued exception flag encoding.
+
+| Flag Mnemonic   | Flag Meaning      |
+|-----------------|-------------------|
+| NV              | Invalid Operation |
+| DZ              | Divide by Zero    |
+| OF              | Overflow          |
+| UF              | Underflow         |
+| NX              | Inexact           |
+
+As  allowed  by  the  standard,  we  do  not  support  traps  on  floating-point  exceptions  in  the  F extension, but instead require explicit checks of the flags in software. We considered adding branches controlled directly by the contents of the floating-point accrued exception flags, but ultimately chose to omit these instructions to keep the ISA simple.
+
+<image>
+
+## 21.3. NaN Generation and Propagation
+
+Except when otherwise stated, if the result of a floating-point operation is NaN, it is the canonical NaN.
+
+The canonical NaN has a positive sign and all significand bits clear except the MSB, a.k.a. the quiet bit. For single-precision floating-point, this corresponds to the pattern 0x7fc00000 .
+
+<image>
+
+<image>
+
+We  considered  propagating  NaN  payloads,  as  is  recommended  by  the  standard,  but  this decision would have increased hardware cost. Moreover, since this feature is optional in the standard, it cannot be used in portable code.
+
+Implementers  are  free  to  provide  a  NaN  payload  propagation  scheme  as  a  nonstandard extension  enabled  by  a  nonstandard  operating  mode.  However,  the  canonical  NaN  scheme described above must always be supported and should be the default mode.
+
+We require implementations to return the standard-mandated default values in the case of exceptional  conditions,  without  any  further  intervention  on  the  part  of  user-level  software (unlike  the  Alpha  ISA  floating-point  trap  barriers).  We  believe  full  hardware  handling  of exceptional cases will become more common, and so wish to avoid complicating the user-level ISA  to  optimize  other  approaches.  Implementations  can  always  trap  to  machine-mode software handlers to provide exceptional default values.
+
+## 21.4. Subnormal Arithmetic
+
+Operations on subnormal numbers are handled in accordance with the IEEE 754-2008 standard.
+
+In the parlance of the IEEE standard, tininess is detected after rounding.
+
+<image>
+
+Detecting tininess after rounding results in fewer spurious underflow signals.
+
+## 21.5. Single-Precision Load and Store Instructions
+
+Floating-point loads and stores use the same base+offset addressing mode as the integer base ISAs, with a base address in register rs1 and a 12-bit signed byte offset. The FLW instruction loads a single-precision floating-point value from memory into floating-point register rd . FSW stores a single-precision value from floating-point register rs2 to memory.
+
+<image>
+
+FLW and FSW are only guaranteed to execute atomically if the effective address is naturally aligned.
+
+FLW and FSW do not modify the bits being transferred; in particular, the payloads of non-canonical NaNs are preserved.
+
+As described in Section 2.6, the execution environment defines whether misaligned floating-point loads and stores are handled invisibly or raise a contained or fatal trap.
+
+## 21.6. Single-Precision Floating-Point Computational Instructions
+
+Floating-point arithmetic instructions with one or two source operands use the R-type format with the OPFP major opcode. FADD.S and FMUL.S perform single-precision floating-point addition and multiplication respectively,  between rs1 and rs2 .  FSUB.S  performs the single-precision floating-point subtraction of rs2 from rs1 . FDIV.S performs the single-precision floating-point division of rs1 by rs2 . FSQRT.S computes the square root of rs1 . In each case, the result is written to rd .
+
+The  2-bit  floating-point  format  field fmt is  encoded  as  shown  in  Table  26.  It  is  set  to S (00)  for  all instructions in the F extension.
+
+Table 26. Format field encoding
+
+|   fmt field | Mnemonic   | Meaning                 |
+|-------------|------------|-------------------------|
+|          00 | S          | 32-bit single-precision |
+|          01 | D          | 64-bit double-precision |
+|          10 | H          | 16-bit half-precision   |
+|          11 | Q          | 128-bit quad-precision  |
+
+All floating-point operations that perform rounding can select the rounding mode using the rm field with the encoding shown in Table 24.
+
+Floating-point  minimum-number  and  maximum-number  instructions  FMIN.S  and  FMAX.S  write, respectively, the smaller or larger of rs1 and rs2 to rd . For the purposes of these instructions only, the value -0.0 is considered to be less than the value +0.0. If both inputs are NaNs, the result is the canonical NaN. If  only  one  operand  is  a  NaN,  the  result  is  the  non-NaN  operand.  Signaling  NaN  inputs  set  the  invalid operation exception flag, even when the result is not NaN.
+
+<image>
+
+Note  that  in  version  2.2  of  the  F  extension,  the  FMIN.S  and  FMAX.S  instructions  were amended  to  implement  the  proposed  IEEE  754-201x minimumNumber and maximumNumber operations,  rather  than  the  IEEE  754-2008  minNum  and  maxNum  operations.  These operations differ in their handling of signaling NaNs.
+
+<image>
+
+Floating-point  fused  multiply-add  instructions  require  a  new  standard  instruction  format.  R4-type instructions specify three source registers ( rs1 , rs2 ,  and rs3 ) and a destination register ( rd ).  This format is only used by the floating-point fused multiply-add instructions.
+
+FMADD.S multiplies  the  values  in rs1 and rs2 ,  adds  the  value  in rs3 ,  and  writes  the  final  result  to rd . FMADD.S computes (rs1 × rs2)+rs3 .
+
+FMSUB.S multiplies the values in rs1 and rs2 ,  subtracts the value in rs3 ,  and writes the final result to rd . FMSUB.S computes (rs1 × rs2) -rs3 .
+
+FNMSUB.S multiplies the values in rs1 and rs2 ,  negates the product, adds the value in rs3 ,  and writes the final result to rd . FNMSUB.S computes -(rs1 × rs2)+rs3 .
+
+FNMADD.S multiplies the values in rs1 and rs2 , negates the product, subtracts the value in rs3 , and writes the final result to rd . FNMADD.S computes -(rs1 × rs2) -rs3 .
+
+<image>
+
+
+
+Final instruction for satp: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

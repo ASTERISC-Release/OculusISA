@@ -1,0 +1,27 @@
+## 3.10. Interrupt delivery and handling
+
+An IMSIC's interrupt files supply external interrupt signals to the attached hart, one interrupt signal per interrupt file. The interrupt signal from a machine-level interrupt file appears as bit MEIP in CSR
+
+Interrupt identity Interrupt priority (same as identity)
+
+mip , and the interrupt signal from a supervisor-level interrupt file appears as bit SEIP in mip and sip . Interrupt signals from any guest interrupt files appear as the active bits in hypervisor CSR hgeip .
+
+When interrupt delivery is disabled by an interrupt file's eidelivery register ( eidelivery =  0),  the interrupt signal from the interrupt file is held de-asserted (false). When interrupt delivery from an interrupt file is enabled ( eidelivery = 1), its interrupt signal is asserted if and only if the interrupt file has a pending-and-enabled interrupt that also exceeds the priority threshold specified by eithreshold , if not zero.
+
+Changes  to  the  state  of  an  interrupt  file  are  guaranteed  to  be  reflected  in  the  relevant  interruptpending bit in CSR mip or hgeip eventually, but not necessarily immediately.
+
+A trap handler solely for external interrupts via an IMSIC could be written roughly as follows:
+
+```
+save processor registers
+```
+
+```
+i =read CSR mtopei or stopei , and write simultaneously to claim the interrupt i = i>>16 call the interrupt handler for external interrupt i (minor identity) restore processor registers return from trap
+```
+
+The combined read and write of mtopei or stopei in the second step can be done by a single CSRRW machine instruction,
+
+## csrrw rd , mtopei/stopei , x0
+
+where rd is the destination register for value i .

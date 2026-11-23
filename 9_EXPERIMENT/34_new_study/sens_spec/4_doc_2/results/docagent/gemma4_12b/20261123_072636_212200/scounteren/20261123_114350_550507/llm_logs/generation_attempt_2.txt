@@ -1,0 +1,32 @@
+Based on the provided documentation, here are the specific details regarding the **mcycle** and **minstret** CSRs:
+
+### **Basic Functionality**
+*   **mcycle**: Counts the number of clock cycles executed by the processor core on which the hart is running.
+*   **minstret**: Counts the number of instructions the hart has retired.
+*   **Precision**: Both registers have **64-bit precision** on all RV32 and RV64 harts.
+
+### **Hardware Behavior**
+*   **Initialization**: The registers have an arbitrary value after the hart is reset and can be written with a given value.
+*   **Write Latency**: Any CSR write takes effect after the writing instruction has otherwise completed.
+*   **Sharing**: The **mcycle** CSR may be shared between harts on the same core. In this case, writes to mcycle are visible to those harts (the platform should provide a mechanism to indicate which harts share it).
+
+### **Access and Availability**
+*   **Privilege Mode**: These are machine-mode CSRs.
+*   **XLEN=32 Implementation**: When XLEN=32, the registers are technically 64 bits wide. Access is split into high and low halves:
+    *   **mcycle / minstret**: Return bits 31-0.
+    *   **mcycleh / minstreth**: Return bits 63-32.
+    *   *Note*: The `mcycleh` and `minstreth` CSRs are provided only if the **Sscofpmf** extension is implemented.
+
+### **Counter-Enable (mcounteren) and Inhibition**
+*   **Accessibility**: Access to these registers in S-mode or U-mode is controlled by the **mcounteren** CSR. If the **TM** (time) or **CY** (cycle) bits are clear, attempts to read these registers in lower privilege modes will cause an **illegal-instruction exception**.
+*   **Inhibition**: The **mcountinhibit** CSR can be used to stop the counters from incrementing. 
+    *   Setting the **CY** bit stops the `mcycle` counter.
+    *   Setting the **IR** bit stops the `minstret` counter.
+    *   This is useful for reducing energy consumption when counters are not needed.
+
+### **Privilege Mode Filtering (Smcntrpmf)**
+The **Smcntrpmf** extension adds **mcyclecfg** and **minstretcfg** registers to inhibit counting in specific modes.
+*   **Filtering**: If a mode (M, S/HS, U, VS, or VU) is inhibited (e.g., by setting the corresponding `INH` bit), the counters will not increment while the CPU is executing in that mode.
+*   **Transitions**: 
+    *   **mcycle**: Only counts cycles while the CPU is in a non-inhibited mode. Mode transitions (traps/returns) may take multiple cycles; the change of privilege mode is reported as occurring in any one of those cycles.
+    *   **minstret**: Instructions that retire in a non-inhibited mode increment the counter. Instructions that cause synchronous exceptions to a higher privilege mode are not considered to retire and do not increment the counter. **xRET** instructions retire and *do* increment the counter only if the originating privilege mode was not inhibited.

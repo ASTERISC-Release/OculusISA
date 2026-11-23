@@ -1,0 +1,16 @@
+## 4.9.3. Synchronizing interactions between a hart and the APLIC
+
+When an APLIC sends an MSI to a hart, there is an unspecified travel delay before the MSI is observed at the hart's IMSIC. Consequently, after an APLIC's configuration is changed by writing to an APLIC register, harts may continue to see MSIs arrive from the APLIC from the time before the write, for an unspecified amount of time.
+
+It is sometimes necessary to know when no more of these late MSIs can arrive. For example, if a hart will  be  turned  off  ("powered  down"),  all  interrupts  directed  to  it  must  be  redirected  to  other  harts, which may involve reconfiguring one or more APLICs. Even after the APLICs are reconfigured, the hart still cannot be safely turned off until it is known no more MSIs are destined for it.
+
+The genmsi register (Section 4.5.15) exists to allow software to determine when all earlier MSIs have arrived at a hart. To use genmsi for this purpose, software can dedicate one external interrupt identity at  each  hart's  IMSIC  interrupt  file  solely  for  APLIC  synchronization.  Assuming  there  are  multiple harts, an APLIC's genmsi register should also be protected by a standard mutual-exclusion lock. The following sequence can then be used to synchronize between an APLIC and a specific hart:
+
+1. At  the  hart's  IMSIC,  clear  the  pending  bit  for  the  specific  minor  interrupt  identity used exclusively for APLIC synchronization. 1
+2. Acquire the shared lock for the APLIC's genmsi register.
+3. Write genmsi to generate an MSI to the hart with interrupt identity  .
+4. Repeatedly read genmsi until bit Busy is false.
+5. Release the lock for genmsi .
+6. Repeatedly read the pending bit for minor interrupt identity at the hart's IMSIC until it is found set.
+
+The loops of steps 4 and 6 are expected normally to succeed very quickly, often on the first or second attempt. When this sequence is complete, all earlier MSIs from the APLIC must also have arrived at the hart's IMSIC.

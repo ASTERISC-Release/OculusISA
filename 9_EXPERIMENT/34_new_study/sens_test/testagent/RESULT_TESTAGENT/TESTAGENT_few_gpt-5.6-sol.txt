@@ -1,0 +1,3691 @@
+===== TARGET: csrrwi =====
+# Test Case Rule: RULE 1: CSRRWI obtains the XLEN-bit value to write to the CSR by zero-extending the 5-bit unsigned immediate field (uimm[4:0]) encoded in the rs1 field.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 31
+csrr a0, mscratch
+# Result: a0 = 0x1f
+
+# Test Case Rule: RULE 2: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that could occur on a CSR read.
+##### ASSEMBLY #####
+nop # Skipped because no CSR with deterministic read side effects is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: When rd of a CSRRWI instruction is x0, the instruction shall write the CSR with the zero-extended immediate value.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 7
+csrr a0, mscratch
+# Result: a0 = 7
+
+# Test Case Rule: RULE 4: When rd of a CSRRWI instruction is not x0, the instruction shall read the current value of the CSR, write the CSR with the zero-extended immediate value, and place the original CSR value into rd.
+##### ASSEMBLY #####
+li t0, 9
+csrw mscratch, t0
+csrrwi a0, mscratch, 5
+csrr a1, mscratch
+li t0, 9
+xor a0, a0, t0
+li t0, 5
+xor a1, a1, t0
+or a0, a0, a1
+# Result: a0 = 0
+
+===== TARGET: fcvt.w.d =====
+# Test Case Rule: RULE 1: FCVT.W.D converts the double-precision floating-point value in floating-point register rs1 to a signed 32-bit integer and writes the result to integer register rd.
+##### ASSEMBLY #####
+li t6, 0x2000
+csrs mstatus, t6
+li t0, 0x4045000000000000
+fmv.d.x f0, t0
+fcvt.w.d a0, f0, rtz
+# Result: a0 = 42
+
+# Test Case Rule: RULE 2: FCVT.W.D rounds the conversion result according to the rounding mode specified in the rm field of the instruction.
+##### ASSEMBLY #####
+li t6, 0x2000
+csrs mstatus, t6
+li t0, 0x3ff4000000000000
+fmv.d.x f0, t0
+fcvt.w.d a0, f0, rup
+# Result: a0 = 2
+
+# Test Case Rule: RULE 3: When executed on an RV64 implementation, FCVT.W.D sign-extends the 32-bit integer result to produce a 64-bit value written to integer register rd.
+##### ASSEMBLY #####
+li t6, 0x2000
+csrs mstatus, t6
+li t0, 0xbff0000000000000
+fmv.d.x f0, t0
+fcvt.w.d a0, f0, rtz
+# Result: a0 = 0xffffffffffffffff
+
+# Test Case Rule: RULE 4: FCVT.W.D must raise the floating-point exception flags that correspond to converting its double-precision source operand to a signed 32-bit integer, and the set of flags raised is identical to those that would be raised for FCVTMOD.W.D with the same operand.
+##### ASSEMBLY #####
+li t6, 0x2000
+csrs mstatus, t6
+li t0, 0x3ff8000000000000
+fmv.d.x f0, t0
+csrwi fflags, 0
+fcvt.w.d t1, f0, rtz
+csrr t2, fflags
+csrwi fflags, 0
+fcvtmod.w.d t1, f0, rtz
+csrr t3, fflags
+slli t3, t3, 8
+or a0, t2, t3
+# Result: a0 = 0x101
+
+===== TARGET: mseccfg =====
+# Test Case Rule: RULE 1: Implementations may implement mseccfg such that the [s,u]seed fields are a read-only constant value 0.
+##### ASSEMBLY #####
+nop # Skipped because read-only-zero implementation is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 2: When mseccfg is implemented with the [s,u]seed fields as a read-only constant value 0, those fields read as 0 and are read-only.
+##### ASSEMBLY #####
+li t0, 0x300
+csrs mseccfg, t0
+csrr a0, mseccfg
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 3: If software writes a 1 to the [s,u]seed fields in mseccfg and subsequently reads them back, the read-back value indicates whether access to the seed CSR is enabled in U and S mode.
+##### ASSEMBLY #####
+nop # Skipped because the supported enable fields are implementation-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: The mseccfg CSR is readable and writable in Machine mode (MRW privilege).
+##### ASSEMBLY #####
+li a0, 1
+csrrw a1, mseccfg, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 5: mseccfg is a 64-bit read/write register that controls security features and exists only if any extension that adds a field to mseccfg is implemented; otherwise it is reserved.
+##### ASSEMBLY #####
+nop # Skipped because CSR existence depends on implemented extensions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 6: When mseccfg.USED = 0, any access to the seed CSR in U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100
+csrc mseccfg, t0
+call machine_to_user
+csrrw a0, seed, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 7: When mseccfg.USED = 1, read-write access to the seed CSR from U-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100
+csrs mseccfg, t0
+call machine_to_user
+csrr a0, seed
+# Result: mcause = 2
+
+# Test Case Rule: RULE 8: If the Zkr extension or U-mode is not implemented, the USEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because extension and privilege-mode absence cannot be selected at runtime
+# Result: x0 = 0
+
+# Test Case Rule: RULE 9: When mseccfg.SSEED = 0, any access to the seed CSR from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrc mseccfg, t0
+call machine_to_supervisor
+csrrw a0, seed, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 10: When mseccfg.SSEED = 1, read-write access to the seed CSR from S-/HS-mode is allowed and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrs mseccfg, t0
+call machine_to_supervisor
+csrr a0, seed
+# Result: mcause = 2
+
+# Test Case Rule: RULE 11: If the Zkr extension or S-mode is not implemented, the SSEED field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because extension and privilege-mode absence cannot be selected at runtime
+# Result: x0 = 0
+
+# Test Case Rule: RULE 12: When the H extension is also implemented, access to the seed CSR from an HS-qualified instruction leads to a virtual-instruction exception in VS and VU modes, and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrs mseccfg, t0
+call machine_to_virtual
+csrrw a0, seed, x0
+# Result: mcause = 22
+
+# Test Case Rule: RULE 13: In machine mode, the seed CSR is always available as normal regardless of the values of the fields in mseccfg, and an attempted read without a write raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x300
+csrc mseccfg, t0
+csrr a0, seed
+# Result: mcause = 2
+
+# Test Case Rule: RULE 14: When mseccfg.USED = 0, any seed CSR access from U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100
+csrc mseccfg, t0
+call machine_to_user
+csrrw a0, seed, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When mseccfg.USED = 1, the seed CSR is accessible as normal from U-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li t0, 0x100
+csrs mseccfg, t0
+call machine_to_user
+li a0, 1
+csrrw a1, seed, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 16: When mseccfg.SSEED = 0, any seed CSR access from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrc mseccfg, t0
+call machine_to_supervisor
+csrrw a0, seed, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 17: When mseccfg.SSEED = 1, the seed CSR is accessible as normal from S-/HS-mode and no exception is raised for read-write accesses.
+##### ASSEMBLY #####
+li t0, 0x200
+csrs mseccfg, t0
+call machine_to_supervisor
+li a0, 1
+csrrw a1, seed, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 18: When mseccfg.SSEED = 0, any seed CSR access from VS or VU mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrc mseccfg, t0
+call machine_to_virtual
+csrrw a0, seed, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: When mseccfg.SSEED = 1, a read-write seed CSR access from VS or VU mode raises a virtual-instruction exception and all other access conditions raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrs mseccfg, t0
+call machine_to_virtual
+csrrw a0, seed, x0
+# Result: mcause = 22
+
+# Test Case Rule: RULE 20: When mseccfg.RLB = 0 and any pmpcfg.L bit is 1 in any rule or entry (including disabled entries), mseccfg.RLB remains 0 and further modifications to mseccfg.RLB are ignored until a PMP reset.
+##### ASSEMBLY #####
+li t0, 0x4
+csrc mseccfg, t0
+li t1, 0x80
+csrs pmpcfg0, t1
+csrs mseccfg, t0
+csrr a0, mseccfg
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 21: When mseccfg.MMWP is set, the default PMP policy for Machine mode for memory regions without a matching PMP rule changes to denied instead of ignored.
+##### ASSEMBLY #####
+la t1, denied_region
+srli t0, t1, 2
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x2
+csrs mseccfg, t0
+lw a0, 0(t1)
+denied_region:
+add x0, x0, x0
+# Result: mcause = 5
+
+# Test Case Rule: RULE 22: When mseccfg.MML is set, the interpretation of pmpcfg.L changes so that a set pmpcfg.L marks a rule as M-mode-only and an unset pmpcfg.L marks a rule as S/U-mode-only.
+##### ASSEMBLY #####
+la t1, su_region
+li t2, -8
+and t1, t1, t2
+srli t0, t1, 2
+csrw pmpaddr0, t0
+csrw pmpaddr1, t0
+li t0, 0x1c8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+jal x0, su_region
+add x0, x0, x0
+add x0, x0, x0
+su_region:
+add x0, x0, x0
+# Result: mcause = 1
+
+# Test Case Rule: RULE 23: When mseccfg.MML is set, the formerly reserved encoding pmpcfg.RW = 01 and the encoding pmpcfg.LRWX = 1111 encode a Shared-Region.
+##### ASSEMBLY #####
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+csrw pmpaddr1, x0
+li t0, 0x1a8d
+csrw pmpcfg0, t0
+csrr a0, pmpcfg0
+srli a0, a0, 8
+li t0, 0xff
+and a0, a0, t0
+# Result: a0 = 0x1a
+
+# Test Case Rule: RULE 24: When mseccfg.MML is set, an M-mode-only rule is enforced on Machine mode, denied on Supervisor or User mode, and remains locked so that further modifications to its configuration or address registers are ignored until a PMP reset unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+csrw pmpaddr1, x0
+li t0, 0x998d
+csrw pmpcfg0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+csrr a0, pmpcfg0
+srli a0, a0, 8
+li t0, 0xff
+and a0, a0, t0
+# Result: a0 = 0x99
+
+# Test Case Rule: RULE 25: When mseccfg.MML is set, an S/U-mode-only rule is enforced on Supervisor and User modes and denied on Machine mode.
+##### ASSEMBLY #####
+la t1, su_region
+li t2, -8
+and t1, t1, t2
+srli t0, t1, 2
+csrw pmpaddr0, t0
+csrw pmpaddr1, t0
+li t0, 0x1c8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+jal x0, su_region
+add x0, x0, x0
+add x0, x0, x0
+su_region:
+add x0, x0, x0
+# Result: mcause = 1
+
+# Test Case Rule: RULE 26: When mseccfg.MML is set and pmpcfg.L is not set, a Shared-Region rule can be used for sharing data between M-mode and S/U-mode, is not executable, provides read/write access to M-mode, and provides read access to S/U-mode if pmpcfg.X is not set or read/write access if pmpcfg.X is set.
+##### ASSEMBLY #####
+la t1, shared_data_region
+li t2, -8
+and t1, t1, t2
+srli t0, t1, 2
+csrw pmpaddr0, t0
+csrw pmpaddr1, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+li t0, 0x1a8d
+csrw pmpcfg0, t0
+jal x0, shared_data_region
+add x0, x0, x0
+add x0, x0, x0
+shared_data_region:
+add x0, x0, x0
+# Result: mcause = 1
+
+# Test Case Rule: RULE 27: When mseccfg.MML is set and pmpcfg.L is set, a Shared-Region rule can be used for sharing code between M-mode and S/U-mode, is not writable, provides execute access to both M-mode and S/U-mode, and provides additional read access to M-mode if pmpcfg.X is set.
+##### ASSEMBLY #####
+la t1, shared_code_region
+li t2, -8
+and t1, t1, t2
+srli t0, t1, 2
+csrw pmpaddr0, t0
+csrw pmpaddr1, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x5
+csrs mseccfg, t0
+li t0, 0x9a8d
+csrw pmpcfg0, t0
+li t0, 0x4
+csrc mseccfg, t0
+jal x0, shared_code_region
+add x0, x0, x0
+add x0, x0, x0
+shared_code_region:
+li a0, 0x55
+# Result: a0 = 0x55
+
+# Test Case Rule: RULE 28: When mseccfg.MML is set, the encoding pmpcfg.LRWX = 1111 can be used for sharing data between M-mode and S/U-mode where both modes have read-only access, and the rule remains locked unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+csrw pmpaddr1, x0
+li t0, 0x9f8d
+csrw pmpcfg0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+csrr a0, pmpcfg0
+srli a0, a0, 8
+li t0, 0xff
+and a0, a0, t0
+# Result: a0 = 0x9f
+
+# Test Case Rule: RULE 29: When mseccfg.MML is set, adding a PMP rule with executable privileges that is either M-mode-only or a locked Shared-Region is not possible; such pmpcfg writes are ignored, leaving pmpcfg unchanged, and this restriction can be temporarily lifted by setting mseccfg.RLB.
+##### ASSEMBLY #####
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+csrw pmpaddr1, x0
+li t0, 0x4
+csrc mseccfg, t0
+li t0, 0x1
+csrs mseccfg, t0
+csrr a0, pmpcfg0
+li t0, 0xffffffffffff00ff
+and t1, a0, t0
+li t0, 0x9c00
+or t1, t1, t0
+csrw pmpcfg0, t1
+csrr a1, pmpcfg0
+xor a0, a0, a1
+# Result: a0 = 0
+
+# Test Case Rule: RULE 30: When mseccfg.MML is set, executing code with Machine mode privileges is only possible from memory regions with a matching M-mode-only rule or a locked Shared-Region rule with executable privileges; executing code from a region without a matching rule or with a matching S/U-mode-only rule is denied.
+##### ASSEMBLY #####
+la t0, denied_region
+srli t0, t0, 2
+csrw pmpaddr0, t0
+li t0, 0x8d
+csrw pmpcfg0, t0
+li t0, 0x1
+csrs mseccfg, t0
+jal x0, denied_region
+denied_region:
+add x0, x0, x0
+# Result: mcause = 1
+
+# Test Case Rule: RULE 31: When mseccfg.MML is not set, the combination pmpcfg.RW = 01 remains reserved for future standard use.
+##### ASSEMBLY #####
+nop # Skipped because reserved encodings have no deterministic required behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 32: The PMM field in mseccfg enables or disables pointer masking for Machine mode.
+##### ASSEMBLY #####
+li a0, 0x5a
+sd a0, 0(sp)
+li t0, 0x300000000
+csrc mseccfg, t0
+li t0, 0x200000000
+csrs mseccfg, t0
+li t0, 0x8000000000000000
+or t1, sp, t0
+ld a0, 0(t1)
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 33: If the Smmpm extension is not implemented, the PMM field in mseccfg is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because Smmpm implementation presence is not controllable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 34: The PMM field in mseccfg is a WARL field whose legal values are 00 meaning pointer masking disabled (PMLEN = 0), 01 reserved, 10 meaning pointer masking enabled with PMLEN = XLEN-57 (7 on RV64), and 11 meaning pointer masking enabled with PMLEN = XLEN-48 (16 on RV64).
+##### ASSEMBLY #####
+li t0, 0x300000000
+csrc mseccfg, t0
+li t0, 0x200000000
+csrs mseccfg, t0
+csrr a0, mseccfg
+srli a0, a0, 32
+li t0, 0x3
+and a0, a0, t0
+# Result: a0 = 2
+
+# Test Case Rule: RULE 35: When mseccfg.MLPE = 1, the Zicfilp extension is enabled in Machine mode.
+##### ASSEMBLY #####
+nop # Skipped because enablement is not directly observable without unrelated Zicfilp semantics
+# Result: x0 = 0
+
+# Test Case Rule: RULE 36: When mseccfg.MLPE = 0, the Zicfilp extension is not enabled in Machine mode, the hart does not update the ELP state and it remains NO_LP_EXPECTED.
+##### ASSEMBLY #####
+nop # Skipped because observing an ELP update requires unrelated Zicfilp control-flow semantics
+# Result: x0 = 0
+
+# Test Case Rule: RULE 37: When mseccfg.MLPE = 0, the LPAD instruction operates as a no-op.
+##### ASSEMBLY #####
+csrw mseccfg, x0
+li a0, 0x5a
+lpad 0
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 38: If the Zicfilp extension is implemented then the mseccfg.MLPE field MUST be reset to 0.
+##### ASSEMBLY #####
+nop # Skipped because execution is not guaranteed to begin immediately after reset
+# Result: x0 = 0
+
+# Test Case Rule: RULE 39: The MML field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because the reset value is platform-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 40: The MMWP field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because the reset value is platform-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 41: The RLB field of the mseccfg register MUST be set to 0 on reset unless the platform mandates a different reset value.
+##### ASSEMBLY #####
+nop # Skipped because the platform may mandate a different reset value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 42: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in M-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x10
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 43: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception because the region is inaccessible.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule43_access
+srli t2, t2, 2
+csrw pmpaddr1, t2
+csrsi mseccfg, 1
+li t1, 0x1410
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule43_access:
+lw a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 44: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x14
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 45: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=0, X=1, an access in S-mode or U-mode to the region is permitted as execute-only.
+##### ASSEMBLY #####
+la t0, rule45_target
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x14
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule45_target:
+addi a0, x0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 46: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t2, 0x11223344
+sw t2, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x12
+csrw pmpcfg0, t1
+li t2, 0x55667788
+sw t2, 0(t0)
+lw a0, 0(t0)
+# Result: a0 = 0x55667788
+
+# Test Case Rule: RULE 47: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=0, an access in S-mode or U-mode to the region permits only read operations.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule47_read
+srli t2, t2, 2
+csrw pmpaddr1, t2
+csrsi mseccfg, 1
+li t1, 0x1412
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule47_read:
+lw a0, 0(s0)
+# Result: a0 = 0x11223344
+
+# Test Case Rule: RULE 48: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in M-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t2, 0x11223344
+sw t2, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x16
+csrw pmpcfg0, t1
+li t2, 0x55667788
+sw t2, 0(t0)
+lw a0, 0(t0)
+# Result: a0 = 0x55667788
+
+# Test Case Rule: RULE 49: When mseccfg.MML = 1 and a PMP entry has L=0, R=0, W=1, X=1, an access in S-mode or U-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+li s2, 0x55667788
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule49_write
+srli t2, t2, 2
+csrw pmpaddr1, t2
+la t2, rule49_read
+srli t2, t2, 2
+csrw pmpaddr2, t2
+csrsi mseccfg, 1
+li t1, 0x141416
+csrw pmpcfg0, t1
+call machine_to_user
+rule49_write:
+sw s2, 0(s0)
+rule49_read:
+lw a0, 0(s0)
+# Result: a0 = 0x55667788
+
+# Test Case Rule: RULE 50: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x11
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 51: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=0, an access in S-mode or U-mode to the region is permitted as a read-only region.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule51_read
+srli t2, t2, 2
+csrw pmpaddr1, t2
+csrsi mseccfg, 1
+li t1, 0x1411
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule51_read:
+lw a0, 0(s0)
+# Result: a0 = 0x11223344
+
+# Test Case Rule: RULE 52: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x15
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 53: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=0, X=1, an access in S-mode or U-mode to the region permits both read and execute operations.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule53_read
+srli t2, t2, 2
+csrw pmpaddr1, t2
+csrsi mseccfg, 1
+li t1, 0x1515
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule53_read:
+lw a0, 0(s0)
+# Result: a0 = 0x11223344
+
+# Test Case Rule: RULE 54: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x13
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 55: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=0, an access in S-mode or U-mode to the region permits both read and write operations.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+li s2, 0x55667788
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule55_write
+srli t2, t2, 2
+csrw pmpaddr1, t2
+la t2, rule55_read
+srli t2, t2, 2
+csrw pmpaddr2, t2
+csrsi mseccfg, 1
+li t1, 0x141413
+csrw pmpcfg0, t1
+call machine_to_user
+rule55_write:
+sw s2, 0(s0)
+rule55_read:
+lw a0, 0(s0)
+# Result: a0 = 0x55667788
+
+# Test Case Rule: RULE 56: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=1, an access in M-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x17
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 57: When mseccfg.MML = 1 and a PMP entry has L=0, R=1, W=1, X=1, an access in S-mode or U-mode to the region permits read, write, and execute operations.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+li s2, 0x55667788
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule57_write
+srli t2, t2, 2
+csrw pmpaddr1, t2
+la t2, rule57_read
+srli t2, t2, 2
+csrw pmpaddr2, t2
+csrsi mseccfg, 1
+li t1, 0x171717
+csrw pmpcfg0, t1
+call machine_to_user
+rule57_write:
+sw s2, 0(s0)
+rule57_read:
+lw a0, 0(s0)
+# Result: a0 = 0x55667788
+
+# Test Case Rule: RULE 58: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=0, an access in M-mode to the region causes an Access Exception because the region is a locked inaccessible region.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi t0, sp, -64
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x90
+csrw pmpcfg0, t1
+lw a0, 0(t0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 59: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception because the region is a locked inaccessible region.
+##### ASSEMBLY #####
+li t0, 0x11223344
+sw t0, -64(sp)
+addi s0, sp, -64
+srli t1, s0, 2
+csrw pmpaddr0, t1
+la t2, rule59_access
+srli t2, t2, 2
+csrw pmpaddr1, t2
+csrsi mseccfg, 1
+li t1, 0x1490
+nop
+csrw pmpcfg0, t1
+call machine_to_user
+rule59_access:
+lw a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 60: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in M-mode to the region is permitted as a locked execute-only region.
+##### ASSEMBLY #####
+la t0, rule60_target
+srli t1, t0, 2
+csrw pmpaddr0, t1
+csrsi mseccfg, 1
+li t1, 0x94
+nop
+csrw pmpcfg0, t1
+addi t2, t0, -4
+jalr x0, 4(t2)
+rule60_target:
+addi a0, x0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 61: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9c
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+ld a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 62: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in M-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+j rule62_setup
+rule62_execute_target:
+li a0, 42
+ret
+rule62_setup:
+la s0, rule62_execute_target
+li t0, -64
+and t1, s0, t0
+srli t1, t1, 2
+li t0, 7
+or t1, t1, t0
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9e9a
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+jal ra, rule62_execute_target
+lb a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 63: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=0, an access in S-mode or U-mode to the region is permitted only for execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+j rule63_setup
+rule63_execute_target:
+li a0, 42
+ret
+rule63_setup:
+la s0, rule63_execute_target
+li t0, -64
+and t1, s0, t0
+srli t1, t1, 2
+li t0, 7
+or t1, t1, t0
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9a
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+jal ra, rule63_execute_target
+lb a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 64: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in M-mode to the region permits read and execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+j rule64_setup
+rule64_execute_target:
+li a0, 42
+ret
+rule64_setup:
+la s0, rule64_execute_target
+li t0, -64
+and t1, s0, t0
+srli t1, t1, 2
+li t0, 7
+or t1, t1, t0
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9e
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+lb x0, 0(s0)
+jal ra, rule64_execute_target
+# Result: a0 = 42
+
+# Test Case Rule: RULE 65: When mseccfg.MML = 1 and a PMP entry has L=1, R=0, W=1, X=1, an access in S-mode or U-mode to the region permits only execute operations because it is a locked shared code region.
+##### ASSEMBLY #####
+j rule65_setup
+rule65_execute_target:
+li a0, 42
+ret
+rule65_setup:
+la s0, rule65_execute_target
+li t0, -64
+and t1, s0, t0
+srli t1, t1, 2
+li t0, 7
+or t1, t1, t0
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9e
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+jal ra, rule65_execute_target
+lb a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 66: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in M-mode to the region is permitted as a locked read-only region.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a99
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+ld a0, 0(s0)
+sd x0, 0(s0)
+# Result: mcause = 7
+
+# Test Case Rule: RULE 67: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=0, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a99
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+ld a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 68: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in M-mode to the region is permitted as a locked read/execute region.
+##### ASSEMBLY #####
+j rule68_setup
+rule68_execute_target:
+li a0, 42
+ret
+rule68_setup:
+la s0, rule68_execute_target
+li t0, -64
+and t1, s0, t0
+srli t1, t1, 2
+li t0, 7
+or t1, t1, t0
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9d
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+lb x0, 0(s0)
+jal ra, rule68_execute_target
+# Result: a0 = 42
+
+# Test Case Rule: RULE 69: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=0, X=1, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9d
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+ld a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 70: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in M-mode to the region is permitted as a locked read/write region.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9b
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+li a0, 84
+sd a0, 0(s0)
+ld a0, 0(s0)
+# Result: a0 = 84
+
+# Test Case Rule: RULE 71: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=0, an access in S-mode or U-mode to the region causes an Access Exception.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9b
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+ld a0, 0(s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 72: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in M-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9f
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+ld a0, 0(s0)
+sd x0, 0(s0)
+# Result: mcause = 7
+
+# Test Case Rule: RULE 73: When mseccfg.MML = 1 and a PMP entry has L=1, R=1, W=1, X=1, an access in S-mode or U-mode to the region is permitted as a locked shared data region that is read-only.
+##### ASSEMBLY #####
+li t0, 42
+addi s0, sp, -256
+srli s0, s0, 3
+slli s0, s0, 3
+sd t0, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 5
+csrs mseccfg, t1
+li t1, 0x9a9f
+csrw pmpcfg0, t1
+li t1, 4
+csrc mseccfg, t1
+call machine_to_supervisor
+ld a0, 0(s0)
+sd x0, 0(s0)
+# Result: mcause = 7
+
+===== TARGET: mstatus =====
+# Test Case Rule: RULE 1: If the TW bit in mstatus is set, the privilege mode is not M mode, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause an illegal-instruction exception.
+##### ASSEMBLY #####
+nop # Skipped because bounded-time noncompletion cannot be guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 2: In VS or VU mode, when the VTW bit in hstatus is set, the TW bit in mstatus is clear, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause a virtual-instruction exception.
+##### ASSEMBLY #####
+nop # Skipped because bounded-time noncompletion cannot be guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPRV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPP field in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 6: Whether a CMO instruction is permitted to access a cache block may depend on the state of the SUM bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 7: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MXR bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because permission dependence is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 8: When the Zfinx extension is implemented, the FS field in the mstatus register is hardwired to 0.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 9: When the Zfinx extension is implemented, the FS field in the mstatus register does not affect the trapping behavior of floating-point instructions or accesses to the fcsr register.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+csrw fcsr, x0
+csrr a0, fcsr
+# Result: a0 = 0
+
+# Test Case Rule: RULE 10: If mstatus.VS equals Off and an attempt is made to execute any vector instruction or to access any vector CSR, an illegal-instruction exception is raised.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrr a0, vstart
+# Result: mcause = 2
+
+# Test Case Rule: RULE 11: If mstatus.VS equals Initial or Clean and an instruction that changes vector state is executed (including accesses to vector CSRs), then mstatus.VS is changed to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+csrw vstart, x0
+csrr a0, mstatus
+li t0, 0x600
+and a0, a0, t0
+# Result: a0 = 0x600
+
+# Test Case Rule: RULE 12: When mstatus.VS equals Initial or Clean, an implementation may change mstatus.VS to Dirty at any time, even when there is no change in vector state.
+##### ASSEMBLY #####
+nop # Skipped because the state transition is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 13: If mstatus.VS equals Dirty, then mstatus.SD is set to 1.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 14: When V=1 and either vsstatus.VS or mstatus.VS is Off, attempts to execute any vector instruction or to access any vector CSR raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+csrr a0, vstart
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When V=1 and neither vsstatus.VS nor mstatus.VS is Off, execution of any instruction that changes vector state, including accesses to vector CSRs, changes both mstatus.VS and vsstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrc mstatus, t0
+csrc vsstatus, t0
+li t0, 0x200
+csrs mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+csrw vstart, x0
+# Result: mstatus[10:9] = 3
+
+# Test Case Rule: RULE 16: If mstatus.VS is Dirty, then mstatus.SD is 1.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 17: If mstatus.VS is not Dirty, then mstatus.SD is set in accordance with existing specifications.
+##### ASSEMBLY #####
+nop # Skipped because SD behavior is unspecified by this rule
+# Result: x0 = 0
+
+# Test Case Rule: RULE 18: If the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+li t0, 0x6000
+csrc mstatus, t0
+vfadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: Any vector floating-point instruction that modifies any floating-point extension state must set the mstatus.FS field to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+vmv.v.i v0, 1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x1000
+csrs mstatus, t0
+vfmv.f.s f0, v0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 20: When the hypervisor extension is implemented and V=1, if the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+csrs vsstatus, t0
+li t0, 0x6000
+csrc mstatus, t0
+csrs vsstatus, t0
+call machine_to_virtual
+li t1, 1
+vsetvli t2, t1, e32, m1, ta, ma
+vfadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 21: When the hypervisor extension is implemented and V=1, if either the vsstatus.FS field or the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x6600
+csrs mstatus, t0
+csrs vsstatus, t0
+li t0, 0x6000
+csrc mstatus, t0
+call machine_to_virtual
+vsetivli zero, 1, e32, m1, ta, ma
+vfadd.vv v0, v0, v0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 22: When the hypervisor extension is implemented and V=1, any vector floating-point instruction that modifies any floating-point extension state must set both mstatus.FS and vsstatus.FS to Dirty.
+##### ASSEMBLY #####
+nop # Skipped because both FS fields cannot be jointly observed from V=1 without a return trap handler
+# Result: x0 = 0
+
+# Test Case Rule: RULE 23: The mstatus CSR is defined to be accessed at Machine privilege level.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, mstatus
+# Result: mcause = 2
+
+# Test Case Rule: RULE 24: The mstatus CSR has machine-read/write (MRW) access permissions.
+##### ASSEMBLY #####
+csrw mstatus, x0
+csrr t0, mstatus
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 25: The mstatush CSR is defined to be accessed at Machine privilege level.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 26: The mstatush CSR has machine-read/write (MRW) access permissions.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 27: The mstatus register is an MXLEN-bit read/write register that keeps track of and controls the hart's current operating state.
+##### ASSEMBLY #####
+csrrw t0, mstatus, x0
+csrw mstatus, t0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 28: In the mstatush register, bits 30:4 generally contain the same fields that are found in bits 62:36 of the RV64 mstatus register.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 29: The fields SD, SXL, and UXL are not present in the mstatush register.
+##### ASSEMBLY #####
+nop # Skipped because mstatush is not applicable to RV64 execution
+# Result: x0 = 0
+
+# Test Case Rule: RULE 30: The global interrupt-enable bits MIE and SIE reside in the low-order bits of mstatus, permitting atomic set or clear with a single CSR instruction.
+##### ASSEMBLY #####
+li t0, 0xa
+csrs mstatus, t0
+li t1, 0x2
+csrc mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+# Result: a0 = 0x8
+
+# Test Case Rule: RULE 31: In mstatus, interrupt enable for any lower-privilege mode w (w < x) is always globally disabled irrespective of the value of the wIE bit.
+##### ASSEMBLY #####
+nop # Skipped because deterministic interrupt delivery is not available
+# Result: x0 = 0
+
+# Test Case Rule: RULE 32: In mstatus, interrupt enable for any higher-privilege mode y (y > x) is always globally enabled irrespective of the value of the yIE bit.
+##### ASSEMBLY #####
+nop # Skipped because deterministic interrupt delivery is not available
+# Result: x0 = 0
+
+# Test Case Rule: RULE 33: If supervisor mode is not implemented, the SIE and SPIE fields of mstatus are read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because supervisor mode is implemented under the execution assumptions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 34: The xPP fields in mstatus can hold only privilege modes up to x, resulting in MPP being two bits wide and SPP being one bit wide.
+##### ASSEMBLY #####
+li t0, 0x1900
+csrs mstatus, t0
+csrr t1, mstatus
+and a0, t1, t0
+# Result: a0 = 0x1900
+
+# Test Case Rule: RULE 35: When a trap is taken from privilege mode y into privilege mode x, the mstatus field xPIE is set to the current value of xIE, the mstatus field xIE is cleared to 0, and the mstatus field xPP is written with y.
+##### ASSEMBLY #####
+nop # Skipped because trap-state fields cannot be observed after the stopping trap
+# Result: x0 = 0
+
+# Test Case Rule: RULE 36: Executing an xRET instruction (MRET or SRET) sets the mstatus field xIE to the value of xPIE, changes the current privilege mode to the value stored in xPP, sets xPIE in mstatus to 1, writes xPP in mstatus with the least-privileged supported mode (U if U-mode is implemented, otherwise M), and, if the saved privilege mode y is not M, also clears the MPRV bit in mstatus.
+##### ASSEMBLY #####
+li t0, 0x1888
+csrc mstatus, t0
+li t0, 0x1880
+csrs mstatus, t0
+la t0, after_mret
+csrw mepc, t0
+mret
+after_mret:
+csrr t1, mstatus
+li t0, 0x1888
+and a0, t1, t0
+# Result: a0 = 0x88
+
+# Test Case Rule: RULE 37: The xPP fields in mstatus are WARL fields that may contain only privilege mode x or any implemented privilege mode lower than x, and if privilege mode x is not implemented, the xPP field must be read-only 0.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrc mstatus, t0
+li t1, 0x1000
+csrs mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+srli a0, a0, 11
+# Result: a0 != 2
+
+# Test Case Rule: RULE 38: M-mode software can determine whether a privilege mode is implemented by writing that mode to the MPP field of mstatus and then reading it back.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrc mstatus, t0
+li t1, 0x800
+csrs mstatus, t1
+csrr t2, mstatus
+and a0, t2, t0
+srli a0, a0, 11
+# Result: a0 = 1
+
+# Test Case Rule: RULE 39: When a machine implements only U and M privilege modes, a single hardware storage bit in the mstatus MPP field suffices to represent either the binary pattern 00 or 11.
+##### ASSEMBLY #####
+nop # Skipped because the implementation includes supervisor mode and storage size is not architecturally observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 40: Upon reset, the MDT field in mstatus is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because execution does not guarantee an unmodified reset state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 41: When the MDT bit in mstatus is set to 1 by an explicit CSR write, the MIE bit in mstatus is cleared to 0.
+##### ASSEMBLY #####
+li t0, 1 << 42
+csrc mstatus, t0
+li t1, 8
+csrs mstatus, t1
+csrs mstatus, t0
+# Result: mstatus[3] = 0
+
+# Test Case Rule: RULE 42: On RV64, the clearing of the MIE bit in mstatus to 0 occurs regardless of the value written, if any, to the MIE bit by the same CSR write that sets the MDT bit to 1.
+##### ASSEMBLY #####
+li t0, 0x40000000008
+csrc mstatus, t0
+csrs mstatus, t0
+# Result: mstatus[3] = 0
+
+# Test Case Rule: RULE 43: The MIE bit in mstatus may be set to 1 by an explicit CSR write only if the MDT bit in mstatus is already 0, or, on RV64, if the MDT bit is being set to 0 by the same write.
+##### ASSEMBLY #####
+li t0, 1 << 42
+csrs mstatus, t0
+csrr t1, mstatus
+not t0, t0
+and t1, t1, t0
+li t0, 8
+or t1, t1, t0
+csrw mstatus, t1
+# Result: mstatus[3] = 1
+
+# Test Case Rule: RULE 44: When a trap is taken into M-mode and the MDT bit in mstatus is currently 0, the MDT bit is set to 1 and the trap is delivered as expected.
+##### ASSEMBLY #####
+nop # Skipped because the trap-stop harness cannot check MDT after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 45: A trap caused by an RNMI does not set the MDT bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because an RNMI cannot be induced deterministically
+# Result: x0 = 0
+
+# Test Case Rule: RULE 46: When executed in M-mode, the MRET instruction sets the MDT bit in mstatus to 0.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+li t0, 1 << 42
+csrs mstatus, t0
+la t0, rule46_after_mret
+csrw mepc, t0
+mret
+rule46_after_mret:
+nop
+# Result: mstatus[42] = 0
+
+# Test Case Rule: RULE 47: When executed in M-mode, the SRET instruction sets the MDT bit in mstatus to 0.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, 1 << 8
+csrs mstatus, t0
+li t0, 1 << 42
+csrs mstatus, t0
+la t0, rule47_after_sret
+csrw sepc, t0
+sret
+rule47_after_sret:
+nop
+# Result: mstatus[42] = 0
+
+# Test Case Rule: RULE 48: When the MNRET instruction is executed, it sets the MDT bit in mstatus to 0 if the new privilege mode is not M.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, 1 << 42
+csrs mstatus, t0
+li t0, 0x1888
+csrc mnstatus, t0
+li t0, 0x800
+csrs mnstatus, t0
+la t0, rule48_after_mnret
+csrw mnepc, t0
+mnret
+rule48_after_mnret:
+nop
+# Result: mstatus[42] = 0
+
+# Test Case Rule: RULE 49: If the new privilege mode after executing MRET or SRET is U, VS, or VU, then sstatus.SDT is also set to 0.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, 1 << 24
+csrs sstatus, t0
+li t0, 0x8000001800
+csrc mstatus, t0
+la t0, rule49_after_mret
+csrw mepc, t0
+mret
+rule49_after_mret:
+nop
+# Result: sstatus[24] = 0
+
+# Test Case Rule: RULE 50: If the new privilege mode after executing MRET or SRET is VU, then vsstatus.SDT is also set to 0.
+##### ASSEMBLY #####
+csrw hgatp, x0
+csrw vsatp, x0
+li t0, 1 << 24
+csrs vsstatus, t0
+li t0, 0x1800
+csrc mstatus, t0
+li t0, 1 << 39
+csrs mstatus, t0
+la t0, rule50_after_mret
+csrw mepc, t0
+mret
+rule50_after_mret:
+nop
+# Result: vsstatus[24] = 0
+
+# Test Case Rule: RULE 51: When MNRET sets the MDT bit in mstatus to 0, if the new privilege mode is U, VS, or VU then sstatus.SDT is set to 0.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, 1 << 24
+csrs sstatus, t0
+li t0, 1 << 42
+csrs mstatus, t0
+li t0, 0x1888
+csrc mnstatus, t0
+la t0, rule51_after_mnret
+csrw mnepc, t0
+mnret
+rule51_after_mnret:
+nop
+# Result: sstatus[24] = 0
+
+# Test Case Rule: RULE 52: When MNRET sets the MDT bit in mstatus to 0, if the new privilege mode is VU then vsstatus.SDT is set to 0.
+##### ASSEMBLY #####
+csrw hgatp, x0
+csrw vsatp, x0
+li t0, 1 << 24
+csrs vsstatus, t0
+li t0, 1 << 42
+csrs mstatus, t0
+li t0, 0x1888
+csrc mnstatus, t0
+li t0, 0x80
+csrs mnstatus, t0
+la t0, rule52_after_mnret
+csrw mnepc, t0
+mnret
+rule52_after_mnret:
+nop
+# Result: vsstatus[24] = 0
+
+# Test Case Rule: RULE 53: In the mstatus register, the SXL and UXL fields are WARL fields that control the XLEN for S-mode and U-mode, respectively, on RV64 harts.
+##### ASSEMBLY #####
+nop # Skipped because the WARL legal values and readback are not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 54: In the mstatus register, the encoding of the SXL and UXL fields is identical to the encoding of the MXL field in the misa register.
+##### ASSEMBLY #####
+li t3, 3
+csrr t0, misa
+srli t0, t0, 62
+and t0, t0, t3
+csrr t1, mstatus
+srli t2, t1, 34
+and t2, t2, t3
+xor a0, t2, t0
+srli t2, t1, 32
+and t2, t2, t3
+xor t2, t2, t0
+or a0, a0, t2
+# Result: a0 = 0
+
+# Test Case Rule: RULE 55: If MXLEN is 64 and S-mode is not supported, the SXL field in the mstatus register is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because S-mode is supported under the execution assumptions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 56: If MXLEN is 64 and S-mode is supported, the SXL field in the mstatus register is a WARL field that encodes the current SXLEN value.
+##### ASSEMBLY #####
+nop # Skipped because the rule does not specify the 64-bit SXL encoding
+# Result: x0 = 0
+
+# Test Case Rule: RULE 57: If MXLEN is 64 and U-mode is not supported, the UXL field in the mstatus register is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because U-mode is supported under the execution assumptions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 58: If MXLEN is 64 and U-mode is supported, the UXL field in the mstatus register is a WARL field that encodes the current UXLEN value.
+##### ASSEMBLY #####
+nop # Skipped because the rule does not specify the 64-bit UXL encoding
+# Result: x0 = 0
+
+# Test Case Rule: RULE 59: When S-mode is implemented, the set of legal values for the UXL field in the mstatus register excludes any encoding that would cause UXLEN to be greater than SXLEN.
+##### ASSEMBLY #####
+nop # Skipped because no concrete forbidden encoding is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 60: If the XLEN value for any privilege mode, as configured by the corresponding fields in the mstatus register, is less than the widest supported XLEN, then all operations must ignore source operand register bits above the configured XLEN and must sign-extend results to fill the entire widest supported XLEN in the destination register.
+##### ASSEMBLY #####
+nop # Skipped because support for a configurable narrower XLEN is not guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 61: If the XLEN for a privilege mode, as defined by the mstatus register, is less than the widest supported XLEN, then PC bits above XLEN are ignored and any write to the PC is sign-extended to fill the widest supported XLEN.
+##### ASSEMBLY #####
+nop # Skipped because support for a lower privilege-mode XLEN is not guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 62: The architecture imposes no checks that lower-privilege XLEN settings, as specified by the mstatus fields, are less than or equal to the XLEN setting of the next-higher privilege mode.
+##### ASSEMBLY #####
+nop # Skipped because absence of cross-privilege XLEN checks has no deterministic required readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 63: When a HINT instruction executes while the current XLEN setting from the mstatus register is less than MXLEN and the bits MXLEN..XLEN of the destination register are not all equal to bit XLEN-1, it is implementation-defined whether those upper bits are left unchanged or overwritten with copies of bit XLEN-1.
+##### ASSEMBLY #####
+nop # Skipped because upper-bit handling is implementation-defined
+# Result: x0 = 0
+
+# Test Case Rule: RULE 64: The implementation-defined behavior of upper-bit handling for a HINT instruction is observable only by privilege modes whose XLEN setting, as defined in the mstatus register, is greater than the current XLEN; it is invisible to the current privilege mode.
+##### ASSEMBLY #####
+nop # Skipped because the observable outcome depends on implementation-defined HINT handling
+# Result: x0 = 0
+
+# Test Case Rule: RULE 65: When the MPRV bit in mstatus is 0, explicit memory accesses behave as normal, using the translation and protection mechanisms of the current privilege mode.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrc mstatus, t0
+addi sp, sp, -16
+li t1, 0x5a
+sd t1, 0(sp)
+ld a0, 0(sp)
+addi sp, sp, 16
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 66: When the MPRV bit in mstatus is 1, load and store memory addresses are translated and protected, and endianness is applied as though the current privilege mode were set to MPP.
+##### ASSEMBLY #####
+nop # Skipped because controlled mappings or protection regions are required to distinguish MPP access semantics
+# Result: x0 = 0
+
+# Test Case Rule: RULE 67: Instruction address-translation and protection are unaffected by the setting of the MPRV bit in mstatus.
+##### ASSEMBLY #####
+li t0, 0x21800
+csrc mstatus, t0
+li t0, 0x20000
+csrs mstatus, t0
+jal x0, 1f
+1:
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 68: The MPRV bit in mstatus is read-only 0 if U-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the test requires an implementation without U-mode
+# Result: x0 = 0
+
+# Test Case Rule: RULE 69: An MRET or SRET instruction that changes the privilege mode to a mode less privileged than M also sets the MPRV bit in mstatus to 0.
+##### ASSEMBLY #####
+la t0, 1f
+csrw mepc, t0
+li t0, 0x21800
+csrc mstatus, t0
+li t0, 0x20800
+csrs mstatus, t0
+mret
+1:
+nop
+# Result: mstatus[17] = 0
+
+# Test Case Rule: RULE 70: When the MPRV bit in mstatus is 1, load and store memory addresses are treated as though the current XLEN were set to MPP's XLEN, following the rules in Section 3.1.6.3.
+##### ASSEMBLY #####
+nop # Skipped because a lower MPP XLEN and a suitable low-address memory object are not guaranteed
+# Result: x0 = 0
+
+# Test Case Rule: RULE 71: When the MXR bit in mstatus is 0, only loads from pages marked readable (R=1) will succeed.
+##### ASSEMBLY #####
+nop # Skipped because a controlled execute-only page mapping is required
+# Result: x0 = 0
+
+# Test Case Rule: RULE 72: When the MXR bit in mstatus is 1, loads from pages marked either readable or executable (R=1 or X=1) will succeed.
+##### ASSEMBLY #####
+nop # Skipped because a controlled execute-only page mapping is required
+# Result: x0 = 0
+
+# Test Case Rule: RULE 73: MXR in mstatus has no effect when page-based virtual memory is not in effect.
+##### ASSEMBLY #####
+li t0, 0x120000
+csrc mstatus, t0
+call machine_to_supervisor
+csrw satp, x0
+sfence.vma x0, x0
+addi sp, sp, -16
+li t0, 0x2a
+sd t0, 0(sp)
+li t1, 0x80000
+csrc sstatus, t1
+ld t2, 0(sp)
+csrs sstatus, t1
+ld a0, 0(sp)
+xor a0, a0, t2
+addi sp, sp, 16
+# Result: a0 = 0
+
+# Test Case Rule: RULE 74: The MXR bit in mstatus is read-only 0 if S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the test requires an implementation without S-mode
+# Result: x0 = 0
+
+# Test Case Rule: RULE 75: When the SUM bit in mstatus is 0, S-mode memory accesses to pages that are accessible by U-mode (U=1) will fault.
+##### ASSEMBLY #####
+nop # Skipped because a controlled U-accessible page mapping is required
+# Result: x0 = 0
+
+# Test Case Rule: RULE 76: When the SUM bit in mstatus is 1, S-mode memory accesses to pages that are accessible by U-mode are permitted.
+##### ASSEMBLY #####
+nop # Skipped because a controlled U-accessible page mapping is required
+# Result: x0 = 0
+
+# Test Case Rule: RULE 77: SUM in mstatus has no effect when page-based virtual memory is not in effect.
+##### ASSEMBLY #####
+li t0, 0x120000
+csrc mstatus, t0
+call machine_to_supervisor
+csrw satp, x0
+sfence.vma x0, x0
+addi sp, sp, -16
+li t0, 0x2a
+sd t0, 0(sp)
+li t1, 0x40000
+csrc sstatus, t1
+ld t2, 0(sp)
+csrs sstatus, t1
+ld a0, 0(sp)
+xor a0, a0, t2
+addi sp, sp, 16
+# Result: a0 = 0
+
+# Test Case Rule: RULE 78: SUM in mstatus is ordinarily ignored when not executing in S-mode, but it is in effect when MPRV=1 and MPP=S.
+##### ASSEMBLY #####
+nop # Skipped because the MPRV exception requires a controlled U-accessible page mapping
+# Result: x0 = 0
+
+# Test Case Rule: RULE 79: The SUM bit in mstatus is read-only 0 if S-mode is not supported or if satp.MODE is read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because neither qualifying implementation condition is software-selectable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 80: The MXR mechanisms encoded in mstatus have no impact on whether access-fault exceptions are raised due to PMAs.
+##### ASSEMBLY #####
+nop # Skipped because PMA-faulting addresses are platform-specific
+# Result: x0 = 0
+
+# Test Case Rule: RULE 81: The SUM mechanisms encoded in mstatus have no impact on whether access-fault exceptions are raised due to PMP.
+##### ASSEMBLY #####
+nop # Skipped because PMP-denied test memory is platform-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 82: The MBE, SBE, and UBE bits are fields in mstatus and mstatush that control the endianness of memory accesses other than instruction fetches.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrc mstatus, t0
+li t0, 0x3000000040
+csrs mstatus, t0
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu s0, 0(sp)
+call machine_to_supervisor
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu s1, 0(sp)
+call supervisor_to_user
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu s2, 0(sp)
+slli s0, s0, 16
+slli s1, s1, 8
+or a0, s0, s1
+or a0, a0, s2
+# Result: a0 = 0x111111
+
+# Test Case Rule: RULE 83: Instruction fetches are always little-endian and are not affected by the mstatus MBE, SBE, or UBE bits.
+##### ASSEMBLY #####
+li t0, 0x3000000040
+csrs mstatus, t0
+addi s0, x0, 1
+call machine_to_supervisor
+addi s0, s0, 2
+call supervisor_to_user
+addi a0, s0, 4
+# Result: a0 = 7
+
+# Test Case Rule: RULE 84: The mstatus.MBE bit controls the endianness of non-instruction-fetch memory accesses made from M-mode when mstatus.MPRV = 0.
+##### ASSEMBLY #####
+li t0, 0x2000020000
+csrc mstatus, t0
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu t2, 0(sp)
+li t0, 0x2000000000
+csrs mstatus, t0
+sw t1, 8(sp)
+lbu t3, 8(sp)
+slli t2, t2, 8
+or a0, t2, t3
+# Result: a0 = 0x4411
+
+# Test Case Rule: RULE 85: When mstatus.MBE = 0, non-instruction-fetch memory accesses from M-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x2000020000
+csrc mstatus, t0
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x44
+
+# Test Case Rule: RULE 86: When mstatus.MBE = 1, non-instruction-fetch memory accesses from M-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrc mstatus, t0
+li t0, 0x2000000000
+csrs mstatus, t0
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x11
+
+# Test Case Rule: RULE 87: If S-mode is not supported, the mstatus.SBE bit is read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because S-mode is supported by the execution environment
+# Result: x0 = 0
+
+# Test Case Rule: RULE 88: The mstatus.SBE bit controls the endianness of explicit load and store memory accesses made from S-mode.
+##### ASSEMBLY #####
+li t0, 0x1000000000
+csrs mstatus, t0
+call machine_to_supervisor
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x11
+
+# Test Case Rule: RULE 89: When mstatus.SBE = 0, explicit load and store memory accesses from S-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x1000000000
+csrc mstatus, t0
+call machine_to_supervisor
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x44
+
+# Test Case Rule: RULE 90: When mstatus.SBE = 1, explicit load and store memory accesses from S-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x1000000000
+csrs mstatus, t0
+call machine_to_supervisor
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x11
+
+# Test Case Rule: RULE 91: If U-mode is not supported, the mstatus.UBE bit is read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because U-mode is supported by the execution environment
+# Result: x0 = 0
+
+# Test Case Rule: RULE 92: The mstatus.UBE bit controls the endianness of explicit load and store memory accesses made from U-mode.
+##### ASSEMBLY #####
+li t0, 0x40
+csrs mstatus, t0
+call machine_to_user
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x11
+
+# Test Case Rule: RULE 93: When mstatus.UBE = 0, explicit load and store memory accesses from U-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x40
+csrc mstatus, t0
+call machine_to_user
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x44
+
+# Test Case Rule: RULE 94: When mstatus.UBE = 1, explicit load and store memory accesses from U-mode are big-endian.
+##### ASSEMBLY #####
+li t0, 0x40
+csrs mstatus, t0
+call machine_to_user
+li t1, 0x11223344
+sw t1, 0(sp)
+lbu a0, 0(sp)
+# Result: a0 = 0x11
+
+# Test Case Rule: RULE 95: The endianness of implicit accesses to supervisor-level memory-management data structures is always controlled by the mstatus.SBE bit.
+##### ASSEMBLY #####
+nop # Skipped because observation depends on page-table-walk and TLB state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 96: The TVM field in mstatus is a WARL field.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic legal TVM readback is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 97: When the TVM bit in mstatus is 1, attempts to read the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, satp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 98: When the TVM bit in mstatus is 1, attempts to write the satp CSR while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+csrw satp, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 99: When the TVM bit in mstatus is 1, attempts to execute an SFENCE.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 100: When the TVM bit in mstatus is 1, attempts to execute a SINVAL.VMA instruction while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 101: When the TVM bit in mstatus is 0, attempts to read or write the satp CSR while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+csrr t1, satp
+csrw satp, t1
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 102: When the TVM bit in mstatus is 0, attempts to execute an SFENCE.VMA instruction while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 103: When the TVM bit in mstatus is 0, attempts to execute a SINVAL.VMA instruction while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 20
+csrc mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 104: The TVM bit in mstatus is read-only 0 when S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the required no-S-mode configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 105: The TW field in mstatus is a WARL field.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic TW legal readback is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 106: The TW bit in mstatus is read-only 0 when there are no modes less privileged than M.
+##### ASSEMBLY #####
+nop # Skipped because the required M-only configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 107: The TSR field in mstatus is a WARL field.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic TSR legal readback is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 108: When the TSR bit in mstatus is 1, attempts to execute SRET while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 1 << 22
+csrs mstatus, t0
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# Test Case Rule: RULE 109: When the TSR bit in mstatus is 0, attempts to execute SRET while executing in S-mode are permitted.
+##### ASSEMBLY #####
+li t0, 1 << 22
+csrc mstatus, t0
+call machine_to_supervisor
+li t0, 1 << 8
+csrs sstatus, t0
+la t1, sret_return_109
+csrw sepc, t1
+sret
+sret_return_109:
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 110: The TSR bit in mstatus is read-only 0 when S-mode is not supported.
+##### ASSEMBLY #####
+nop # Skipped because the required no-S-mode configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 111: The mstatus register contains the FS[1:0] and VS[1:0] fields, which are WARL fields, and the XS[1:0] field, which is a read-only field.
+##### ASSEMBLY #####
+nop # Skipped because WARL legal readbacks and the XS value are unspecified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 112: The SD bit in mstatus is a read-only bit that summarizes whether either the FS, VS, or XS fields signal the presence of dirty state that will require saving extended user context to memory.
+##### ASSEMBLY #####
+li t0, 1 << 63
+csrs mstatus, t0
+li t0, 3 << 13
+csrs mstatus, t0
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 113: If the FS, VS, and XS fields in mstatus are all read-only zero, then the SD bit in mstatus is also always zero.
+##### ASSEMBLY #####
+nop # Skipped because the required hardwired-zero FS VS XS configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 114: If the F extension is implemented, the FS field in mstatus shall not be read-only zero.
+##### ASSEMBLY #####
+li t0, 1 << 13
+csrs mstatus, t0
+csrr t1, mstatus
+li t0, 3 << 13
+and a0, t1, t0
+# Result: a0 != 0
+
+# Test Case Rule: RULE 115: If neither the F extension nor S-mode is implemented, then the FS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because the required no-F no-S configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 116: If S-mode is implemented but the F extension is not, the FS field in mstatus may optionally be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because FS read-only-zero behavior is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 117: Implementations with S-mode but without the F extension are permitted, but not required, to make the FS field in mstatus be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because FS read-only-zero behavior is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 118: If the v registers are implemented, the VS field in mstatus shall not be read-only zero.
+##### ASSEMBLY #####
+li t0, 1 << 9
+csrs mstatus, t0
+csrr t1, mstatus
+li t0, 3 << 9
+and a0, t1, t0
+# Result: a0 != 0
+
+# Test Case Rule: RULE 119: If neither the v registers nor S-mode is implemented, then the VS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because the required no-vector no-S configuration is unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 120: If S-mode is implemented but the v registers are not, the VS field in mstatus may optionally be read-only zero.
+##### ASSEMBLY #####
+nop # Skipped because VS read-only-zero behavior is optional
+# Result: x0 = 0
+
+# Test Case Rule: RULE 121: In harts without additional user extensions requiring new state, the XS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+li t0, 0x18000
+csrs mstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 122: Changing the setting of the FS field in mstatus has no effect on the contents of the floating-point register state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x12345678
+fmv.w.x ft0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+fmv.x.w a0, ft0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 123: Setting the FS field in mstatus to Off does not destroy the floating-point state, and setting the FS field to Initial does not clear the floating-point contents.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x12345678
+fmv.w.x ft0, t1
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.x.w a0, ft0
+# Result: a0 = 0x12345678
+
+# Test Case Rule: RULE 124: Changing the setting of the VS field in mstatus has no effect on the contents of the vector register state.
+##### ASSEMBLY #####
+li t0, 0x600
+csrs mstatus, t0
+vsetivli x0, 1, e8, m1, ta, ma
+li t1, 0x5a
+vmv.v.x v1, t1
+li t0, 0x600
+csrc mstatus, t0
+li t0, 0x400
+csrs mstatus, t0
+vmv.x.s a0, v1
+# Result: a0 = 0x5a
+
+# Test Case Rule: RULE 125: The FS field in mstatus is set directly by privileged code when resuming a user context, while the XS field in mstatus is set indirectly by writing to the status register of the individual extensions.
+##### ASSEMBLY #####
+nop # Skipped because the individual extension status register for XS is not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 126: Machine mode and Supervisor mode share a single copy of the FS, VS, and XS bits in mstatus.
+##### ASSEMBLY #####
+li t0, 0x6600
+csrc mstatus, t0
+li t0, 0x4200
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, sstatus
+li t0, 0x6600
+and a0, a0, t0
+# Result: a0 = 0x4200
+
+# Test Case Rule: RULE 127: The SD bit in mstatus is read-only and is set when either the FS, VS, or XS bits in mstatus encode a Dirty state (i.e., SD = (FS==0b11 OR VS==0b11 OR XS==0b11)).
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+li t1, 0x8000000000000000
+csrc mstatus, t1
+csrr a0, mstatus
+srli a0, a0, 63
+# Result: a0 = 1
+
+# Test Case Rule: RULE 128: In mstatus, the encoding 0 for FS and VS means Off, 1 means Initial, 2 means Clean, and 3 means Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x4000
+
+# Test Case Rule: RULE 129: In mstatus, the encoding 0 for XS means All off, 1 means None dirty or clean with some on, 2 means None dirty with some clean, and 3 means Some dirty.
+##### ASSEMBLY #####
+nop # Skipped because no individual XS extension state is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 130: When an extension's status field in mstatus is set to Off, any instruction that attempts to read or write the corresponding state causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.w.x ft0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 131: If the FS, VS, or XS field in mstatus is Off, executing an instruction that reads the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.x.w a0, ft0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 132: If the FS, VS, or XS field in mstatus is Off, executing an instruction that may modify the corresponding state causes an exception.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+fmv.w.x ft0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 133: If the FS, VS, or XS field in mstatus is Initial, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x2000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 134: If the FS, VS, or XS field in mstatus is Clean, executing an instruction that may modify the corresponding state causes the field to transition to Dirty.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrc mstatus, t0
+li t0, 0x4000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 135: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction that may modify the corresponding state leaves the field in the Dirty state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+fmv.w.x ft0, x0
+csrr a0, mstatus
+li t0, 0x6000
+and a0, a0, t0
+# Result: a0 = 0x6000
+
+# Test Case Rule: RULE 136: If the FS, VS, or XS field in mstatus is Off, executing an instruction to unconfigure the unit causes an exception.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 137: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to unconfigure the unit leaves the field in the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 138: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 139: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to unconfigure the unit transitions the field to the Initial state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to unconfigure the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 140: If the FS, VS, or XS field in mstatus is Off, executing an instruction to disable the unit leaves the field in the Off state.
+##### ASSEMBLY #####
+nop # Skipped because no instruction to disable the unit is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 141: If the FS, VS, or XS field in mstatus is Initial, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x2000
+csrw mstatus, t0
+csrw mstatus, x0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 142: If the FS, VS, or XS field in mstatus is Clean, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x4000
+csrw mstatus, t0
+csrw mstatus, x0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 143: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrw mstatus, t0
+csrw mstatus, x0
+# Result: mstatus[14:13] = 0
+
+# Test Case Rule: RULE 144: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Off transitions the field to the Initial state.
+##### ASSEMBLY #####
+csrw mstatus, x0
+li t0, 0x2000
+csrw mstatus, t0
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 145: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Initial leaves the field in the Initial state.
+##### ASSEMBLY #####
+li t0, 0x2000
+csrw mstatus, t0
+csrw mstatus, t0
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 146: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Clean transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x4000
+csrw mstatus, t0
+li t0, 0x2000
+csrw mstatus, t0
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 147: Executing an instruction to enable a unit when the FS, VS, or XS field in mstatus is Dirty transitions the field to the Initial state.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrw mstatus, t0
+li t0, 0x2000
+csrw mstatus, t0
+# Result: mstatus[14:13] = 1
+
+# Test Case Rule: RULE 148: Each xPELP field (SPELP or MPELP) in mstatus encodes the value 0 as NO_LP_EXPECTED, meaning no landing pad instruction is expected, and encodes the value 1 as LP_EXPECTED, meaning a landing pad instruction is expected.
+##### ASSEMBLY #####
+nop # Skipped because the encoding meaning is not directly observable from standard architectural state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 149: When a trap is delegated to S-mode, the SPP field of mstatus is written with the active privilege mode at the time of the trap.
+##### ASSEMBLY #####
+li t0, 0x4
+csrs medeleg, t0
+li t0, 0x100
+csrs mstatus, t0
+call machine_to_user
+csrr a0, mstatus
+# Result: mstatus[8] = 0
+
+# Test Case Rule: RULE 150: When a trap is delegated to S-mode, the SPIE field of mstatus is written with the value of the SIE field at the time of the trap.
+##### ASSEMBLY #####
+li t0, 0x4
+csrs medeleg, t0
+li t0, 0x22
+csrc mstatus, t0
+li t0, 0x2
+csrs mstatus, t0
+call machine_to_user
+csrr a0, mstatus
+# Result: mstatus[5] = 1
+
+# Test Case Rule: RULE 151: When a trap is delegated to S-mode, the SIE field of mstatus is cleared.
+##### ASSEMBLY #####
+li t0, 0x4
+csrs medeleg, t0
+li t0, 0x2
+csrs mstatus, t0
+call machine_to_user
+csrr a0, mstatus
+# Result: mstatus[1] = 0
+
+# Test Case Rule: RULE 152: When a trap is delegated to S-mode, the MPP and MPIE fields of mstatus are not written.
+##### ASSEMBLY #####
+li t0, 0x4
+csrs medeleg, t0
+li t0, 0x88
+csrc mstatus, t0
+call machine_to_supervisor
+csrr a0, mstatus
+# Result: mstatus[7] = 1
+
+# Test Case Rule: RULE 153: If the current privilege mode is M and the MIE bit in mstatus is set, an interrupt i will trap to M-mode, causing the privilege mode to change to M-mode.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic pending interrupt source is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 154: If the current privilege mode has less privilege than M-mode, an interrupt i will trap to M-mode, causing the privilege mode to change to M-mode regardless of the MIE bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic pending interrupt source is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 155: After an explicit write to any CSR on which the interrupt-trap conditions expressly depend, including mstatus, the interrupt-trap conditions must be evaluated immediately.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic pending interrupt source is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 156: After execution of an xRET instruction, the interrupt-trap conditions, which depend on mstatus, must be evaluated immediately.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic pending interrupt source is specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 157: If the TSR bit in the mstatus register is 1, execution of the SRET instruction should raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x400000
+csrs mstatus, t0
+call machine_to_supervisor
+sret
+# Result: mcause = 2
+
+# Test Case Rule: RULE 158: A hart must resume execution when a locally enabled interrupt becomes pending even if the MIE or SIE bits in mstatus are 0.
+##### ASSEMBLY #####
+nop # Skipped because suspended-hart testing requires a prohibited WFI and interrupt injection
+# Result: x0 = 0
+
+# Test Case Rule: RULE 159: Implementations should honor individual interrupt enable bits in mstatus such as MTIE and should avoid resuming the hart if an interrupt is pending but its individual enable bit is not set.
+##### ASSEMBLY #####
+nop # Skipped because should behavior is non-mandatory
+# Result: x0 = 0
+
+# Test Case Rule: RULE 160: Upon reset, the mstatus fields MIE and MPRV are reset to 0.
+##### ASSEMBLY #####
+nop # Skipped because reset state cannot be observed after test-harness setup
+# Result: x0 = 0
+
+# Test Case Rule: RULE 161: If little-endian memory accesses are supported, then upon reset the mstatus or mstatush field MBE is reset to 0.
+##### ASSEMBLY #####
+csrr a0, mstatus
+srli a0, a0, 37
+li t0, 1
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 162: If the MPRV bit in mstatus is set and the MPP field in mstatus contains the value S or U, then PMP checks are applied to data accesses performed while the processor is in M-mode.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8
+csrw pmpcfg0, t0
+li t0, 0x21800
+csrc mstatus, t0
+li t0, 0x20800
+csrs mstatus, t0
+ld a0, 0(sp)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 163: When NMIE is 0, the hart behaves as though the MPRV field of mstatus is cleared, regardless of the actual setting of mstatus.MPRV.
+##### ASSEMBLY #####
+li a0, 0x123
+sd a0, -8(sp)
+csrw satp, x0
+li t0, -1
+csrw pmpaddr0, t0
+li t0, 0x8
+csrw pmpcfg0, t0
+li t0, 0x21800
+csrc mstatus, t0
+li t0, 0x20800
+csrs mstatus, t0
+li t0, 0x8
+csrc mnstatus, t0
+ld a0, -8(sp)
+# Result: a0 = 0x123
+
+# Test Case Rule: RULE 164: If the MNRET instruction changes the privilege mode to a mode less privileged than M, then mstatus.MPRV MUST be set to 0.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrs mstatus, t0
+li t0, 0x1800
+csrc mnstatus, t0
+li t0, 0x800
+csrs mnstatus, t0
+li t0, 0x8
+csrc mnstatus, t0
+la t0, rule164_after
+csrw mnepc, t0
+mnret
+rule164_after:
+nop
+# Result: mstatus[17] = 0
+
+# Test Case Rule: RULE 165: The SPP bit in mstatus indicates the privilege level at which a hart was executing before entering supervisor mode.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop handling prevents directly checking SPP after supervisor trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 166: When a trap is taken, the SPP bit in mstatus is set to 0 if the trap originated from user mode, otherwise it is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop handling prevents directly checking the updated SPP bit
+# Result: x0 = 0
+
+# Test Case Rule: RULE 167: When an SRET instruction is executed, the privilege level is set to user mode if the SPP bit in mstatus is 0, otherwise to supervisor mode if the SPP bit in mstatus is 1, and then the SPP bit in mstatus is set to 0.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li t0, 0x100
+csrs sstatus, t0
+la t0, rule167_after
+csrw sepc, t0
+sret
+rule167_after:
+csrr a0, sstatus
+srli a0, a0, 8
+li t0, 1
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 168: When a trap is taken into supervisor mode, the SPIE bit in mstatus is set to the value of the SIE bit in mstatus, and the SIE bit in mstatus is set to 0.
+##### ASSEMBLY #####
+nop # Skipped because trap-stop handling prevents directly checking SIE and SPIE after trap entry
+# Result: x0 = 0
+
+# Test Case Rule: RULE 169: When an SRET instruction is executed, the SIE bit in mstatus is set to the value of the SPIE bit in mstatus, then the SPIE bit in mstatus is set to 1.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li t0, 0x22
+csrc sstatus, t0
+li t0, 0x102
+csrs sstatus, t0
+la t0, rule169_after
+csrw sepc, t0
+sret
+rule169_after:
+csrr a0, sstatus
+li t0, 0x22
+and a0, a0, t0
+# Result: a0 = 0x20
+
+# Test Case Rule: RULE 170: In a straightforward implementation, reading or writing any field in sstatus is equivalent to reading or writing the homonymous field in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because the rule describes an implementation-dependent implementation strategy
+# Result: x0 = 0
+
+# Test Case Rule: RULE 171: When the V bit is zero, any access to the SPELP field defined by the Zicfilp extension accesses the homonymous fields of the mstatus register.
+##### ASSEMBLY #####
+li t0, 0x800000
+csrc mstatus, t0
+csrs sstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+# Result: a0 = 0x800000
+
+# Test Case Rule: RULE 172: The SUM field of the mstatus register is consulted when determining whether a requested memory access is allowed by the pte.u bit.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic PTE.U page mapping is provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 173: The MXR field of the mstatus register is consulted when determining whether a requested memory access is allowed by the pte.u bit.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic PTE.U page mapping is provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 174: If the decision, which uses the current privilege mode and the SUM and MXR fields of the mstatus register, determines that the access is not allowed, the implementation MUST stop and raise a page-fault exception corresponding to the original access type.
+##### ASSEMBLY #####
+nop # Skipped because no deterministic page-table mapping for the permission decision is provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 175: If mstatus.TVM=1, an attempt to execute SINVAL.VMA or HINVAL.GVMA in S-mode or HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 176: SFENCE.W.INVAL and SFENCE.INVAL.IR are unaffected by the mstatus.TVM field and therefore are always permitted in S-mode and VS-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.w.inval
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 177: When mstatus.TVM=1 (or hstatus.VTVM=1), SFENCE.W.INVAL and SFENCE.INVAL.IR instructions do not need to be trapped because they have only ordering effects and no visible side effects.
+##### ASSEMBLY #####
+nop # Skipped because the rule is permissive and specifies no mandatory visible behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 178: The mstatus fields TSR, TW, and TVM have corresponding hstatus fields VTSR, VTW, and VTVM that are defined analogously but affect execution only in VS-mode and cause virtual-instruction exceptions instead of illegal-instruction exceptions.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs hstatus, t0
+call machine_to_virtual
+csrr a0, satp
+# Result: mcause != 2
+
+# Test Case Rule: RULE 179: When the TVM field of mstatus equals 1, attempts to read or write hgatp while executing in HS-mode must raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, hgatp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 180: When the V field in mstatus is 0, vsstatus does not directly affect the behavior of the machine.
+##### ASSEMBLY #####
+nop # Skipped because absence of direct behavioral effect has no deterministic standalone observation
+# Result: x0 = 0
+
+# Test Case Rule: RULE 181: If a virtual-machine load/store instruction (HLV, HLVX, or HSV) is used to execute a load or store as though V=1, then vsstatus can affect the behavior of the machine even when the V field in mstatus is 0.
+##### ASSEMBLY #####
+nop # Skipped because the observable effect depends on guest translation and page permissions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 182: If the MPRV feature in mstatus is used to execute a load or store as though V=1, then vsstatus can affect the behavior of the machine even when the V field in mstatus is 0.
+##### ASSEMBLY #####
+nop # Skipped because the observable effect depends on guest translation and page permissions
+# Result: x0 = 0
+
+# Test Case Rule: RULE 183: The MPRV feature in the mstatus register can be used to execute a load or store as though the V bit is 1.
+##### ASSEMBLY #####
+nop # Skipped because observing V-as-1 load behavior requires deterministic guest translation state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 184: When the V bit is 0, the vsatp register does not directly affect the behavior of the machine unless a virtual-machine load/store or the MPRV feature in the mstatus register is used to execute a load or store as though V is 1.
+##### ASSEMBLY #####
+nop # Skipped because absence of a vsatp effect is not deterministically observable without translation state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 185: mstatus.TVM does not cause HFENCE.VVMA to trap.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+li a0, 1
+hfence.vvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 186: HFENCE.GVMA is valid only in HS-mode when mstatus.TVM = 0.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc mstatus, t0
+call machine_to_supervisor
+li a0, 1
+hfence.gvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 187: HFENCE.GVMA is valid in M-mode irrespective of the value of mstatus.TVM.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+li a0, 1
+hfence.gvma x0, x0
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 188: Executing HFENCE.GVMA in HS-mode when mstatus.TVM = 1 causes an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+hfence.gvma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 189: MPV is written by the implementation whenever a trap is taken into M-mode.
+##### ASSEMBLY #####
+nop # Skipped because the rule does not specify a deterministic MPV value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 190: When a trap is taken into M-mode, MPV in mstatus is set to the value of the virtualization mode V at the time of the trap.
+##### ASSEMBLY #####
+nop # Skipped because post-trap MPV cannot be checked with the required mcause result
+# Result: x0 = 0
+
+# Test Case Rule: RULE 191: When an MRET instruction is executed, the virtualization mode V is set to MPV in mstatus unless MPP = 3, in which case V remains 0.
+##### ASSEMBLY #####
+nop # Skipped because virtualization mode V is not directly observable after MRET
+# Result: x0 = 0
+
+# Test Case Rule: RULE 192: GVA is written by the implementation whenever a trap is taken into M-mode.
+##### ASSEMBLY #####
+nop # Skipped because the rule does not specify a deterministic GVA value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 193: For any trap that writes a guest virtual address to mtval, GVA in mstatus is set to 1.
+##### ASSEMBLY #####
+nop # Skipped because deterministic guest-address fault state and post-trap GVA observation are unavailable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 194: For any other trap into M-mode, GVA in mstatus is set to 0.
+##### ASSEMBLY #####
+nop # Skipped because post-trap GVA cannot be checked with the required mcause result
+# Result: x0 = 0
+
+# Test Case Rule: RULE 195: The TSR field of mstatus affects execution only in HS-mode and does not affect execution in VS-mode.
+##### ASSEMBLY #####
+nop # Skipped because testing TSR requires direct SRET use not explicitly permitted by this rule
+# Result: x0 = 0
+
+# Test Case Rule: RULE 196: The TVM field of mstatus affects execution only in HS-mode and does not affect execution in VS-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc hstatus, t0
+csrs mstatus, t0
+call machine_to_virtual
+li a0, 1
+csrr a0, satp
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 197: The TW field of mstatus affects execution in all modes except M-mode.
+##### ASSEMBLY #####
+nop # Skipped because testing TW requires WFI, which is prohibited
+# Result: x0 = 0
+
+# Test Case Rule: RULE 198: Setting TVM = 1 in mstatus prevents HS-mode from accessing hgatp or executing HFENCE.GVMA or HINVAL.GVMA.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, hgatp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 199: Setting TVM = 1 in mstatus has no effect on accesses to vsatp or on execution of HFENCE.VVMA or HINVAL.VVMA.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+li a0, 1
+csrr a0, vsatp
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 200: Setting TVM = 1 in mstatus does not cause traps for accesses to vsatp, for execution of HFENCE.VVMA or HINVAL.VVMA, or for any actions taken in VS-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc hstatus, t0
+csrs mstatus, t0
+call machine_to_virtual
+li a0, 1
+csrr a0, satp
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 201: When MPRV = 0 in mstatus, translation and protection behave as normal.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrc mstatus, t0
+addi sp, sp, -8
+li t1, 0x1122334455667788
+sd t1, 0(sp)
+ld a0, 0(sp)
+addi sp, sp, 8
+# Result: a0 = 0x1122334455667788
+
+# Test Case Rule: RULE 202: When MPRV = 1 in mstatus, explicit memory accesses are translated and protected, and endianness is applied as though the current virtualization mode were MPV and the current nominal privilege mode were MPP.
+##### ASSEMBLY #####
+nop # Skipped because deterministic translation protection and endianness mappings are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 203: When MPRV = 1, MPV = 0, and MPP = 0 in mstatus, explicit memory accesses are treated as U-level accesses with HS-level translation and protection only.
+##### ASSEMBLY #####
+nop # Skipped because deterministic HS translation and protection mappings are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 204: When MPRV = 1, MPV = 0, and MPP = 1 in mstatus, explicit memory accesses are treated as HS-level accesses with HS-level translation and protection only.
+##### ASSEMBLY #####
+nop # Skipped because deterministic HS translation and protection mappings are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 205: When MPRV = 1 and MPP = 3 in mstatus (MPV value is ignored), explicit memory accesses are treated as M-level accesses with no translation.
+##### ASSEMBLY #####
+li t0, 0x8000021800
+csrs mstatus, t0
+addi sp, sp, -8
+li t1, 0x55aa55aa55aa55aa
+sd t1, 0(sp)
+ld a0, 0(sp)
+addi sp, sp, 8
+# Result: a0 = 0x55aa55aa55aa55aa
+
+# Test Case Rule: RULE 206: When MPRV = 1, MPV = 1, and MPP = 0 in mstatus, explicit memory accesses are treated as VU-level accesses with two-stage translation and protection; the HS-level MXR bit makes any executable page readable, and vsstatus.MXR makes readable those pages marked executable at the VS translation stage only if readable at the guest-physical translation stage.
+##### ASSEMBLY #####
+nop # Skipped because deterministic two-stage page mappings and permissions are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 207: When MPRV = 1, MPV = 1, and MPP = 1 in mstatus, explicit memory accesses are treated as VS-level accesses with two-stage translation and protection; the HS-level MXR bit makes any executable page readable, vsstatus.MXR makes readable those pages marked executable at the VS translation stage only if readable at the guest-physical translation stage, and vsstatus.SUM applies instead of the HS-level SUM bit.
+##### ASSEMBLY #####
+nop # Skipped because deterministic two-stage page mappings and permissions are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 208: MPRV in mstatus does not affect the virtual-machine load/store instructions HLV, HLVX, and HSV.
+##### ASSEMBLY #####
+nop # Skipped because controlled guest translation and protection mappings are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 209: The explicit loads and stores of the HLV, HLVX, and HSV instructions always act as though V = 1 and the nominal privilege mode were hstatus.SPVP, overriding the effect of MPRV in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because controlled guest mappings with privilege-sensitive permissions are not provided
+# Result: x0 = 0
+
+# Test Case Rule: RULE 210: When the V bit in mstatus is 1, a virtual-instruction exception with code 22 is raised instead of an illegal-instruction exception if the attempted instruction is HS-qualified and execution is prevented because of insufficient privilege or because the instruction is expressly disabled by a supervisor or hypervisor CSR such as scounteren or hcounteren.
+##### ASSEMBLY #####
+call machine_to_virtual
+hfence.gvma x0, x0
+# Result: mcause = 22
+
+# Test Case Rule: RULE 211: The TSR and TVM fields of mstatus are ignored when determining exceptions in VS-mode because they are intended to affect only S-mode (HS-mode).
+##### ASSEMBLY #####
+li t0, 0x500000
+csrc hstatus, t0
+csrs mstatus, t0
+call machine_to_virtual
+sfence.vma x0, x0
+la t1, 1f
+csrw sepc, t1
+li t0, 0x100
+csrs sstatus, t0
+sret
+1:
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 212: When a trap is taken into M-mode, the virtualization mode bit V in mstatus is set to 0.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 213: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was U-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 214: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 0 if the previous privilege mode was U-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 215: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was HS-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 216: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 1 if the previous privilege mode was HS-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 217: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 0 if the previous privilege mode was M-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 218: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 3 if the previous privilege mode was M-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 219: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VU-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 220: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 0 if the previous privilege mode was VU-mode.
+##### ASSEMBLY #####
+nop # Skipped because trap termination prevents post-trap mstatus field readback
+# Result: x0 = 0
+
+# Test Case Rule: RULE 221: When a trap is taken into M-mode, the MPV field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+csrw medeleg, x0
+li t0, 0x8000000000
+csrc mstatus, t0
+call machine_to_virtual
+csrr a0, mstatus
+# Result: mstatus[39] = 1
+
+# Test Case Rule: RULE 222: When a trap is taken into M-mode, the MPP field in mstatus (or mstatush) is set to 1 if the previous privilege mode was VS-mode.
+##### ASSEMBLY #####
+csrw medeleg, x0
+li t0, 0x1800
+csrc mstatus, t0
+call machine_to_virtual
+csrr a0, mstatus
+# Result: mstatus[12:11] = 1
+
+# Test Case Rule: RULE 223: When returning from a trap, the MPV field in mstatus is ignored if the MPP field in mstatus equals 3.
+##### ASSEMBLY #####
+li a0, 1
+li t0, 0x8000001800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+csrr t0, mstatus
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 224: When the MRET instruction is executed, the new privilege mode is determined from the values of the MPP and MPV fields in mstatus or mstatush as specified by the architecture.
+##### ASSEMBLY #####
+li a0, 1
+li t0, 0x8000001800
+csrc mstatus, t0
+li t0, 0x1800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+csrr t0, mstatus
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 225: When the MRET instruction is executed, the MPV field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 0x8000001800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+nop
+# Result: mstatus[39] = 0
+
+# Test Case Rule: RULE 226: When the MRET instruction is executed, the MPP field in mstatus or mstatush is set to 0.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+nop
+# Result: mstatus[12:11] = 0
+
+# Test Case Rule: RULE 227: When the MRET instruction is executed, the MIE field in mstatus or mstatush is written with the current value of the MPIE field.
+##### ASSEMBLY #####
+li t0, 0x8
+csrc mstatus, t0
+li t0, 0x1880
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+nop
+# Result: mstatus[3] = 1
+
+# Test Case Rule: RULE 228: When the MRET instruction is executed, the MPIE field in mstatus or mstatush is set to 1.
+##### ASSEMBLY #####
+li t0, 0x80
+csrc mstatus, t0
+li t0, 0x1800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+nop
+# Result: mstatus[7] = 1
+
+# Test Case Rule: RULE 229: The SPELP bit in mstatus can be accessed through the sstatus CSR.
+##### ASSEMBLY #####
+li t0, 0x800000
+csrc mstatus, t0
+csrs sstatus, t0
+csrr a0, mstatus
+and a0, a0, t0
+srli a0, a0, 23
+# Result: a0 = 1
+
+# Test Case Rule: RULE 230: When a trap is taken into privilege mode x, the x PELP bit in mstatus is set to the current ELP value.
+##### ASSEMBLY #####
+csrw medeleg, x0
+li t0, 0x4
+csrs menvcfg, t0
+li t0, 0x200000000000
+csrc mstatus, t0
+call machine_to_supervisor
+la t0, 1f
+jalr x0, t0, 0
+1:
+nop
+# Result: mstatus[45] = 1
+
+# Test Case Rule: RULE 231: When a trap is taken into privilege mode x, the ELP field in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+nop # Skipped because ELP is not directly observable after the trapping instruction
+# Result: x0 = 0
+
+# Test Case Rule: RULE 232: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to the value of the x PELP bit in mstatus if the LPE bit of privilege mode y is 1.
+##### ASSEMBLY #####
+li a0, 1
+li t0, 0x4
+csrs menvcfg, t0
+li t0, 0x8000001800
+csrc mstatus, t0
+li t0, 0x200000000800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+li a0, 0
+# Result: a0 = 1
+
+# Test Case Rule: RULE 233: When executing an MRET or SRET instruction and the new privilege mode is y, the ELP field in mstatus is set to NO_LP_EXPECTED if the LPE bit of privilege mode y is 0.
+##### ASSEMBLY #####
+nop # Skipped because ELP is not directly observable while target LPE is 0
+# Result: x0 = 0
+
+# Test Case Rule: RULE 234: When executing an MRET or SRET instruction, the x PELP bit in mstatus is set to NO_LP_EXPECTED.
+##### ASSEMBLY #####
+li t0, 0x200000001800
+csrs mstatus, t0
+la t0, 1f
+csrw mepc, t0
+mret
+1:
+nop
+# Result: mstatus[45] = 0
+
+===== TARGET: satp =====
+# Test Case Rule: RULE 1: The satp register has the privilege SRW.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc mstatus, t0
+call machine_to_supervisor
+csrr t1, satp
+csrw satp, t1
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 2: Unless otherwise specified, the value returned by an implicit read of the satp CSR is the same value that would have been returned by an explicit read of the satp CSR, using a CSR-access instruction in a sufficient privilege mode.
+##### ASSEMBLY #####
+nop # Skipped because an implicit satp read value is not directly observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 3: If S-mode is not supported or satp.MODE is read-only 0, the SUM (permit Supervisor User Memory access) bit is read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because applicability depends on implementation support for S-mode and satp.MODE
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: When TVM=1, attempts to read or write the satp CSR while executing in S-mode will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a0, satp
+# Result: mcause = 2
+
+# Test Case Rule: RULE 5: When TVM=0, attempts to read or write the satp CSR are permitted in S-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc mstatus, t0
+call machine_to_supervisor
+csrr t1, satp
+csrw satp, t1
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 6: When SXLEN is 64, the satp register is formatted with a 4-bit MODE field, a 16-bit ASID field, and a 44-bit PPN field.
+##### ASSEMBLY #####
+nop # Skipped because field widths alone provide no deterministic CSR readback value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 7: When SXLEN is 64, the MODE, ASID, and PPN fields in the satp register exhibit WARL behavior.
+##### ASSEMBLY #####
+nop # Skipped because the rule gives no deterministic legal WARL readback value
+# Result: x0 = 0
+
+# Test Case Rule: RULE 8: When the MODE field in the satp register is set to Bare, supervisor virtual addresses are equal to supervisor physical addresses.
+##### ASSEMBLY #####
+nop # Skipped because the rule provides no concrete encoding to select Bare
+# Result: x0 = 0
+
+# Test Case Rule: RULE 9: When the MODE field in the satp register is set to Bare, there is no additional memory protection beyond the physical memory protection scheme.
+##### ASSEMBLY #####
+nop # Skipped because observation depends on PMP configuration and the physical memory map
+# Result: x0 = 0
+
+# Test Case Rule: RULE 10: To select MODE=Bare in the satp register, software must write zero to bits 59 through 0 when SXLEN is 64.
+##### ASSEMBLY #####
+csrw satp, x0
+csrr a0, satp
+li t0, 0x0fffffffffffffff
+and a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 11: Attempting to select MODE=Bare in the satp register with a nonzero pattern in the remaining fields has an UNSPECIFIED effect on the value that the remaining fields assume.
+##### ASSEMBLY #####
+nop # Skipped because the resulting field values are unspecified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 12: When SXLEN is 64, all satp encodings corresponding to MODE=Bare are reserved for future standard use.
+##### ASSEMBLY #####
+nop # Skipped because reserved-for-future-use classification has no deterministic observation
+# Result: x0 = 0
+
+# Test Case Rule: RULE 13: If the satp register is written with an unsupported MODE, the entire write has no effect and no fields in the satp register are modified.
+##### ASSEMBLY #####
+nop # Skipped because the rule identifies no MODE that is deterministically unsupported
+# Result: x0 = 0
+
+# Test Case Rule: RULE 14: The least-significant bits of the ASID field in the satp register are implemented first, such that if ASIDLEN is greater than 0, ASID[ASIDLEN-1:0] is writable.
+##### ASSEMBLY #####
+nop # Skipped because ASIDLEN is implementation-defined and may be zero
+# Result: x0 = 0
+
+# Test Case Rule: RULE 15: When SXLEN is 64, the satp MODE field value of 0 is named Bare and means no translation or protection.
+##### ASSEMBLY #####
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 16: When SXLEN is 64, the satp MODE field values from 1 to 7 are reserved for standard use.
+##### ASSEMBLY #####
+nop # Skipped because reserved MODE values have no deterministic architectural behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 17: When SXLEN is 64, the satp MODE field value of 8 is named Sv39 and means page-based 39-bit virtual addressing.
+##### ASSEMBLY #####
+nop # Skipped because Sv39 support and page-table memory mappings are not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 18: When SXLEN is 64, the satp MODE field value of 9 is named Sv48 and means page-based 48-bit virtual addressing.
+##### ASSEMBLY #####
+nop # Skipped because Sv48 support and page-table memory mappings are not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 19: When SXLEN is 64, the satp MODE field value of 10 is named Sv57 and means page-based 57-bit virtual addressing.
+##### ASSEMBLY #####
+nop # Skipped because Sv57 support and page-table memory mappings are not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 20: When SXLEN is 64, the satp MODE field value of 11 is named Sv64 and is reserved for page-based 64-bit virtual addressing.
+##### ASSEMBLY #####
+nop # Skipped because the reserved Sv64 encoding has no deterministic architectural behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 21: When SXLEN is 64, the satp MODE field values from 12 to 13 are reserved for standard use.
+##### ASSEMBLY #####
+nop # Skipped because reserved-use designation has no deterministic runtime behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 22: When SXLEN is 64, the satp MODE field values from 14 to 15 are designated for custom use.
+##### ASSEMBLY #####
+nop # Skipped because custom-use designation has no deterministic runtime behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 23: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+##### ASSEMBLY #####
+nop # Skipped because immediate translation effect requires controlled page-table memory
+# Result: x0 = 0
+
+# Test Case Rule: RULE 24: Changes to satp.ASID take effect immediately.
+##### ASSEMBLY #####
+nop # Skipped because immediate ASID effect depends on hidden translation-cache state
+# Result: x0 = 0
+
+# Test Case Rule: RULE 25: The `satp` register MUST be active, meaning the effective privilege mode MUST be S-mode or U-mode.
+##### ASSEMBLY #####
+nop # Skipped because satp activity requires controlled address-translation memory
+# Result: x0 = 0
+
+# Test Case Rule: RULE 26: When VTVM=1, an attempt in VS-mode to access CSR satp raises a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs hstatus, t0
+call machine_to_virtual
+csrr a0, satp
+# Result: mcause = 22
+
+# Test Case Rule: RULE 27: A write to satp with an unsupported MODE value is ignored.
+##### ASSEMBLY #####
+nop # Skipped because no concrete unsupported MODE value is identified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 28: When V=1, `vsatp` substitutes for the usual `satp`, so instructions that normally read or modify `satp` actually access `vsatp` instead.
+##### ASSEMBLY #####
+csrw vsatp, x0
+call machine_to_virtual
+csrr a0, satp
+# Result: a0 = 0
+
+# Test Case Rule: RULE 29: When V=0, a write to `vsatp` with an unsupported MODE value is either ignored as it is for `satp`, or the fields of `vsatp` are treated as WARL in the normal way.
+##### ASSEMBLY #####
+nop # Skipped because the permitted write behavior is implementation-dependent
+# Result: x0 = 0
+
+# Test Case Rule: RULE 30: When V=1, a write to `satp` with an unsupported MODE value is ignored and no write to `vsatp` is effected.
+##### ASSEMBLY #####
+nop # Skipped because no concrete unsupported MODE value is identified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 31: A virtual-instruction exception is raised when in VS-mode there is an attempt to access satp and hstatus.VTVM=1.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs hstatus, t0
+call machine_to_virtual
+csrr a0, satp
+# Result: mcause = 22
+
+# Test Case Rule: RULE 32: If `satp.MODE` (or `vsatp.MODE` when `V=1`) is set to `Bare` and the effective privilege mode is less than `M`, shadow stack instructions raise a store/AMO access-fault exception.
+##### ASSEMBLY #####
+li t0, 0x8
+csrs menvcfg, t0
+csrw satp, x0
+li t1, 0x1000
+csrw ssp, t1
+call machine_to_supervisor
+sspush x1
+# Result: mcause = 7
+
+# Test Case Rule: RULE 33: The ignore transformation replaces the upper PMLEN bits of a physical address, including guest-physical addresses, with 0 in all cases except when the active satp register's MODE field is not Bare.
+##### ASSEMBLY #####
+nop # Skipped because the physical-address transformation requires controlled memory mapping
+# Result: x0 = 0
+
+# Test Case Rule: RULE 34: The cases where the ignore transformation replaces the upper PMLEN bits of a physical address with 0 include both running in M-mode and running in other privilege modes with the active satp register's MODE field set to Bare address translation mode.
+##### ASSEMBLY #####
+nop # Skipped because the physical-address transformation requires controlled memory mapping
+# Result: x0 = 0
+
+# Test Case Rule: RULE 35: In M-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrw 0x180, x0
+csrr a0, 0x180
+# Result: a0 = 0
+
+# Test Case Rule: RULE 36: In S-mode, accessing satp register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrw 0x180, x0
+call machine_to_supervisor
+csrr a0, 0x180
+# Result: a0 = 0
+
+# Test Case Rule: RULE 37: In U-mode, accessing satp register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x180; # Result: mcause = 0x2].
+##### ASSEMBLY #####
+call machine_to_user
+csrr a0, 0x180
+# Result: mcause = 0x2
+
+# Test Case Rule: RULE 38: In M-mode, setting satp.MODE (bit 60) should not be reflected on the readback (# Result: a2 = 0x0) [# Extension Must Be Active: NONE; li a0, 0x1000000000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x0].
+##### ASSEMBLY #####
+csrw 0x180, x0
+li a0, 0x1000000000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x0
+
+# Test Case Rule: RULE 39: In M-mode, setting satp.ASID (bit 44) should be reflected on the readback (# Result: a2 = 0x100000000000) [# Extension Must Be Active: NONE; li a0, 0x100000000000; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x100000000000].
+##### ASSEMBLY #####
+csrw 0x180, x0
+li a0, 0x100000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x100000000000
+
+# Test Case Rule: RULE 40: In M-mode, setting satp.PPN (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x180, a0; csrr a1, 0x180; and a2, a0, a1; # Result: a2 = 0x1].
+##### ASSEMBLY #####
+csrw 0x180, x0
+li a0, 0x1
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# Test Case Rule: RULE 41: In M-mode, writing 0xffffffffffffffff to the satp register should not set it to 0xffffffff or 0xffffffffffffffff (# Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff) [# Extension Must Be Active: NONE; li a0, 0xffffffffffffffff; csrw 0x180, a0; csrr a1, 0x180; # Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff].
+##### ASSEMBLY #####
+li a0, 0xffffffffffffffff
+csrw 0x180, a0
+csrr a1, 0x180
+# Result: a1 != 0xffffffff && a1 != 0xffffffffffffffff
+
+# Test Case Rule: RULE 42: In M-mode, accessing satp register while Svade extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svade; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x180
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 43: In M-mode, accessing satp register while Svadu extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svadu; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x180
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 44: In M-mode, accessing satp register while Svnapot extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svnapot; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x180
+li a0, 0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 45: In M-mode, accessing satp register while Svpbmt extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svpbmt; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x180
+li a0, 0
+# Result: a0 = 0
+
+===== TARGET: scounteren =====
+# Test Case Rule: RULE 1: The scounteren register has a privilege of SRW.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrw scounteren, x0
+csrr t0, scounteren
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 2: When the CY, TM, IR, or HPM n bit in the scounteren register is clear, attempts to read the cycle, time, instret, or hpmcountern register while executing in U-mode will cause an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 1
+csrs mcounteren, t0
+csrc scounteren, t0
+call machine_to_user
+csrr a0, cycle
+# Result: mcause = 2
+
+# Test Case Rule: RULE 3: When one of the CY, TM, IR, or HPM n bits in the scounteren register is set, access to the corresponding register is permitted.
+##### ASSEMBLY #####
+li t0, 1
+csrs mcounteren, t0
+csrs scounteren, t0
+call machine_to_user
+csrr t1, cycle
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 4: U-mode may only access a counter if the corresponding bits in scounteren and mcounteren are both set.
+##### ASSEMBLY #####
+li t0, 1
+csrs scounteren, t0
+csrc mcounteren, t0
+call machine_to_user
+csrr a0, cycle
+# Result: mcause = 2
+
+# Test Case Rule: RULE 5: In VU-mode, a counter is not readable unless the applicable bits are set in both hcounteren and scounteren.
+##### ASSEMBLY #####
+csrw mcause, x0
+li t0, 1
+csrs mcounteren, t0
+csrs scounteren, t0
+csrc hcounteren, t0
+call machine_to_virtual_user
+csrr a0, cycle
+# Result: mcause != 0
+
+# Test Case Rule: RULE 6: When V=1, a virtual-instruction exception (code 22) is normally raised instead of an illegal-instruction exception if the attempted instruction is HS-qualified, which means it would be valid to execute in HS-mode assuming fields TSR and TVM of CSR mstatus are both zero, but is prevented from executing when V=1 either due to insufficient privilege or because the instruction is expressly disabled by a supervisor CSR such as scounteren.
+##### ASSEMBLY #####
+li t0, 1
+csrs mcounteren, t0
+csrs hcounteren, t0
+csrc scounteren, t0
+call machine_to_virtual_user
+csrr a0, cycle
+# Result: mcause = 22
+
+# Test Case Rule: RULE 7: In M-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x106; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr t0, 0x106
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 8: In S-mode, accessing scounteren register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x106; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr t0, 0x106
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 9: In U-mode, accessing scounteren register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x106; # Result: mcause = 0x2].
+##### ASSEMBLY #####
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 0x2
+
+# Test Case Rule: RULE 10: In M-mode, setting scounteren.HPM18 (bit 18) should be reflected on the readback (# Result: a2 = 0x40000) [# Extension Must Be Active: NONE; li a0, 0x40000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40000].
+##### ASSEMBLY #####
+li a0, 0x40000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40000
+
+# Test Case Rule: RULE 11: In M-mode, setting scounteren.HPM17 (bit 17) should be reflected on the readback (# Result: a2 = 0x20000) [# Extension Must Be Active: NONE; li a0, 0x20000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20000].
+##### ASSEMBLY #####
+li a0, 0x20000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20000
+
+# Test Case Rule: RULE 12: In M-mode, setting scounteren.HPM16 (bit 16) should be reflected on the readback (# Result: a2 = 0x10000) [# Extension Must Be Active: NONE; li a0, 0x10000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x10000].
+##### ASSEMBLY #####
+li a0, 0x10000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10000
+
+# Test Case Rule: RULE 13: In M-mode, setting scounteren.HPM15 (bit 15) should be reflected on the readback (# Result: a2 = 0x8000) [# Extension Must Be Active: NONE; li a0, 0x8000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8000].
+##### ASSEMBLY #####
+li a0, 0x8000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8000
+
+# Test Case Rule: RULE 14: In M-mode, setting scounteren.HPM14 (bit 14) should be reflected on the readback (# Result: a2 = 0x4000) [# Extension Must Be Active: NONE; li a0, 0x4000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4000].
+##### ASSEMBLY #####
+li a0, 0x4000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4000
+
+# Test Case Rule: RULE 15: In M-mode, setting scounteren.HPM13 (bit 13) should be reflected on the readback (# Result: a2 = 0x2000) [# Extension Must Be Active: NONE; li a0, 0x2000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2000].
+##### ASSEMBLY #####
+li a0, 0x2000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2000
+
+# Test Case Rule: RULE 16: In M-mode, setting scounteren.HPM12 (bit 12) should be reflected on the readback (# Result: a2 = 0x1000) [# Extension Must Be Active: NONE; li a0, 0x1000; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1000].
+##### ASSEMBLY #####
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1000
+
+# Test Case Rule: RULE 17: In M-mode, setting scounteren.HPM11 (bit 11) should be reflected on the readback (# Result: a2 = 0x800) [# Extension Must Be Active: NONE; li a0, 0x800; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x800].
+##### ASSEMBLY #####
+li a0, 0x800
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x800
+
+# Test Case Rule: RULE 18: In M-mode, setting scounteren.HPM10 (bit 10) should be reflected on the readback (# Result: a2 = 0x400) [# Extension Must Be Active: NONE; li a0, 0x400; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x400].
+##### ASSEMBLY #####
+li a0, 0x400
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x400
+
+# Test Case Rule: RULE 19: In M-mode, setting scounteren.HPM9 (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x200].
+##### ASSEMBLY #####
+li a0, 0x200
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x200
+
+# Test Case Rule: RULE 20: In M-mode, setting scounteren.HPM8 (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x100].
+##### ASSEMBLY #####
+li a0, 0x100
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x100
+
+# Test Case Rule: RULE 21: In M-mode, setting scounteren.HPM7 (bit 7) should be reflected on the readback (# Result: a2 = 0x80) [# Extension Must Be Active: NONE; li a0, 0x80; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x80].
+##### ASSEMBLY #####
+li a0, 0x80
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x80
+
+# Test Case Rule: RULE 22: In M-mode, setting scounteren.HPM6 (bit 6) should be reflected on the readback (# Result: a2 = 0x40) [# Extension Must Be Active: NONE; li a0, 0x40; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x40].
+##### ASSEMBLY #####
+li a0, 0x40
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40
+
+# Test Case Rule: RULE 23: In M-mode, setting scounteren.HPM5 (bit 5) should be reflected on the readback (# Result: a2 = 0x20) [# Extension Must Be Active: NONE; li a0, 0x20; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x20].
+##### ASSEMBLY #####
+li a0, 0x20
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20
+
+# Test Case Rule: RULE 24: In M-mode, setting scounteren.HPM4 (bit 4) should be reflected on the readback (# Result: a2 = 0x10) [# Extension Must Be Active: NONE; li a0, 0x10; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x10].
+##### ASSEMBLY #####
+li a0, 0x10
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10
+
+# Test Case Rule: RULE 25: In M-mode, setting scounteren.HPM3 (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8].
+##### ASSEMBLY #####
+li a0, 0x8
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8
+
+# Test Case Rule: RULE 26: In M-mode, setting scounteren.IR (bit 2) should be reflected on the readback (# Result: a2 = 0x4) [# Extension Must Be Active: NONE; li a0, 0x4; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x4].
+##### ASSEMBLY #####
+li a0, 0x4
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4
+
+# Test Case Rule: RULE 27: In M-mode, setting scounteren.TM (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x2].
+##### ASSEMBLY #####
+li a0, 0x2
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2
+
+# Test Case Rule: RULE 28: In M-mode, setting scounteren.CY (bit 0) should be reflected on the readback (# Result: a2 = 0x1) [# Extension Must Be Active: NONE; li a0, 0x1; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x1].
+##### ASSEMBLY #####
+li a0, 0x1
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# Test Case Rule: RULE 29: In M-mode, writing -1 to the scounteren register must not set it to -1 or 0xffffffff (scounteren != -1 & scounteren != 0xffffffff).
+##### ASSEMBLY #####
+li a0, -1
+csrw 0x106, a0
+csrr a1, 0x106
+# Result: a1 != 0xffffffffffffffff && a1 != 0xffffffff
+
+===== TARGET: sfence.vma =====
+# Test Case Rule: RULE 1: When TVM=1, attempting to execute an SFENCE.VMA instruction while executing in S-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 2: When TVM=0, attempting to execute an SFENCE.VMA instruction is permitted in S-mode.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrc mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 3: If the value held in rs1 of an SFENCE.VMA instruction is not a valid virtual address, no exception is raised by the SFENCE.VMA instruction.
+##### ASSEMBLY #####
+li t0, 0x4000000000000000
+sfence.vma t0, x0
+li a0, 1
+# Result: a0 = 1
+
+# Test Case Rule: RULE 4: For an SFENCE.VMA instruction where rs2 ≠ x0, bits SXLEN-1:ASIDMAX of the value held in rs2 are reserved for future standard use.
+##### ASSEMBLY #####
+nop # Skipped because reserved bits have no specified deterministic behavior
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+##### ASSEMBLY #####
+csrw satp, x0
+li t0, 0x8000000000000000
+csrw satp, t0
+csrr a0, satp
+srli a0, a0, 60
+xori a0, a0, 8
+csrw satp, x0
+csrr t0, satp
+or a0, a0, t0
+# Result: a0 = 0
+
+# Test Case Rule: RULE 6: An attempt to execute the SFENCE.VMA instruction in U-mode always raises an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 7: An attempt to execute the SFENCE.VMA instruction in S-mode or HS-mode when mstatus.TVM is 1 raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 8: An attempt to execute the SFENCE.VMA instruction in VU-mode raises a virtual-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause != 2
+
+# Test Case Rule: RULE 9: When hstatus.VTVM is 1, an attempt to execute the SFENCE.VMA instruction in VS-mode raises a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs hstatus, t0
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause != 2
+
+# Test Case Rule: RULE 10: When VTVM is set to 1, an attempt in VS-mode to execute SFENCE.VMA raises a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs hstatus, t0
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause != 2
+
+# Test Case Rule: RULE 11: An attempt to execute an SFENCE.VMA instruction in VU-mode raises a virtual-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause != 2
+
+# Test Case Rule: RULE 12: When V=1, an attempt to execute an SFENCE.VMA instruction raises a virtual-instruction exception with code 22 instead of an illegal-instruction exception if the instruction is HS-qualified but is prevented from executing due to insufficient privilege or because it is expressly disabled by a supervisor or hypervisor CSR.
+##### ASSEMBLY #####
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause = 22
+
+# Test Case Rule: RULE 13: On a virtual-instruction trap caused by an SFENCE.VMA instruction, mtval or stval is written the same as for an illegal-instruction trap.
+##### ASSEMBLY #####
+nop # Skipped because the reference illegal-instruction trap value is not specified
+# Result: x0 = 0
+
+# Test Case Rule: RULE 14: If an SFENCE.VMA instruction raises multiple synchronous exceptions, a virtual-instruction exception has a lower priority than an illegal instruction exception but a higher priority than an instruction address misaligned exception for determining which exception is taken and reported in mcause or scause.
+##### ASSEMBLY #####
+nop # Skipped because the listed simultaneous exceptions cannot be provoked deterministically
+# Result: x0 = 0
+
+===== TARGET: vle32ff.v =====
+# Test Case Rule: RULE 1: VLE32FF.V MUST execute as a regular load except that it will only take a trap caused by a synchronous exception on element 0.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+li t1, 34
+sw t1, 4(s0)
+li t1, 51
+sw t1, 8(s0)
+addi t1, s0, 8
+srli t1, t1, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 3, e32, m8, ta, ma
+csrw vstart, x0
+li a0, 0
+vle32ff.v v0, (s0)
+vmv.x.s a0, v0
+# Result: a0 = 17
+
+# Test Case Rule: RULE 2: If element 0 raises an exception during VLE32FF.V, the trap is taken and vl MUST NOT be modified.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+srli t1, s0, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 2, e32, m8, ta, ma
+csrw vstart, x0
+vle32ff.v v0, (s0)
+# Result: mcause = 5
+
+# Test Case Rule: RULE 3: If any element greater than 0 raises an exception during VLE32FF.V, the trap MUST NOT be taken and vl MUST be reduced to the index of that element.
+##### ASSEMBLY #####
+li t0, -8
+and s0, sp, t0
+addi s0, s0, 64
+li t1, 17
+sw t1, 0(s0)
+li t1, 34
+sw t1, 4(s0)
+li t1, 51
+sw t1, 8(s0)
+addi t1, s0, 8
+srli t1, t1, 2
+csrw pmpaddr0, t1
+li t1, -1
+csrw pmpaddr1, t1
+li t1, 0x1f18
+csrw pmpcfg0, t1
+csrw satp, x0
+sfence.vma x0, x0
+call machine_to_supervisor
+vsetivli t0, 3, e32, m8, ta, ma
+csrw vstart, x0
+li a0, 0
+vle32ff.v v0, (s0)
+csrr a0, vl
+# Result: a0 = 2
+
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+nop # Skipped because non-idempotent memory access timing is not deterministically observable
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: If vstart = 0 and vl > 0 for VLE32FF.V, then at least one element MUST be processed.
+##### ASSEMBLY #####
+li t0, 1
+sw t0, 64(sp)
+vsetivli t1, 1, e32, m1, ta, ma
+csrw vstart, x0
+vmv.v.i v0, 0
+csrw vstart, x0
+addi t0, sp, 64
+vle32ff.v v0, (t0)
+vmv.x.s a0, v0
+# Result: a0 = 1

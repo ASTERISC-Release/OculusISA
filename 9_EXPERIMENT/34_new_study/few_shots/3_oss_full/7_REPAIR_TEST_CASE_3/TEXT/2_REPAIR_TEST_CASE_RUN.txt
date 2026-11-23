@@ -1,0 +1,97 @@
+============
+START ITER 1
+
+# 23 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: If any element greater than 0 raises an exception during VLE32FF.V, the trap MUST NOT be taken and vl MUST be reduced to the index of that element.
+##### ASSEMBLY #####
+li t0, 2
+vsetvli t1, t0, e32, m1
+la a0, test_mem
+vle32ff.v v1, (a0)
+csrr t6, vl
+test_mem:
+.align 4
+.word 0
+.word 0xdeadbeef
+# Result: t6 = 1
+.align 4
+.word 0
+.word 0xdeadbeef
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 1
+==========
+
+============
+START ITER 2
+
+# 24 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: VLE32FF.V MUST access non-idempotent memory locations only when it is known that the corresponding element load operation will not be restarted due to a trap or vector-length trimming.
+##### ASSEMBLY #####
+vsetvli a5, zero, e32,m1
+li a0, 0
+csrw vstart, zero
+vle32ff.v v8, (a0)
+csrr a5, vstart
+# Result: a5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 2
+==========
+
+============
+START ITER 3
+
+# 35 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 12: When the H extension is also implemented, access to the seed CSR from an HS-qualified instruction leads to a virtual-instruction exception in VS and VU modes, and all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+la t0, trap_handler
+csrw mtvec, t0
+nop
+csrrwi x0, seed, 0
+nop
+trap_handler:
+nop
+# Result: mcause = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 3
+==========
+
+============
+START ITER 4
+
+# 45 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 22: When mseccfg.MML is set, the interpretation of pmpcfg.L changes so that a set pmpcfg.L marks a rule as M-mode-only and an unset pmpcfg.L marks a rule as S/U-mode-only.
+##### ASSEMBLY #####
+li t0, 0x1
+csrr t1, mseccfg
+or t1, t1, t0
+csrw mseccfg, t1
+li t0, 0x0
+csrw pmpcfg0, t0
+srli t1, t1, 2
+csrw pmpaddr0, t1
+call machine_to_supervisor
+li a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 4
+==========

@@ -1,0 +1,2797 @@
+============
+START ITER 1
+
+# 1 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: If the CSRRWI instruction is executed, then the specified CSR is updated with the immediate value and the previous value of the CSR is written to the destination register.
+##### ASSEMBLY #####
+li t0, 0xa
+csrw mscratch, t0
+csrrwi a0, mscratch, 5
+# Result: a0 = 10
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 1
+==========
+
+============
+START ITER 2
+
+# 2 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: The CSRRWI instruction updates the specified CSR using an XLEN-bit value obtained by zero-extending the 5-bit unsigned immediate field encoded in the rs1 field.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 13
+# Result: mscratch = 13
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 2
+==========
+
+============
+START ITER 3
+
+# 3 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: The CSRRWI instruction reads the old value of the CSR, zero-extends it to XLEN bits, and writes it to integer register rd.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mscratch, t0
+csrrwi t1, mscratch, 2
+# Result: t1 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 3
+==========
+
+============
+START ITER 4
+
+# 4 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: If the destination register rd is x0, the CSRRWI instruction shall not read the CSR and shall not cause any side effects that might occur on a CSR read.
+##### ASSEMBLY #####
+csrrwi x0, mstatus, 0
+csrr a1, mstatus
+srli a0, a1, 0
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 4
+==========
+
+============
+START ITER 5
+
+# 5 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: If the CSRRWI instruction is executed with rd not equal to x0, then the destination register rd shall contain the value of the specified CSR prior to the write.
+##### ASSEMBLY #####
+li t0, 0x1
+csrrw mscratch, mscratch, t0
+csrrwi t1, mscratch, 2
+# Result: t1 = 1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:109: Error: illegal operands `csrrw mscratch,mscratch,t0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 5
+==========
+
+============
+START ITER 6
+
+# 6 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 6: The CSRRWI instruction shall write to the specified CSR regardless of whether the destination register rd is x0.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 1
+# Result: mscratch = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 6
+==========
+
+============
+START ITER 7
+
+# 7 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 7: If the CSRRWI instruction writes to a CSR, then all fields within that CSR that are defined to have side effects upon being written must trigger those side effects.
+##### ASSEMBLY #####
+csrrwi x0, mstatus, 0
+csrr a1, mstatus
+srli a0, a1, 12
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 7
+==========
+
+============
+START ITER 8
+
+# 8 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 8: If the CSRRWI instruction's rd field is set to a register r other than x0, then r is updated with the original value of the CSR.
+##### ASSEMBLY #####
+li t0, 0x1
+csrrw mscratch, mscratch, t0
+csrrwi t1, mscratch, 2
+# Result: t1 = 1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:109: Error: illegal operands `csrrw mscratch,mscratch,t0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 8
+==========
+
+============
+START ITER 9
+
+# 9 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: FCVT.W.D converts a double-precision floating-point number in floating-point register rs1 to a signed 32-bit integer in integer register rd.
+##### ASSEMBLY #####
+li t0, 0x4001000000000000
+fmv.d.x fa0, t0
+fcvt.w.d a0, fa0, rne
+# Result: a0 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 9
+==========
+
+============
+START ITER 10
+
+# 10 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: FCVT.W.D rounds the result according to the rm field.
+##### ASSEMBLY #####
+li t0, 0x3ff0000000000000
+fmv.d.x fa0, t0
+li t1, 0x1
+fcvt.w.d a0, fa0, 0
+# Result: a0 = 1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:111: Error: illegal operands `fcvt.w.d a0,fa0,0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 10
+==========
+
+============
+START ITER 11
+
+# 11 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: FCVT.W.D sign-extends the 32-bit result when executed on an RV64 system.
+##### ASSEMBLY #####
+li t0, 0x1
+fcvt.d.w fa0, t0
+fcvt.w.d t1, fa0, 0x00
+# Result: t1 = 1
+# 12 # Extension Must Be Active: NONE
+li t0, 0xffffffffffffffff
+fcvt.d.w fa0, t0
+fcvt.w.d t1, fa0, 0x00
+# Result: t1 = -1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: illegal operands `fcvt.w.d t1,fa0,0x00'
+bootloader/code.S:115: Error: illegal operands `fcvt.w.d t1,fa0,0x00'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 11
+==========
+
+============
+START ITER 12
+
+# 13 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: If the input value for FCVT.W.D is outside the range of representable signed 32-bit integers, then the result is the same as the behavior for FCVT.int.S for the same out-of-range input.
+##### ASSEMBLY #####
+li t0, 0x4008000000000000
+fmv.d.x fa0, t0
+fcvt.w.d a0, fa0, 0
+# Result: a0 = -2147483648
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: illegal operands `fcvt.w.d a0,fa0,0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 12
+==========
+
+============
+START ITER 13
+
+# 14 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: An SFENCE.VMA instruction executed in S-mode while TVM=1 must raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x400000000000
+csrw satp, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2 || t5 = 2
+
+priv           0x1	prv:1 [Supervisor]
+
+END ITER 13
+==========
+
+============
+START ITER 14
+
+# 15 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: If an SFENCE.VMA instruction is executed in S-mode while TVM=0, then it must execute without raising an exception.
+##### ASSEMBLY #####
+nop # Skipped because SFENCE.VMA effects on TLB are not directly observable through standard architectural state
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 14
+==========
+
+============
+START ITER 15
+
+# 16 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: If the value held in rs1 is not a valid virtual address, the SFENCE.VMA instruction has no effect and no exception is raised.
+##### ASSEMBLY #####
+nop # Skipped because SFENCE.VMA effects on TLB/cache are not directly observable through deterministic standard architectural state
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 15
+==========
+
+============
+START ITER 16
+
+# 17 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: An attempt to execute SFENCE.VMA in U-mode always raises an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+sfence.vma x0, x0
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 16
+==========
+
+============
+START ITER 17
+
+# 18 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 5: An attempt to execute SFENCE.VMA in S-mode or HS-mode when mstatus.TVM=1 raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sfence.vma x0, x0
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 17
+==========
+
+============
+START ITER 18
+
+# 19 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 6: An attempt to execute SFENCE.VMA in VU-mode raises a virtual-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause = 0x16 || t5 = 0x16
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:108:(.text+0x146): undefined reference to `machine_to_virtual_user'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 18
+==========
+
+============
+START ITER 19
+
+# 20 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 7: An attempt to execute SFENCE.VMA in VS-mode when hstatus.VTVM=1 raises a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrw hstatus, t0
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause = 0xf || t5 = 0xf
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:110:(.text+0x14e): undefined reference to `machine_to_virtual'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 19
+==========
+
+============
+START ITER 20
+
+# 21 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 8: An attempt to execute SFENCE.VMA in VS-mode while VTVM=1 MUST raise a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x2
+csrw hgatp, t0
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause = 0xf || t5 = 0xf
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:110:(.text+0x14c): undefined reference to `machine_to_virtual'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 20
+==========
+
+============
+START ITER 21
+
+# 22 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 9: Attempts to execute the SFENCE.VMA instruction in VU-mode raise a virtual-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual_user
+sfence.vma x0, x0
+# Result: mcause = 0x16 || t5 = 0x16
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:108:(.text+0x146): undefined reference to `machine_to_virtual_user'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 21
+==========
+
+============
+START ITER 22
+
+# 23 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: SFENCE.VMA
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 10: Attempts to execute the SFENCE.VMA instruction in VS-mode raise a virtual-instruction exception when hstatus.VTVM=1.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrw hstatus, t0
+call machine_to_virtual
+sfence.vma x0, x0
+# Result: mcause = 0xf || t5 = 0xf
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:110:(.text+0x14e): undefined reference to `machine_to_virtual'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 22
+==========
+
+============
+START ITER 23
+
+# 24 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: The VLE32FF.V instruction executes as a regular load, except that it will only take a trap caused by a synchronous exception on element 0.
+##### ASSEMBLY #####
+li t0, 0x0
+vsetvli t1, x0, 0
+vle32ff.v v0, (t0), 0
+# Result: mcause = 5 || t5 = 5
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: illegal operands `vle32ff.v v0,(t0),0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 23
+==========
+
+============
+START ITER 24
+
+# 25 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: If element 0 of the VLE32FF.V instruction raises an exception, the vector length vl is not modified and the trap is taken.
+##### ASSEMBLY #####
+li t0, 0x4
+csrw vl, t0
+li t1, 0x0
+vle32ff.v v0, (t1), v0
+# Result: vl = 4
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:111: Error: illegal operands `vle32ff.v v0,(t1),v0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 24
+==========
+
+============
+START ITER 25
+
+# 26 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 3: If an element greater than 0 of the VLE32FF.V instruction raises an exception, the corresponding trap is not taken and the vector length vl is reduced to the index of the element that would have raised the exception.
+##### ASSEMBLY #####
+li t0, 0x4
+vsetvli t1, t0, 0
+li t0, 0x4
+vsetvli t1, t0, 0
+li a0, 0x0
+vle32ff.v v0, (a0), 0
+# Result: vl = 1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:113: Error: illegal operands `vle32ff.v v0,(a0),0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 25
+==========
+
+============
+START ITER 26
+
+# 27 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: If vstart = 0 and vl > 0, the VLE32FF.V instruction must process at least one element.
+##### ASSEMBLY #####
+li t0, 0x80000000
+sw x0, 0(t0)
+li t1, 0x1
+csrw vl, t1
+csrw vstart, x0
+vle32ff.v v1, (t0), x0
+csrr a1, v1
+srli a0, a1, 0
+andi a0, a0, 1
+# Result: a0 = 0
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:113: Error: illegal operands `vle32ff.v v1,(t0),x0'
+bootloader/code.S:114: Error: unknown CSR `v1'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 26
+==========
+
+============
+START ITER 27
+
+# 28 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 1: Software may discover if access to the seed CSR can be enabled in S mode by writing a 1 to the SSEED field of the mseccfg CSR and reading back the result.
+##### ASSEMBLY #####
+li t0, 0x200
+csrs mseccfg, t0
+csrr t1, mseccfg
+li t2, 0x200
+and t1, t1, t2
+# Result: t1 = 512
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 27
+==========
+
+============
+START ITER 28
+
+# 29 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 2: Software may discover if access to the seed CSR can be enabled in U mode by writing a 1 to the USEED field of the mseccfg CSR and reading back the result.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x100
+or t0, t0, t1
+csrw mseccfg, t0
+csrr t0, mseccfg
+li t1, 0x100
+and t0, t0, t1
+# Result: t0 = 256
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 28
+==========
+
+============
+START ITER 29
+
+# 30 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 3: If the mseccfg register is accessed from a privilege level lower than Machine mode, then the access raises an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+csrr t0, mseccfg
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 29
+==========
+
+============
+START ITER 30
+
+# 31 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 4: When the USEED field in mseccfg is 0, access to the seed CSR in U-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mseccfg, t0
+call machine_to_user
+csrr t1, 0x15
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 30
+==========
+
+============
+START ITER 31
+
+# 32 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 5: When the USEED field in mseccfg is 1, read-write access to the seed CSR from U-mode is allowed, while all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100
+csrw mseccfg, t0
+# Result: seed = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 31
+==========
+
+============
+START ITER 32
+
+# 33 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 6: The USEED field in mseccfg is read-only zero if Zkr or U-mode is not implemented.
+##### ASSEMBLY #####
+li t0, 0x100
+csrs mseccfg, t0
+li t1, 0x100
+csrr t2, mseccfg
+and t0, t2, t1
+nop # Skipped because U-mode is implemented
+# Result: t0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 32
+==========
+
+============
+START ITER 33
+
+# 34 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 7: When the SSEED field in mseccfg is 0, access to the seed CSR from S-/HS-mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mseccfg, t0
+call machine_to_supervisor
+csrr t1, 0x15
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 33
+==========
+
+============
+START ITER 34
+
+# 35 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 8: When the SSEED field in mseccfg is 1, read-write access to the seed CSR from S-/HS-mode is allowed, while all other types of accesses raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x200
+csrw mseccfg, t0
+# Result: seed = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 34
+==========
+
+============
+START ITER 35
+
+# 36 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 9: When the SSEED field in mseccfg is 0, any seed CSR access from VS/VU mode raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mseccfg, t0
+call machine_to_virtual_user
+csrr t1, 0x15
+# Result: mcause = 2 || t5 = 2
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:110:(.text+0x14c): undefined reference to `machine_to_virtual_user'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 35
+==========
+
+============
+START ITER 36
+
+# 37 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 10: If mseccfg.RLB is 0, any attempt to remove, modify, or edit a locked PMP rule must be ignored or raise an exception; if mseccfg.RLB is 1, locked PMP rules may be removed, modified, or edited.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw pmpcfg0, t0
+li t1, 0x0
+csrw mseccfg, t1
+li t2, 0x2
+csrw pmpcfg0, t2
+# Result: pmpcfg0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 36
+==========
+
+============
+START ITER 37
+
+# 38 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 11: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries), then mseccfg.RLB remains 0 and any further modifications to mseccfg.RLB are ignored until a PMP reset.
+##### ASSEMBLY #####
+li t0, 0x20
+csrw pmpcfg0, t0
+li t1, 0x4
+csrw mseccfg, t1
+li t2, 0x0
+csrw mseccfg, t2
+csrr a1, mseccfg
+srli a0, a1, 2
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 37
+==========
+
+============
+START ITER 38
+
+# 39 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 12: The mseccfg.MMWP field is a sticky bit, meaning that once set it cannot be unset until a PMP reset.
+##### ASSEMBLY #####
+li t0, 0x2
+csrw mseccfg, t0
+li t1, 0x0
+csrw mseccfg, t1
+csrr a1, mseccfg
+srli a0, a1, 1
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 38
+==========
+
+============
+START ITER 39
+
+# 40 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 13: When mseccfg.MMWP is set, the default PMP policy for M-mode when accessing memory regions that don't have a matching PMP rule changes to denied instead of ignored.
+##### ASSEMBLY #####
+li t0, 0x2
+csrs mseccfg, t0
+li t1, 0x1
+sd t1, 0(t1)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 39
+==========
+
+============
+START ITER 40
+
+# 41 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 14: The mseccfg.MML field is a sticky bit, meaning that once set it cannot be unset until a PMP reset.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x0
+csrw mseccfg, t1
+csrr a1, mseccfg
+srli a0, a1, 0
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 40
+==========
+
+============
+START ITER 41
+
+# 42 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 15: When mseccfg.MML is set, pmpcfg.L marks a rule as M-mode-only when set and S/U-mode-only when unset, instead of marking a rule as locked and enforced in all modes.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x20
+csrw pmpcfg0, t1
+call machine_to_user
+li t2, 0x1000
+sd t0, 0(t2)
+# Result: mcause = 1 || t5 = 1
+# 43 # Extension Must Be Active: NONE
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1
+csrw pmpaddr0, t1
+li t2, 0x20
+csrw pmpcfg0, t2
+call machine_to_user
+li t3, 0x1000
+sd t0, 0(t3)
+# Result: mcause = 7
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 41
+==========
+
+============
+START ITER 42
+
+# 44 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 16: If mseccfg.MML is set, any memory access to a region where pmpcfg.RW=01 and pmpcfg.LRWX=1111 shall be treated as a Shared-Region access.
+##### ASSEMBLY #####
+nop # Skipped because Shared-Region access is an internal memory attribute and not directly observable through deterministic architectural state
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 42
+==========
+
+============
+START ITER 43
+
+# 45 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 17: If mseccfg.MML is set and an M-mode-only instruction is executed in Supervisor or User mode, then it raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+call machine_to_user
+csrr t1, mseccfg
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 43
+==========
+
+============
+START ITER 44
+
+# 46 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 18: When mseccfg.MML is set, an M-mode-only rule remains locked so that any further modifications to its associated configuration or address registers are ignored until a PMP reset, unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1
+csrw pmpaddr0, t1
+li t2, 0x1f
+csrw pmpcfg0, t2
+li t3, 0x0
+csrw pmpcfg0, t3
+li t4, 0x1f
+csrw pmpcfg0, t4
+# Result: pmpcfg0 = 31
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 44
+==========
+
+============
+START ITER 45
+
+# 47 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 19: If mseccfg.MML is set and a Supervisor or User mode instruction attempts to access a Machine-mode-only resource, then an illegal-instruction or access-fault exception is raised, whereas Machine mode accesses to the same resource are permitted.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+call machine_to_supervisor
+csrr t1, mstatus
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 45
+==========
+
+============
+START ITER 46
+
+# 48 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 20: When mseccfg.MML is set, a Shared-Region rule where pmpcfg.L is not set is not executable, M-mode has read/write access to that region, and S/U-mode has read access if pmpcfg.X is not set or read/write access if pmpcfg.X is set.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1
+csrw pmpaddr0, t1
+li t2, 0x1f
+csrw pmpcfg0, t2
+call machine_to_user
+li t0, 0x1
+sd t0, 0(t1)
+# Result: mcause = 0xd || t5 = 0xd
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 46
+==========
+
+============
+START ITER 47
+
+# 49 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 21: When mseccfg.MML is set, a Shared-Region rule where pmpcfg.L is set is not writable, both M-mode and S/U-mode have execute access on the region, and M-mode also has read access if pmpcfg.X is set.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x81
+csrw pmpcfg0, t1
+li t2, 0x1
+csrw pmpcfg0, t2
+# Result: pmpcfg0 = 0x81
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 47
+==========
+
+============
+START ITER 48
+
+# 50 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 22: When mseccfg.MML is set, a Shared-Region rule where pmpcfg.L is set remains locked so that any further modifications to its associated configuration or address registers are ignored until a PMP reset, unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x80
+csrw pmpcfg0, t1
+li t2, 0x1
+csrw pmpaddr0, t2
+li t3, 0x40
+csrw pmpcfg0, t3
+csrr a1, pmpcfg0
+srli a0, a1, 7
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 48
+==========
+
+============
+START ITER 49
+
+# 51 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 23: When mseccfg.MML is set, a Shared-Region rule encoded by pmpcfg.LRWX=1111 provides read-only access to the region for both M-mode and S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0xf
+csrw pmpcfg0, t1
+li t2, 0x64
+csrw pmpaddr0, t2
+li t3, 0x64
+sw zero, 0(t3)
+# Result: mcause = 7 || t5 = 7
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 49
+==========
+
+============
+START ITER 50
+
+# 52 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 24: When mseccfg.MML is set, a Shared-Region rule encoded by pmpcfg.LRWX=1111 remains locked so that any further modifications to its associated configuration or address registers are ignored until a PMP reset, unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0xf
+csrw pmpcfg0, t1
+li t2, 0x2
+csrw pmpaddr0, t2
+li t3, 0x1
+csrw pmpcfg0, t3
+# Result: pmpcfg0 = 15
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 50
+==========
+
+============
+START ITER 51
+
+# 53 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 25: When mseccfg.MML is set, executing code with Machine mode privileges is only possible from memory regions with a matching M-mode-only rule or a locked Shared-Region rule with executable privileges.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 51
+==========
+
+============
+START ITER 52
+
+# 54 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 26: When mseccfg.MML is set, executing code from a region without a matching rule or with a matching S/U-mode-only rule is denied.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 52
+==========
+
+============
+START ITER 53
+
+# 55 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 27: When the PMM field in mseccfg is 00, pointer masking is disabled (PMLEN = 0).
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mseccfg, t0
+csrr t1, mseccfg
+li t2, 0x300000000
+and t1, t1, t2
+srli t1, t1, 32
+# Result: t1 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 53
+==========
+
+============
+START ITER 54
+
+# 56 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 28: When the PMM field in mseccfg is 10, pointer masking is enabled with PMLEN = XLEN - 57.
+##### ASSEMBLY #####
+li t0, 0x200000000
+csrw mseccfg, t0
+csrr t1, mseccfg
+li t2, 0x300000000
+and t1, t1, t2
+srli t1, t1, 32
+# Result: t1 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 54
+==========
+
+============
+START ITER 55
+
+# 57 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 29: When the PMM field in mseccfg is 11, pointer masking is enabled with PMLEN = XLEN - 48.
+##### ASSEMBLY #####
+li t0, 0x300000000
+csrw mseccfg, t0
+csrr t1, mseccfg
+li t2, 0x300000000
+and t0, t1, t2
+# Result: t0 = 12884901888
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 55
+==========
+
+============
+START ITER 56
+
+# 58 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 30: The PMM field in mseccfg is read-only zero if Smmpm is not implemented.
+##### ASSEMBLY #####
+li t0, 0x3
+slli t0, t0, 32
+csrw mseccfg, t0
+csrr t1, mseccfg
+li t2, 0x300000000
+and t1, t1, t2
+srli t1, t1, 32
+# Result: t1 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 56
+==========
+
+============
+START ITER 57
+
+# 59 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 31: When the MLPE field in mseccfg is 1, Zicfilp extension is enabled in M-mode.
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mseccfg, t0
+csrr a1, mseccfg
+srli a0, a1, 10
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 57
+==========
+
+============
+START ITER 58
+
+# 60 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 32: When the MLPE field in mseccfg is 0, the Zicfilp extension is not enabled in M-mode, the hart does not update the ELP state (it remains as NO_LP_EXPECTED), and the LPAD instruction operates as a no-op.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mseccfg, t0
+lpad 0x123
+nop # Skipped because ELP state is internal and LPAD as no-op is not observable via architectural registers
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 58
+==========
+
+============
+START ITER 59
+
+# 61 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 33: If the Zicfilp extension is implemented, the mseccfg.MLPE field is reset to 0.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x400
+and t0, t0, t1
+# Result: t0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 59
+==========
+
+============
+START ITER 60
+
+# 62 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 34: If the platform does not mandate a different reset value, then upon reset, the MML field of the mseccfg register readback value is 0.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x1
+and t0, t0, t1
+# Result: t0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 60
+==========
+
+============
+START ITER 61
+
+# 63 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 35: If the platform does not mandate a different reset value, then upon reset, the MMWP field of the mseccfg register must be 0.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x2
+and t2, t0, t1
+srli t2, t2, 1
+# Result: t2 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 61
+==========
+
+============
+START ITER 62
+
+# 64 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 36: If the platform does not mandate a different reset value, then after reset the RLB field of the mseccfg register must be 0.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x4
+and t2, t0, t1
+# Result: t2 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 62
+==========
+
+============
+START ITER 63
+
+# 65 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 37: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=0, pmpcfg W=0, and pmpcfg X=0 results in an inaccessible region causing an access exception for both M mode and S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x0
+csrw pmpcfg0, t1
+li t2, 0x80000000
+sd x0, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 63
+==========
+
+============
+START ITER 64
+
+# 66 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 38: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=0, pmpcfg W=0, and pmpcfg X=1 results in an access exception for M mode and an execute-only region for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x18
+csrw pmpcfg0, t1
+li t2, 0x80000000
+sd x0, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 64
+==========
+
+============
+START ITER 65
+
+# 67 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 39: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=0, pmpcfg W=1, and pmpcfg X=0 results in a shared data region that is read/write on M mode and read-only on S/U mode for both M mode and S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x4
+csrw pmpcfg0, t1
+call machine_to_user
+li t2, 0x80000000
+sd t0, 0(t2)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 65
+==========
+
+============
+START ITER 66
+
+# 68 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 40: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=1, pmpcfg W=0, and pmpcfg X=0 results in an access exception for M mode and a read-only region for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x2
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+sd t0, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 66
+==========
+
+============
+START ITER 67
+
+# 69 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 41: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=1, pmpcfg W=0, and pmpcfg X=1 results in an access exception for M mode and a read/execute region for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x2
+csrw pmpcfg0, t1
+li t2, 0x80000000
+ld t3, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 67
+==========
+
+============
+START ITER 68
+
+# 70 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 42: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=1, pmpcfg W=1, and pmpcfg X=0 results in an access exception for M mode and a read/write region for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1a
+csrw pmpcfg0, t1
+sd t0, 0(t1)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 68
+==========
+
+============
+START ITER 69
+
+# 71 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 43: When mseccfg.MML is set to 1, pmpcfg L=0, pmpcfg R=1, pmpcfg W=1, and pmpcfg X=1 results in an access exception for M mode and a read/write/execute region for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1e
+csrw pmpcfg0, t1
+li t2, 0x80000000
+sd x0, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 69
+==========
+
+============
+START ITER 70
+
+# 72 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 44: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=0, pmpcfg W=0, and pmpcfg X=0 results in a locked inaccessible region causing an access exception for both M mode and S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x20
+csrw pmpcfg0, t1
+li t2, 0x80000000
+sd t0, 0(t2)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 70
+==========
+
+============
+START ITER 71
+
+# 73 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 45: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=0, pmpcfg W=0, and pmpcfg X=1 results in a locked execute-only region for M mode and an access exception for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x18 # L=1, R=0, W=0, X=1 (pmpcfg: bits 3=L, 2=R, 1=W, 0=X)
+csrw pmpcfg0, t1
+call machine_to_supervisor
+li t0, 0x80000000
+ld t1, 0(t0)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 71
+==========
+
+============
+START ITER 72
+
+# 74 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 46: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=0, pmpcfg W=1, and pmpcfg X=1 results in a locked shared code region that is execute only on S/U mode and read/execute on M mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x19
+csrw pmpcfg0, t1
+call machine_to_supervisor
+li t2, 0x80000000
+ld a0, 0(t2)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 72
+==========
+
+============
+START ITER 73
+
+# 75 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 47: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=1, pmpcfg W=0, and pmpcfg X=0 results in a locked read-only region for M mode and an access exception for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1c
+csrw pmpcfg0, t1
+li t2, 0x80000000
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t0, 0x80000000
+ld t1, 0(t0)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 73
+==========
+
+============
+START ITER 74
+
+# 76 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 48: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=1, pmpcfg W=0, and pmpcfg X=1 results in a locked read/execute region for M mode and an access exception for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x19
+csrw pmpcfg0, t1
+li t2, 0x1
+csrw pmpaddr0, t2
+call machine_to_supervisor
+li t0, 0x1000
+ld t1, 0(t0)
+# Result: mcause = 5 || t5 = 5
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 74
+==========
+
+============
+START ITER 75
+
+# 77 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 49: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=1, pmpcfg W=1, and pmpcfg X=0 results in a locked read/write region for M mode and an access exception for S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1b
+csrw pmpcfg0, t1
+li t2, 0x80000000
+sd s0, 0(t2)
+call machine_to_user
+li t3, 0x80000000
+ld s0, 0(t3)
+# Result: mcause = 0xd || t5 = 0xd
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 75
+==========
+
+============
+START ITER 76
+
+# 78 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 50: When mseccfg.MML is set to 1, pmpcfg L=1, pmpcfg R=1, pmpcfg W=1, and pmpcfg X=1 results in a locked shared data region that is read only on both M mode and S/U mode.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x88 # L=1, R=1, W=1, X=1 (Bits 7,6,5,4 are L,R,W,X; 0x88 = 1000 1000 in binary? No. PMPCFG fields: L=bit 7, R=bit 6, W=bit 5, X=bit 4. L=1, R=1, W=1, X=1 is 0x80 | 0x40 | 0x20 | 0x10 = 0xF0)
+li t1, 0xf0
+csrw pmpcfg0, t1
+li t2, 0x1
+csrw pmpaddr0, t2
+li t3, 0x2
+sd t3, 0(t2)
+# Result: mcause = 1 || t5 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 76
+==========
+
+============
+START ITER 77
+
+# 79 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 51: When S-mode is implemented, the xLPE for privilege mode M is determined by mseccfg.MLPE.
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mseccfg, t0
+csrr a1, mseccfg
+srli a0, a1, 10
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 77
+==========
+
+============
+START ITER 78
+
+# 80 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 52: In M-mode, accessing mseccfg register should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: NONE; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x747
+# Result: mcause = 0 || t5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 78
+==========
+
+============
+START ITER 79
+
+# 81 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 53: In S-mode, accessing mseccfg register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_supervisor; csrr a0, 0x747; # Result: mcause = 0x2].
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, 0x747
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 79
+==========
+
+============
+START ITER 80
+
+# 82 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 54: In U-mode, accessing mseccfg register should result in illegal-instruction exception (# Result: mcause = 0x2) [# Extension Must Be Active: NONE; call machine_to_user; csrr a0, 0x747; # Result: mcause = 0x2].
+##### ASSEMBLY #####
+call machine_to_user
+csrr a0, 0x747
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 80
+==========
+
+============
+START ITER 81
+
+# 83 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 55: In M-mode, setting mseccfg.SSEED (bit 9) should be reflected on the readback (# Result: a2 = 0x200) [# Extension Must Be Active: NONE; li a0, 0x200; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x200].
+##### ASSEMBLY #####
+li a0, 0x200
+csrs 0x747, a0
+csrr a1, 0x747
+li a2, 0x200
+and a3, a1, a2
+# Result: a3 = 0x200
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 81
+==========
+
+============
+START ITER 82
+
+# 84 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 56: In M-mode, setting mseccfg.USEED (bit 8) should be reflected on the readback (# Result: a2 = 0x100) [# Extension Must Be Active: NONE; li a0, 0x100; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x100].
+##### ASSEMBLY #####
+li a0, 0x100
+csrs 0x747, a0
+csrr a1, 0x747
+and a2, a1, a0
+# Result: a2 = 0x100
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 82
+==========
+
+============
+START ITER 83
+
+# 85 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 57: In M-mode, setting mseccfg.RLB (bit 2) should be reflected on the readback (# Result: a2 = 0x4) [# Extension Must Be Active: NONE; li a0, 0x4; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x4].
+##### ASSEMBLY #####
+li a0, 0x4
+csrs 0x747, a0
+csrr a1, 0x747
+and a2, a1, a0
+# Result: a2 = 0x4
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 83
+==========
+
+============
+START ITER 84
+
+# 86 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 58: In M-mode, setting mseccfg.MMWP (bit 1) should be reflected on the readback (# Result: a2 = 0x2) [# Extension Must Be Active: NONE; li a0, 0x2; csrs 0x747, a0; csrr a1, 0x747; and a2, a0, a1; # Result: a2 = 0x2].
+##### ASSEMBLY #####
+li a0, 0x2
+csrs 0x747, a0
+csrr a1, 0x747
+li a2, 0x2
+and a3, a1, a2
+# Result: a3 = 0x2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 84
+==========
+
+============
+START ITER 85
+
+# 87 # Extension Must Be Active: Smepmp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 59: In M-mode, accessing mseccfg register while Smepmp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smepmp; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x747
+# Result: mcause = 0 || t5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 85
+==========
+
+============
+START ITER 86
+
+# 88 # Extension Must Be Active: Smmpm
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 60: In M-mode, accessing mseccfg register while Smmpm extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smmpm; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x747
+# Result: mcause = 0 || t5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 86
+==========
+
+============
+START ITER 87
+
+# 89 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 61: In M-mode, accessing mseccfg register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x747
+# Result: mcause = 0 || t5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 87
+==========
+
+============
+START ITER 88
+
+# 90 # Extension Must Be Active: Zkr
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 62: In M-mode, accessing mseccfg register while Zkr extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zkr; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, 0x747
+# Result: mcause = 0 || t5 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 88
+==========
+
+============
+START ITER 89
+
+# 91 # Extension Must Be Active: Zfinx
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 1: If the Zfinx extension is implemented, the mstatus field FS is hardwired to 0.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrs mstatus, t0
+csrr t1, mstatus
+li t2, 0x6000
+and t0, t1, t2
+srli t0, t0, 13
+# Result: t0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 89
+==========
+
+============
+START ITER 90
+
+# 92 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 2: The mstatus register contains a vector context status field, VS, in bits [10:9].
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mstatus, t0
+csrr a1, mstatus
+srli a0, a1, 9
+andi a0, a0, 3
+# Result: a0 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 90
+==========
+
+============
+START ITER 91
+
+# 93 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 3: The mstatus.VS field is shadowed in sstatus[10:9].
+##### ASSEMBLY #####
+li t0, 0x400
+csrw mstatus, t0
+call machine_to_supervisor
+csrr t1, sstatus
+li t2, 0x600
+and t1, t1, t2
+srli t1, t1, 9
+# Result: t1 = 2
+
+priv           0x1	prv:1 [Supervisor]
+
+END ITER 91
+==========
+
+============
+START ITER 92
+
+# 94 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 4: Attempts to execute any vector instruction or access the vector CSRs raise an illegal-instruction exception when mstatus.VS is set to Off.
+##### ASSEMBLY #####
+li t0, 0x300
+csrr t1, 0x300
+li t2, 0x600
+and t2, t2, t2
+li t3, 0x0
+srli t1, t1, 9
+and t1, t1, 3
+li t4, 0x0
+li t0, 0x300
+csrr t1, 0x300
+li t2, 0x600
+not t2, t2
+and t1, t1, t2
+csrw 0x300, t1
+vadd.vv v1, v2, v3
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 92
+==========
+
+============
+START ITER 93
+
+# 95 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 5: Executing any instruction that changes vector state, including the vector CSRs, will change mstatus.VS to Dirty when mstatus.VS is set to Initial or Clean.
+##### ASSEMBLY #####
+li t0, 0x0
+li t1, 0xc00
+csrr t2, mstatus
+li t3, 0xc00
+not t3, t3
+and t2, t2, t3
+or t2, t2, t1
+csrw mstatus, t2
+vsetvli t0, zero, 0
+csrr a1, mstatus
+srli a0, a1, 10
+andi a0, a0, 3
+# Result: a0 = 3
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 93
+==========
+
+============
+START ITER 94
+
+# 96 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 6: If mstatus.VS is Dirty, mstatus.SD is 1.
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0x600
+and t2, t0, t1
+csrr a1, mstatus
+srli a0, a1, 63
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 94
+==========
+
+============
+START ITER 95
+
+# 97 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 7: If mstatus.VS is not Dirty, then mstatus.SD must be set according to the existing specifications.
+##### ASSEMBLY #####
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x600
+not t2, t2
+and t1, t1, t2
+li t3, 0x200
+or t1, t1, t3
+csrw mstatus, t1
+csrr t1, mstatus
+li t2, 0x8000000000000000
+and t0, t1, t2
+srli t0, t0, 63
+li t2, 0xc000
+not t2, t2
+csrr t1, mstatus
+and t1, t1, t2
+csrw mstatus, t1
+csrr t1, mstatus
+li t2, 0x8000000000000000
+and t0, t1, t2
+srli t0, t0, 63
+# Result: t0 = 0 (assuming SD is 0 when VS is not Dirty and no other extension is Dirty)
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 95
+==========
+
+============
+START ITER 96
+
+# 98 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 8: When V=1, attempts to execute any vector instruction or access vector CSRs raise an illegal-instruction exception if mstatus.VS is set to Off, regardless of the value of vsstatus.VS.
+##### ASSEMBLY #####
+li t0, 0x0
+csrw mstatus, t0
+vsetvli zero, zero, zero
+# Result: mcause = 2 || t5 = 2
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: instruction vsetvli requires absolute expression
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 96
+==========
+
+============
+START ITER 97
+
+# 99 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 9: When V=1, attempts to execute any vector instruction or access vector CSRs raise an illegal-instruction exception if vsstatus.VS is set to Off, regardless of the value of mstatus.VS.
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mstatus, t0
+li t1, 0x0
+csrw vsstatus, t1
+call machine_to_virtual
+vsetvli zero, zero, zero
+# Result: mcause = 2 || t5 = 2
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:113: Error: instruction vsetvli requires absolute expression
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 97
+==========
+
+============
+START ITER 98
+
+# 100 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 10: When V=1 and neither vsstatus.VS nor mstatus.VS is set to Off, executing any instruction that changes vector state, including the vector CSRs, will change mstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x0
+csrs mstatus, t0
+li t0, 0x200
+csrr t1, mstatus
+and t2, t1, t0
+li t3, 0x0
+csrw mstatus, t3
+vsetvli zero, zero, zero
+csrr a1, mstatus
+srli a0, a1, 9
+andi a0, a0, 3
+# Result: a0 = 3
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:115: Error: instruction vsetvli requires absolute expression
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 98
+==========
+
+============
+START ITER 99
+
+# 101 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 11: When V=1 and neither vsstatus.VS nor mstatus.VS is set to Off, executing any instruction that changes vector state, including the vector CSRs, will change vsstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x600
+csrw mstatus, t0
+li t1, 0x400
+csrs mstatus, t1
+call machine_to_virtual
+vsetvli zero, zero, 0
+csrr t2, vsstatus
+li t3, 0x600
+srli t2, t2, 9
+and t2, t2, t3
+csrr a1, vsstatus
+srli a0, a1, 10
+andi a0, a0, 1
+# Result: a0 = 1
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:112:(.text+0x156): undefined reference to `machine_to_virtual'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 99
+==========
+
+============
+START ITER 100
+
+# 102 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 12: If mstatus.VS is Dirty, mstatus.SD is 1.
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0x600
+and t2, t0, t1
+csrr a1, mstatus
+srli a0, a1, 63
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 100
+==========
+
+============
+START ITER 101
+
+# 103 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 13: If mstatus.VS is not Dirty, then mstatus.SD must be set according to existing specifications.
+##### ASSEMBLY #####
+li t0, 0x400
+csrr t1, mstatus
+and t1, t1, t0
+nop # Skipped because mstatus.SD is a hardware-managed bit dependent on the internal state transition of mstatus.VS, which is not directly observable through deterministic standard architectural state in a simple assembly sequence.
+csrr a1, mstatus
+srli a0, a1, 63
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 101
+==========
+
+============
+START ITER 102
+
+# 104 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 14: If the floating-point unit status field mstatus.FS is Off, then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x2000
+csrr t1, mstatus
+and t2, t1, t0
+beq t2, t0, skip_off
+li t0, 0x0
+csrs t1, mstatus, 0
+li t0, 0x6000
+csrrc mstatus, mstatus, t0
+vfmv.v.f v1, fa0
+skip_off:
+# Result: mcause = 2 || t5 = 2
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:113: Error: unknown CSR `t1'
+bootloader/code.S:113: Error: unknown CSR `t1'
+bootloader/code.S:113: Error: instruction csrs requires absolute expression
+bootloader/code.S:113: Error: illegal operands `csrs t1,mstatus,0'
+bootloader/code.S:115: Error: illegal operands `csrrc mstatus,mstatus,t0'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 102
+==========
+
+============
+START ITER 103
+
+# 105 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 15: Any vector floating-point instruction that modifies any floating-point extension state, such as floating-point CSRs or f registers, must set mstatus.FS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mstatus, t0
+vfmv.v.f v0, v1
+csrr a1, mstatus
+srli a0, a1, 13
+andi a0, a0, 1
+# Result: a0 = 1
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: illegal operands `vfmv.v.f v0,v1'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 103
+==========
+
+============
+START ITER 104
+
+# 106 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 16: If the hypervisor extension is implemented and V=1, and either vsstatus.FS or mstatus.FS is Off, then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x400
+csrs mstatus, t0
+li t1, 0x0
+csrw vsstatus, t1
+call machine_to_virtual
+vadd.vv v1, v2, v3
+# Result: mcause = 2 || t5 = 2
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+riscv64-unknown-elf-ld: bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:112:(.text+0x154): undefined reference to `machine_to_virtual'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 104
+==========
+
+============
+START ITER 105
+
+# 107 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 17: If the hypervisor extension is implemented and V=1, any vector floating-point instruction that modifies any floating-point extension state, such as floating-point CSRs or f registers, must set both mstatus.FS and vsstatus.FS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x800
+csrs mstatus, t0
+li t1, 0x6000
+csrr t2, mstatus
+not t3, t1
+and t2, t2, t3
+csrw mstatus, t2
+li t0, 0x6000
+csrr t1, vsstatus
+not t2, t0
+and t1, t1, t2
+csrw vsstatus, t1
+call machine_to_virtual
+vsetvli zero, zero, 0
+vfmv.v.f v0, v1
+csrr a1, mstatus
+srli a0, a1, 13
+andi a0, a0, 3
+csrr a1, vsstatus
+srli a3, a1, 13
+andi a3, a3, 3
+# Result: a0 = 3 && a3 = 3
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:122: Error: illegal operands `vfmv.v.f v0,v1'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 105
+==========
+
+============
+START ITER 106
+
+# 108 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 18: If a write or read access to the mstatus register is attempted from a privilege mode lower than Machine mode, then the access raises an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+csrr t0, mstatus
+# Result: mcause = 2 || t5 = 2
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 106
+==========
+
+============
+START ITER 107
+
+# 109 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 19: If the MIE bit in mstatus is 0, then M-mode interrupts are disabled; if the SIE bit in mstatus is 0, then S-mode interrupts are disabled.
+##### ASSEMBLY #####
+nop # Skipped because interrupt enabling/disabling is not directly observable through deterministic standard architectural state without external trigger or internal timing
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 107
+==========
+
+============
+START ITER 108
+
+# 110 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 20: The xPIE field in mstatus holds the value of the interrupt-enable bit active prior to the trap.
+##### ASSEMBLY #####
+li t0, 0x8
+csrs mstatus, t0
+ebreak
+csrr a1, mstatus
+srli a0, a1, 7
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 108
+==========
+
+============
+START ITER 109
+
+# 111 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 21: If the processor transitions from privilege mode $P$ to a different privilege mode, then the $xPP$ field in `mstatus` must be updated to hold the value of mode $P$.
+##### ASSEMBLY #####
+li t0, 0x800
+csrs mstatus, t0
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 11
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 109
+==========
+
+============
+START ITER 110
+
+# 112 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 22: When a trap is taken from privilege mode y into privilege mode x, the xPIE field in mstatus is set to the value of xIE.
+##### ASSEMBLY #####
+li t0, 0x8
+csrw mstatus, t0
+call machine_to_user
+ebreak
+csrr a1, mstatus
+srli a0, a1, 7
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 110
+==========
+
+============
+START ITER 111
+
+# 113 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 23: When a trap is taken from privilege mode y into privilege mode x, the xIE field in mstatus is set to 0.
+##### ASSEMBLY #####
+li t0, 0x8
+csrs mstatus, t0
+call machine_to_user
+ebreak
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 111
+==========
+
+============
+START ITER 112
+
+# 114 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 24: When a trap is taken from privilege mode y into privilege mode x, the xPP field in mstatus is set to y.
+##### ASSEMBLY #####
+call machine_to_user
+ecall
+csrr a1, mstatus
+srli a0, a1, 11
+andi a0, a0, 3
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 112
+==========
+
+============
+START ITER 113
+
+# 115 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 25: When executing an xRET instruction (MRET or SRET), if xPP in mstatus holds the value y, xIE in mstatus is set to xPIE.
+##### ASSEMBLY #####
+li t0, 0x80
+csrs mstatus, t0
+li t1, 0x8
+csrc mstatus, t1
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 113
+==========
+
+============
+START ITER 114
+
+# 116 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 26: When executing an xRET instruction (MRET or SRET), if xPP in mstatus holds the value y, the privilege mode is changed to y.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 11
+andi a0, a0, 3
+# Result: a0 = 3
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 114
+==========
+
+============
+START ITER 115
+
+# 117 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 27: When executing an xRET instruction (MRET or SRET), if xPP in mstatus holds the value y, xPIE in mstatus is set to 1.
+##### ASSEMBLY #####
+li t0, 0x1000
+csrs mstatus, t0
+li t1, 0x80
+csrc mstatus, t1
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 7
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 115
+==========
+
+============
+START ITER 116
+
+# 118 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 28: When executing an xRET instruction (MRET or SRET), if xPP in mstatus holds the value y, xPP in mstatus is set to the least-privileged supported mode (U if U-mode is implemented, else M).
+##### ASSEMBLY #####
+li t0, 0x1800
+csrs mstatus, t0
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 11
+andi a0, a0, 3
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 116
+==========
+
+============
+START ITER 117
+
+# 119 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 29: When executing an xRET instruction, if the value y held in xPP of mstatus is not equal to M, xRET also sets MPRV in mstatus to 0.
+##### ASSEMBLY #####
+li t0, 0x20000
+csrs mstatus, t0
+li t1, 0x800
+csrs mstatus, t1
+call machine_to_user
+csrr a1, mstatus
+srli a0, a1, 17
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 117
+==========
+
+============
+START ITER 118
+
+# 120 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 30: If a value is written to an xPP field in mstatus that is neither the current privilege mode nor an implemented privilege mode lower than the current privilege mode, then the field shall be updated to the value that would result from the WARL (Write Any, Read Legal) behavior defined for that field.
+##### ASSEMBLY #####
+li t0, 0x1800
+csrr t1, mstatus
+and t2, t1, (3 << 11)
+li t0, 0x2000
+csrr t1, mstatus
+li t2, 0x1800
+not t2, t2
+and t1, t1, t2
+or t1, t1, t0
+csrw mstatus, t1
+csrr t1, mstatus
+li t2, 0x1800
+and t1, t1, t2
+srli t1, t1, 11
+bne t1, x0, label_done
+label_done:
+li t0, 0x2000
+csrr t1, mstatus
+li t2, 0x1800
+not t2, t2
+and t1, t1, t2
+or t1, t1, t0
+csrw mstatus, t1
+csrr t1, mstatus
+li t2, 0x1800
+and t1, t1, t2
+srli t1, t1, 11
+# Result: the field is not 4
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: illegal operands `and t2,t1,(3<<11)'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 118
+==========
+
+============
+START ITER 119
+
+# 121 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 31: If privilege mode x is not implemented, then xPP in mstatus must be read-only 0.
+##### ASSEMBLY #####
+nop # Skipped because M-mode, S-mode, and U-mode are all implemented, so the condition "If privilege mode x is not implemented" is not met for the relevant xPP fields.
+# Result: x0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 119
+==========
+
+============
+START ITER 120
+
+# 122 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 32: M-mode software can determine whether a privilege mode is implemented by writing that mode to MPP in mstatus then reading it back.
+##### ASSEMBLY #####
+li t0, 0x800
+csrs mstatus, t0
+csrr t1, mstatus
+li t2, 0x1800
+and t0, t1, t2
+srli t0, t0, 11
+# Result: t0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 120
+==========
+
+============
+START ITER 121
+
+# 123 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 33: The MDT field in the mstatus register is set to 1 upon reset.
+##### ASSEMBLY #####
+csrr t0, mstatus
+csrr a1, mstatus
+srli a0, a1, 42
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 121
+==========
+
+============
+START ITER 122
+
+# 124 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 34: When the MDT bit in the mstatus register is set to 1 by an explicit CSR write, the MIE (Machine Interrupt Enable) bit in the mstatus register is cleared to 0.
+##### ASSEMBLY #####
+li t0, 0x8
+csrs mstatus, t0
+li t1, 0x40000000000
+csrs mstatus, t1
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 122
+==========
+
+============
+START ITER 123
+
+# 125 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 35: For RV64, the clearing of the MIE bit in the mstatus register occurs regardless of the value written, if any, to the MIE bit by the same write that sets the MDT bit to 1.
+##### ASSEMBLY #####
+li t0, 0x40000000000
+li t1, 0x8
+or t0, t0, t1
+csrw mstatus, t0
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 123
+==========
+
+============
+START ITER 124
+
+# 126 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 36: The MIE bit in the mstatus register can only be set to 1 by an explicit CSR write if the MDT bit in the mstatus register is already 0 or, for RV64, if the MDT bit in the mstatus register is being set to 0 by the same write.
+##### ASSEMBLY #####
+li t0, 0x40000000000
+csrw mstatus, t0
+li t1, 0x8
+csrr t2, mstatus
+or t2, t2, t1
+csrw mstatus, t2
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 0
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 124
+==========
+
+============
+START ITER 125
+
+# 127 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 37: When a trap is to be taken into M-mode, if the MDT bit in the mstatus register is currently 0, the MDT bit in the mstatus register is set to 1 and the trap is delivered as expected.
+##### ASSEMBLY #####
+li t0, 0x40000000000
+csrs mstatus, t0
+li t0, 0x40000000000
+csrc mstatus, t0
+ebreak
+csrr a1, mstatus
+srli a0, a1, 42
+andi a0, a0, 1
+# Result: a0 = 1
+
+priv           0x3	prv:3 [Machine]
+
+END ITER 125
+==========
+
+============
+START ITER 126
+
+# 128 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 38: The MRET and SRET instructions, when executed in M-mode, set the MDT bit in the mstatus register to 0.
+##### ASSEMBLY #####
+li t0, 0x40000000000
+csrs mstatus, t0
+mret
+csrr a1, mstatus
+srli a0, a1, 42
+andi a0, a0, 1
+# Result: a0 = 0

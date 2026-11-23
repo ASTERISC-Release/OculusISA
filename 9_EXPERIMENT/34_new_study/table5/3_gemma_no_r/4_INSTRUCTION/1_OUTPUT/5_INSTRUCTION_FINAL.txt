@@ -1,0 +1,37 @@
+INSTRUCTION: CSRRWI
+FORMAT: csrrwi rd, csr, zimm5
+RULE 1: If the CSRRWI instruction is executed, the destination register must contain the original value of the specified CSR, and the CSR must be updated to the immediate value specified in the instruction.
+RULE 2: The CSRRWI instruction updates the CSR using an XLEN-bit value obtained by zero-extending a 5-bit unsigned immediate (uimm[4:0]) encoded in the rs1 field.
+RULE 3: The CSRRWI instruction always writes to the CSR regardless of the rd or uimm values.
+RULE 4: If rd is not x0, the CSRRWI instruction reads the CSR, zero-extends the value to XLEN bits, and writes it to integer register rd.
+RULE 5: If rd = x0, the CSRRWI instruction shall not read the CSR and shall not cause any side effects that might occur on a CSR read.
+RULE 6: If the CSRRWI instruction is executed, then the target CSR is updated with the immediate value and the previous value of the CSR is written to the destination register.
+RULE 7: The assembler pseudoinstruction CSRWI csr, uimm is encoded as CSRRWI x0, csr, uimm.
+RULE 8: If the rd field of a CSRRWI instruction is set to a register r (where r is not x0), then the original value of the CSR shall be written to register r.
+
+INSTRUCTION: FCVT.W.D
+FORMAT: fcvt.w.d rd, fs1, rm
+RULE 1: FCVT.W.D converts a double-precision floating-point number in floating-point register rs1 to a signed 32-bit integer in integer register rd.
+RULE 2: For RV64, FCVT.W.D sign-extends the 32-bit result.
+RULE 3: FCVT.W.D rounds according to the rm field.
+RULE 4: If the input value for FCVT.W.D is outside the range of representable signed 32-bit integers, then the destination register contains the same result as FCVT.int.S with the same input value.
+RULE 5: Floating-point exception flags are raised by FCVTMOD.W.D in the same manner as they would be for FCVT.W.D with the same input operand.
+
+INSTRUCTION: SFENCE.VMA
+FORMAT: sfence.vma rs1, rs2
+RULE 1: If the TVM bit is set to 1, executing an SFENCE.VMA instruction while in S-mode will raise an illegal-instruction exception.
+RULE 2: If the TVM bit is set to 1 and the SFENCE.VMA instruction is executed in S-mode, then it raises an illegal-instruction exception.
+RULE 3: If the value in rs1 is not a valid virtual address, the SFENCE.VMA instruction has no effect and no exception is raised.
+RULE 4: SINVAL.VMA requires the same permissions and raises the same exceptions as the SFENCE.VMA instruction.
+RULE 5: When the VTVM field of the hstatus register is set to 1, any attempt to execute the SFENCE.VMA instruction in VS-mode will raise a virtual-instruction exception.
+RULE 6: In VS-mode, attempts to execute an SFENCE.VMA instruction when hstatus.VTVM=1 will raise a virtual-instruction exception.
+RULE 7: Pointer masking is not applied to the SFENCE.VMA instruction.
+RULE 8: If the rd field of an SFENCE.VMA instruction is not 00000, then it must raise an illegal-instruction exception.
+
+INSTRUCTION: VLE32FF.V
+FORMAT: vle32ff.v vd, (rs1), vm
+RULE 1: VLE32FF.V takes a trap if a synchronous exception occurs on element 0, in which case vl is not modified.
+RULE 2: If an exception occurs on an element index greater than 0 during the execution of VLE32FF.V, the trap is not taken and vl is reduced to the index of the element that would have raised the exception.
+RULE 3: If vstart = 0 and vl > 0, then executing VLE32FF.V must result in at least one element being processed, as evidenced by a change in the destination vector register or a change in the value of vl.
+RULE 4: When VLE32FF.V takes a trap due to an interrupt, implementations should set a vstart value instead of reducing vl.
+RULE 5: If VLE32FF.V triggers a debug data-watchpoint trap on any element after the first, the implementation should trigger the debug trap and not reduce vl.

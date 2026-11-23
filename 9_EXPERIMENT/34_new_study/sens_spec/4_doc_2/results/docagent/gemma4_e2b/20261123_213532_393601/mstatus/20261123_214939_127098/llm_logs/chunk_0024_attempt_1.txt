@@ -1,0 +1,13 @@
+RULE 1: When a trap is taken into M-mode, the MPV bit in mstatus is written with the value of the virtualization mode V at the time of the trap, and the MPP field is set to the nominal privilege mode at the time of the trap.
+RULE 2: When an MRET instruction is executed, the virtualization mode V is set to the MPV bit in mstatus, unless the MPP field is 3, in which case V remains 0.
+RULE 3: When a trap is taken into M-mode and a guest virtual address is written to mtval, the GVA field in mstatus is set to 1.
+RULE 4: When a trap is taken into M-mode and the guest virtual address is not written to mtval, the GVA field in mstatus is set to 0.
+RULE 5: When TVM is set to 1, HS-mode cannot access hgatp or execute HFENCE.GVMA or HINVAL.GVMA.
+RULE 6: When TVM is set to 1, VS-mode accesses to vsatp or instructions HFENCE.VVMA or HINVAL.VVMA are unaffected.
+RULE 7: The mstatus register is a superset of the HS-level sstatus register.
+RULE 8: The mstatus register is not a superset of vsstatus.
+RULE 9: When MPRV is 0, translation and protection behave as normal, and the current privilege mode applies.
+RULE 10: When MPRV is 1, and MPV is 1, MPP is 0, the access is VU-level with two-stage translation and protection, and the HS-level MXR bit makes any executable page readable.
+RULE 11: When MPRV is 1, and MPV is 1, MPP is 1, the access is VS-level with two-stage translation and protection, and the HS-level MXR bit makes any executable page readable, and vsstatus.SUM applies instead of the HS-level SUM bit.
+RULE 12: When MPRV is 1, and MPV is -1, MPP is 3, the access is M-level with no translation.
+RULE 13: Virtual-machine load/store instructions (HLV, HLVX, HSV) always act as though V=1 and the nominal privilege mode were hstatus.SPVP, overriding MPRV.

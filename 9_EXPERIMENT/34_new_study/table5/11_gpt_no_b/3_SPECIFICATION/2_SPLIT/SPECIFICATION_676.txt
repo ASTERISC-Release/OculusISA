@@ -1,0 +1,69 @@
+## 2.1. CSR Address Mapping Conventions
+
+The standard RISC-V ISA sets aside a 12-bit encoding space (csr[11:0]) for up to 4,096 CSRs. By convention, the upper 4 bits of the CSR address (csr[11:8]) are used to encode the read and write accessibility of the CSRs according to privilege level as shown in Table 3. The top two bits (csr[11:10]) indicate whether the register is read/write ( 00 , 01 , or 10 ) or read-only ( 11 ). The next two bits (csr[9:8]) encode the lowest privilege level that can access the CSR, with the pattern 10 representing hypervisor CSRs.
+
+<image>
+
+The CSR address convention uses the upper bits of the CSR address to encode default access privileges. This simplifies error checking in the hardware and provides a larger CSR space, but does constrain the mapping of CSRs into the address space.
+
+Implementations might allow a more-privileged level to trap otherwise permitted CSR accesses by  a  less-privileged  level  to  allow  these  accesses  to  be  intercepted.  This  change  should  be transparent to the less-privileged software.
+
+Instructions that access a non-existent CSR are reserved. Attempts to access a CSR without appropriate privilege  level  raise  illegal-instruction  exceptions  or,  as  described  in  Section  22.6.1,  virtual-instruction exceptions. Attempts to write a read-only register raise illegal-instruction exceptions. A read/write register might also contain some bits that are read-only, in which case writes to the read-only bits are ignored.
+
+Table 3 also indicates the convention to allocate CSR addresses between standard and custom uses. The CSR addresses designated for custom uses will not be redefined by future standard extensions.
+
+Machine-mode standard read-write CSRs 0x7A0 -0x7BF are reserved for use by the debug system. Of these CSRs, 0x7A0 -0x7AF are accessible to machine mode, whereas 0x7B0 -0x7BF are only visible to debug mode. Implementations should raise illegal-instruction exceptions on machine-mode access to the latter set of registers.
+
+<image>
+
+Effective  virtualization  requires  that  as  many  instructions  run  natively  as  possible  inside  a virtualized  environment,  while  any  privileged  accesses  trap  to  the  virtual  machine  monitor. (Goldberg,  1974)  CSRs  that  are  read-only  at  some  lower  privilege  level  are  shadowed  into separate  CSR  addresses  if  they  are  made  read-write  at  a  higher  privilege  level.  This  avoids trapping  permitted  lower-privilege  accesses  while  still  causing  traps  on  illegal  accesses. Currently, the counters are the only shadowed CSRs.
+
+Table 3. Allocation of RISC-V CSR address ranges.
+
+| CSR Address                      | CSR Address                      | CSR Address                      | Hex                              | Use and Accessibility            |
+|----------------------------------|----------------------------------|----------------------------------|----------------------------------|----------------------------------|
+| [11:10]                          | [9:8]                            | [7:4]                            | Hex                              | Use and Accessibility            |
+| Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs | Unprivileged and User-Level CSRs |
+| 00                               | 00                               | XXXX                             | 0x000-0x0FF                      | Standard read/write              |
+| 01                               | 00                               | XXXX                             | 0x400-0x4FF                      | Standard read/write              |
+| 10                               | 00                               | XXXX                             | 0x800-0x8FF                      | Custom read/write                |
+| 11                               | 00                               | 0XXX                             | 0xC00-0xC7F                      | Standard read-only               |
+| 11                               | 00                               | 10XX                             | 0xC80-0xCBF                      | Standard read-only               |
+| 11                               | 00                               | 11XX                             | 0xCC0-0xCFF                      | Custom read-only                 |
+| Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            | Supervisor-Level CSRs            |
+| 00                               | 01                               | XXXX                             | 0x100-0x1FF                      | Standard read/write              |
+| 01                               | 01                               | 0XXX                             | 0x500-0x57F                      | Standard read/write              |
+| 01                               | 01                               | 10XX                             | 0x580-0x5BF                      | Standard read/write              |
+| 01                               | 01                               | 11XX                             | 0x5C0-0x5FF                      | Custom read/write                |
+| 10                               | 01                               | 0XXX                             | 0x900-0x97F                      | Standard read/write              |
+| 10                               | 01                               | 10XX                             | 0x980-0x9BF                      | Standard read/write              |
+| 10                               | 01                               | 11XX                             | 0x9C0-0x9FF                      | Custom read/write                |
+| 11                               | 01                               | 0XXX                             | 0xD00-0xD7F                      | Standard read-only               |
+| 11                               | 01                               | 10XX                             | 0xD80-0xDBF                      | Standard read-only               |
+| 11                               | 01                               | 11XX                             | 0xDC0-0xDFF                      | Custom read-only                 |
+| Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           | Hypervisor and VS CSRs           |
+| 00                               | 10                               | XXXX                             | 0x200-0x2FF                      | Standard read/write              |
+| 01                               | 10                               | 0XXX                             | 0x600-0x67F                      | Standard read/write              |
+| 01                               | 10                               | 10XX                             | 0x680-0x6BF                      | Standard read/write              |
+| 01                               | 10                               | 11XX                             | 0x6C0-0x6FF                      | Custom read/write                |
+| 10                               | 10                               | 0XXX                             | 0xA00-0xA7F                      | Standard read/write              |
+| 10                               | 10                               | 10XX                             | 0xA80-0xABF                      | Standard read/write              |
+| 10                               | 10                               | 11XX                             | 0xAC0-0xAFF                      | Custom read/write                |
+| 11                               | 10                               | 0XXX                             | 0xE00-0xE7F                      | Standard read-only               |
+| 11                               | 10                               | 10XX                             | 0xE80-0xEBF                      | Standard read-only               |
+| 11                               | 10                               | 11XX                             | 0xEC0-0xEFF                      | Custom read-only                 |
+| Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               | Machine-Level CSRs               |
+| 00                               | 11                               | XXXX                             | 0x300-0x3FF                      | Standard read/write              |
+| 01                               | 11                               | 0XXX                             | 0x700-0x77F                      | Standard read/write              |
+| 01                               | 11                               | 100X                             | 0x780-0x79F                      | Standard read/write              |
+| 01                               | 11                               | 1010                             | 0x7A0-0x7AF                      | Standard read/write debug CSRs   |
+| 01                               | 11                               | 1011                             | 0x7B0-0x7BF                      | Debug-mode-only CSRs             |
+| 01                               | 11                               | 11XX                             | 0x7C0-0x7FF                      | Custom read/write                |
+| 10                               | 11                               | 0XXX                             | 0xB00-0xB7F                      | Standard read/write              |
+
+|   10 |   11 | 10XX   | 0xB80-0xBBF   | Standard read/write   |
+|------|------|--------|---------------|-----------------------|
+|   10 |   11 | 11XX   | 0xBC0-0xBFF   | Custom read/write     |
+|   11 |   11 | 0XXX   | 0xF00-0xF7F   | Standard read-only    |
+|   11 |   11 | 10XX   | 0xF80-0xFBF   | Standard read-only    |
+|   11 |   11 | 11XX   | 0xFC0-0xFFF   | Custom read-only      |

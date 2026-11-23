@@ -1,0 +1,28 @@
+## 4.1. Debug Mode
+
+Debug  Mode  is  a  special  processor  mode  used  only  when  a  hart  is  halted  for  external  debugging. Because the hart is halted, there is no forward progress in the normal instruction stream. How Debug Mode is implemented is not specified here.
+
+When executing code due to an abstract command, the hart stays in Debug Mode and the following apply:
+
+1. All implemented instructions operate just as they do in M-mode, unless an exception is mentioned in this list.
+2. All operations are executed with machine mode privilege, except that additional Debug Mode CSRs are accessible and mprv in mstatus may be ignored according to mprven. Full permission checks, or a relaxed set of permission checks, will apply according to relaxedpriv.
+3. All interrupts (including NMI) are masked.
+4. Traps don't take place. Instead, they end execution of the program buffer and the hart remains in Debug Mode. Because they do not trap to M-mode, they do not update registers such as , mepc , mcause , mtval , mtval2 , and mtinst . The same is true for the equivalent privileged registers that are updated when trapping to other modes. Registers that may be updated as part of execution before the exception are allowed to be updated. For example, vector load/store instructions which raise exceptions may partially update the destination register and set vstart appropriately.
+5. Triggers don't match or fire.
+6. If stopcount is 0 then counters continue. If it is 1 then counters are stopped.
+7. If  stoptime  is  0  then time continues  to  update.  If  it  is  1  then time will  not  update.  It  will resynchronize with time after leaving Debug Mode.
+8. Instructions that place the hart into a stalled state act as a nop .  This  includes wfi , wrs.sto ,  and wrs.nto .
+9. Almost  all  instructions  that  change  the  privilege  mode  have  UNSPECIFIED  behavior.  This includes ecall , mret , sret ,  and uret .  (To change the privilege mode, the debugger can write prv and v in dcsr). The only exception is ebreak ,  which ends execution of the Program Buffer when executed.
+10. All  control  transfer  instructions  may  act  as  illegal  instructions  if  their  destination  is  in  the Program Buffer. If one such instruction acts as an illegal instruction, all such instructions must act
+
+as illegal instructions.
+
+11. All control transfer instructions may act as illegal instructions if their destination is outside the Program Buffer. If one such instruction acts as an illegal instruction, all such instructions must act as illegal instructions.
+12. Instructions that depend on the value of the PC (e.g. auipc ) may act as illegal instructions.
+13. When the Zicfilp extension is implemented, the ELP state is NO\_LP\_EXPECTED and is not updated by any instructions. LPAD instruction executes as a no-op.
+14. Effective XLEN is DXLEN.
+15. Forward progress is guaranteed.
+
+<image>
+
+When  mprven,  the  external  debugger  can  set  MPRV  and  MPP  appropriately  to  have hardware perform memory accesses with the appropriate endianness, address translation, permission  checks,  and  PMP/PMA checks (subject  to  relaxedpriv).  This  is  also  the  only way to access all of physical memory when 34-bit physical addresses are supported on a Sv32 hart. If hardware ties mprven to 0 then the external debugger is expected to simulate all the effects of MPRV, including any extensions that affect memory accesses. For these reasons it is recommended to tie mprven to 1.

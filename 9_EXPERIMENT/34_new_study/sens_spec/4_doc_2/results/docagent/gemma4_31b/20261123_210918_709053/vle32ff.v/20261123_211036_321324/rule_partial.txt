@@ -1,0 +1,14 @@
+RULE 1: For the `vle32ff.v` instruction, the operation executes as a regular unit-stride load except that it only takes a trap caused by a synchronous exception on element 0.
+RULE 2: If element 0 of a `vle32ff.v` instruction raises a synchronous exception, the `vl` register is not modified and a trap is taken.
+RULE 3: If an element with index greater than 0 of a `vle32ff.v` instruction raises a synchronous exception, no trap is taken and the vector length `vl` is reduced to the index of the element that would have raised the exception.
+RULE 4: A `vle32ff.v` instruction may update active destination elements past the element that causes trimming of the vector length, but not past the original vector length.
+RULE 5: If `vstart` equals 0 and `vl` is greater than 0, a `vle32ff.v` instruction must process at least one element.
+RULE 6: If a `vle32ff.v` instruction takes a trap due to an interrupt, the implementation shall not reduce `vl` and shall instead set a `vstart` value.
+RULE 7: If a `vle32ff.v` instruction would trigger a debug data-watchpoint trap on an element after the first, the implementation shall not reduce `vl` and shall trigger the debug trap.
+RULE 8: A `vle32ff.v` instruction is a masked vector load and shall only access memory or raise exceptions for active elements.
+RULE 9: A `vle32ff.v` instruction shall not update inactive elements in the destination vector register group unless `vtype.vma` is set to 1.
+RULE 10: For `vle32ff.v`, prestart elements (index less than initial `vstart`) shall not raise exceptions and shall not update the destination vector register.
+RULE 11: For `vle32ff.v`, tail elements (index greater than or equal to `vl`) shall not raise exceptions and shall not update the destination vector register group unless `vtype.vta` is set to 1.
+RULE 12: If `vstart` is greater than or equal to `vl` during a `vle32ff.v` instruction, no elements are updated in the destination vector register group and no tail elements are updated with agnostic values.
+RULE 13: If `vl` equals 0 during a `vle32ff.v` instruction, no elements, including agnostic elements, are updated in the destination vector register group regardless of `vstart`.
+RULE 14: If an element accessed by `vle32ff.v` is not naturally aligned to the size of the element (32 bits), the implementation shall either transfer the element successfully or raise an address-misaligned exception.

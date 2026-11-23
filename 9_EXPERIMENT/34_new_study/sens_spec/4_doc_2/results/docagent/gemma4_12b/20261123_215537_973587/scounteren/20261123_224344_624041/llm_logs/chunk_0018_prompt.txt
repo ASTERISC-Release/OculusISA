@@ -1,0 +1,853 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `scounteren`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+        | …           | …        | …        | …        | …        | …        |
+| 0xFF       | eie63       | none     | none     | none     | none     | none     |
+
+Table 9. Currently allocated RISC-V indirect CSR (Smcsrind/Sscsrind) mappings - S-mode
+
+| siselect   | sireg        | sireg2     | sireg3   | sireg4         | sireg5      | sireg6   |
+|------------|--------------|------------|----------|----------------|-------------|----------|
+| 0x30       | iprio0       | none       | none     | none           | none        | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0x3F       | iprio15      | none       | none     | none           | none        | none     |
+| 0x40       | cycle        | cyclecfg   | none     | cycleh         | cyclecfgh   | none     |
+| 0x41       | none         | none       | none     | none           | none        | none     |
+| 0x42       | instret      | instretcfg | none     | instreth       | instretcfgh | none     |
+| 0x43       | hpmcounter3  | hpmevent3  | none     | hpmcounter3h   | hpmevent3h  | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0x5F       | hpmcounter31 | hpmevent31 | none     | hpmcounter31 h | hpmevent31h | none     |
+| 0x70       | eidelivery   | none       | none     | none           | none        | none     |
+| 0x71       | 0            | none       | none     | none           | none        | none     |
+| 0x72       | eithreshold  | none       | none     | none           | none        | none     |
+| 0x73       | 0            | none       | none     | none           | none        | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0x7F       | 0            | none       | none     | none           | none        | none     |
+| 0x80       | eip0         | none       | none     | none           | none        | none     |
+| …          | …            | …          | …        | …              | …           | …        |
+| 0xBF       | eip63        | none       | none     | none           | none        | none     |
+
+| siselect   | sireg        | sireg2       | sireg3     | sireg4   | sireg5   | sireg6   |
+|------------|--------------|--------------|------------|----------|----------|----------|
+| 0xC0       | eie0         | none         | none       | none     | none     | none     |
+| …          | …            | …            | …          | …        | …        | …        |
+| 0xFF       | eie63        | none         | none       | none     | none     | none     |
+| 0x200      | ctrsource0   | ctrtarget0   | ctrdata0   | 0        | 0        | 0        |
+| …          | …            | …            | …          | …        | …        | …        |
+| 0x2FF      | ctrsource255 | ctrtarget255 | ctrdata255 | 0        | 0        | 0        |
+
+Table 10. Currently allocated RISC-V indirect CSR (Smcsrind/Sscsrind) mappings - VS-mode
+
+| vsiselect   | vsireg       | vsireg2      | vsireg3    | vsireg4   | vsireg5   | vsireg6   |
+|-------------|--------------|--------------|------------|-----------|-----------|-----------|
+| 0x30        | iprio0       | none         | none       | none      | none      | none      |
+| …           | …            | …            | …          | …         | …         | …         |
+| 0x3F        | iprio15      | none         | none       | none      | none      | none      |
+| 0x70        | eidelivery   | none         | none       | none      | none      | none      |
+| 0x71        | 0            | none         | none       | none      | none      | none      |
+| 0x72        | eithreshold  | none         | none       | none      | none      | none      |
+| 0x73        | 0            | none         | none       | none      | none      | none      |
+| …           | …            | …            | …          | …         | …         | …         |
+| 0x7F        | 0            | none         | none       | none      | none      | none      |
+| 0x80        | eip0         | none         | none       | none      | none      | none      |
+| …           | …            | …            | …          | …         | …         | …         |
+| 0xBF        | eip63        | none         | none       | none      | none      | none      |
+| 0xC0        | eie0         | none         | none       | none      | none      | none      |
+| …           | …            | …            | …          | …         | …         | …         |
+| 0xFF        | eie63        | none         | none       | none      | none      | none      |
+| 0x200       | ctrsource0   | ctrtarget0   | ctrdata0   | 0         | 0         | 0         |
+| …           | …            | …            | …          | …         | …         | …         |
+| 0x2FF       | ctrsource255 | ctrtarget255 | ctrdata255 | 0         | 0         | 0         |
+
+## 2.3. CSR Field Specifications
+
+The following definitions and abbreviations are used in specifying the behavior of fields within the CSRs.
+
+## 2.3.1. Reserved Writes Preserve Values, Reads Ignore Values (WPRI)
+
+Some whole read/write fields are reserved for future use. Software should ignore the values read from these fields, and should preserve the values held in these fields when writing values to other fields of the same register.  For  forward  compatibility,  implementations  that  do  not  furnish  these  fields  must  make  them read-only zero. These fields are labeled WPRI in the register descriptions.
+
+<image>
+
+To  simplify  the  software  model,  any  backward-compatible  future  definition  of  previously reserved fields within a CSR must cope with the possibility that a non-atomic read/modify/write  sequence  is  used  to  update  other  fields  in  the  CSR.  Alternatively,  the
+
+original CSR definition must specify that subfields can only be updated atomically, which may require  a  two-instruction  clear  bit/set  bit  sequence  in  general  that  can  be  problematic  if intermediate values are not legal.
+
+## 2.3.2. Write/Read Only Legal Values (WLRL)
+
+Some read/write  CSR  fields  specify  behavior  for  only  a  subset  of  possible  bit  encodings,  with  other  bit encodings reserved. Software should not write anything other than legal values to such a field, and should not assume a read will return a legal value unless the last write was of a legal value, or the register has not been written since another operation (e.g., reset) set the register to a legal value. These fields are labeled WLRL in the register descriptions.
+
+<image>
+
+Hardware implementations need only implement enough state bits to differentiate between the supported values, but must always return the complete specified bit-encoding of any supported value when read.
+
+Implementations are permitted but not required to raise an illegal-instruction exception if an instruction attempts  to  write  a  non-supported  value  to  a WLRL field.  Implementations  can  return  arbitrary  bit patterns on the read of a WLRL field  when the last write was of an illegal value, but the value returned should deterministically depend on the illegal written value and the value of the field prior to the write.
+
+## 2.3.3. Write Any Values, Reads Legal Values (WARL)
+
+Some read/write CSR fields are only defined for a subset of bit encodings, but allow any value to be written while guaranteeing to return a legal value whenever read. Assuming that writing the CSR has no other side effects,  the  range  of  supported  values  can  be  determined  by  attempting  to  write  a  desired  setting  then reading to see if the value was retained. These fields are labeled WARL in the register descriptions.
+
+Implementations  will  not  raise  an  exception  on  writes  of  unsupported  values  to  a WARL field. Implementations can return any legal value on the read of a WARL field  when  the  last  write  was  of  an illegal value, but the legal value returned should deterministically depend on the illegal written value and the architectural state of the hart.
+
+## 2.4. CSR Field Modulation
+
+If  a  write  to  one  CSR  changes  the  set  of  legal  values  allowed  for  a  field  of  a  second  CSR,  then  unless specified otherwise, the second CSR's field immediately gets an UNSPECIFIED value  from  among its new legal values. This is true even if the field's value before the write remains legal after the write; the value of the field may be changed in consequence of the write to the controlling CSR.
+
+<image>
+
+As a special case of this rule, the value written to one CSR may control whether a field of a second  CSR  is  writable  (with  multiple  legal  values)  or  is  read-only.  When  a  write  to  the controlling  CSR  causes  the  second  CSR's  field  to  change  from  previously  read-only  to  now writable,  that  field  immediately  gets  an UNSPECIFIED but  legal  value,  unless  specified otherwise.
+
+Some CSR fields are, when writable, defined as aliases of other CSR fields. Let x be such a CSR field, and let y be the CSR field it aliases when writable. If a write to a controlling CSR causes field  x  to  change  from  previously  read-only  to  now  writable,  the  new  value  of  x  is  not UNSPECIFIED but instead immediately reflects the existing value of its alias y, as required.
+
+A change to the value of a CSR for this reason is not a write to the affected CSR and thus does not trigger any side effects specified for that CSR.
+
+## 2.5. Implicit Reads of CSRs
+
+Implementations sometimes perform implicit reads of CSRs. (For example, all S-mode instruction fetches implicitly read the satp CSR.) Unless otherwise specified, the value returned by an implicit read of a CSR is the  same  value  that  would  have  been  returned  by  an  explicit  read  of  the  CSR,  using  a  CSR-access instruction in a sufficient privilege mode.
+
+## 2.6. CSR Width Modulation
+
+If  the  width  of  a  CSR  is  changed  (for  example,  by  changing  SXLEN  or  UXLEN,  as  described  in  Section 3.1.6.3),  the  values  of  the writable fields  and  bits  of  the  new-width  CSR  are,  unless  specified  otherwise, determined from the previous-width CSR as though by this algorithm:
+
+1. The value of the previous-width CSR is copied to a temporary register of the same width.
+2. For  the  read-only  bits  of  the  previous-width  CSR,  the  bits  at  the  same  positions  in  the  temporary register are set to zeros.
+3. The width of the temporary register is changed to the new width. If the new width W is narrower than the previous width, the least-significant W bits  of  the  temporary register are retained and the moresignificant bits are discarded. If the new width is wider than the previous width, the temporary register is zero-extended to the wider width.
+4. Each  writable  field  of  the  new-width  CSR  takes  the  value  of  the  bits  at  the  same  positions  in  the temporary register.
+
+Changing the width of a CSR is not a read or write of the CSR and thus does not trigger any side effects.
+
+## 2.7. Explicit Accesses to CSRs Wider than XLEN
+
+If  a  standard  CSR is wider than XLEN bits, then an explicit read of the CSR returns the register's leastsignificant XLEN bits, and an explicit write to the CSR modifies only the register's least-significant XLEN bits, leaving the upper bits unchanged.
+
+Some  standard  CSRs,  such  as  the  counter  CSRs  of  extension  Zicntr,  are  always  64  bits,  even  when XLEN=32 (RV32). For each such 64-bit CSR (for example, counter time ), a corresponding 32-bit high-half CSR is usually defined with the same name but with the letter 'h' appended at the end ( timeh ). The highhalf CSR aliases bits 63:32 of its namesake 64-bit CSR, thus providing a way for RV32 software to read and modify the otherwise-unreachable 32 bits.
+
+Standard high-half CSRs are accessible only when the base RISC-V instruction set is RV32 (XLEN=32). For RV64 (when XLEN=64), the addresses of all standard high-half CSRs are reserved, so an attempt to access a high-half CSR typically raises an illegal-instruction exception.
+
+## Chapter 3. Machine-Level ISA, Version 1.13
+
+This chapter describes the machine-level operations available in machine-mode (M-mode), which is the highest privilege mode in a RISC-V hart. M-mode is used for low-level access to a hardware platform and is the first mode entered at reset. M-mode can also be used to implement features that are too difficult or expensive to implement in hardware directly. The RISC-V machine-level ISA contains a common core that is  extended  depending  on  which  other  privilege  levels  are  supported  and  other  details  of  the  hardware implementation.
+
+## 3.1. Machine-Level CSRs
+
+In addition to the machine-level CSRs described in this section, M-mode code can access all CSRs at lower privilege levels.
+
+## 3.1.1. Machine ISA ( misa ) Register
+
+The misa CSR is a WARL read-write register reporting the ISA supported by the hart. This register must be readable in any implementation, but a value of zero can be returned to indicate the misa register has not been  implemented,  requiring  that  CPU  capabilities  be  determined  through  a  separate  non-standard mechanism.
+
+Figure 2. Machine ISA register (misa)
+
+<image>
+
+| MXLEN-1         | MXLEN-2   | MXLEN-3   | 26 25                   |
+|-----------------|-----------|-----------|-------------------------|
+| MXL[1:0] (WARL) |           | 0 (WARL)  | Extensions[25:0] (WARL) |
+
+The MXL (Machine XLEN) field encodes the native base integer ISA width as shown in Table 11. The MXL field is read-only. If misa is  nonzero, the MXL field indicates the effective XLEN in M-mode, a constant termed MXLEN .  XLEN is  never  greater  than  MXLEN, but XLEN might be smaller than MXLEN in lessprivileged modes.
+
+Table 11. Encoding of MXL field in misa
+
+|   MXL | XLEN     |
+|-------|----------|
+|     1 | 32       |
+|     2 | 64       |
+|     3 | Reserved |
+
+The misa CSR is MXLEN bits wide.
+
+<image>
+
+The base width can be quickly ascertained using branches on the sign of the returned misa value, and possibly a shift left by one and a second branch on the sign. These checks can be written in assembly code without knowing the register width (MXLEN) of the hart. The base width is given by MXLEN=2 MXL+4 .
+
+The base width can also be found if misa is zero, by placing the immediate 2 in a register, then shifting the register left by 31 bits. If zero, the hart is RV32, else it is RV64.
+
+The Extensions field encodes the presence of the standard extensions, with a single bit per letter of the alphabet (bit 0 encodes presence of extension "A" , bit 1 encodes presence of extension "B", through to bit 25 which encodes "Z"). The "I" bit will be set for the RV32I and RV64I base ISAs, and the "E" bit will be set for RV32E  and  RV64E.  The  Extensions  field  is  a WARL field  that  can  contain  writable  bits  where  the implementation allows the supported ISA to be modified. At reset, the Extensions field shall contain the maximal set of supported extensions, and "I" shall be selected over "E" if both are available.
+
+When a standard extension is disabled by clearing its bit in misa ,  the  instructions  and  CSRs  defined  or modified  by  the  extension  revert  to  their  defined  or  reserved  behaviors  as  if  the  extension  is  not implemented.
+
+For a given RISC-V execution environment, an instruction, extension, or other feature of the RISC-V ISA is ordinarily judged to be implemented or not by the observable execution behavior in that environment. For example, the F extension is said to be implemented for an execution environment  if  and  only  if  the  instructions  that  the  RISC-V  Unprivileged  ISA  defines  for  F execute as specified.
+
+<image>
+
+With this definition of implemented, disabling an extension by clearing its bit in misa results in the extension being considered not implemented in M-mode. For example, setting misa .F=0 results  in  the  F  extension  being  not  implemented  for  M-mode,  because  the  F  extension's instructions  will  not  act  as  the  Unprivileged  ISA  requires  but  may  instead  raise  an  illegalinstruction exception.
+
+Defining the term implemented based strictly on the observable behavior might conflict with other common understandings of the same word. In particular, although common usage may allow  for  the  combination  "implemented  but  disabled,"  in  this  document  it  is  considered  a contradiction of terms, because disabled implies execution will not behave as required for the feature  to  be  considered  implemented.  In  the  same  vein,  "implemented  and  enabled"  is redundant here; "implemented" suffices.
+
+All bits that are reserved for future use must return zero when read.
+
+Table 12. Encoding of Extensions field in misa .
+
+|   Bit | Character   | Description                                              |
+|-------|-------------|----------------------------------------------------------|
+|     0 | A           | Atomic extension                                         |
+|     1 | B           | B extension                                              |
+|     2 | C           | Compressed extension                                     |
+|     3 | D           | Double-precision floating-point extension                |
+|     4 | E           | RV32E/64E base ISA                                       |
+|     5 | F           | Single-precision floating-point extension                |
+|     6 | G           | Reserved                                                 |
+|     7 | H           | Hypervisor extension                                     |
+|     8 | I           | RV32I/64I base ISA                                       |
+|     9 | J           | Reserved                                                 |
+|    10 | K           | Reserved                                                 |
+|    11 | L           | Reserved                                                 |
+|    12 | M           | Integer Multiply/Divide extension                        |
+|    13 | N           | Tentatively reserved for User-Level Interrupts extension |
+|    14 | O           | Reserved                                                 |
+|    15 | P           | Tentatively reserved for Packed-SIMD extension           |
+|    16 | Q           | Quad-precision floating-point extension                  |
+|    17 | R           | Reserved                                                 |
+|    18 | S           | Supervisor mode implemented                              |
+|    19 | T           | Reserved                                                 |
+|    20 | U           | User mode implemented                                    |
+|    21 | V           | Vector extension                                         |
+|    22 | W           | Reserved                                                 |
+|    23 | X           | Non-standard extensions present                          |
+|    24 | Y           | Reserved                                                 |
+|    25 | Z           | Reserved                                                 |
+
+The "X" bit will be set if there are any non-standard extensions.
+
+When the "B"  bit  is  1,  the  implementation  supports  the  instructions  provided  by  the  Zba,  Zbb,  and  Zbs extensions. When the "B" bit is 0, it indicates that the implementation might not support one or more of the Zba, Zbb, or Zbs extensions.
+
+When the "M" bit is 1, the implementation supports all multiply and division instructions defined by the M extension. When the "M" bit is 0, it indicates that the implementation might not support those instructions. However if  the  Zmmul  extension  is  supported  then  the  multiply  instructions  it  specifies  are  supported irrespective of the value of the "M" bit.
+
+When  the  "S"  bit  is  1,  the  implementation  supports  supervisor  mode.  When  the  "S"  bit  is  0,  the implementation might not support supervisor mode.
+
+When the "U" bit is 1, the implementation supports user mode. When the "U" bit is 0, the implementation might not support user mode.
+
+<image>
+
+The misa CSR exposes a rudimentary catalog of CPU features to machine-mode code. More extensive information can be obtained in machine mode by probing other machine registers, and examining other ROM storage in the system as part of the boot process.
+
+We  require  that  lower  privilege  levels  execute  environment  calls  instead  of  reading  CPU registers  to  determine  features  available  at  each  privilege  level.  This  enables  virtualization layers to alter the ISA observed at any level, and supports a much richer command interface
+
+without burdening hardware designs.
+
+The "E" bit is read-only. Unless misa is all read-only zero, the "E" bit always reads as the complement of the "I" bit. If an execution environment supports both RV32E and RV32I, software can select RV32E by clearing the "I" bit.
+
+If an ISA feature x depends on an ISA feature y ,  then attempting to enable feature x but disable feature y results in both features being disabled. For example, setting "F"=0 and "D"=1 results in both "F" and "D" being cleared. Similarly, setting "U"=0 and "S"=1" results in both "U" and "S" being cleared.
+
+An implementation may impose additional constraints on the collective setting of two or more misa fields, in  which  case  they  function  collectively  as  a  single WARL field.  An  attempt  to  write  an  unsupported combination causes those bits to be set to some supported combination.
+
+Writing misa may increase IALIGN, e.g., by disabling the "C" extension. If an instruction that would write misa increases  IALIGN, and the subsequent instruction's address is not IALIGN-bit aligned, the write to misa is suppressed, leaving misa unchanged.
+
+When software enables an extension that was previously disabled, then all state uniquely associated with that extension is UNSPECIFIED, unless otherwise specified by that extension.
+
+<image>
+
+Although one of the bits 25-0 in misa being set to 1 implies that the corresponding feature is implemented,  the  inverse  is  not  necessarily  true:  one  of  these  bits  being  clear  does  not necessarily imply that the corresponding feature is not implemented. This follows from the fact that,  when  a  feature  is  not  implemented,  the  corresponding  opcodes  and  CSRs  become reserved, not necessarily illegal.
+
+## 3.1.2. Machine Vendor ID ( mvendorid ) Register
+
+The mvendorid CSR is a 32-bit read-only register providing the JEDEC manufacturer ID of the provider of the core. This register must be readable in any implementation, but a value of 0 can be returned to indicate the field is not implemented or that this is a non-commercial implementation.
+
+<image>
+
+JEDEC  manufacturer  IDs  are  ordinarily  encoded  as  a  sequence  of  one-byte  continuation  codes 0x7f , terminated by a one-byte ID not equal to 0x7f ,  with an odd parity bit in the most-significant bit of each byte. mvendorid encodes the number of one-byte continuation codes in the Bank field, and encodes the final byte in the Offset field, discarding the parity bit. For example, the JEDEC manufacturer ID 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x7f 0x8a (twelve  continuation  codes  followed  by 0x8a ) would be encoded in the mvendorid CSR as 0x60a .
+
+In JEDEC's parlance, the bank number is one greater than the number of continuation codes; hence,  the mvendorid Bank  field  encodes  a  value  that  is  one  less  than  the  JEDEC  bank number.
+
+<image>
+
+Previously  the  vendor  ID  was  to  be  a  number  allocated  by  RISC-V  International,  but  this duplicates the work of JEDEC in maintaining a manufacturer ID standard. At time of writing, registering a manufacturer ID with JEDEC has a one-time cost of $500.
+
+## 3.1.3. Machine Architecture ID ( marchid ) Register
+
+The marchid CSR is an MXLEN-bit read-only register encoding the base microarchitecture of the hart. This register must be readable in any implementation, but a value of 0 can be returned to indicate the field is not implemented. The combination of mvendorid and marchid should uniquely identify the type of hart microarchitecture that is implemented.
+
+<image>
+
+MXLEN
+
+Figure 4. Machine Architecture ID ( marchid ) register
+
+Open-source project architecture IDs are allocated globally by RISC-V International, and have non-zero architecture IDs with a zero most-significant-bit (MSB). Commercial architecture IDs are allocated by each commercial vendor independently, but must have the MSB set and cannot contain zero in the remaining MXLEN-1 bits.
+
+<image>
+
+The  intent  is  for  the  architecture  ID  to  represent  the  microarchitecture  associated  with  the project around which development occurs rather than a particular organization. Commercial fabrications of open-source designs should (and might be required by the license to) retain the original architecture ID. This will aid in reducing fragmentation and tool support costs, as well as provide attribution. Open-source architecture IDs are administered by RISC-V International  and  should  only  be  allocated  to  released,  functioning  open-source  projects. Commercial architecture IDs can be managed independently by any registered vendor but are required  to  have  IDs  disjoint  from  the  open-source  architecture  IDs  (MSB  set)  to  prevent collisions if a vendor wishes to use both closed-source and open-source microarchitectures.
+
+The convention adopted within the following Implementation field can be used to segregate branches of the same architecture design, including by organization. The misa register  also helps distinguish different variants of a design.
+
+## 3.1.4. Machine Implementation ID ( mimpid ) Register
+
+The mimpid CSR provides a unique encoding of the version of the processor implementation. This register must be readable in any implementation, but a value of 0 can be returned to indicate that the field is not implemented. The Implementation value should reflect the design of the RISC-V processor itself and not any surrounding system.
+
+<image>
+
+MXLEN
+
+Figure 5. Machine Implementation ID ( mimpid ) register
+
+The format of this field is left to the provider of the architecture source code, but will often be printed by standard tools as a hexadecimal string without any leading or trailing zeros, so the Implementation  value  can  be  left-justified  (i.e.,  filled  in  from  most-significant  nibble  down) with subfields aligned on nibble boundaries to ease human readability.
+
+<image>
+
+## 3.1.5. Hart ID ( mhartid ) Register
+
+The mhartid CSR  is  an  MXLEN-bit read-only register containing the integer ID of the hardware thread running the code. This register must be readable in any implementation. Hart IDs might not necessarily be numbered contiguously in a multiprocessor system, but one hart must have a hart ID of zero. Hart IDs must be unique within the execution environment.
+
+<image>
+
+Hart ID
+
+MXLEN
+
+Figure 6. Hart ID ( mhartid ) register
+
+In certain cases, we must ensure exactly one hart runs some code (e.g., at reset), and so require one hart to have a known hart ID of zero.
+
+For efficiency, system implementers should aim to reduce the magnitude of the largest hart ID used in a system.
+
+## 3.1.6. Machine Status ( mstatus and mstatush ) Registers
+
+The mstatus register  is  an  MXLEN-bit read/write register formatted as shown in Figure 7 for RV32 and Figure 8 for RV64. The mstatus register keeps track of and controls the hart's current operating state. A restricted view of mstatus appears as the sstatus register in the S-level ISA.
+
+Figure 7. Machine-mode status ( mstatus ) register for RV32
+
+<image>
+
+| 31      | 30      |          |      | 25      | 24   | 23    | 22   | 21   | 20   | 19   | 18   | 17   | 16      |
+|---------|---------|----------|------|---------|------|-------|------|------|------|------|------|------|---------|
+| SD      | WPRI    | WPRI     | WPRI | WPRI    | SDT  | SPELP | TSR  | TW   | TVM  | MXR  | SUM  | MPRV | XS[1:0] |
+| 15      | 13 14   | 12       | 11   | 9 10    | 8    | 7     | 6    | 5    | 4    | 3    | 2    | 1    | 0       |
+| XS[1:0] | FS[1:0] | MPP[1:0] |      | VS[1:0] | SPP  | MPIE  | UBE  | SPIE | WPRI | MIE  | WPRI | SIE  | WPRI    |
+
+Figure 8. Machine-mode status ( mstatus ) register for RV64
+
+<image>
+
+| 63      | 62      |         |          |          |         |         |      |       |      |      |      |          |          |          | 48       |
+|---------|---------|---------|----------|----------|---------|---------|------|-------|------|------|------|----------|----------|----------|----------|
+| SD      | WPRI    | WPRI    | WPRI     | WPRI     | WPRI    | WPRI    | WPRI | WPRI  | WPRI | WPRI | WPRI | WPRI     | WPRI     | WPRI     | WPRI     |
+| 47      |         |         |          | 43       | 42      | 41      | 40   | 39    | 38   | 37   | 36   | 35       | 34       | 33       | 32       |
+|         | WPRI    | WPRI    | WPRI     |          | MDT     | MPELP   | WPRI | MPV   | GVA  | MBE  | SBE  | SXL[1:0] | SXL[1:0] | UXL[1:0] | UXL[1:0] |
+| 31      |         |         |          |          |         | 25      | 24   | 23    | 22   | 21   | 20   | 19       | 18       | 17       | 16       |
+|         | WPRI    | WPRI    | WPRI     |          |         |         | SDT  | SPELP | TSR  | TW   | TVM  | MXR      | SUM      | MPRV     | XS[1:0]  |
+| 15      | 14      | 13      | 12       | 11       | 10      | 9       | 8    | 7     | 6    | 5    | 4    | 3        | 2        | 1        | 0        |
+| XS[1:0] | FS[1:0] | FS[1:0] | MPP[1:0] | MPP[1:0] | VS[1:0] | VS[1:0] | SPP  | MPIE  | UBE  | SPIE | WPRI | MIE      | WPRI     | SIE      | WPRI     |
+
+For  RV32  only, mstatush is  a  32-bit  read/write  register  formatted  as  shown  in  Figure  9.  Bits  30:4  of mstatush generally contain the same fields found in bits 62:36 of mstatus for RV64. Fields SD, SXL, and UXL do not exist in mstatush .
+
+Figure 9. Additional machine-mode status ( mstatush ) register  for RV32.
+
+<image>
+
+| 31   |      |      |      |       |      |      |      |      |      |      | 16   |      |
+|------|------|------|------|-------|------|------|------|------|------|------|------|------|
+| WPRI | WPRI | WPRI | WPRI | WPRI  | WPRI | WPRI | WPRI | WPRI | WPRI | WPRI | WPRI | WPRI |
+| 15   |      | 11   | 10   | 9     | 8    | 7    | 6    | 5    | 4    | 3    | 0    |      |
+|      | WPRI |      | MDT  | MPELP | WPRI | MPV  | GVA  | MBE  | SBE  | WPRI |      |      |
+
+## 3.1.6.1. Privilege and Global Interrupt-Enable Stack in mstatus register
+
+Global interrupt-enable bits, MIE and SIE, are provided for M-mode and S-mode respectively. These bits are primarily used to guarantee atomicity with respect to interrupt handlers in the current privilege mode.
+
+<image>
+
+The global xIE bits are located in the low-order bits of mstatus , allowing them to be atomically set or cleared with a single CSR instruction.
+
+When a hart  is  executing  in  privilege  mode x ,  interrupts  are  globally  enabled  when x IE=1  and  globally disabled when x IE=0. Interrupts for lower-privilege modes, w < x , are always globally disabled regardless of the setting of any global w IE bit for the lower-privilege mode. Interrupts for higher-privilege modes, y > x ,
+
+0
+
+are  always  globally  enabled  regardless  of  the  setting  of  the  global y IE  bit  for  the  higher-privilege  mode. Higher-privilege-level code can use separate per-interrupt enable bits to disable selected higher-privilegemode interrupts before ceding control to a lower-privilege mode. If supervisor mode is not implemented, then SIE and SPIE are read-only 0.
+
+<image>
+
+A higher-privilege mode y could disable all of its interrupts before ceding control to a lowerprivilege  mode  but  this  would  be  unusual  as  it  would  leave  only  a  synchronous  trap,  nonmaskable interrupt, or reset as means to regain control of the hart.
+
+To  support  nested  traps,  each  privilege  mode x that  can  respond  to  interrupts  has  a  two-level  stack  of interrupt-enable bits and privilege modes. x PIE holds the value of the interrupt-enable bit active prior to the trap, and x PP holds the previous privilege mode. The x PP fields can only hold privilege modes up to x , so MPP is two bits wide and SPP is one bit wide. When a trap is taken from privilege mode y into privilege mode x , x PIE is set to the value of x IE; x IE is set to 0; and x PP is set to y .
+
+<image>
+
+For lower privilege modes, any trap (synchronous or asynchronous) is usually taken at a higher privilege mode with interrupts disabled upon entry. The higher-level trap handler will either service the trap and return using the stacked information, or, if not returning immediately to the interrupted context, will save the privilege stack before re-enabling interrupts, so only one entry per stack is required.
+
+An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When executing an x RET instruction, supposing x PP holds the value y , x IE is set to x PIE; the privilege mode is changed  to y ; x PIE  is  set  to  1;  and x PP  is  set  to  the  least-privileged  supported  mode  (U  if  U-mode  is implemented, else M). If y ≠M, x RET also sets MPRV=0.
+
+<image>
+
+Setting xPP to the least-privileged supported mode on an xRET helps identify software bugs in the management of the two-level privilege-mode stack.
+
+<image>
+
+Trap handlers must be designed to neither enable interrupts nor cause exceptions during the phase of handling where the trap handler preserves the critical state information required to handle  and  resume  from  the  trap.  An  exception  or  interrupt  in  this  critical  phase  of  trap handling may lead to a trap that can overwrite such critical state. This could result in the loss of data needed to recover from the initial trap. Further, if an exception occurs in the code path needed to handle traps, then such a situation may lead to an infinite loop of traps. To prevent this,  trap  handlers  must  be  meticulously  designed  to  identify  and  safely  manage  exceptions within their operational flow.
+
+x PP fields are WARL fields that can hold only privilege mode x and any implemented privilege mode lower than x . If privilege mode x is not implemented, then x PP must be read-only 0.
+
+<image>
+
+M-mode  software  can  determine  whether  a  privilege  mode  is  implemented  by  writing  that mode to MPP then reading it back.
+
+If  the  machine  provides  only  U  and  M  modes,  then  only  a  single  hardware  storage  bit  is required to represent either 00 or 11 in MPP.
+
+## 3.1.6.2. Double Trap Control in mstatus Register
+
+A double trap typically arises during a sensitive phase in trap handling operations -when an exception or interrupt occurs while the trap handler (the component responsible for managing these events) is in a nonreentrant state. This non-reentrancy usually occurs in the early phase of trap handling, wherein the trap handler has not yet preserved the necessary state to handle and resume from the trap. The occurrence of a trap during this phase can lead to an overwrite of critical state information, resulting in the loss of data needed  to  recover  from  the  initial  trap.  The  trap  that  caused  this  critical  error  condition  is  henceforth
+
+called the unexpected trap .  Trap  handlers are designed to neither enable interrupts nor cause exceptions during  this  phase  of  handling.  However,  managing  Hardware-Error  exceptions,  which  may  occur unpredictably, presents significant challenges in trap handler implementation due to the potential risk of a double trap.
+
+The M-mode-disable-trap ( MDT ) bit is a WARL field introduced by the Smdbltrp extension. Upon reset, the MDT field is set to 1. When the MDT bit is set to 1 by an explicit CSR write, the MIE (Machine Interrupt Enable) bit is cleared to 0. For RV64, this clearing occurs regardless of the value written, if any, to the MIE bit by the same write. The MIE bit can only be set to 1 by an explicit CSR write if the MDT bit is already 0 or, for RV64, is being set to 0 by the same write (For RV32, the MDT bit is in mstatush and the MIE bit in mstatus register).
+
+When a trap is to be taken into M-mode, if the MDT bit  is  currently  0,  it  is  then  set  to  1,  and  the  trap  is delivered as expected. However, if MDT is already set to 1, then this is an unexpected trap . When the Smrnmi extension is implemented, a trap caused by an RNMI is not considered an unexpected trap irrespective of the state of the MDT bit. A trap caused by an RNMI does not set the MDT bit. However, a trap that occurs when executing in M-mode with mnstatus.NMIE set to 0 is an unexpected trap .
+
+In the event of a unexpected trap , the handling is as follows:
+
+- ⚫ When  the  Smrnmi  extension  is  implemented  and mnstatus.NMIE is  1,  the  hart  traps  to  the  RNMI handler.  To  deliver  this  trap,  the mnepc and mncause registers  are  written  with  the  values  that  the unexpected trap would have written to the mepc and mcause registers respectively. The privilege mode information fields in the mnstatus register are written to indicate M-mode and its NMIE field is set to 0.
+
+<image>
+
+The consequence of this specification is that on occurrence of double trap the RNMI handler is not provided with information that a trap reports in the mtval and the mtval2 registers. This information, if needed, can be obtained by the RNMI handler by decoding the instruction at the address in mnepc and examining its source register contents.
+
+- ⚫ When the  Smrnmi  extension  is  not  implemented,  or  if  the  Smrnmi  extension  is  implemented  and mnstatus.NMIE is  0,  the  hart  enters  a  critical-error  state  without  updating  any  architectural  state, including the pc .  This state involves ceasing execution, disabling all interrupts (including NMIs), and asserting  a critical-error signal  to  the  platform.  Whether  performance  counters  and  timers  are updated in the critical-error state is UNSPECIFIED.
+
+<image>
+
+The  actions  performed  by  the  platform  when  a  hart  asserts  a critical-error signal  are platform-specific.  The  range  of  possible  actions  include  restarting  the  affected  hart  or restarting the entire platform, among others.
+
+The MRET and SRET instructions, when executed in M-mode, set the MDT bit to 0. If the new privilege mode is U, VS, or VU, then sstatus.SDT is also set to 0. Additionally, if it is VU, then vsstatus.SDT is also set to 0.
+
+The MNRET instruction, provided by the Smrnmi extension, sets the MDT bit to 0 if the new privilege mode is not M. If it is U, VS, or VU, then sstatus.SDT is also set to 0. Additionally, if it is VU, then vsstatus.SDT is also set to 0.
+
+## 3.1.6.3. Base ISA Control in mstatus Register
+
+For RV64 harts, the SXL and UXL fields are WARL fields that control the value of XLEN for S-mode and Umode, respectively. The encoding of these fields is the same as the MXL field of misa ,  shown in Table 11. The effective XLEN in S-mode and U-mode are termed SXLEN and UXLEN , respectively.
+
+When MXLEN=32, the SXL and UXL fields do not exist, and SXLEN=32 and UXLEN=32.
+
+When MXLEN=64, if S-mode is not supported, then SXL is read-only zero. Otherwise, it is a WARL field
+
+that encodes the current value of SXLEN. In particular, an implementation may make SXL be a read-only field whose value always ensures that SXLEN=MXLEN.
+
+When MXLEN=64, if U-mode is not supported, then UXL is read-only zero. Otherwise, it is a WARL field that encodes the current value of UXLEN. In particular, an implementation may make UXL be a read-only field whose value always ensures that UXLEN=MXLEN or UXLEN=SXLEN.
+
+If S-mode is implemented, the set of legal values that the UXL field may assume excludes those that would cause UXLEN to be greater than SXLEN.
+
+Whenever XLEN in any mode is set to a value less than the widest supported XLEN, all operations must ignore source operand register bits above the configured XLEN, and must sign-extend results to fill the entire widest supported XLEN in the destination register. Similarly, pc bits above XLEN are ignored, and when the pc is written, it is sign-extended to fill the widest supported XLEN.
+
+We require that operations always fill the entire underlying hardware registers with defined values to avoid implementation-defined behavior.
+
+<image>
+
+To reduce hardware complexity, the architecture imposes no checks that lower-privilege modes have  XLEN  settings  less  than  or  equal  to  the  next-higher  privilege  mode.  In  practice,  such settings would almost always be a software bug, but machine operation is well-defined even in this case.
+
+Some  HINT  instructions  are encoded  as integer computational  instructions that overwrite their destination register with its current value, e.g., c.addi x8, 0 . When such a HINT is executed with XLEN < MXLEN  and  bits  MXLEN..XLEN  of  the  destination register not all equal to bit XLEN-1, it is implementation-defined  whether  bits  MXLEN..XLEN  of  the  destination  register  are  unchanged  or  are overwritten with copies of bit XLEN-1.
+
+<image>
+
+This  definition  allows  implementations  to  elide  register  write-back  for  some  HINTs,  while allowing  them  to  execute  other  HINTs  in  the  same  manner  as  other  integer  computational instructions. The implementation choice is observable only by privilege modes with an XLEN setting greater than the current XLEN; it is invisible to the current privilege mode.
+
+## 3.1.6.4. Memory Privilege in mstatus Register
+
+The  MPRV  (Modify  PRiVilege)  bit  modifies  the effective  privilege  mode ,  i.e.,  the  privilege  level  at  which explicit memory accesses execute. When MPRV=0, explicit memory accesses behave as normal, using the translation  and  protection  mechanisms  of  the  current  privilege  mode.  When  MPRV=1,  load  and  store memory addresses are translated and protected, and endianness is applied, as though the current privilege mode  were  set  to  MPP.  Instruction  address-translation  and  protection  are  unaffected  by  the  setting  of MPRV. MPRV is read-only 0 if U-mode is not supported.
+
+An MRET or SRET instruction that changes the privilege mode to a mode less privileged than M also sets MPRV=0.
+
+The MXR (Make eXecutable Readable) bit modifies the privilege with which loads access virtual memory. When MXR=0, only loads from pages marked readable (R=1 in Figure 67) will succeed. When MXR=1, loads from pages marked either readable or executable (R=1 or X=1) will succeed. MXR has no effect when pagebased virtual memory is not in effect. MXR is read-only 0 if S-mode is not supported.
+
+<image>
+
+The MPRV and MXR mechanisms were conceived to improve the efficiency of M-mode routines that emulate missing hardware features, e.g., misaligned loads and stores. MPRV obviates the need to perform address translation in software. MXR allows instruction words to be loaded from pages marked execute-only.
+
+The  current  privilege  mode  and  the  privilege  mode  specified  by  MPP  might  have  different XLEN settings. When MPRV=1, load and store memory addresses are treated as though the current XLEN were set to MPP's XLEN, following the rules in Section 3.1.6.3.
+
+The SUM (permit Supervisor User Memory access) bit modifies the privilege with which S-mode loads and stores access virtual memory. When SUM=0, S-mode memory accesses to pages that are accessible by Umode (U=1 in Figure 67) will fault. When SUM=1, these accesses are permitted. SUM has no effect when page-based virtual memory is not in effect. Note that, while SUM is ordinarily ignored when not executing in S-mode, it is in effect when MPRV=1 and MPP=S. SUM is read-only 0 if S-mode is not supported or if satp .MODE is read-only 0.
+
+The  MXR  and  SUM  mechanisms  only  affect  the  interpretation  of  permissions  encoded  in  page-table entries. In particular, they have no impact on whether access-fault exceptions are raised due to PMAs or PMP.
+
+## 3.1.6.5. Endianness Control in mstatus and mstatush Registers
+
+The MBE, SBE, and UBE bits in mstatus and mstatush are WARL fields  that  control  the  endianness  of memory accesses other than instruction fetches. Instruction fetches are always little-endian.
+
+MBE controls whether non-instruction-fetch memory accesses made from M-mode (assuming mstatus .MPRV=0) are little-endian (MBE=0) or big-endian (MBE=1).
+
+If  S-mode is not supported, SBE is read-only 0. Otherwise, SBE controls whether explicit load and store memory accesses made from S-mode are little-endian (SBE=0) or big-endian (SBE=1).
+
+If U-mode is not supported, UBE is read-only 0. Otherwise, UBE controls whether explicit load and store memory accesses made from U-mode are little-endian (UBE=0) or big-endian (UBE=1).
+
+For implicit accesses  to  supervisor-level  memory  management  data  structures,  such  as  page  tables, endianness is always controlled by SBE. Since changing SBE alters the implementation's interpretation of these data structures, if any such data structures remain in use across a change to SBE, M-mode software must follow such a change to SBE by executing an SFENCE.VMA instruction with rs1 = x0 and rs2 = x0 .
+
+<image>
+
+Only in contrived scenarios will a given memory-management data structure be interpreted as both little-endian and big-endian. In practice, SBE will only be changed at runtime on world switches, in which case neither the old nor new memory-management data structure will be reinterpreted in a different endianness. In this case, no additional SFENCE.VMA is necessary, beyond what would ordinarily be required for a world switch.
+
+If  S-mode  is  supported,  an  implementation  may  make  SBE  be  a  read-only  copy  of  MBE.  If  U-mode  is supported, an implementation may make UBE be a read-only copy of either MBE or SBE.
+
+An implementation supports only little-endian memory accesses if fields MBE, SBE, and UBE are all read-only 0. An implementation supports only big-endian memory accesses (aside from instruction fetches) if MBE is read-only 1 and SBE and UBE are each read-only 1 when S-mode and U-mode are supported.
+
+<image>
+
+Volume I defines a hart's address space as a circular sequence of 2 XLEN bytes  at  consecutive addresses. The correspondence between addresses and byte locations is fixed and not affected by  any  endianness  mode.  Rather,  the  applicable  endianness  mode  determines  the  order  of mapping between memory bytes and a multibyte quantity (halfword, word, etc.).
+
+Standard RISC-V ABIs are expected to be purely little-endian-only or big-endian-only, with no accommodation for mixing endianness. Nevertheless, endianness control has been defined so as  to  permit,  for  instance,  an  OS  of  one  endianness  to  execute  user-mode  programs  of  the opposite  endianness.  Consideration  has  been  given  also  to  the  possibility  of  non-standard usages whereby software flips the endianness of memory accesses as needed.
+
+RISC-V  instructions  are  uniformly  little-endian  to  decouple  instruction  encoding  from  the current  endianness  settings,  for  the  benefit  of  both  hardware  and  software.  Otherwise,  for instance, a RISC-V assembler or disassembler would always need to know the intended active endianness, despite that the endianness mode might change dynamically during execution. In contrast,  by  giving  instructions  a  fixed  endianness,  it  is  sometimes  possible  for  carefully written software to be endianness-agnostic  even  in binary form, much  like positionindependent code.
+
+The  choice  to  have  instructions  be  only  little-endian  does  have  consequences,  however,  for RISC-V  software  that  encodes  or  decodes  machine  instructions.  In  big-endian  mode,  such software  must  account  for  the  fact  that  explicit  loads  and  stores  have  endianness  opposite that of instructions, for example by swapping byte order after loads and before stores.
+
+## 3.1.6.6. Virtualization Support in mstatus Register
+
+The TVM (Trap Virtual Memory) bit is a WARL field that supports intercepting supervisor virtual-memory management  operations.  When  TVM=1,  attempts  to  read  or  write  the satp CSR  or  execute  an SFENCE.VMA  or  SINVAL.VMA  instruction  while  executing  in  S-mode  will  raise  an  illegal-instruction exception. When TVM=0, these operations are permitted in S-mode. TVM is read-only 0 when S-mode is not supported.
+
+<image>
+
+The TVM mechanism improves virtualization efficiency by permitting guest operating systems to  execute  in  S-mode,  rather  than  classically  virtualizing  them  in  U-mode.  This  approach obviates the need to trap accesses to most S-mode CSRs.
+
+Trapping satp accesses  and  the  SFENCE.VMA  and  SINVAL.VMA  instructions  provides  the hooks necessary to lazily populate shadow page tables.
+
+The TW (Timeout Wait) bit is a WARL field  that  supports intercepting the WFI instruction (see Section 3.3.3). When TW=0, the WFI instruction may execute in modes less privileged than M when not prevented for some other reason. When TW=1, then if WFI is executed in any less-privileged mode, and it does not complete within an implementation-specific, bounded time limit, the WFI instruction causes an illegalinstruction exception. An implementation may have WFI always raise an illegal-instruction exception in modes less privileged than M when TW=1, even if there are pending globally-disabled interrupts when the instruction is executed. TW is read-only 0 when there are no modes less privileged than M.
+
+<image>
+
+Trapping  the  WFI  instruction  can  trigger  a  world  switch  to  another  guest  OS,  rather  than wastefully idling in the current guest.
+
+When  S-mode  is  implemented,  then  executing  WFI  in  U-mode  causes  an  illegal-instruction  exception, regardless of the value of the TW bit, unless the instruction completes within an implementation-specific, bounded time limit.
+
+The  TSR  (Trap  SRET)  bit  is  a WARL field  that  supports  intercepting  the  supervisor  exception  return instruction, SRET. When TSR=1, attempts to execute SRET while executing in S-mode will raise an illegalinstruction exception. When TSR=0, this operation is permitted in S-mode. TSR is read-only 0 when S-
+
+mode is not supported.
+
+<image>
+
+Trapping  SRET  is  necessary  to  emulate  the  hypervisor  extension  (see  Chapter  22)  on implementations that do not provide it.
+
+## 3.1.6.7. Extension Context Status in mstatus Register
+
+Supporting substantial extensions is one of the primary goals of RISC-V, and hence we define a standard interface to allow unchanged privileged-mode code, particularly a supervisor-level OS, to support arbitrary user-mode state extensions.
+
+<image>
+
+To date, the V extension is the only standard extension that defines additional state beyond the floating-point CSR and data registers.
+
+The FS[1:0] and VS[1:0] WARL fields and the XS[1:0] read-only field are used to reduce the cost of context save and restore by setting and tracking the current state of the floating-point unit and any other usermode extensions respectively. The FS field encodes the status of the floating-point unit state, including the floating-point registers f0 -f31 and the CSRs fcsr , frm , and fflags . The VS field encodes the status of the vector extension state, including the vector registers v0 -v31 and the CSRs vcsr , vxrm , vxsat , vstart , vl , vtype , and vlenb . The XS field encodes the status of additional user-mode extensions and associated state. These  fields  can  be  checked  by  a  context  switch  routine  to  quickly  determine  whether  a  state  save  or restore is required. If a save or restore is required, additional instructions and CSRs are typically required to effect and optimize the process.
+
+<image>
+
+The design anticipates that most context switches will not need to save/restore state in either or both of the floating-point unit or other extensions, so provides a fast check via the SD bit.
+
+The FS, VS, and XS fields use the same status encoding as shown in Table 13, with the four possible status values being Off, Initial, Clean, and Dirty.
+
+Table 13. Encoding of FS[1:0], VS[1:0], and XS[1:0] status fields
+
+|   Status | FS and VS Meaning   | XS Meaning                   |
+|----------|---------------------|------------------------------|
+|        0 | Off                 | All off                      |
+|        1 | Initial             | None dirty or clean, some on |
+|        2 | Clean               | None dirty, some clean       |
+|        3 | Dirty               | Some dirty                   |
+
+If the F extension is implemented, the FS field shall not be read-only zero.
+
+If neither the F extension nor S-mode is implemented, then FS is read-only zero. If S-mode is implemented but the F extension is not, FS may optionally be read-only zero.
+
+<image>
+
+Implementations with S-mode but without the F extension are permitted, but not required, to make the FS field be read-only zero. Some such implementations will choose not to have the FS field be read-only zero, so as to enable emulation of the F extension for both S-mode and Umode via invisible traps into M-mode.
+
+If the v registers are implemented, the VS field shall not be read-only zero.
+
+If neither the v registers nor S-mode is implemented, then VS is read-only zero. If S-mode is implemented but the v registers are not, VS may optionally be read-only zero.
+
+In  harts  without  additional  user  extensions  requiring  new  state,  the  XS  field  is  read-only  zero.  Every additional extension with state provides a CSR field that encodes the equivalent of the XS states. The XS
+
+field represents a summary of all extensions' status as shown in Table 13.
+
+<image>
+
+The  XS  field  effectively  reports  the  maximum  status  value  across  all  user-extension  status fields, though individual extensions can use a different encoding than XS.
+
+The SD bit is a read-only bit that summarizes whether either the FS, VS, or XS fields signal the presence of some dirty state that will require saving extended user context to memory. If FS, XS, and VS are all readonly zero, then SD is also always zero.
+
+When an extension's status is set to Off, any instruction that attempts to read or write the corresponding state will cause an illegal-instruction exception. When the status is Initial, the corresponding state should have an initial constant value. When the status is Clean, the corresponding state is potentially different from the initial value, but matches the last value stored on a context swap. When the status is Dirty, the corresponding state has potentially been modified since the last context save.
+
+During a context save, the responsible privileged code need only write out the corresponding state if its status is Dirty, and can then reset the extension's status to Clean. During a context restore, the context need only  be  loaded  from  memory  if  the  status  is  Clean  (it  should  never  be  Dirty  at  restore).  If  the  status  is Initial, the context must be set to an initial constant value on context restore to avoid a security hole, but this can be done without accessing memory. For example, the floating-point registers can all be initialized to the immediate value 0.
+
+The FS and XS fields are read by the privileged code before saving the context. The FS field is set directly by privileged code when resuming a user context, while the XS field is set indirectly by writing to the status register of the individual extensions. The status fields will also be updated during execution of instructions, regardless of privilege mode.
+
+Extensions  to  the  user-mode  ISA  often  include  additional  user-mode  state,  and  this  state  can  be considerably  larger  than  the  base  integer  registers.  The  extensions  might  only  be  used  for  some applications,  or  might  only  be  needed  for  short  phases  within  a  single  application.  To  improve performance, the user-mode extension can define additional instructions to allow user-mode software to return the unit to an initial state or even to turn off the unit.
+
+For example, a coprocessor might require to be configured before use and can be "unconfigured" after use. The unconfigured state would be represented as the Initial state for context save. If the same application remains running between the unconfigure and the next configure (which would set status to Dirty), there is no  need  to  actually  reinitialize  the  state  at  the  unconfigure  instruction,  as  all  state  is  local  to  the  user process, i.e., the Initial state may only cause the coprocessor state to be initialized to a constant value at context restore, not at every unconfigure.
+
+Executing a user-mode instruction to disable a unit and place it into the Off state will cause an illegalinstruction exception to be raised if any subsequent instruction tries to use the unit before it is turned back on. A user-mode instruction to turn a unit on must also ensure the unit's state is properly initialized, as the unit might have been used by another context meantime.
+
+Changing the setting of FS has no effect on the contents of the floating-point register state. In particular, setting  FS=Off  does  not  destroy  the  state,  nor  does  setting  FS=Initial  clear  the  contents.  Similarly,  the setting of VS has no effect on the contents of the vector register state. Other extensions, however, might not preserve state when set to Off.
+
+Implementations  may  choose  to  track  the  dirtiness  of  the  floating-point  register  state  imprecisely  by reporting  the  state  to  be  dirty  even  when  it  has  not  been  modified.  On  some  implementations,  some instructions that do not mutate the floating-point state may cause the state to transition from Initial or Clean to Dirty. On other implementations, dirtiness might not be tracked at all, in which case the valid FS states are Off and Dirty, and an attempt to set FS to Initial or Clean causes it to be set to Dirty.
+
+<image>
+
+This  definition  of  FS  does  not  disallow  setting  FS  to  Dirty  as  a  result  of  errant  speculation. Some  platforms  may  choose  to  disallow  speculatively  writing  FS  to  close  a  potential  side channel.
+
+If  an  instruction explicitly or implicitly writes a floating-point register or the fcsr but  does not alter its contents, and FS=Initial or FS=Clean, it is implementation-defined whether FS transitions to Dirty.
+
+Implementations may choose to track the dirtiness of the vector register state in an analogous imprecise fashion, including possibly setting VS to Dirty when software attempts to set VS=Initial or VS=Clean. When VS=Initial or VS=Clean, it is implementation-defined whether an instruction that writes a vector register or vector CSR but does not alter its contents causes VS to transition to Dirty.
+
+Table 14 shows all the possible state transitions for the FS, VS, or XS status bits. Note that the standard floating-point and vector extensions do not support user-mode unconfigure or disable/enable instructions.
+
+## Table 14. FS, VS, and XS state transitions.
+
+| Current State Action                                                      | Off                                                                       | Initial                                                                   | Clean                                                                     | Dirty                                                                     |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| At context save in privileged code                                        | At context save in privileged code                                        | At context save in privileged code                                        | At context save in privileged code                                        | At context save in privileged code                                        |
+| Save state? Next state                                                    | No Off                                                                    | No Initial                                                                | No Clean                                                                  | Yes Clean                                                                 |
+| At context restore in privileged code                                     | At context restore in privileged code                                     | At context restore in privileged code                                     | At context restore in privileged code                                     | At context restore in privileged code                                     |
+| Restore state? Next state                                                 | No Off                                                                    | Yes, to initial Initial                                                   | Yes, from memory Clean                                                    | N/A N/A                                                                   |
+| Execute instruction to read state                                         | Execute instruction to read state                                         | Execute instruction to read state                                         | Execute instruction to read state                                         | Execute instruction to read state                                         |
+| Action? Next state                                                        | Exception Off                                                             | Execute Initial                                                           | Execute Clean                                                             | Execute Dirty                                                             |
+| Execute instruction that possibly modifies state, including configuration | Execute instruction that possibly modifies state, including configuration | Execute instruction that possibly modifies state, including configuration | Execute instruction that possibly modifies state, including configuration | Execute instruction that possibly modifies state, including configuration |
+| Action? Next state                                                        | Exception Off                                                             | Execute Dirty                                                             | Execute Dirty                                                             | Execute Dirty                                                             |
+| Execute instruction to unconfigure unit                                   | Execute instruction to unconfigure unit                                   | Execute instruction to unconfigure unit                                   | Execute instruction to unconfigure unit                                   | Execute instruction to unconfigure unit                                   |
+| Action? Next state                                                        | Exception Off                                                             | Execute Initial                                                           | Execute Initial                                                           | Execute Initial                                                           |
+| Execute instruction to disable unit                                       | Execute instruction to disable unit                                       | Execute instruction to disable unit                                       | Execute instruction to disable unit                                       | Execute instruction to disable unit                                       |
+| Action? Next state                                                        | Execute Off                                                               | Execute Off                                                               | Execute Off                                                               | Execute Off                                                               |
+| Execute instruction to enable unit                                        | Execute instruction to enable unit                                        | Execute instruction to enable unit                                        | Execute instruction to enable unit                                        | Execute instruction to enable unit                                        |
+| Action? Next state                                                        | Execute Initial                                                           | Execute Initial                                                           | Execute Initial                                                           | Execute Initial                                                           |
+
+Standard  privileged  instructions  to  initialize,  save,  and  restore  extension  state  are  provided  to  insulate privileged code from details of the added extension state by treating the state as an opaque object.
+
+<image>
+
+Many coprocessor extensions are only used in limited contexts that allows software to safely unconfigure  or  even  disable  units  when  done.  This  reduces  the  context-switch  overhead  of large stateful coprocessors.
+
+We separate out floating-point state from other extension state, as when a floating-point unit is present the floating-point registers are part of the standard calling convention, and so usermode software cannot know when it is safe to disable the floating-point unit.
+
+The XS field provides a summary of all added extension state, but additional microarchitectural bits might be maintained in the extension to further reduce context save and restore overhead.
+
+The SD bit is read-only and is set when either the FS, VS, or XS bits encode a Dirty state (i.e., SD=(FS==0b11 OR XS==0b11 OR VS==0b11) ). This allows privileged code to quickly determine when no additional context save is required beyond the integer register set and pc .
+
+The floating-point unit state is  always  initialized,  saved,  and  restored  using  standard  instructions  (F,  D, and/or Q), and privileged code must be aware of FLEN to determine the appropriate space to reserve for each f register.
+
+Machine and Supervisor modes share a single copy of the FS, VS, and XS bits. Supervisor-level software normally uses the FS, VS, and XS bits directly to record the status with respect to the supervisor-level saved context. Machine-level software must be more conservative in saving and restoring the extension state in their corresponding version of the context.
+
+<image>
+
+In any reasonable use case, the number of context switches between user and supervisor level should  far  outweigh  the  number  of  context  switches  to  other  privilege  levels.  Note  that coprocessors should not require their context to be saved and restored to service asynchronous interrupts, unless the interrupt results in a user-level context swap.
+
+## 3.1.6.8. Previous Expected Landing Pad (ELP) State in mstatus Register
+
+The  Zicfilp  extension  adds  the SPELP and MPELP fields  that  hold  the  previous ELP ,  and  are  updated  as specified in Section 23.1.2. The x PELP fields are encoded as follows:
+
+- ⚫ 0 -NO\_LP\_EXPECTED - no landing pad instruction expected.
+- ⚫ 1 -LP\_EXPECTED - a landing pad instruction is expected.
+
+## 3.1.7. Machine Trap-Vector Base-Address ( mtvec ) Register
+
+The mtvec register  is  an  MXLEN-bit WARL read/write  register  that  holds  trap  vector  configuration, consisting of a vector base address (BASE) and a vector mode (MODE).
+
+<image>
+
+MXLEN-2
+
+Figure 10. Encoding of mtvec MODE field.
+
+The mtvec register must always be implemented, but can contain a read-only value. If mtvec is writable, the set of values the register may hold can vary by implementation. The value in the BASE field must always be aligned on a 4-byte boundary, and the MODE setting may impose additional alignment constraints on the value in the BASE field. Note that the CSR contains only bits XLEN-1 through 2 of the address BASE. When used as an address, the lower two bits are filled with zeroes to obtain an XLEN-bit address that is always aligned on a 4-byte boundary.
+
+<image>
+
+We allow for considerable flexibility in implementation of the trap vector base address. On the one hand, we do not wish to burden low-end implementations with a large number of state bits, but on the other hand, we wish to allow flexibility for larger systems.
+
+Table 15. Encoding of mtvec MODE field.
+
+| Value   | Name     | Description                                       |
+|---------|----------|---------------------------------------------------|
+| 0       | Direct   | All traps set pc to BASE.                         |
+| 1       | Vectored | Asynchronous interrupts set pc to BASE+4 × cause. |
+| ≥2      | ---      | Reserved                                          |
+
+The encoding of the MODE field is shown in Table 15. When MODE=Direct, all traps into machine mode cause the pc to be set to the address in the BASE field. When MODE=Vectored, all synchronous exceptions into machine mode cause the pc to be set to the address in the BASE field, whereas interrupts cause the pc to  be  set  to  the  address  in  the  BASE  field  plus  four  times  the  interrupt  cause  number.  For  example,  a
+
+2
+
+machine-mode timer interrupt (see Table 16) causes the pc to be set to BASE+ 0x1c .
+
+An  implementation  may  have  different  alignment  constraints  for  different  modes.  In  particular, MODE=Vectored may have stricter alignment constraints than MODE=Direct.
+
+<image>
+
+Allowing coarser alignments in Vectored mode enables vectoring to be implemented without a hardware adder circuit.
+
+Reset and NMI vector locations are given in a platform specification.
+
+## 3.1.8. Machine Trap Delegation ( medeleg and mideleg ) Registers
+
+By default, all traps at any privilege level are handled in machine mode, though a machine-mode handler can  redirect  traps  back  to  the  appropriate  level  with  the  MRET  instruction  (Section  3.3.2).  To  increase performance,  implementations  can  provide  individual  read/write  bits  within medeleg and mideleg to indicate that certain exceptions and interrupts should be processed directly by a lower privilege level. The machine  exception  delegation  register  ( medeleg )  is  a  64-bit  read/write  register.  The  machine  interrupt delegation ( mideleg ) register is an MXLEN-bit read/write register.
+
+In harts with S-mode, the medeleg and mideleg registers must exist, and setting a bit in medeleg or mideleg will delegate the corresponding trap, when occurring in S-mode or U-mode, to the S-mode trap handler. In harts without S-mode, the medeleg and mideleg registers should not exist.
+
+<image>
+
+In  versions  1.9.1  and  earlier  ,  these  registers  existed  but  were  hardwired  to  zero  in  M-mode only, or M/U without N harts. There is no reason to require they return zero in those cases, as the misa register indicates whether they exist.
+
+When a trap is delegated to S-mode, the scause register is written with the trap cause; the sepc register is written with the virtual address of the instruction that took the trap; the stval register is written with an exception-specific datum; the SPP field of mstatus is written with the active privilege mode at the time of the trap; the SPIE field of mstatus is written with the value of the SIE field at the time of the trap; and the SIE  field  of mstatus is  cleared.  The mcause , mepc ,  and mtval registers  and  the  MPP  and  MPIE  fields  of mstatus are not written.
+
+An implementation can choose to subset the delegatable traps, with the supported delegatable bits found by writing  one  to  every  bit  location,  then  reading  back  the  value  in medeleg or mideleg to  see  which  bit positions hold a one.
+
+An implementation shall not have any bits of medeleg be read-only one, i.e., any synchronous trap that can be delegated must support not being delegated. Similarly, an implementation shall not fix as read-only one any bits of mideleg corresponding to machine-level interrupts (but may do so for lower-level interrupts).
+
+<image>
+
+Version  1.11  and  earlier  prohibited  having  any  bits  of mideleg be  read-only  one.  Platform standards may always add such restrictions.
+
+Traps never transition from a more-privileged mode to a less-privileged mode. For example, if M-mode has delegated  illegal-instruction  exceptions  to  S-mode,  and  M-mode  software  later  executes  an  illegal instruction, the trap is taken in M-mode, rather than being delegated to S-mode. By contrast, traps may be taken horizontally. Using the same example, if M-mode has delegated illegal-instruction exceptions to Smode, and S-mode software later executes an illegal instruction, the trap is taken in S-mode.
+
+Delegated interrupts result in the interrupt being masked at the delegator privilege level. For example, if the supervisor timer interrupt (STI) is delegated to S-mode by setting mideleg [5],  STIs  will  not  be  taken
+
+when  executing  in  M-mode.  By  contrast,  if mideleg [5]  is  clear,  STIs  can  be  taken  in  any  mode  and regardless of current mode will transfer control to M-mode.
+
+<image>
+
+64
+
+Figure 11. Machine Exception Delegation ( medeleg ) register.
+
+medeleg has a bit position allocated for every synchronous exception shown in Table 16, with the index of the  bit  position  equal  to  the  value  returned  in  the mcause register  (i.e.,  setting  bit  8  allows  user-mode environment calls to be delegated to a lower-privilege trap handler).
+
+When XLEN=32, medelegh is a 32-bit read/write register that aliases bits 63:32 of medeleg .  The medelegh register does not exist when XLEN=64.
+
+<image>
+
+MXLEN
+
+Figure 12. Machine Interrupt Delegation ( mideleg ) Register.
+
+mideleg holds trap delegation bits for individual interrupts, with the layout of bits matching those in the mip register (i.e., STIP interrupt delegation control is located in bit 5).
+
+For exceptions that cannot occur in less privileged modes, the corresponding medeleg bits should be readonly zero. In particular, medeleg [11] is read-only zero.
+
+The medeleg [16] is read-only zero as double trap is not delegatable.
+
+## 3.1.9. Machine Interrupt ( mip and mie ) Registers
+
+The mip register is an MXLEN-bit read/write register containing information on pending interrupts, while mie is  the corresponding MXLEN-bit read/write register containing interrupt enable bits. Interrupt cause number i (as reported in CSR mcause ,  Section 3.1.15) corresponds with bit i in both mip and mie .  Bits 15:0 are allocated to standard interrupt causes only, while bits 16 and above are designated for platform use.
+
+<image>
+
+Interrupts  designated  for  platform  use  may  be  designated  for  custom  use  at  the  platform's
+
+-  discretion.
+
+<image>
+
+MXLEN
+
+Figure 14. Machine Interrupt-Enable ( mie ) register
+
+An interrupt i will trap to M-mode (causing the privilege mode to change to M-mode) if all of the following are true: (a) either the current privilege mode is M and the MIE bit in the mstatus register is set, or the current privilege mode has less privilege than M-mode; (b) bit i is set in both mip and mie ; and (c) if register mideleg exists, bit i is not set in mideleg .
+
+These conditions for an interrupt trap to occur must be evaluated in a bounded amount of time from when an interrupt becomes, or ceases to be, pending in mip ,  and must also be evaluated immediately following
+
+the execution of an x RET instruction or an explicit write to a CSR on which these interrupt trap conditions expressly depend (including mip , mie , mstatus , and mideleg ).
+
+Interrupts to M-mode take priority over any interrupts to lower privilege modes.
+
+Each individual bit in register mip may be writable or may be read-only. When bit i in mip is  writable, a pending interrupt i can be cleared by writing 0 to this bit. If interrupt i can become pending but bit i in mip is read-only, the implementation must provide some other mechanism for clearing the pending interrupt.
+
+A bit in mie must be writable if the corresponding interrupt can ever become pending. Bits of mie that are not writable must be read-only zero.
+
+The standard portions (bits  15:0)  of  the mip and mie registers  are  formatted  as  shown  in  Figure  15  and Figure 16 respectively.
+
+<image>
+
+<image>
+
+The machine-level interrupt registers handle a few root interrupt sources which are assigned a fixed service priority for simplicity, while separate external interrupt controllers can implement a  more  complex  prioritization  scheme  over  a  much  larger  set  of  interrupts  that  are  then multiplexed into the machine-level interrupt sources.
+
+The non-maskable interrupt is not made visible via the mip register as its presence is implicitly known when executing the NMI trap handler.
+
+Bits mip .MEIP  and mie .MEIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  machine-level external  interrupts.  MEIP  is  read-only  in mip ,  and  is  set  and  cleared  by  a  platform-specific  interrupt controller.
+
+Bits mip .MTIP  and mie .MTIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  machine  timer interrupts.  MTIP  is  read-only  in  the mip register,  and  is  cleared  by  writing  to  the  memory-mapped machine-mode timer compare register.
+
+Bits mip .MSIP  and mie .MSIE  are  the  interrupt-pending  and  interrupt-enable  bits  for  machine-level software  interrupts.  MSIP  is  read-only  in mip ,  and  is  written  by  accesses  to  memory-mapped  control registers, which are used to provide machine-level interprocessor interrupts.
+
+A hart's memory-mapped msip register is a 32-bit read/write register, where bits 31-1 read as zero and bit 0 contains the MSIP bit. When the memory-mapped msip register changes, it is guaranteed to be reflected in mip .MSIP eventually, but not necessarily immediately. If a system has only one hart, or if a platform standard  supports  the  delivery  of  machine-level  interprocessor  interrupts  through  external  interrupts (MEI) instead, then mip .MSIP and mie .MSIE may both be read-only zeros.
+
+If supervisor mode is not implemented, bits SEIP, STIP, and SSIP of mip and SEIE, STIE, and SSIE of mie are read-only zeros.
+
+
+
+Final instruction for scounteren: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

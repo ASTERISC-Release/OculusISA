@@ -1,0 +1,810 @@
+# 6 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: CSRRWI
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 6: CSRRWI triggers the defined side-effects for all writable fields of the CSR that are written by the instruction.
+##### ASSEMBLY #####
+csrrwi x0, mscratch, 8
+csrr t2, mscratch
+# Result: t2 = 8
+
+# 23 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 1: VLE32FF.V executes as a regular load but only takes a trap caused by a synchronous exception on element 0.
+##### ASSEMBLY #####
+li a0, 0x4
+vsetvli t0, a0, e32,m1
+li a1, 0x0
+vle32ff.v v2, (a1)
+csrr t2, mcause
+# Result: t2 != 0
+
+# 24 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 2: If element 0 raises an exception during VLE32FF.V execution, the trap is taken and the architectural vector length register vl is not modified.
+##### ASSEMBLY #####
+li t0, 0x8
+csrw vl, t0
+li t1, 0x1003
+vle32ff.v v1, (t1)
+csrr t5, vl
+# Result: t5 = 0x8
+
+# 26 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: VLE32FF.V
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: When vstart equals 0 and vl is greater than 0 for VLE32FF.V, at least one element must be processed.
+##### ASSEMBLY #####
+li t1, 0x1000
+li t2, 0x1
+sw t2, 0(t1)
+li a0, 0x1
+vsetvli t0, a0, e32,m1
+csrw vstart, x0
+vle32ff.v v1, (t1)
+vmv.x.s a0, v1
+# Result: a0 = 1
+
+# 37 # Extension Must Be Active: H
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 12: When the H extension is also implemented, all other types of accesses to the seed CSR raise an illegal-instruction exception.
+##### ASSEMBLY #####
+csrr a0, seed
+# Result: mcause = 2 || t5 = 2
+
+# 53 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 29: A Shared-Region rule with pmpcfg.L not set (when mseccfg.MML is set) permits data sharing between M-mode and S/U-mode, is not executable, gives M-mode read/write access, and gives S/U-mode read access unless pmpcfg.X is set, in which case S/U-mode has read/write access.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t0, 0xa
+csrw pmpcfg0, t0
+li t0, 0x400
+csrw pmpaddr0, t0
+li t1, 0x1000
+li a0, 0x2a
+sd a0, 0(t1)
+call machine_to_supervisor
+li t1, 0x1000
+ld a0, 0(t1)
+# Result: a0 = 42
+
+# 55 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 31: A Shared-Region rule with pmpcfg.LRWX = 1111 (when mseccfg.MML is set) permits data sharing between M-mode and S/U-mode with both modes read-only access and remains locked unless mseccfg.RLB is set.
+##### ASSEMBLY #####
+csrr t0, mseccfg
+li t1, 0x1
+or t0, t0, t1
+csrw mseccfg, t0
+li t2, 0xf
+csrw pmpcfg0, t2
+li t3, 0x0
+csrw pmpcfg0, t3
+csrr t4, pmpcfg0
+li t5, 0xf
+and t6, t4, t5
+# Result: t6 = 0xf
+
+# 62 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 39: When the Zicfilp extension is present, the MLPE field in mseccfg being 1 enables the Zicfilp extension in M-mode.
+##### ASSEMBLY #####
+csrr t1, mseccfg
+li t0, 0x400
+or t1, t1, t0
+csrw mseccfg, t1
+csrr t2, mseccfg
+and t3, t2, t0
+# Result: t3 = 0x400
+
+# 63 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 40: If the Zicfilp extension is implemented, the MLPE field of the mseccfg register is reset to 0.
+##### ASSEMBLY #####
+csrr t1, mseccfg
+li t2, 0x400
+and t3, t1, t2
+# Result: t3 = 0
+
+# 71 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 48: When mseccfg.MML = 1, L = 0, R = 1, W = 0, X = 0, an access in M-mode raises an access exception while an access in S/U-mode is permitted as a read-only region.
+##### ASSEMBLY #####
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x9
+csrw pmpcfg0, t1
+li t2, 0x20000800
+csrw pmpaddr0, t2
+li t3, 0x80001000
+lw a0, 0(t3)
+# Result: mcause = 5 || t5 = 5
+
+# 90 # Extension Must Be Active: Smepmp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 67: In M-mode, accessing mseccfg register while Smepmp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smepmp; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mseccfg
+# Result: mcause = 0 || t5 = 0
+
+# 91 # Extension Must Be Active: Smmpm
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 68: In M-mode, accessing mseccfg register while Smmpm extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smmpm; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mseccfg
+# Result: mcause = 0 || t5 = 0
+
+# 92 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 69: In M-mode, accessing mseccfg register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mseccfg
+# Result: mcause = 0 || t5 = 0
+
+# 93 # Extension Must Be Active: Zkr
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mseccfg
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 70: In M-mode, accessing mseccfg register while Zkr extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zkr; csrr a0, 0x747; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mseccfg
+# Result: mcause = 0 || t5 = 0
+
+# 94 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 1: Bits 10-9 of sstatus contain a shadow copy of the VS field of mstatus.
+##### ASSEMBLY #####
+li t2, 0x600
+csrrc x0, mstatus, t2
+li t3, 0x200
+csrrs x0, mstatus, t3
+call machine_to_supervisor
+csrr t0, sstatus
+li t1, 0x600
+and t2, t0, t1
+srli t2, t2, 9
+# Result: t2 = 1
+
+# 95 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 2: When mstatus.VS is Off, executing any vector instruction raises an illegal-instruction exception.
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0xfffffffffffff9ff
+and t0, t0, t1
+csrw mstatus, t0
+vmv.v.i v0, 0
+vadd.vv v0, v0, v0
+# Result: mcause = 2 || t5 = 2
+
+# 96 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 3: When mstatus.VS is Off, accessing a vector CSR raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x600
+li t3, 0xffffffffffffffff
+xor t2, t3, t0
+csrr t1, mstatus
+and t1, t1, t2
+csrw mstatus, t1
+csrr t4, vstart
+# Result: mcause = 2 || t5 = 2
+
+# 97 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 4: When mstatus.VS is Initial or Clean, executing any instruction that changes vector state, including accesses to vector CSRs, sets mstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x300
+csrrc x0, mstatus, t0
+li t1, 0x0
+csrw vtype, t1
+csrr t2, mstatus
+li t3, 0x300
+and t4, t2, t3
+# Result: t4 = 0x300
+
+# 100 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 7: When V=1 and either vsstatus.VS or mstatus.VS is Off, any attempt to execute a vector instruction or to access a vector CSR must raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x8000000000
+csrrs x0, mstatus, t0
+li t1, 0x600
+csrrc x0, mstatus, t1
+vmv.v.i v0, 0
+vadd.vv v0, v0, v0
+# Result: mcause = 2 || t5 = 2
+
+# 101 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 8: When V=1 and both vsstatus.VS and mstatus.VS are not Off, executing any instruction that changes vector state, including accesses to vector CSRs, must set both mstatus.VS and vsstatus.VS to Dirty.
+##### ASSEMBLY #####
+li t0, 0x80
+csrrs x0, mstatus, t0
+call machine_to_supervisor
+li t0, 0x200
+csrrs x0, mstatus, t0
+csrrs x0, vsstatus, t0
+vsetvl a0, a0, a0
+csrr t2, mstatus
+li t3, 0x600
+and a0, t2, t3
+# Result: a0 = 0x400
+
+# 103 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 10: If mstatus.FS is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0xffffffffffffa000
+and t0, t0, t1
+csrw mstatus, t0
+vfmv.v.f v0, ft0
+# Result: mcause = 2 || t5 = 2
+
+# 104 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 11: Any vector floating-point instruction that modifies any floating-point extension state must set mstatus.FS to Dirty.
+##### ASSEMBLY #####
+li t1, 0x6000
+csrrc x0, mstatus, t1
+li t2, 0x4000
+csrrs x0, mstatus, t2
+vsetvli t0, x0, e64, m1
+vfmul.vv v0, v0, v0
+li t3, 0x6000
+csrr t4, mstatus
+and t5, t4, t3
+mv a0, t5
+# Result: a0 = 0x6000
+
+# 105 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 12: If either vsstatus.FS or mstatus.FS is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t1, 0x6000
+csrrc x0, mstatus, t1
+vfmul.vv v0, v1, v2
+# Result: mcause = 2 || t5 = 2
+
+# 107 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 14: The mstatus CSR is a machine-mode register that is readable and writable (MRW).
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0x8
+or t2, t0, t1
+csrw mstatus, t2
+csrr t3, mstatus
+li t4, 0x8
+and t5, t3, t4
+# Result: t5 = 8
+
+# 108 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 16: The global interrupt-enable bits MIE and SIE reside in the low-order bits of mstatus, allowing them to be atomically set or cleared with a single CSR instruction.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrs x0, mstatus, t0
+csrr t1, mstatus
+li t2, 0x8
+and t3, t1, t2
+srli t3, t3, 3
+mv a0, t3
+# Result: a0 = 1
+
+# 109 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 17: When a trap is taken from privilege mode y into privilege mode x, the xPIE field in mstatus is set to the current value of xIE, the xIE field in mstatus is cleared to zero, and the xPP field in mstatus is written with the value y.
+##### ASSEMBLY #####
+li t0, 0x2
+csrs mstatus, t0
+call machine_to_supervisor
+csrr a1, mstatus
+srli a0, a1, 5
+andi a0, a0, 1
+# Result: a0 = 1
+
+# 110 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 18: An xRET instruction (MRET or SRET) sets the xIE field in mstatus to the value of xPIE when the xPP field holds the previous mode y.
+##### ASSEMBLY #####
+li t0, 0x80
+csrw mstatus, t0
+mret
+li t1, 0x8
+csrr t2, mstatus
+and t3, t2, t1
+# Result: t3 = 8
+
+# 117 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 26: When the MDT bit in mstatus is set to 1 by an explicit CSR write, the MIE bit in mstatus is cleared to 0.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrs x0, mstatus, t0
+csrr t1, mstatus
+li t2, 0x40000000000
+or t1, t1, t2
+csrrw x0, mstatus, t1
+csrr a1, mstatus
+srli a0, a1, 3
+andi a0, a0, 1
+# Result: a0 = 0
+
+# 149 # Extension Must Be Active: S
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 63: When the TSR field in mstatus is 1, attempts to execute SRET while executing in S-mode raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x400000
+csrr t1, mstatus
+or t2, t1, t0
+csrw mstatus, t2
+call machine_to_supervisor
+sret
+# Result: mcause = 2 || t5 = 2
+
+# 155 # Extension Must Be Active: F
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 69: If the F extension is implemented, the FS field in mstatus shall not be read-only zero.
+##### ASSEMBLY #####
+li t0, 0x6000
+csrrc x0, mstatus, t0
+csrrs x0, mstatus, t0
+csrr a1, mstatus
+srli a0, a1, 13
+andi a0, a0, 1
+# Result: a0 = 1
+
+# 157 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 71: In harts without additional user extensions requiring new state, the XS field in mstatus is read-only zero.
+##### ASSEMBLY #####
+li t4, 0x18000 # attempt to set XS bits to 3
+csrw mstatus, t4
+csrr t1, mstatus
+srli t2, t1, 15
+li t0, 0x3
+and t3, t2, t0 # extract XS field
+# Result: t3 = 0
+
+# 162 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 77: If an instruction executes, then every mstatus field that the specification defines to be modified by that instruction is updated, and reading the mstatus CSR after the instruction shows the new values regardless of the current privilege mode.
+##### ASSEMBLY #####
+li t0, 0x8
+csrrs x0, mstatus, t0
+csrrw x0, mstatus, x0
+csrr t1, mstatus
+li t2, 0x8
+and t3, t1, t2
+mv a0, t3
+# Result: a0 = 0
+
+# 166 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 81: Changing the VS setting in mstatus has no effect on the contents of the vector register state.
+##### ASSEMBLY #####
+li a0, 0x1122334455667788
+vmv.v.x v0, a0
+li t2, 0x600
+csrrc x0, mstatus, t2
+li t3, 0x200
+csrrs x0, mstatus, t3
+vmv.x.s a1, v0
+# Result: a1 = 0x0
+
+# 196 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 112: Upon reset, the MIE field in mstatus is reset to 0.
+##### ASSEMBLY #####
+csrr t0, mstatus
+li t1, 0x8
+and t2, t0, t1
+# Result: t2 = 0
+
+# 203 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 122: When an SRET instruction is executed, the SPP field in mstatus is then set to 0.
+##### ASSEMBLY #####
+li t0, 0x100
+csrs mstatus, t0
+call machine_to_supervisor
+csrr t0, mstatus
+li t1, 0x100
+and t2, t0, t1
+csrr a1, mstatus
+srli a0, a1, 8
+andi a0, a0, 1
+# Result: a0 = 0
+
+# 213 # Extension Must Be Active: S
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 132: When executing a SINVAL.VMA instruction in S-mode or HS-mode, if mstatus.TVM = 1 the instruction raises an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0x100000
+csrs mstatus, t0
+call machine_to_supervisor
+sinval.vma x0, x0
+# Result: mcause = 2 || t5 = 2
+
+# 266 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 198: In M-mode, setting mstatus.MIE (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x300, a0; csrr a1, 0x300; and a2, a0, a1; # Result: a2 = 0x8].
+##### ASSEMBLY #####
+li a0, 0x8
+csrs mstatus, a0
+csrr a1, mstatus
+and a2, a0, a1
+# Result: a2 = 0x8
+
+# 269 # Extension Must Be Active: H
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 201: In M-mode, accessing mstatus register while H extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: H; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 270 # Extension Must Be Active: Smdbltrp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 202: In M-mode, accessing mstatus register while Smdbltrp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smdbltrp; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 271 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 203: In M-mode, accessing mstatus register while V extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: V; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 272 # Extension Must Be Active: Zdinx
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 204: In M-mode, accessing mstatus register while Zdinx extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zdinx; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 273 # Extension Must Be Active: Zfinx
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 205: In M-mode, accessing mstatus register while Zfinx extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zfinx; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 274 # Extension Must Be Active: Zhinx
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 206: In M-mode, accessing mstatus register while Zhinx extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zhinx; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 275 # Extension Must Be Active: Zicboz
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 207: In M-mode, accessing mstatus register while Zicboz extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicboz; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 276 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 208: In M-mode, accessing mstatus register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x300; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, mstatus
+# Result: mcause = 0 || t5 = 0
+
+# 280 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 5: When TVM equals 0, reads or writes of the satp CSR in S-mode do not raise an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li t5, 0x100000
+csrrc sstatus, sstatus, t5
+li t0, 0x1
+slli t0, t0, 60
+csrw satp, t0
+csrr t1, satp
+srli t2, t1, 60
+li t3, 0xf
+and t4, t2, t3
+# Result: t4 = 1
+
+# 290 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 18: If SXLEN = 64 and the MODE field of the SATP CSR is set to a value other than Sv39, Sv48, or Sv57, then virtual‑address translation is disabled, so the effective physical address for subsequent loads and stores equals the virtual address.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrw satp, x0
+auipc t0, 0
+addi t0, t0, 8
+li t1, 0x12345678
+sd t1, 0(t0)
+ld t2, 0(t0)
+mv a0, t2
+# Result: a0 = 0x12345678
+
+# 293 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 22: If the ASID field written into satp contains a value that exceeds the allowed width (more than 9 bits in Sv32 mode or more than 16 bits in Sv39, Sv48 or Sv57 mode), then reading back satp returns the ASID truncated to the low 9 bits (Sv32) or low 16 bits (Sv39/Sv48/Sv57), with any higher bits cleared.
+##### ASSEMBLY #####
+li t0, 0x12345
+li t1, 0x8
+slli t1, t1, 60
+slli t0, t0, 44
+or t2, t1, t0
+csrw satp, t2
+csrr t3, satp
+srli t3, t3, 44
+li t4, 0xffff
+and t3, t3, t4
+mv a0, t3
+# Result: a0 = 0x2345
+
+# 296 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 25: Writing satp does not impose any ordering constraints between page-table updates and later address translations, nor does it cause any invalidation of address-translation caches.
+##### ASSEMBLY #####
+li t0, 0x1000
+li t1, 0x2000
+li t2, 0x2
+slli t2, t2, 10
+li t3, 0xf
+or t2, t2, t3
+sd t2, 0(t0)
+li t4, 0x1
+sd t4, 0(t1)
+li t5, 0x8
+slli t5, t5, 60
+li t6, 0x1000
+srli t6, t6, 12
+or t5, t5, t6
+csrw satp, t5
+lw a0, 0(x0)
+li a7, 0x3000
+li t4, 0x2
+sd t4, 0(a7)
+li t2, 0x3
+slli t2, t2, 10
+or t2, t2, t3
+sd t2, 0(t0)
+csrw satp, t5
+li t7, 1
+sb t7, 0(x0)
+lw a1, 0(x0)
+# Result: a1 = 1
+
+# 302 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 32: If a write to the satp CSR specifies a MODE value that is not supported, the write is ignored and the previous value of satp remains unchanged.
+##### ASSEMBLY #####
+li t1, 0x8
+slli t1, t1, 60 # supported MODE (8) in bits 63..60
+li t2, 0x1
+or t0, t1, t2 # satp = supported mode with small PPN
+csrw satp, t0
+li t3, 0x1
+slli t3, t3, 60 # unsupported MODE (1) in bits 63..60
+li t4, 0x2
+or t5, t3, t4 # attempt write with unsupported mode
+csrw satp, t5 # should be ignored
+csrr t6, satp
+srli a0, t6, 60 # extract MODE field into a0
+# Result: a0 = 8
+
+# 311 # Extension Must Be Active: Smcdeleg
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 41: In M-mode, accessing satp register while Smcdeleg extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smcdeleg; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 312 # Extension Must Be Active: Smnpm
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 42: In M-mode, accessing satp register while Smnpm extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Smnpm; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 313 # Extension Must Be Active: Ssnpm
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 43: In M-mode, accessing satp register while Ssnpm extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Ssnpm; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 314 # Extension Must Be Active: Sstc
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 44: In M-mode, accessing satp register while Sstc extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Sstc; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 315 # Extension Must Be Active: Svade
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 45: In M-mode, accessing satp register while Svade extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svade; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 316 # Extension Must Be Active: Svadu
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 46: In M-mode, accessing satp register while Svadu extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svadu; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 317 # Extension Must Be Active: Svnapot
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 47: In M-mode, accessing satp register while Svnapot extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svnapot; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 318 # Extension Must Be Active: Svpbmt
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 48: In M-mode, accessing satp register while Svpbmt extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Svpbmt; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 319 # Extension Must Be Active: Zicbom
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 49: In M-mode, accessing satp register while Zicbom extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicbom; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 320 # Extension Must Be Active: Zicboz
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 50: In M-mode, accessing satp register while Zicboz extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicboz; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 321 # Extension Must Be Active: Zicfilp
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 51: In M-mode, accessing satp register while Zicfilp extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfilp; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 322 # Extension Must Be Active: Zicfiss
+# Many important RISC-V extensions are currently active.
+# Test Case Name: satp
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 52: In M-mode, accessing satp register while Zicfiss extension is active should result in no exception (# Result: mcause = 0x0) [# Extension Must Be Active: Zicfiss; csrr a0, 0x180; # Result: mcause = 0x0].
+##### ASSEMBLY #####
+csrr a0, satp
+# Result: mcause = 0 || t5 = 0
+
+# 348 # Extension Must Be Active: V
+# Many important RISC-V extensions are currently active.
+# Test Case Name: scounteren
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 26: In M-mode, setting scounteren.HPM3 (bit 3) should be reflected on the readback (# Result: a2 = 0x8) [# Extension Must Be Active: NONE; li a0, 0x8; csrs 0x106, a0; csrr a1, 0x106; and a2, a0, a1; # Result: a2 = 0x8].
+##### ASSEMBLY #####
+li a0, 0x8
+csrs scounteren, a0
+csrr a1, scounteren
+and a2, a0, a1
+# Result: a2 = 0x8

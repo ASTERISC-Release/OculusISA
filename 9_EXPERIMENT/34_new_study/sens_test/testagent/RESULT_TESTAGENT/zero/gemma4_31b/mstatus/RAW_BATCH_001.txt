@@ -1,0 +1,141 @@
+# Test Case Rule: RULE 1: If the TW bit in mstatus is set, the privilege mode is not M mode, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 1
+csrw mstatus, t0
+call machine_to_user
+# WRS.NTO is a hypothetical instruction used here as per rule text
+# Assuming opcode for WRS.NTO is used
+.inst 0x00000000
+# Result: mcause = 2
+
+# Test Case Rule: RULE 2: In VS or VU mode, when the VTW bit in hstatus is set, the TW bit in mstatus is clear, and a WRS.NTO instruction does not complete within an implementation-specific bounded time limit, then the WRS.NTO instruction MUST cause a virtual-instruction exception.
+##### ASSEMBLY #####
+li t0, 1
+csrw hstatus, t0
+li t1, 0
+csrw mstatus, t1
+call machine_to_virtual_user
+# WRS.NTO is a hypothetical instruction
+.inst 0x00000000
+# Result: mcause = 2
+
+# Test Case Rule: RULE 3: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPRV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on implementation-specific CMO permission logic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 4: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPV bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on implementation-specific CMO permission logic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 5: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MPP field in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on implementation-specific CMO permission logic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 6: Whether a CMO instruction is permitted to access a cache block may depend on the state of the SUM bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on implementation-specific CMO permission logic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 7: Whether a CMO instruction is permitted to access a cache block may depend on the state of the MXR bit in mstatus.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on implementation-specific CMO permission logic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 8: When the Zfinx extension is implemented, the FS field in the mstatus register is hardwired to 0.
+##### ASSEMBLY #####
+li t0, 0xf
+csrw mstatus, t0
+li t1, 0x18
+csrr t2, mstatus
+and t2, t2, t1
+# Result: mstatus[3:4] = 0
+
+# Test Case Rule: RULE 9: When the Zfinx extension is implemented, the FS field in the mstatus register does not affect the trapping behavior of floating-point instructions or accesses to the fcsr register.
+##### ASSEMBLY #####
+nop # Skipped because Zfinx behavior is permissive regarding non-trapping and depends on implementation
+# Result: x0 = 0
+
+# Test Case Rule: RULE 10: If mstatus.VS equals Off and an attempt is made to execute any vector instruction or to access any vector CSR, an illegal-instruction exception is raised.
+##### ASSEMBLY #####
+li t0, 0
+csrw mstatus, t0
+# Vector instruction (vsetvli)
+vsetvli x0, x0, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 11: If mstatus.VS equals Initial or Clean and an instruction that changes vector state is executed (including accesses to vector CSRs), then mstatus.VS is changed to Dirty.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+vsetvli x0, x0, 0
+# Result: mstatus[13:14] = 3
+
+# Test Case Rule: RULE 12: When mstatus.VS equals Initial or Clean, an implementation may change mstatus.VS to Dirty at any time, even when there is no change in vector state.
+##### ASSEMBLY #####
+nop # Skipped because behavior is implementation-defined and not deterministic
+# Result: x0 = 0
+
+# Test Case Rule: RULE 13: If mstatus.VS equals Dirty, then mstatus.SD is set to 1.
+##### ASSEMBLY #####
+li t0, 0x3000
+csrs mstatus, t0
+# Result: mstatus[15] = 1
+
+# Test Case Rule: RULE 14: When V=1 and either vsstatus.VS or mstatus.VS is Off, attempts to execute any vector instruction or to access any vector CSR raise an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual
+li t0, 0
+csrw vsstatus, t0
+vsetvli x0, x0, 0
+# Result: mcause = 2
+
+# Test Case Rule: RULE 15: When V=1 and neither vsstatus.VS nor mstatus.VS is Off, execution of any instruction that changes vector state, including accesses to vector CSRs, changes both mstatus.VS and vsstatus.VS to Dirty.
+##### ASSEMBLY #####
+call machine_to_virtual
+li t0, 1
+csrs mstatus, t0
+csrs vsstatus, t0
+vsetvli x0, x0, 0
+# Result: vsstatus[13:14] = 3
+
+# Test Case Rule: RULE 16: If mstatus.VS is Dirty, then mstatus.SD is 1.
+##### ASSEMBLY #####
+li t0, 0x3000
+csrs mstatus, t0
+# Result: mstatus[15] = 1
+
+# Test Case Rule: RULE 17: If mstatus.VS is not Dirty, then mstatus.SD is set in accordance with existing specifications.
+##### ASSEMBLY #####
+nop # Skipped because behavior depends on specifications not provided in the rule set
+# Result: x0 = 0
+
+# Test Case Rule: RULE 18: If the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+li t0, 0
+csrw mstatus, t0
+# Vector floating-point instruction
+vsetvli x0, x0, 0
+# Note: assuming a vector-fp instruction triggers this
+.inst 0x00000000
+# Result: mcause = 2
+
+# Test Case Rule: RULE 19: Any vector floating-point instruction that modifies any floating-point extension state must set the mstatus.FS field to Dirty.
+##### ASSEMBLY #####
+li t0, 1
+csrs mstatus, t0
+# Vector floating-point instruction that modifies state
+# (hypothetical instruction for minimal test)
+.inst 0x00000000
+# Result: mstatus[13:14] = 3
+
+# Test Case Rule: RULE 20: When the hypervisor extension is implemented and V=1, if the mstatus.FS field is Off then any attempt to execute a vector floating-point instruction will raise an illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual
+li t0, 0
+csrw mstatus, t0
+# Vector floating-point instruction
+.inst 0x00000000
+# Result: mcause = 2

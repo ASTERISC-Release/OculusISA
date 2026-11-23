@@ -1,0 +1,36 @@
+#!/bin/bash -e
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    echo "Usage: ./run <mode> [gdb_port]"
+    echo "0 - User Mode, 1 - Supervisor Mode, 3 - Machine Mode"
+    echo "e.g. ./run 0"
+    echo "e.g. ./run 3 12345"
+    exit 0
+fi
+
+kernel=$1
+gdb_port=${2:-1234}
+
+if [ "$1" == "0" ]; then
+    echo "Booting into User Mode"
+    upper="UMODE"
+elif [ "$1" == "1" ]; then
+    echo "Booting into Supervisor Mode"
+    upper="SMODE"
+elif [ "$1" == "3" ]; then
+    echo "Booting into Machine Mode"
+    upper="MMODE"
+else
+    echo "Invalid mode: $1"
+    exit 1
+fi
+
+echo "Using GDB port: $gdb_port"
+echo "Running QEMU from $(whereis qemu-system-riscv64)"
+
+make clean
+make all MODE=$upper
+
+echo ""
+echo "Executing..."
+make qemu-gdb GDBPORT=$gdb_port

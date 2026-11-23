@@ -1,0 +1,4140 @@
+# 1 # Extension Must Be Active: zicsr
+li t0, 0
+csrrwi t1, 0x100, 27
+# Result: CSR 0x100 is updated with the value 27 (zero-extended 5-bit immediate), and t1 contains the previous value of CSR 0x100.
+
+# 2 # Extension Must Be Active: None
+csrrwi x0, mcycle, 0
+# Result: The CSR mcycle is updated with 0; the CSR is not read, and no read side effects occur.
+
+# 3 # Extension Must Be Active: zicsr
+csrrwi x0, mscratch, 0x15
+# Result: mscratch = 0x15
+
+# 4 # Extension Must Be Active: None
+li t0, 0x123
+csrrw mcycle, mcycle, 0 # Clear mcycle or set to 0 for predictability
+li t0, 0xABC
+csrrwi t1, mcycle, 0x15
+# Result: t1 = 0, mcycle = 0x15 (Note: If mcycle was 0, t1 becomes 0 and mcycle becomes 21)
+
+Wait, let me refine that for a clearer, more deterministic verification of the rule:
+
+# 5 # Extension Must Be Active: None
+li t0, 0x55
+csrw mscratch, t0
+csrrwi t1, mscratch, 0x10
+# Result: t1 = 0x55, mscratch = 0x10
+
+# 6 # Extension Must Be Active: F, D
+li t0, 0x4009219990000000 # Load double-precision 3.14159... into t0
+fmv.d.x fa0, t0 # Move to floating-point register fa0
+fcvt.w.d t1, fa0, rtz # Convert double fa0 to signed 32-bit integer in t1 (Round towards Zero)
+# Result: t1 = 3
+
+# 7 # Extension Must Be Active: F, D
+li t0, 0x4001000000000000 # Load double-precision 3.14159... into t0 (simplified via floating point move)
+# Since we cannot easily load floats with 'li', we use a float loading pattern or assume pre-loaded values.
+# For clarity, let's use a precise sequence:
+la t0, val_pi
+fd lw f1, 0(t0) # Load 3.14159 as double (approx)
+# Let's use a simpler constant: 3.75
+li t0, 0x400e000000000000
+fmv.d.x f1, t0 # f1 = 3.75
+fcvt.w.d a0, f1, rne # Round to nearest, tie to even: 3.75 -> 4
+# Result: a0 = 4
+
+# Manual verification:
+# Input: 3.75 (double)
+# rm: RNE (Round to Nearest, tie to Even)
+# Calculation: 3.75 is closer to 4 than 3.
+# Result: 4
+
+# 8 # Extension Must Be Active: F, D
+li t0, 0x7FFFFFFF
+fcvt.d.w fa0, t0
+# Test case for FCVT.W.D: Value slightly above max signed 32-bit int to trigger Invalid exception (overflow)
+# Max signed 32-bit int is 2147483647.0. Let's use a value that clearly overflows.
+li t1, 3000000000
+fcvt.d.w fa0, t1
+fcvt.w.d t2, fa0, rnz
+# Result: fcsr.fflags[NV] = 1
+
+# 9 # Extension Must Be Active: None
+li t0, 0
+li t1, 0
+# Set TVM = 1 in satp register
+li t2, 0x80000000
+csrw satp, t2
+# Execute SFENCE.VMA in S-mode (Assuming the processor is currently in S-mode)
+sfence.vma t0, t1
+# Result: illegal-instruction exception
+
+# 10 # Extension Must Be Active: zicsr
+li t0, 0
+li t1, 0
+csrw satp, t0 # Set TVM=0 (by clearing the top bit of satp)
+sfence.vma t0, t1
+# Result: Instruction executes without exception
+
+# 11 # Extension Must Be Active: None
+li t0, 0xDEADBEEF # Load an arbitrary value into rs1
+# Assume this address is invalid/out-of-bounds for the current page table configuration
+sfence.vma t0, x0
+# Result: No exception is raised; execution continues to the next instruction.
+
+# 12 # Extension Must Be Active: None
+li t0, 0x0 # Bare mode (MODE=0)
+csrw satp, t0
+li t1, 0x8000000000000000 # Sv39 mode (MODE=8)
+csrw satp, t1
+# Result: Translation mode changes from Bare to Sv39 immediately without requiring SFENCE.VMA.
+
+# 13 # Extension Must Be Active: zicsr
+li t0, 0
+li t1, 0
+sfence.vma t0, t1
+# Result: illegal-instruction exception
+
+# 14 # Extension Must Be Active: None
+li t0, 0x100000 # Load a value for rs1
+li t1, 0x0 # Load a value for rs2
+csrr t2, mstatus
+li t3, (1 << 20) # TVM bit position
+or t2, t2, t3 # Set mstatus.TVM = 1
+csrw mstatus, t2
+# Switch to S-mode (assuming environment supports privilege transition)
+# Execution of SFENCE.VMA in S-mode with mstatus.TVM=1
+sfence.vma t0, t1
+# Result: illegal-instruction exception
+
+# 15 # Extension Must Be Active: None
+# Setup: Assume processor is in VU-mode
+sfence.vma x0, x0
+# Result: virtual-instruction exception
+
+# 16 # Extension Must Be Active: Svnapot
+# Assume the processor is currently in HS-mode to configure hstatus
+li t0, 0x10000 # Set VTVM (bit 20) to 1
+csrw hstatus, t0
+# Transition to VS-mode (this is typically handled by the hypervisor via sstatus/hstatus)
+# For the purpose of this test case, we assume the execution context is now VS-mode
+sfence.vma x0, x0
+# Result: virtual-instruction exception
+
+# 17 # Extension Must Be Active: Svnapot (or any standard Sv extension)
+li t0, 0
+li t1, 0
+# Setup: Transition to VS-mode and set VTVM = 1 in hgatp
+# (Assuming environment handles the transition to VS-mode)
+# Setting VTVM bit (bit 1) in hgatp to 1
+li t2, 0x2
+csrw hgatp, t2
+sfence.vma t0, t1
+# Result: virtual-instruction exception
+
+# 18 # Extension Must Be Active: None
+# Setup: Assume the hart is in VU-mode
+sfence.vma x0, x0
+# Result: virtual-instruction exception
+
+# 19 # Extension Must Be Active: S-mode, H-extension
+# Setup:
+# 1. Set V=1 (Enter Virtualization mode / VS-mode).
+# 2. Ensure the instruction is HS-qualified (intended for S/HS mode).
+# 3. Execute SFENCE.VMA in VS-mode.
+# According to the rule: When V=1, SFENCE.VMA in VS-mode (where it is prevented by privilege/mode) must raise a virtual-instruction exception (code 22).
+
+sfence.vma x0, x0
+# Result: virtual-instruction exception (code 22)
+
+# 20 # Extension Must Be Active: None
+# Setup: Execute in VU-mode to trigger a virtual-instruction trap.
+# The instruction SFENCE.VMA x0, x0 (opcode 0x00000015) will cause a virtual-instruction exception.
+# According to the rule, stval/mtval must be written the same as for an illegal-instruction trap (the instruction encoding).
+
+sfence.vma x0, x0
+# Result: stval = 0x00000015 (or mtval = 0x00000015 if trapped to M-mode)
+
+# 21 # Extension Must Be Active: None
+# Setup:
+# 1. Set privilege mode to VU-mode (Virtual User mode) to trigger a virtual-instruction exception.
+# 2. Set the Program Counter (PC) to an address that is NOT 4-byte aligned to trigger an instruction address misaligned exception.
+# 3. Ensure the opcode is an invalid/undefined sequence or configured to trigger an illegal instruction exception simultaneously (by treating the misaligned fetch as an illegal opcode).
+# However, the rule specifically compares the priority of these three: Illegal Instruction > Virtual-Instruction > Instruction Address Misaligned.
+
+# To test the priority, we place SFENCE.VMA at a misaligned address while in VU-mode.
+# The SFENCE.VMA in VU-mode triggers a virtual-instruction exception.
+# The misaligned address triggers an instruction address misaligned exception.
+# According to the rule: Virtual-Instruction > Instruction Address Misaligned.
+
+# Assembly represents the target instruction at a misaligned address (e.g., 0x1001)
+.set pc_misaligned, 0x1001
+.org pc_misaligned
+sfence.vma x0, x0
+
+# Result: scause.CODE = 22 (Instruction address misaligned) is bypassed; scause.CODE = 21 (Virtual-instruction exception) is reported.
+
+# 22 # Extension Must Be Active: V
+li t0, 0x00000003 # Load address that triggers a fault on the second element (offset 4)
+# Assume t0 points to a page boundary where index 0 is valid and index 1 is invalid
+# Setup: vl = 2, vstart = 0
+li t1, 2
+vsetvli t1, t1, e32, m1, ta, ma
+vle32ff.v v1, (t0), v0
+# Result: No trap is taken; vl is reduced to 1 (the index of the faulting element); v1[0] is loaded.
+
+# 23 # Extension Must Be Active: V
+li t0, 0x0 # Set address to 0 (typically causes a load access fault)
+li t1, 4 # Set vl to 4
+csrw vl, t1
+vle32ff.v v0, (t0), v0.t
+# Result: Trap taken, vl remains 4
+
+# 24 # Extension Must Be Active: V
+# Setup: Set vl to 4. Set rs1 to an address where element 0 is valid, but element 2 (index 2) causes a page fault/access exception.
+li t0, 0x1000 # Base address (assume aligned)
+vsetvli t1, t1, e32, m1, ta, ma # Set vl = 4 (assuming available HW width)
+# Note: In a real environment, page permissions would be set so 0x1000-0x1007 are valid,
+# but 0x1008 (element 2) is invalid.
+vle32ff.v v1, (t0)
+# Result: vl = 2
+
+# Self-check:
+# Input: rs1 = 0x1000, vl = 4.
+# Execution:
+# Element 0 (0x1000): Success.
+# Element 1 (0x1004): Success.
+# Element 2 (0x1008): Exception triggered.
+# Rule: Element index 2 > 0, so trap is NOT taken, and vl is reduced to the index of the faulting element (2).
+# Effect: vl becomes 2.
+
+# 25 # Extension Must Be Active: V
+li t0, 0x1000
+vsetvli t1, t2, e32, m1, ta, ma
+# Assume address 0x1000 is a non-idempotent memory location (e.g., a FIFO)
+# Ensure vl is set such that no fault occurs on elements > 0 to avoid restarting/trimming
+li t2, 1
+vsetvli zero, t2, e32, m1, ta, ma
+vle32ff.v v1, (t0)
+# Result: v1[0] is loaded from 0x1000, vl remains 1, and no elements are restarted.
+
+# 26 # Extension Must Be Active: V
+li t0, 0x1000
+csrw vl, 1
+csrw vstart, 0
+vle32ff.v v0, (t0), v0
+# Result: v0[0] is loaded with the value at address 0x1000, vl remains 1, and vstart remains 0.
+
+# 27 # Extension Must Be Active: None
+li t0, 1
+csrrw t1, 0x747, t0
+csrr t2, 0x747
+# Result: t2[9] == 0 and t2[8] == 0 (SSEED and USEED remain 0 despite write attempt)
+
+# 28 # Extension Must Be Active: None
+li t0, 0x300 # Binary: 0000...0011 0000 0000 (SSEED=1, USEED=1)
+csrw mseccfg, t0
+csrr t1, mseccfg
+and t1, t1, 0x300
+# Result: t1 = 0x300
+
+# 29 # Extension Must Be Active: None
+li t0, 0x123
+csrw mseccfg, t0
+csrr t1, mseccfg
+# Result: t1 = 0x123
+
+# 30 # Extension Must Be Active: None
+csrw mseccfg, 0 # Set USEED (bit 8) to 0
+# Switch to U-mode (simplified representation)
+csrrw sp, mstatus, t0 # (Assume transition to U-mode happens here)
+csrr t0, 0x15 # Attempt to read seed CSR in U-mode
+# Result: illegal-instruction exception
+
+# 31 # Extension Must Be Active: None
+# Setup: In M-mode, set mseccfg.USEED (bit 8) to 1 to allow U-mode access to seed CSR.
+# Switch to U-mode and attempt to read the seed CSR.
+li t0, 0x100 # Bit 8 = 1 (USEED)
+csrw mseccfg, t0
+# Transition to U-mode (simulated via mret/mstatus)
+# [Assume system is now in U-mode]
+csrr t1, 0x15
+# Result: Success (read access to seed CSR is allowed)
+
+# 32 # Extension Must Be Active: None (Zkr and U-mode not implemented)
+li t0, 0x100
+csrw mseccfg, t0
+csrr t1, mseccfg
+andi t1, t1, 0x100
+# Result: t1 = 0
+
+# 33 # Extension Must Be Active: None
+csrrw x0, 0x747, x0 # Set mseccfg to 0, ensuring SSEED = 0
+mret # Transition to S-mode (assuming mstatus.MPP=1)
+csrr x1, 0x15 # Attempt to read seed CSR from S-mode
+# Result: illegal-instruction exception
+
+# 34 # Extension Must Be Active: Zicseed
+csrrw x0, mseccfg, x0 # Clear mseccfg
+li t0, (1 << 9) # SSEED = 1
+csrw mseccfg, t0 # Enable S-mode seed access
+csrw mstatus, 0x1800 # Enter S-mode (simplified)
+csrw seed, t0 # Attempt to write to seed CSR from S-mode
+# Result: Success (seed CSR updated)
+
+# 35 # Extension Must Be Active: None
+li t0, 0x200 # Bit 9 corresponds to SSEED
+csrw mseccfg, t0
+csrr t1, mseccfg
+andi t1, t1, 0x200
+# Result: t1 = 0
+
+# 36 # Extension Must Be Active: H
+csrr x10, 0x15
+# Result: virtual-instruction exception
+
+# 37 # Extension Must Be Active: None
+csrr t0, 0x15
+# Result: illegal-instruction exception
+
+# 38 # Extension Must Be Active: None
+li t0, 0
+csrw mseccfg, t0
+# Transition to U-mode
+csrw mstatus, 0x1800
+# Attempt to read seed CSR in U-mode
+csrr t1, 0x15
+# Result: illegal-instruction exception
+
+# 39 # Extension Must Be Active: Zicseed
+csrrw x0, 0x747, x0 # Clear mseccfg
+li t0, (1 << 8) # Set USEED bit (bit 8)
+csrw 0x747, t0 # mseccfg.USEED = 1
+li t1, 0xDEADBEEF
+csrw 0x15, t1 # Write to seed CSR from U-mode
+csrr t2, 0x15 # Read from seed CSR from U-mode
+# Result: t2 = 0xDEADBEEF
+
+# 40 # Extension Must Be Active: None
+# Setup: M-mode sets mseccfg.SSEED = 0, then drops to S-mode
+la t0, 0x747 # mseccfg address
+li t1, 0 # Set SSEED (bit 9) to 0
+csrw 0x747, t1
+# Switch to S-mode (simplified for test case)
+csrw mstatus, t1 # Assume transition to S-mode happens here
+
+# Test: Access seed CSR from S-mode
+csrr t0, 0x15 # Read seed CSR
+# Result: illegal-instruction exception
+
+# 41 # Extension Must Be Active: S-mode
+csrrw x0, 0x747, x0 # Reset mseccfg
+li t0, (1 << 9) # Set SSEED bit (bit 9)
+csrw 0x747, t0 # mseccfg.SSEED = 1
+csrr t1, 0x15 # Read seed CSR in S-mode
+li t2, 0x12345678
+csrw 0x15, t2 # Write to seed CSR in S-mode
+csrr t3, 0x15 # Read back to verify
+# Result: t3 = 0x12345678, no exception raised during access to 0x15
+
+# 42 # Extension Must Be Active: None
+li t0, 0
+csrw mseccfg, t0
+# Switch to VS-mode (simulated via environment/privilege transition)
+csrr t1, seed
+# Result: illegal-instruction exception
+
+# 43 # Extension Must Be Active: Sstc
+csrrw x0, 0x747, x0 # Setup: Ensure mseccfg is 0
+li t0, (1 << 9) # SSEED = 1
+csrw 0x747, t0 # Set mseccfg.SSEED = 1
+# Switch to VS-mode (simplified representation for test case)
+csrrw x0, 0x15, x0 # Attempt to write to seed CSR from VS-mode
+# Result: virtual-instruction exception
+
+# 44 # Extension Must Be Active: Smpmp
+# Setup: Ensure mseccfg.RLB is 0 and at least one PMP entry has the L (Lock) bit set.
+# 1. Set pmpcfg0.L = 1 (Locking a PMP rule)
+li t0, 0x80000000
+csrw pmpcfg0, t0
+# 2. Ensure mseccfg.RLB is 0 (Default is 0, but explicitly clearing for the test)
+li t1, 0
+csrs mseccfg, t1 # This is a no-op for RLB, but ensure state is RLB=0
+# 3. Attempt to set mseccfg.RLB to 1 (Bit 2)
+li t2, (1 << 2)
+csrs mseccfg, t2
+# 4. Read back mseccfg to verify RLB remained 0
+csrr t3, mseccfg
+srli t3, t3, 2
+andi t3, t3, 1
+# Result: t3 = 0
+
+# 45 # Extension Must Be Active: None
+li t0, 0x1
+csrw mseccfg, t0
+la t1, 0x1000 # Address in a region with no PMP rules
+lw t2, 0(t1)
+# Result: Store instruction exception (access denied) due to mseccfg.MMWP=1
+
+# 46 # Extension Must Be Active: smpmp
+li t0, 1
+csrw mseccfg, t0
+li t1, 0x80000000
+csrw pmpcfg0, t1
+# Result: pmpcfg0.L is set and mseccfg.MML is set, therefore PMP rule 0 is now M-mode-only.
+
+# 47 # Extension Must Be Active: None
+li t0, 1
+csrw mseccfg, t0
+li t1, 2
+csrw mseccfg, t1
+csrr t2, mseccfg
+# Result: t2 = 1
+
+# 48 # Extension Must Be Active: None
+csrrw x0, mseccfg, x0 # Clear mseccfg
+li t0, 1
+csrs mseccfg, t0 # Set mseccfg.MML = 1
+# The rule states: When mseccfg.MML is set, an S/U-mode-only rule is enforced.
+# This means M-mode access to PMP configurations that would normally be
+# "S/U-mode only" is denied/restricted.
+# Attempting to modify PMP configuration in M-mode while MML is set:
+li t0, 0x1
+csrw pmpcfg0, t0
+# Result: Execution succeeds in M-mode, but the PMP rule created is now restricted to S/U-mode access only.
+
+# 49 # Extension Must Be Active: Smisc
+# Setup:
+# 1. Set mseccfg.MML = 1 (Enable Shared-Region rules)
+# 2. Configure PMP entry 0:
+# - pmpaddr0 = 0x1000 (Region: 0x1000 - 0x1fff)
+# - pmpcfg0 = 0x02 (L=0, R=0, W=0, X=1)
+# - Rule: Based on the rule, if MML=1 and L=0, and pmpcfg.X=1, then S/U-mode gets R/W access.
+# 3. Attempt to write to the region from S-mode.
+
+la t0, 0x1000
+csrw mseccfg, t1 # t1 contains 1 (MML=1)
+li t2, 0x02
+csrw pmpcfg0, t2
+mret # Drop to S-mode
+sw x1, 0(t0) # S-mode write access to Shared-Region (should succeed because pmpcfg.X=1)
+# Result: S-mode write access to 0x1000 succeeds
+
+# 50 # Extension Must Be Active: Smstateen
+li t0, 1
+csrw mseccfg, t0 # Set mseccfg.MML = 1
+li t1, 0x80
+csrw pmpcfg0, t1 # Set pmpcfg0.L = 1 (Lock bit)
+# Setup PMP address for the shared region (e.g., 0x1000 to 0x2000)
+li t2, 0x2
+csrw pmpaddr0, t2 # NAPOT encoding for 4KB region at 0x0
+# Set pmpcfg0.X = 1 to enable execution and M-mode read access
+li t1, 0x82
+csrw pmpcfg0, t1 # pmpcfg0.L=1, pmpcfg0.X=1
+# Result: The memory region defined by PMP0 is now a Shared-Region; it is executable by both M-mode and S/U-mode, not writable, and readable by M-mode.
+
+# 51 # Extension Must Be Active: Smepmp
+# Assume PMP address registers are already configured for a specific memory region
+li t0, 1 << 0 # Set MML bit (bit 0)
+csrw mseccfg, t0
+li t1, 0xF # LRWX = 1111 (Read, Write, Execute, Lock)
+csrw pmpcfg0, t1
+# Result: PMP rule 0 is locked, and M-mode/S-mode both have read-only access to the region.
+
+# 52 # Extension Must Be Active: Smisc
+# Setup: Assume PMP0 is initially empty (pmpcfg0 = 0)
+# Step 1: Set mseccfg.MML = 1 (bit 0) and ensure mseccfg.RLB = 0 (bit 2)
+li t0, 1
+csrw mseccfg, t0
+# Step 2: Attempt to write a PMP configuration that is executable and M-mode-only (L=0, X=1, R=1, W=0)
+# According to the rule: When MML=1 and RLB=0, this write should be ignored.
+li t1, 0x1a # Binary: 0001 1010 (X=1, R=1, AP=0, L=0)
+csrw pmpcfg0, t1
+# Step 3: Read pmpcfg0 to verify it remains unchanged (0)
+csrr t2, pmpcfg0
+# Result: t2 = 0
+
+# 53 # Extension Must Be Active: Smisc
+# Setup:
+# 1. Set mseccfg.MML = 1 to enable M-mode Locked (MML) enforcement.
+# 2. Ensure PMP is configured such that the current PC is in a region
+# without a matching M-mode-only rule or is in an S/U-mode-only region.
+# 3. Execute an instruction in M-mode from this forbidden region.
+
+li t0, 1
+csrw mseccfg, t0
+# Assume the PC is now executing from a region that does not satisfy
+# the MML requirements (e.g., a region marked for S-mode only).
+# The next instruction fetch should trigger an access fault.
+nop
+# Result: Instruction access fault exception
+
+# 54 # Extension Must Be Active: None
+li t0, (1 << 32)
+csrw mseccfg, t0
+# Result: mseccfg[33:32] (PMM field) is set to 1, enabling pointer masking for Machine mode.
+
+# 55 # Extension Must Be Active: None
+li t0, 3
+slli t0, t0, 32
+csrw mseccfg, t0
+csrr t1, mseccfg
+srli t1, t1, 32
+andi t1, t1, 3
+# Result: t1 = 0
+
+# 56 # Extension Must Be Active: Zicfilp
+li t0, (1 << 10)
+csrw mseccfg, t0
+# Result: mseccfg.MLPE = 1, Zicfilp is enabled in Machine mode
+
+# 57 # Extension Must Be Active: Zicfilp
+li t0, 0
+csrw mseccfg, t0
+# Now mseccfg.MLPE = 0, Zicfilp is disabled in M-mode
+# Execute an instruction that would normally update ELP (e.g., a landing pad instruction)
+lpad
+# Result: ELP state remains NO_LP_EXPECTED
+
+# 58 # Extension Must Be Active: Zicfilp
+csrw mseccfg, 0 # Set MLPE (bit 10) to 0
+li t0, 0x12345678
+lpad t0, 0xABC # LPAD should act as a no-op because MLPE=0
+# Result: t0 remains 0x12345678
+
+# 59 # Extension Must Be Active: Zicfilp
+csrr t0, mseccfg
+# Result: t0[10] == 0
+
+# 60 # Extension Must Be Active: None
+csrr t0, 0x747
+andi t0, t0, 1
+# Result: t0 = 0
+
+# 61 # Extension Must Be Active: None
+csrr t0, 0x747
+andi t0, t0, 0x2
+# Result: t0 == 0
+
+# 62 # Extension Must Be Active: none
+csrr t0, 0x747
+srli t0, t0, 2
+andi t0, t0, 1
+# Result: t0 should be 0
+
+# 63 # Extension Must Be Active: None
+li t0, 0x747 # Load address of mseccfg
+li t1, 1 # Set MML = 1
+csrw t0, t1 # Write to mseccfg: MML=1
+
+# Setup PMP entry 0 to cover a specific region (e.g., 0x80000000)
+# with L=0, R=0, W=0, X=0 (No access)
+li t0, 0x80000000 # Target address
+csrw pmpaddr0, t0 # Set PMP0 address
+li t1, 0 # pmpcfg0 = 0 (L=0, R=0, W=0, X=0)
+csrw pmpcfg0, t1
+
+# Attempt to access the region in M-mode
+lw t2, 0(t0) # This should trigger an Access Exception
+# Result: Access Exception
+
+# 64 # Extension Must Be Active: None
+# Setup:
+# 1. Set mseccfg.MML = 1 (bit 0)
+# 2. Configure a PMP entry to cover a specific address range with L=0, R=0, W=0, X=0 (No access)
+# 3. Attempt to access that memory region from S-mode.
+
+csrrw x0, mseccfg, 1 # Set mseccfg.MML = 1
+li t0, 0x1000 # Target address in a restricted PMP region
+# Assume PMP entry 0 is configured for [0x1000, 0x1FFF] with L=0, R=0, W=0, X=0
+# Transition to S-mode
+li t1, 0x1 # S-mode privilege
+csrw mstatus, t1 # Simplified privilege transition for test case logic
+lw t2, 0(t0) # Accessing the region should trigger an exception
+
+# Result: Access Exception
+
+# 65 # Extension Must Be Active: None
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1ff
+csrw pmpaddr0, t1
+li t2, 0x80
+csrw pmpcfg0, t2
+la t3, test_region
+lw t4, 0(t3)
+test_region:
+.word 0xdeadbeef
+# Result: Access Exception
+
+# 66 # Extension Must Be Active: Smstateen
+csrw mseccfg, 1 # Set MML = 1
+# Setup PMP entry 0: L=0, R=0, W=0, X=1 (Execute-only)
+# Address range: 0x1000 to 0x1FFF (NAPOT)
+li t0, 0x1000
+csrw pmpaddr0, t0
+li t1, 0x04 # pmpcfg0: L=0, R=0, W=0, X=1 (bit 2=1), A=NAPOT (bits 4:3=01)
+csrw pmpcfg0, t1
+# Switch to S-mode and attempt to execute from the region
+li t0, 0x1000
+mret # Jump to S-mode at 0x1000
+# Result: Execution permitted (no access fault)
+
+# 67 # Extension Must Be Active: Smstateen
+# Setup:
+# 1. Configure PMP entry 0 to cover a specific memory region with L=0, R=0, W=1, X=0.
+# 2. Set mseccfg.MML = 1 to enable the "M-mode Lock" behavior.
+# 3. In M-mode, attempt to read from the region.
+# Based on the rule, since MML=1 and W=1, M-mode should be permitted to read even though R=0.
+
+li t0, 0x1
+csrw pmpaddr0, t0 # Set PMP address (simplified)
+li t1, 0x00000002 # PMP configuration: L=0, R=0, W=1, X=0 (NAPOT or TOR depending on addr)
+csrw pmpcfg0, t1
+
+li t2, 1
+csrs mseccfg, t2 # Set mseccfg.MML = 1
+
+# Target: Access the region configured as W=1, R=0 in M-mode
+# Address is derived from pmpaddr0
+la t3, 0x1
+lw t4, 0(t3) # Should succeed due to MML=1 rule
+
+# Result: M-mode read access is permitted to the region.
+
+# 68 # Extension Must Be Active: None
+csrrw x0, mseccfg, 1
+# Setup PMP entry 0: L=0, R=0, W=1, X=0 (Write-only in PMP config)
+# pmpcfg0: 0x80 (R=0, W=1, X=0, A=NAPOT/TOR/NA4)
+li t0, 0x80
+csrw pmpcfg0, t0
+# Set PMP address for region 0 (example: 0x1000)
+li t1, 0x1000
+csrw pmpaddr0, t1
+# Switch to S-mode and attempt to WRITE to the region
+# According to the rule: If MML=1 and PMP is W=1 (R=0), S-mode should only permit READS.
+# Therefore, a WRITE operation should trigger a store access fault.
+mret # Transition to S-mode (assuming mstatus.MPP=S)
+sw x1, 0(t1)
+# Result: Store Access Fault exception
+
+# 69 # Extension Must Be Active: Smstateen
+# Setup:
+# 1. Set mseccfg.MML = 1 (Machine Mode Locking = 1)
+# 2. Configure PMP entry 0: Address range covers 0x1000 to 0x1FFF,
+# Permissions: L=0, R=0, W=1, X=1 (Write and Execute only)
+# 3. Attempt a Read operation to 0x1000 in M-mode.
+# According to the rule: because MML=1 and the entry is W=1, X=1 (L=0, R=0),
+# M-mode is permitted to Read and Write.
+
+csrr t0, mseccfg
+li t1, 1
+or t0, t0, t1
+csrw mseccfg, t0
+
+li t2, 0x1000
+# PMP Configuration (Assuming 4-byte NAPOT or TOR)
+# pmpaddr0: 0x1000 >> 2
+li t3, 0x400
+csrw pmpaddr0, t3
+# pmpcfg0: Entry 0 = 0x86 (L=0, R=0, W=1, X=1, A=NAPOT)
+li t4, 0x86
+csrw pmpcfg0, t4
+
+# Perform read access to the region
+lw t5, 0(t2)
+
+# Result: Read operation succeeds without triggering an access-fault exception.
+
+# 70 # Extension Must Be Active: None
+li t0, 0x1
+csrw mseccfg, t0
+# Setup PMP: Region 0, Address 0x1000 to 0x2000, L=0, R=0, W=1, X=1 (Value: 0x1B)
+li t0, 0x1B
+csrw pmpcfg0, t0
+li t0, 0x2000
+csrw pmpaddr0, t0
+# Drop privilege to S-mode and attempt to read from the region
+# Based on the rule: L=0, R=0, W=1, X=1 and MML=1 allows Read and Write
+li t1, 0x1000
+lw t2, 0(t1)
+# Result: Success (No load access fault)
+
+# 71 # Extension Must Be Active: None
+# Setup:
+# 1. Set mseccfg.MML = 1 (Bit 0) to enable M-mode locking check.
+# 2. Configure a PMP entry: L=0, R=1, W=0, X=0.
+# Assuming PMP 0 covers the address 0x1000.
+# pmpaddr0 = 0x1000 >> 2
+# pmpcfg0 = 0x02 (R=1, W=0, X=0, L=0)
+# 3. Attempt to read from address 0x1000 in M-mode.
+
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x400
+csrw pmpaddr0, t1
+li t2, 0x02
+csrw pmpcfg0, t2
+li t3, 0x1000
+lw t4, 0(t3)
+# Result: Access Exception
+
+# 72 # Extension Must Be Active: Smstateen
+# Setup: M-mode configures PMP and mseccfg
+# PMP entry 0: Base=0, Bound=0x1000, Permissions: R=1, W=0, X=0, L=0
+# mseccfg.MML = 1
+# Goal: Verify S-mode can read this region (permitted as read-only)
+
+csrw pmpaddr0, 0x1000
+csrw pmpcfg0, 0x08 # R=1, W=0, X=0, L=0 (Entry 0)
+li t0, 1
+csrw mseccfg, t0 # Set MML = 1
+
+# Switch to S-mode
+li t1, 0x1ff # mstatus.MPP = 01 (S-mode)
+csrs mstatus, t1
+mret
+
+# S-mode execution
+lw t0, 0(zero) # Access region covered by PMP0
+# Result: Read successful (no exception)
+
+# 73 # Extension Must Be Active: Smepmp
+li t0, 0x1
+csrw mseccfg, t0 # Set mseccfg.MML = 1
+li t1, 0x1F # L=0, R=1, W=0, X=1 (Address matching for PMP entry 0)
+csrw pmpcfg0, t1 # Configure PMP entry 0: Read and Execute only
+li t2, 0x0 # Target address in the PMP region
+sw x0, 0(t2) # M-mode attempt to write to a region where W=0 and MML=1
+# Result: Access Exception
+
+# 74 # Extension Must Be Active: Smepmp
+# Assume PMP entry 0 is configured for a specific memory region with L=0, R=1, W=0, X=1
+# Step 1: Set mseccfg.MML = 1 to enable the modified PMP rule
+csrw mseccfg, 1
+# Step 2: Transition to S-mode
+# (Assuming standard mechanism to drop privilege to S-mode)
+# Step 3: Attempt to read from the region (Should succeed)
+la t0, 0x1000 # Address within PMP entry 0
+lw t1, 0(t0)
+# Step 4: Attempt to execute from the region (Should succeed)
+jalr x0, 0(t0)
+# Result: S-mode access to the region permits both read and execute operations without triggering a store/AMO or access fault.
+
+# 75 # Extension Must Be Active: None
+li t0, 0x1
+csrw mseccfg, t0
+# PMP configuration: L=0, R=1, W=1, X=0 for region 0
+# pmpaddr0 = 0 (covers all memory for this test)
+# pmpcfg0 = 0x06 (L=0, R=1, W=1, X=0)
+li t1, 0x0
+csrw pmpaddr0, t1
+li t2, 0x06
+csrw pmpcfg0, t2
+# M-mode access to the region (should cause Access Exception because MML=1 and L=0)
+lw t3, 0(t1)
+# Result: Access Exception
+
+# 76 # Extension Must Be Active: None
+# Setup:
+# 1. Set mseccfg.MML = 1 to enable the modified PMP behavior.
+# 2. Configure a PMP entry with L=0, R=1, W=1, X=0.
+# 3. Set pmpaddr to cover a specific memory region.
+# 4. Transition to S-mode to verify that read and write are permitted.
+
+csrr t0, mseccfg
+ori t0, t0, 1 # Set mseccfg.MML = 1
+csrw mseccfg, t0
+
+li t1, 0x17 # L=0, R=1, W=1, X=0 (Binary: 01110) -> pmpcfg0
+csrw pmpcfg0, t1
+li t2, 0x1 # Set pmpaddr0 to cover a memory range
+csrw pmpaddr0, t2
+
+# Transition to S-mode
+li t3, 0x1 # S-mode
+csrw mstatus, t3
+mret
+
+# Test Access in S-mode
+la t4, test_region # Address within PMP0 region
+lw t5, 0(t4) # Should succeed (R=1)
+sw t5, 0(t4) # Should succeed (W=1)
+
+test_region: .word 0
+
+# Result: S-mode access to the region permits both read and write operations.
+
+# 77 # Extension Must Be Active: None
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x1F
+csrw pmpcfg0, t1
+li t2, 0x10
+csrw pmpaddr0, t2
+la t3, 0x10
+lw t4, 0(t3)
+# Result: Access Exception
+
+# 78 # Extension Must Be Active: Smstateen
+csrrw x0, mseccfg, 1 # Set mseccfg.MML = 1
+# Setup PMP entry 0: Address 0x1000 to 0x1FFF, L=0, R=1, W=1, X=1
+li t0, 0x1000
+csrw pmpaddr0, t0
+li t1, 0x83 # R=1, W=1, X=1, L=0 (0b10000011)
+csrw pmpcfg0, t1
+
+# Switch to Supervisor mode to test access
+li t2, 1
+csrw mstatus, t2
+mret
+
+# Attempt to Read, Write, and Execute in S-mode
+li t0, 0x1000
+lw t1, 0(t0) # Read operation
+sw t1, 0(t0) # Write operation
+jalr x0, 0(t0) # Execute operation
+
+# Result: All memory operations (Read, Write, Execute) to the PMP region succeed without triggering an access fault.
+
+# 79 # Extension Must Be Active: None
+li t0, 1
+csrw mseccfg, t0 # Set mseccfg.MML = 1
+li t1, 0x0F # L=1, R=0, W=0, X=0 (Locked and inaccessible)
+csrw pmpcfg0, t1 # Configure PMP entry 0: Locked, no access
+li t2, 0x1000 # Address within PMP entry 0 range (assuming pmpaddr0 is 0)
+sw zero, 0(t2) # Attempt to write to the locked inaccessible region in M-mode
+# Result: Access Exception
+
+# 80 # Extension Must Be Active: Smisc
+# Setup:
+# 1. Set mseccfg.MML = 1 to enable the locked inaccessible region behavior.
+# 2. Configure PMP entry 0 to cover a specific address range.
+# 3. Set PMP entry 0 to L=1 (Locked), R=0, W=0, X=0.
+# 4. Transition to S-mode and attempt to read from that region.
+
+csrw mseccfg, 1 # Set MML = 1
+li t0, 0x1F # L=1, R=0, W=0, X=0 (Locked, no permissions)
+csrw pmpcfg0, t0 # Apply config to PMP entry 0
+li t1, 0x1FFFFFFFFF # Set PMP address for entry 0 (NAPOT or TOR)
+csrw pmpaddr0, t1
+
+# Transition to S-mode
+li t0, (1 << 1) # S-mode
+csrw mstatus, t0
+mret
+
+# Trigger access to the locked inaccessible region
+la t0, 0x1000 # Address within PMP entry 0 range
+lw t1, 0(t0) # This should trigger an Access Exception
+
+# Result: Access Exception
+
+# 81 # Extension Must Be Active: Smepmp
+# Setup: Define a PMP region with L=1, R=0, W=0, X=1 (Locked Execute-Only)
+# Setup: Set mseccfg.MML = 1 to allow M-mode access to locked regions
+li t0, 0x80 # L=1, X=1 (bits 7 and 0)
+csrw pmpaddr0, t1 # Assume t1 contains a valid aligned address
+csrw pmpcfg0, t0
+
+li t1, 1
+csrs mseccfg, t1 # Set MML (bit 0) to 1
+
+# Test: Attempt to execute from the locked region
+# Assuming pc points to the range defined by pmpaddr0
+# Result: Execution is permitted (no access fault)
+
+# Test: Attempt to read from the locked region (should fail)
+la t2, 0x80000000 # Assume this is within the PMP0 region
+lw t3, 0(t2)
+# Result: Store/AMO access fault or Load access fault occurs
+
+# 82 # Extension Must Be Active: None
+# Setup:
+# 1. Set mseccfg.MML = 1
+# 2. Configure PMP entry 0 to cover the target address with L=1, R=0, W=0, X=1
+# 3. Attempt to access (read/write) that region from S-mode
+
+csrw mseccfg, 1 # Set MML = 1
+li t0, 0x0F # L=1, R=0, W=0, X=1 (Binary: 0...1111 where L is bit 3)
+csrw pmpcfg0, t0 # Configure PMP0
+li t1, 0x1000 # Example address covered by PMP0
+csrw pmpaddr0, t1 # Set PMP0 address boundary
+# Switch to S-mode
+li t2, 0x1FFF # mstatus value to enter S-mode
+csrw mstatus, t2
+# Attempt to read from the protected region
+lw t3, 0(t1)
+
+# Result: Access Exception
+
+# 83 # Extension Must Be Active: Smstateen
+csrw mseccfg, 1 # Set mseccfg.MML = 1
+# Assume PMP entry 0 is configured as: L=1, R=0, W=1, X=0 for a specific memory region
+# The following instruction attempts to read (load) from that locked region in M-mode
+lw x10, 0(x11) # x11 points to the region defined by PMP entry 0
+# Result: Store/AMO access fault (load access is prohibited when R=0, even if W=1, given MML=1 and L=1)
+
+# 84 # Extension Must Be Active: Smisc
+# Setup:
+# 1. Set mseccfg.MML = 1 (bit 0)
+# 2. Configure a PMP entry for a specific memory range: L=1, R=0, W=1, X=0
+# 3. Attempt to read (load) from that region in S-mode.
+# 4. According to the rule, only execute operations are permitted; read/write should fault.
+
+csrw mseccfg, 1 # Set MML = 1
+# Assume pmpaddr0 covers the target range, pmpcfg0 set to 0x84 (L=1, R=0, W=1, X=0)
+li t0, 0x84
+csrw pmpcfg0, t0
+# Switch to S-mode and attempt to read from the locked shared code region
+# (Assuming the PC/Address corresponds to the pmpaddr0 range)
+la t1, 0x1000 # Address within PMP0 region
+lw t2, 0(t1) # S-mode Read Access
+# Result: Store Page Fault or Access Fault (since R=0 and MML=1 restricts access to X only)
+
+# 85 # Extension Must Be Active: Smstateen
+li t0, 0x1
+csrw mseccfg, t0
+# Setup PMP entry 0: L=1, R=0, W=1, X=1 (Locked shared code region)
+# PMP configuration: 0x80 (L=1) | 0x00 (R=0) | 0x20 (W=1) | 0x10 (X=1) = 0xB0
+li t1, 0xB0
+csrw pmpcfg0, t1
+# Set PMP address for entry 0 to cover a specific range (e.g., TOR)
+li t2, 0x100
+csrw pmpaddr0, t2
+# Attempt to read from the region (should be permitted due to MML=1 and L=1)
+la t3, 0x100
+lw t4, 0(t3)
+# Attempt to execute from the region (should be permitted)
+la t5, 0x100
+jalr x0, 0(t5)
+# Result: M-mode access to the region succeeds for read and execute operations.
+
+# 86 # Extension Must Be Active: None
+# Setup:
+# 1. Set mseccfg.MML = 1
+# 2. Configure PMP entry 0 for a region with L=1, R=0, W=1, X=1 (Locked, No Read, Write, Execute)
+# 3. Set pmpaddr0 to the target memory region
+# 4. Transition to S-mode
+
+csrr t0, mseccfg
+ori t0, t0, 1
+csrw mseccfg, t0
+
+# PMP configuration: L=1 (bit 7), R=0 (bit 6), W=1 (bit 5), X=1 (bit 4)
+# Binary: 10110000 -> Hex: 0xB0
+li t1, 0xB0
+csrw pmpcfg0, t1
+
+# Set pmpaddr0 to a valid memory address (e.g., 0x80000000)
+li t2, 0x80000000
+csrw pmpaddr0, t2
+
+# Transition to S-mode to attempt access
+li t0, 0x1
+csrw mstatus, t0
+sfence.vma
+
+# Attempt to read from the region (should fail/fault because R=0)
+lw t3, 0(t2)
+
+# Result: Store-access or Load-access fault (Instruction fails because only Execute is permitted when MML=1 and L=1, R=0, W=1, X=1)
+
+# 87 # Extension Must Be Active: Smepmp
+# Setup: Assume PMP entry 0 is configured for a specific memory region (e.g., 0x80000000) with L=1, R=1, W=0, X=0.
+# Action: Set mseccfg.MML = 1 and attempt to read from the locked region in M-mode.
+li t0, 0x1
+csrw mseccfg, t0
+li t1, 0x80000000
+lw t2, 0(t1)
+# Result: The load instruction succeeds because mseccfg.MML=1 allows M-mode access to a locked read-only PMP region.
+
+# 88 # Extension Must Be Active: None
+csrw mseccfg, 1 # Set mseccfg.MML = 1
+li t0, 0x10 # Load PMP configuration: L=1, R=1, W=0, X=0 (0x10 in pmpcfg)
+csrw pmpcfg0, t0 # Apply to PMP0
+li t1, 0x1 # Set PMP address for region 0 (NAPOT or TOR)
+csrw pmpaddr0, t1 # Define memory region
+# Switch to S-mode (simplified representation of privilege transition)
+mret # Transition to S-mode
+lw t2, 0(t1) # Access region defined by PMP0 (R=1, but MML=1 prevents S-mode access)
+# Result: Access Exception
+
+# 89 # Extension Must Be Active: Smepmp
+# Setup:
+# 1. Set mseccfg.MML = 1 (Enable M-mode Lock restriction)
+# 2. Configure PMP entry 0: L=1 (Locked), R=1, W=0, X=1
+# 3. Set PMP address for entry 0 to cover the target address.
+# 4. Execute a read and an instruction fetch from that region in M-mode.
+
+li t0, 1
+csrw mseccfg, t0 # mseccfg.MML = 1
+li t1, 0x1b # L=1, R=1, W=0, X=1 (Binary: 11011)
+csrw pmpcfg0, t1 # Apply config to PMP entry 0
+li t2, 0x1000 # Define region boundary
+csrw pmpaddr0, t2
+
+# Test access to the locked region (assuming address 0x0 is within the region)
+la t3, 0x0
+lw t4, 0(t3) # Read access: Should be permitted
+beq t4, t4, target_label # Execute access: Should be permitted
+
+target_label:
+# Result: M-mode access to the region is permitted for read and execute.
+
+# 90 # Extension Must Be Active: None
+csrw mseccfg, 1
+pmpcfg0 0x1D # Set PMP entry 0: L=1, R=1, W=0, X=1 (0b11101)
+pmpaddr0 0x1000000 # Set PMP region 0 boundary
+mret # Drop to S-mode (assuming mstatus.MPP = 01)
+la t0, 0x1000000
+lw t1, 0(t0) # Attempt to write/read in S-mode to a region where W=0
+# Result: Access Exception
+
+# 91 # Extension Must Be Active: Smisc
+li t0, 1
+csrw mseccfg, t0
+# Assume PMP entry 0 is configured: pmpaddr0 = 0x80000000 >> 2, pmpcfg0 = 0x8B (L=1, R=1, W=1, X=0)
+# The following store and load access the locked region in M-mode
+li t1, 0x1234
+li t2, 0x80000000
+sw t1, 0(t2)
+lw t3, 0(t2)
+# Result: Access permitted, t3 = 0x1234
+
+# 92 # Extension Must Be Active: None
+li t0, 1
+csrw mseccfg, t0
+# Setup PMP: Region 0, L=1, R=1, W=1, X=0 (Address range: 0x0 to 0x1000)
+li t0, 0x00000007
+csrw pmpcfg0, t0
+li t0, 0x1
+csrw pmpaddr0, t0
+# Switch to S-mode to trigger access check
+li t0, 0x1
+csrw mstatus, t0
+# Attempt to read from the PMP region (L=1, R=1, W=1, X=0)
+# This should cause an Access Exception because mseccfg.MML=1
+lw t1, 0(zero)
+# Result: Access Exception
+
+# 93 # Extension Must Be Active: Smisc
+li t0, 0x1
+csrw mseccfg, t0
+# Setup PMP entry 0: Address 0x1000 to 0x1fff, L=1, R=1, W=1, X=1
+li t1, 0x1
+csrw pmpaddr0, t1
+li t2, 0xF
+csrw pmpcfg0, t2
+# Attempt to write to the locked region in M-mode
+li t3, 0xDEADBEEF
+li t4, 0x1000
+sw t3, 0(t4)
+# Result: Store access fault exception (M-mode access is read-only when MML=1 and L=1)
+
+# 94 # Extension Must Be Active: Smmpmp
+csrw mseccfg, 1 # Set mseccfg.MML = 1
+li t0, 0x1F # L=1, R=1, W=1, X=1 (binary 11111)
+csrw pmpcfg0, t0 # Configure PMP entry 0 as locked, full access
+# Assume pmpaddr0 is configured to cover the address in t1
+li t1, 0x80001000 # Target address within PMP0 region
+mret # Drop to S-mode (or U-mode)
+lw t2, 0(t1) # Read access: Permitted (Shared data region)
+sw t2, 0(t1) # Write access: Should trigger a Store Page Fault/Access Fault
+# Result: Read access to the locked PMP region is permitted in S/U-mode, but write access is denied (read-only).
+
+# 95 # Extension Must Be Active: Zicbom
+li t0, 0x1000
+csrr t1, mstatus
+li t2, (1 << 17)
+or t1, t1, t2
+csrw mstatus, t1
+cbo.clean 0(t0)
+# Result: Cache block containing address 0x1000 is cleaned based on the privilege level specified by MPRV=1.
+
+# 96 # Extension Must Be Active: Zicbom
+li t0, 0x1000
+# Set mstatus.MPV = 0 (bit 39) to potentially restrict CMO access
+li t1, 0
+csrs mstatus, t1
+# Attempt a Cache Block Zero (CBO.ZERO) instruction
+cbo.zero (t0)
+# Result: Cache block at address 0x1000 is zeroed if MPV=0 permits access, otherwise access is restricted.
+
+# 97 # Extension Must Be Active: Zicbom
+# Set mstatus.MPP to User mode (00)
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 11) | (1 << 12) # Mask for MPP
+and t1, t1, t2
+csrc 0x300, t2 # Clear MPP to 00 (User)
+# Attempt a Cache Block Zero (CBO.ZERO) instruction
+cbo.zero (a0)
+# Result: The execution of cbo.zero is governed by the MPP field in mstatus; depending on the implementation, this may trigger a store-address-misaligned or access-fault exception if the current privilege/MPP state prohibits CMO access to the target block.
+
+# 98 # Extension Must Be Active: Zicbom
+# Setup: Initialize a user-mode address and ensure we are in Supervisor mode.
+# Set mstatus.SUM = 0 (Supervisor cannot access User pages).
+li t0, 0x300 # mstatus address
+csrr t1, 0x300 # Read mstatus
+li t2, (1 << 18) # SUM bit mask
+and t1, t1, t2 # Clear SUM bit (this is a simplified logic for the test case)
+# In a real scenario, we explicitly clear bit 18:
+li t1, 0
+csrw mstatus, t1 # Clear all, including SUM = 0
+
+# Target: Attempt a Cache Management Operation (CMO) on a user-mode address
+# while SUM=0.
+la t3, user_data # Load address of user-mode page
+cbo.clean t3 # CMO instruction: Clean cache block
+# Result: Store/AMO/CMO access fault exception (due to SUM=0 prohibiting access to user page)
+
+.section .user
+user_data: .word 0xDEADBEEF
+
+# 99 # Extension Must Be Active: Zicbom
+li t0, 0x00000000 # Target address
+csrr t1, mstatus
+li t2, (1 << 19) # MXR bit mask
+and t1, t1, t2
+beqz t1, set_mxr
+cbo.clean t0
+j end
+set_mxr:
+csrs mstatus, t2 # Set MXR = 1
+cbo.clean t0
+end:
+# Result: cbo.clean execution permission depends on mstatus.MXR state
+
+# 100 # Extension Must Be Active: Zfinx
+csrr t0, mstatus
+li t1, (1 << 13)
+or t0, t0, t1
+csrw mstatus, t0
+csrr t0, mstatus
+srli t0, t0, 13
+andi t0, t0, 3
+# Result: t0 = 0
+
+# 101 # Extension Must Be Active: Zfinx
+li t0, 0
+csrrw t1, mstatus, t0 # Set mstatus.FS to 0 (Off)
+csrr t2, fcsr # Access fcsr register
+# Result: No exception is raised; fcsr is read successfully into t2.
+
+# 102 # Extension Must Be Active: V
+li t0, 0
+csrr t1, mstatus
+# Clear VS field (bits 10:9) to 0 (Off)
+li t2, ~(3 << 9)
+and t1, t1, t2
+csrw mstatus, t1
+# Attempt to execute a vector instruction while VS is Off
+vsetvli t0, x0, 0
+# Result: illegal-instruction exception
+
+# 103 # Extension Must Be Active: V
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 9)
+and t1, t1, t2
+# Set mstatus.VS to Initial (00)
+li t3, 0
+slli t3, t3, 9
+li t4, ~(1 << 9)
+li t4, ~(1 << 10)
+or t4, t4, t3
+csrw 0x300, t4
+# Execute an instruction that changes vector state (vsetvli)
+vsetvli zero, zero, 0
+# Read mstatus to verify VS is now Dirty (01)
+csrr t1, 0x300
+# Result: mstatus.VS is changed to Dirty (01)
+
+# 104 # Extension Must Be Active: V
+li t0, (2 << 9) # Set VS (bits 10:9) to 2 (Dirty)
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.SD == 1
+
+# 105 # Extension Must Be Active: V
+li t0, 0
+csrr t1, mstatus
+# Clear VS field (bits 10:9) to 0 (Off)
+li t2, (1 << 9) | (1 << 10)
+and t1, t1, t2
+not t2, t2
+or t1, t1, t2 # This logic is flawed, let's use a mask
+li t2, ~( (3 << 9) )
+and t1, t1, t2
+csrw mstatus, t1
+# Execute a vector instruction while VS is Off
+vsetvli t0, x0, e8, m1, ta, ma
+# Result: illegal-instruction exception
+
+# 106 # Extension Must Be Active: V
+# Setup: M-mode, V=1 (mstatus.V=1), mstatus.VS=Initial, vsstatus.VS=Initial
+# Instruction: vsetvli (changes vector state)
+# Expected: Both mstatus.VS and vsstatus.VS transition to Dirty (3)
+
+li t0, 0x1
+csrs mstatus, t0 # Set mstatus.V = 1
+li t1, 0x0
+csrw mstatus, t1 # Clear VS field (Set to Off)
+csrw vsstatus, t1 # Clear VS field (Set to Off)
+# Note: The rule requires VS not to be Off. Let's set them to Initial (1)
+li t2, (1 << 9)
+csrs mstatus, t2 # mstatus.VS = Initial
+csrs vsstatus, t2 # vsstatus.VS = Initial
+vsetvli zero, zero, 0 # Instruction that changes vector state
+# Result: mstatus.VS = Dirty (3), vsstatus.VS = Dirty (3)
+
+# 107 # Extension Must Be Active: V
+li t0, 0x600 # Value where VS=2 (Dirty) - bit 10 and 9 are set
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.SD is 1
+
+# 108 # Extension Must Be Active: Zve
+li t0, 0
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus.VS == 0 and mstatus.SD == 0
+
+# 109 # Extension Must Be Active: V
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 13)
+and t1, t1, t2
+not t1, t1
+csrw 0x300, t1
+vadd.vv v1, v2, v3
+# Result: illegal-instruction exception
+
+# 110 # Extension Must Be Active: V, F
+li t0, 0
+csrw mstatus, t0
+vsetvli t1, x0, e32, m1, ta, ma
+vmfadd.vv v1, v2, v3, v4
+csrr t0, mstatus
+# Result: mstatus.FS set to 3 (Dirty)
+
+# 111 # Extension Must Be Active: H, V
+li t0, 0
+csrr t1, mstatus
+# Clear FS field (bits 14:13) to 00 (Off)
+li t2, ~(3 << 13)
+and t1, t1, t2
+# Set V bit (bit 63) to 1 (Hypervisor enabled/active)
+li t2, (1 << 63)
+or t1, t1, t2
+csrw mstatus, t1
+# Attempt to execute a vector floating-point instruction
+vfwadd.vv v1, v2, v3
+# Result: illegal-instruction exception
+
+# 112 # Extension Must Be Active: H, V
+# Setup: M-mode configures Hypervisor mode and enters VS-mode (V=1)
+# Ensure mstatus.FS = 0 (Off) and vsstatus.FS = 0 (Off)
+li t0, 0
+csrw mstatus, t0
+li t1, 0
+csrw vsstatus, t1
+
+# Execute a vector floating-point instruction
+# vflw.v v1, (a0) is a vector floating-point load
+vflw.v v1, (a0)
+
+# Result: illegal-instruction exception
+
+# 113 # Extension Must Be Active: H, V
+# Set V=1 in mstatus to enable virtualization mode
+li t0, (1 << 10) # VS field bit 10 (hypothetically mapping to V-mode active)
+csrs mstatus, t0
+# Clear FS bits in both mstatus and vsstatus to Off (00)
+li t1, ~(3 << 13)
+csrs mstatus, t1
+li t2, ~(3 << 13)
+csrs vsstatus, t2
+# Execute a vector floating-point instruction that modifies state
+vsetvli t3, x0, e32, m1, ta, ma
+vfmv.v.f v1, v2
+# Result: mstatus.FS = 3 (Dirty), vsstatus.FS = 3 (Dirty)
+
+# 114 # Extension Must Be Active: None
+csrr x10, mstatus
+# Result: Illegal-instruction exception if executed in S-mode or U-mode; success if executed in M-mode.
+
+# 115 # Extension Must Be Active: None
+li t0, 0x1
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0x1
+
+# 116 # Extension Must Be Active: None
+li t0, 0x1
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0x1
+
+# 117 # Extension Must Be Active: None
+li t0, 0x0
+csrr t1, mstatus
+li t2, (1 << 3) # MIE bit
+or t2, t2, (1 << 1) # SIE bit
+csrs mstatus, t2
+csrr t1, mstatus
+and t1, t1, t2
+# Result: t1 = 0x0A
+
+# 118 # Extension Must Be Active: None
+# Setup: Processor is in Machine Mode (M-mode).
+# We set mstatus.SIE = 1 (Supervisor Interrupt Enable) and mstatus.MIE = 1 (Machine Interrupt Enable).
+# According to the rule: "interrupt enable for any lower-privilege mode w (w < x) is always globally disabled irrespective of the value of the wIE bit."
+# Since the current privilege mode is M-mode (x=3), and Supervisor mode is lower (w=1),
+# interrupts for Supervisor mode must be globally disabled even though SIE is 1.
+
+li t0, 0x2 # Value to set SIE (bit 1) and MIE (bit 3) would be 10 (0x2 | 0x8)
+li t0, 0xA
+csrw mstatus, t0
+
+# Result: Interrupts for S-mode and U-mode are globally disabled because the processor is executing in M-mode.
+
+# 119 # Extension Must Be Active: None
+li t0, 0
+csrw mstatus, t0
+# Result: M-mode interrupts are globally enabled despite MIE=0 because no privilege mode exists higher than M-mode, but if the processor is in S-mode, M-mode interrupts will trigger regardless of the MIE bit value.
+
+# 120 # Extension Must Be Active: None
+li t0, 0x22 # Binary: 0010 0010 (Sets bits 5 [SPIE] and 1 [SIE])
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 should be 0x0 (or specifically, bits 5 and 1 of mstatus must remain 0 if supervisor mode is not implemented)
+
+# 121 # Extension Must Be Active: None
+li t0, 0x3 # Value for MPP: 3 (Machine mode)
+csrrw t1, mstatus, t0 # Write to mstatus; however, MPP is at bits 11-12
+# To specifically test the rule: MPP is bits 12:11.
+# Let's shift the value 3 (binary 11) to bits 12:11.
+li t0, (3 << 11)
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 11
+andi t1, t1, 0x3
+# Result: t1 = 3
+
+# To verify SPP (bit 8) is one bit wide:
+li t0, (1 << 8)
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 8
+andi t1, t1, 0x1
+# Result: t1 = 1
+
+# 122 # Extension Must Be Active: None
+# Scenario: Trap from Supervisor mode (y=S) to Machine mode (x=M).
+# Initial state: mstatus.MIE = 1, mstatus.MPIE = 0.
+# Process:
+# 1. Set mstatus.MIE to 1.
+# 2. Trigger a trap (e.g., ecall from S-mode).
+# 3. According to the rule:
+# - mstatus.MPIE (xPIE) = current mstatus.MIE (1)
+# - mstatus.MIE (xIE) = 0
+# - mstatus.MPP (xPP) = S-mode (01 in binary, which is 1)
+
+# Initial setup in M-mode
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 3) # MIE bit
+or t1, t1, t2
+csrw 0x300, t1
+
+# Transition to S-mode and trigger trap
+# (Assume environment setup transitions to S-mode)
+ecall
+
+# Result: mstatus.MPIE=1, mstatus.MIE=0, mstatus.MPP=1
+
+# 123 # Extension Must Be Active: None
+li t0, 0x0
+csrrw t1, mstatus, t0 # Clear mstatus to test specific bits
+# Setup:
+# mstatus.MPIE = 1 (bit 7)
+# mstatus.MPP = 0 (U-mode, bits 12:11)
+# mstatus.MPRV = 1 (bit 17)
+li t0, (1 << 7) | (0 << 11) | (1 << 17)
+csrw mstatus, t0
+mret
+# Result: mstatus.MIE=1, mstatus.MPIE=1, mstatus.MPP=0, mstatus.MPRV=0, CurrentPrivilege=U
+
+# 124 # Extension Must Be Active: None
+li t0, 0x3 # Value 3 corresponds to M-mode
+csrrw t1, mstatus, t0 # Write 3 to MPP (bits 11-12) and read old value
+# Result: mstatus.MPP is updated to 3 (M-mode) if supported, or a value <= 3 if only lower modes are implemented. Since M-mode is always implemented in RISC-V, mstatus.MPP will be 3.
+
+# 125 # Extension Must Be Active: None
+li t0, 0x1 << 11 # Load value for S-mode (MPP = 01 in bits 12:11)
+csrw mstatus, t0 # Write S-mode to MPP field
+csrr t1, mstatus # Read back mstatus
+srli t1, t1, 11 # Shift to isolate MPP field
+andi t1, t1, 0x3 # Mask to get only the 2 bits of MPP
+# Result: t1 contains 0x1 if S-mode is implemented, or 0x0/0x3 if not implemented (depending on hardware behavior for unsupported modes)
+
+# 126 # Extension Must Be Active: None
+li t0, 0x3 # Binary 11 (M-mode)
+csrw mstatus, t0 # Set MPP to 11
+csrr t1, mstatus
+# Result: t1 = 0x3 (MPP bits 11..12 are 11)
+
+# 127 # Extension Must Be Active: None
+csrr x10, mstatus
+srli x11, x10, 42
+andi x12, x11, 1
+# Result: x12 = 1
+
+# 128 # Extension Must Be Active: None
+li t0, (1 << 42) | (1 << 3)
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus[42] = 1, mstatus[3] = 0
+
+# 129 # Extension Must Be Active: None
+li t0, (1 << 42) | (1 << 3)
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: mstatus[42] == 1, mstatus[3] == 0
+
+# 130 # Extension Must Be Active: None
+li t0, 0x0
+csrr t1, mstatus
+# Set MDT (bit 42) to 1, and ensure MIE (bit 3) is 0
+li t2, (1 << 42)
+csrw mstatus, t2
+# Attempt to set MIE=1 while MDT=1.
+# According to the rule, this should be ignored or prohibited.
+li t2, (1 << 42) | (1 << 3)
+csrw mstatus, t2
+csrr t1, mstatus
+# Result: mstatus bit 3 (MIE) remains 0 because MDT was 1 and not being cleared in the same write.
+
+# 131 # Extension Must Be Active: none
+li t0, 0
+csrw mstatus, t0
+ecall
+csrr t1, mstatus
+# Result: mstatus[42] (MDT) is 1
+
+# 132 # Extension Must Be Active: Smast
+# Trigger an RNMI (Resumable Non-Maskable Interrupt) and check mstatus.MDT
+csrr t0, mstatus
+li t1, (1 << 42)
+and t0, t0, t1
+# Simulate RNMI event here (via platform-specific trigger)
+# After RNMI trap handler is entered:
+csrr t0, mstatus
+li t1, (1 << 42)
+and t0, t0, t1
+# Result: t0 == 0
+
+# 133 # Extension Must Be Active: None
+li t0, (1 << 42)
+csrw mstatus, t0
+mret
+# Result: mstatus[42] == 0
+
+# 134 # Extension Must Be Active: None
+li t0, (1 << 42)
+csrw mstatus, t0
+sret
+# Result: mstatus[42] == 0
+
+# 135 # Extension Must Be Active: None
+li t0, (1 << 42)
+csrw mstatus, t0
+li t1, 0
+csrs mstatus, t1
+# Set MPP to 0 (User mode) to ensure return is not to M-mode
+li t0, (3 << 11)
+csrs mstatus, t0
+# Note: In a real environment, we would set mepc to a valid address
+# MNRET will return to privilege mode defined by MPP (User)
+mnret
+# Result: mstatus.MDT is 0
+
+# 136 # Extension Must Be Active: S
+# Assume starting in M-mode.
+# Setup mstatus.MPP = 0 (User mode) to ensure MRET transitions to U-mode.
+# Setup sstatus.SD = 1 (bit 63) to test that it is cleared.
+li t0, 0x8000000000000000
+csrw sstatus, t0
+li t1, 0
+csrs mstatus, t1 # Ensure MPP is 0 (U-mode)
+mret
+# Result: sstatus.SD = 0
+
+# 137 # Extension Must Be Active: Svnap
+# Setup:
+# 1. Set mstatus.MPP to 0 (User mode) and mstatus.MPV to 1 (Virtualization), making the target mode VU.
+# 2. Manually set vsstatus.SDT (bit 63) to 1.
+# 3. Execute MRET to transition to VU mode.
+# 4. Verify vsstatus.SDT is cleared to 0.
+
+la t0, 0x300 # mstatus
+csrr t1, 0x300
+li t2, 0
+srli t1, t1, 11 # shift to MPP
+andi t1, t1, 3
+# Ensure mstatus.MPP = 0 (User) and mstatus.MPV = 1 (Virtual)
+li t2, (1 << 39) # MPV bit
+csrs t2, 0x300
+# Clear MPP bits (11, 12)
+li t3, ~(3 << 11)
+csrs t3, 0x300
+
+la t0, 0x200 # vsstatus
+li t1, (1 << 63) # SDT bit
+csrs t1, 0x200 # Set vsstatus.SDT = 1
+
+mret
+
+# Result: vsstatus.SDT is 0
+
+# 138 # Extension Must Be Active: None
+li t0, 0x20000000000000 # Bit 42 (MDT) = 1
+csrw mstatus, t0
+li t1, 0x80000000000000 # Bit 63 (SD) = 1
+csrs sstatus, t1
+li t0, 0x0 # Set MPP to 0 (User mode)
+csrc mstatus, t0
+# Note: In a real environment, mstatus.MPP is set via masking; here we ensure MPP=0 for U-mode
+li t0, 0x0
+csrs mstatus, t0
+# Set mstatus.MDT to 0 and trigger MNRET to U-mode
+li t0, 0x0
+csrc mstatus, t0 # Ensure MDT is 0 before MNRET logic triggers
+mnret
+# Result: sstatus.SDT is set to 0
+
+# 139 # Extension Must Be Active: Svnap
+# Setup:
+# 1. Set mstatus.MDT = 1
+# 2. Set vsstatus.SDT = 1
+# 3. Set mstatus.MPP = VU (Virtual User mode)
+# 4. Execute MNRET to transition to VU mode and clear MDT.
+la t0, 0x300 # mstatus
+csrr t1, 0x300
+li t2, (1 << 42) # MDT bit
+or t1, t1, t2
+csrw 0x300, t1
+
+la t0, 0x200 # vsstatus
+csrr t1, 0x200
+li t2, (1 << 63) # SDT bit
+or t1, t1, t2
+csrw 0x200, t1
+
+la t0, 0x300 # mstatus
+csrr t1, 0x300
+li t2, (0x1 << 11) # MPP = VU (binary 01 for VU in some configs, or specific encoding)
+# Note: For VU, MPP is typically encoded as 01 (Virtual User)
+li t2, (1 << 11)
+and t1, t1, ~(0x3 << 11)
+or t1, t1, t2
+csrw 0x300, t1
+
+mnret
+# Result: mstatus.MDT == 0 and vsstatus.SDT == 0
+
+# 140 # Extension Must Be Active: rv64
+li t0, 0x1
+csrr t1, mstatus
+# Set SXL to 0 (32-bit) and UXL to 0 (32-bit)
+# SXL is bits 35:34, UXL is bits 33:32
+# Mask out these bits and write 0
+li t2, ~( (3 << 34) | (3 << 32) )
+and t1, t1, t2
+csrw mstatus, t1
+csrr t1, mstatus
+# Result: mstatus[35:32] == 0
+
+# Alternatively, testing the WARL (Write Any Read Legal) nature:
+# Writing an unsupported value to SXL/UXL should result in the hart's
+# supported XLEN value being read back.
+li t0, 0x3
+slli t0, t0, 34 # Set SXL to 3 (reserved/unsupported)
+csrr t1, mstatus
+or t1, t1, t0
+csrw mstatus, t1
+csrr t1, mstatus
+# Result: mstatus[35:34] != 3 (Value is clamped to a legal XLEN setting)
+
+# 141 # Extension Must Be Active: None
+li t0, 0x1 << 62 # Set MXL bits to 1 (representing 64-bit if MXL=1, though usually MXL=0 for 32 and MXL=1 for 64)
+csrrw misa, t0 # Set misa.MXL
+csrr t1, mstatus # Read mstatus
+# Result: t1[35:34] == misa[63:62] AND t1[33:32] == misa[63:62]
+
+# 142 # Extension Must Be Active: None
+li t0, 0x3 << 34 # Value to attempt to write to SXL field (bits 35:34)
+csrw mstatus, t0 # Write value to mstatus
+csrr t1, mstatus # Read mstatus back
+srli t1, t1, 34 # Shift right to isolate SXL field
+andi t1, t1, 0x3 # Mask to keep only SXL bits
+# Result: t1 = 0
+
+# 143 # Extension Must Be Active: None
+li t0, 0x2 # Value to attempt to write to SXL field (bits 35:34)
+csrr t1, mstatus
+slli t0, t0, 34
+or t0, t0, t1
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 34
+andi t1, t1, 0x3
+# Result: t1 contains the actual SXLEN value as determined by the hardware (WARL), regardless of whether 0x2 was written.
+
+# 144 # Extension Must Be Active: None
+li t0, 3
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 32
+andi t1, t1, 3
+# Result: t1 is 0
+
+# 145 # Extension Must Be Active: None
+li t0, 0x1 << 32 # Set UXL field to 1 (representing 32-bit UXLEN)
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, (0x3 << 32)
+srli t1, t1, 32
+# Result: t1 = 1
+
+li t0, 0x3 << 32 # Set UXL field to 3 (representing 64-bit UXLEN)
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, (0x3 << 32)
+srli t1, t1, 32
+# Result: t1 = 3
+
+li t0, 0x2 << 32 # Attempt to write 2 (Reserved/Invalid value for UXL)
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, (0x3 << 32)
+srli t1, t1, 32
+# Result: t1 != 2 (WARL behavior: register retains a valid architectural value)
+
+# 146 # Extension Must Be Active: S-mode (Supervisor Mode)
+li t0, 0x0
+# SXL is bits 35:34, UXL is bits 33:32.
+# Setting SXL = 0 (32-bit) and UXL = 1 (64-bit) violates the rule: UXLEN > SXLEN.
+# Value: (0 << 35) | (1 << 33) = 0x200000000
+li t1, 0x200000000
+csrw mstatus, t1
+# Result: Illegal Instruction Exception
+
+**Reasoning:**
+1. **SXL (bits 35-34):** 0 encodes 32-bit (SXLEN = 32).
+2. **UXL (bits 33-32):** 1 encodes 64-bit (UXLEN = 64).
+3. **The Rule:** If S-mode is implemented, any encoding where UXLEN > SXLEN is illegal.
+4. **Effect:** Writing a value to `mstatus` that creates an illegal state for the UXL field must trigger an illegal-instruction exception.
+
+# 147 # Extension Must Be Active: zicsr
+li t0, 0x0
+# Set mstatus.UXL to 1 (which configures User-mode XLEN to 32 bits on a 64-bit system)
+# UXL is bits 33..32. Value 1 = 32-bit.
+li t1, (1 << 32)
+csrw mstatus, t1
+# Transition to User mode to apply the XLEN setting
+li t0, 0
+csrw mepc, t0
+mret
+
+# --- Now in User Mode (XLEN=32) ---
+# Load a 64-bit value into a register.
+# Since XLEN is 32, the hardware must ignore bits 63..32 of source operands
+# and sign-extend results to 64 bits.
+li t2, 0x00000000FFFFFFFF # This is -1 in 32-bit
+li t3, 0x0000000100000001 # The upper bit (32) is set
+add t4, t2, t3 # 32-bit add: 0xFFFFFFFF + 0x00000001 = 0x00000000
+# Result should be 0, then sign-extended to 64-bit (still 0)
+
+# Test sign extension:
+li t2, 0x0000000080000000 # 32-bit value with MSB set (negative)
+mv t4, t2 # Move should sign-extend 0x80000000 to 0xFFFFFFFF80000000
+# Result: t4 = 0xFFFFFFFF80000000
+
+# Result: t4 = 0xFFFFFFFF80000000
+
+# 148 # Extension Must Be Active: None
+# Setup: Assume a 64-bit system (Widest XLEN = 64).
+# Set UXL = 1 (User XLEN = 32 bits).
+# Set PC to a value that exceeds 32 bits, and perform a jump/write to PC.
+
+li t0, 0x300 # mstatus address
+csrr t1, 0x300 # Read mstatus
+li t2, (1 << 32) # Mask for UXL bit (bit 32)
+or t1, t1, t2 # Set UXL=1 (User mode is now 32-bit)
+csrw 0x300, t1 # Write back to mstatus
+
+# Scenario: In User mode (XLEN=32), writing a 32-bit address to PC
+# should result in sign-extension to 64 bits.
+# We simulate a jump to 0x8000_0000 (which is negative if treated as 32-bit signed).
+li t3, 0x80000000 # Target address (32-bit)
+# In a real execution, if the CPU transitions to U-mode and jumps to t3:
+# The 32-bit value 0x80000000 is sign-extended to 0xFFFFFFFF80000000.
+
+# Result: PC becomes 0xFFFFFFFF80000000
+
+# 149 # Extension Must Be Active: None
+li t0, 0x3
+csrs mstatus, t0 # Set UXL = 3 (64-bit) while in M-mode (assuming a 32-bit hardware implementation or S-mode is 32-bit)
+# Result: mstatus.UXL is updated to 3 without triggering an exception, regardless of M-mode XLEN.
+
+# 150 # Extension Must Be Active: none
+li t0, 0x0
+csrr t1, mstatus
+li t2, (1 << 17)
+and t1, t1, t2
+beq t1, t0, access_mem
+# Setup for case where MPRV might be 1 (should not happen in this test flow)
+li t0, 0
+j end
+
+access_mem:
+# MPRV is 0. Perform a load using current privilege mode (M-mode)
+# Assuming address 0x80000000 is valid M-mode memory
+la t3, 0x80000000
+lw t4, 0(t3)
+
+end:
+# Result: Memory access is performed using M-mode translation and protection mechanisms.
+
+# 151 # Extension Must Be Active: None
+li t0, 0x2000 # A virtual address valid in User-mode but protected from Machine-mode (via PMP or Page Tables)
+csrw mstatus, 0 # Clear mstatus
+li t1, 3 # Set MPP to 3 (Machine mode)
+slli t1, t1, 11 # Shift to MPP position (bits 11-12)
+ori t1, t1, (1 << 17) # Set MPRV = 1
+csrw mstatus, t1 # Now MPRV=1 and MPP=M
+sw x0, 0(t0) # Store should occur with M-mode privileges regardless of current mode
+# Result: Store at 0x2000 succeeds using M-mode translation and protection settings.
+
+# 152 # Extension Must Be Active: None
+li t0, 0x10000 # Load a virtual address
+csrr t1, mstatus
+li t2, (1 << 17) # MPRV bit mask
+or t1, t1, t2 # Set MPRV = 1
+csrw mstatus, t1 # Enable Modify Privilege (MPRV)
+# The rule states that instruction address-translation and protection
+# are unaffected by MPRV. Therefore, attempting to jump to an
+# invalid/protected address should still trigger a fault regardless of MPRV.
+la t3, 0xDEADD00D # Load invalid address
+jr t3
+# Result: Instruction address-translation fault (exception) regardless of mstatus.MPRV setting
+
+# 153 # Extension Must Be Active: None
+li t0, (1 << 17)
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, (1 << 17)
+# Result: t1 = 0
+
+# 154 # Extension Must Be Active: None
+li t0, 0x20000 # Set MPRV bit (bit 17) to 1
+csrw mstatus, t0
+li t1, 0x0 # Set MPP to User mode (00 in bits 12..11)
+# Clear MPP bits in mstatus (masking bits 12 and 11)
+li t2, ~(3 << 11)
+and t0, t0, t2
+csrw mstatus, t0
+mret
+# Result: mstatus.MPRV is 0
+
+# 155 # Extension Must Be Active: Zicsr
+li t0, 0x10000 # Load a target address
+li t1, 0x1234 # Value to store
+csrw mstatus, zero # Reset mstatus
+li t2, (1 << 17) # MPRV bit
+li t3, (0 << 11) # MPP = 0 (User mode)
+or t2, t2, t3 # Combine MPRV=1 and MPP=U
+csrw mstatus, t2 # Enable MPRV and set MPP to U
+sw t1, 0(t0) # Store will be treated as 32-bit (assuming 64-bit Hart)
+# Result: Store at 0x1000 is performed as a 32-bit access regardless of current XLEN.
+
+# 156 # Extension Must Be Active: None
+li t0, 0
+csrr t1, mstatus
+li t2, (1 << 19)
+and t1, t1, t2
+beqz t1, load_non_readable
+jump end
+
+load_non_readable:
+# Assume x10 points to a memory page where R=0 (not readable)
+lw t3, 0(x10)
+
+end:
+# Result: Load access fault exception (caused by MXR=0 and R=0)
+
+# 157 # Extension Must Be Active: None
+# Setup: Assume a page is mapped as Executable but NOT Readable (R=0, X=1).
+# The following code enables MXR and attempts to load from that page.
+
+li t0, 0x80000 # Example address of a page with R=0, X=1
+csrr t1, mstatus
+li t2, (1 << 19) # MXR bit is bit 19
+or t1, t1, t2
+csrw mstatus, t1
+lw t3, 0(t0)
+# Result: load from address 0x80000 succeeds without a page fault
+
+# 158 # Extension Must Be Active: None
+li t0, (1 << 19)
+csrs mstatus, t0
+la t1, test_label
+lw t2, 0(t1)
+test_label:
+.word 0x12345678
+# Result: t2 = 0x12345678 (MXR bit set in mstatus does not change memory access behavior when page-based virtual memory is disabled)
+
+# 159 # Extension Must Be Active: None
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 19)
+and t3, t1, t2
+# Result: t3 == 0
+
+# 160 # Extension Must Be Active: satp
+# Setup:
+# 1. Set mstatus.SUM = 0 (bit 18).
+# 2. Configure satp to enable paging.
+# 3. Map a page in the page table with U=1 (User-accessible).
+# 4. Enter Supervisor mode.
+# 5. Attempt to load from the U-mode page.
+
+li t0, 0x0
+csrw mstatus, t0 # Ensure SUM = 0
+# (Assume page table is configured such that 0x80001000 is U=1)
+li t1, 0x80001000 # Address of a User-mode page
+lw t2, 0(t1) # S-mode access to U-mode page while SUM=0
+# Result: Store Page Fault (Exception Code 13 or 15)
+
+# 161 # Extension Must Be Active: None
+# Setup: Assume a page is mapped as User-accessible (U=1) and we are in S-mode.
+# Case: Set SUM=1 in mstatus to allow S-mode access to U-mode pages.
+
+csrr t0, mstatus
+li t1, (1 << 18)
+or t0, t0, t1
+csrw mstatus, t0
+la t2, user_page_address
+lw t3, 0(t2)
+
+# Result: The load instruction (lw) succeeds without triggering a page fault because mstatus.SUM is 1.
+
+# 162 # Extension Must Be Active: None
+li t0, 0x40000 # Value to set SUM=1 (bit 18)
+csrw mstatus, t0
+la t1, user_data
+lw t2, 0(t1)
+# Result: lw succeeds regardless of SUM value because page-based virtual memory is disabled (satp.MODE=0)
+
+.section .data
+user_data: .word 0xDEADBEEF
+
+# 163 # Extension Must Be Active: None
+# Setup:
+# 1. Set mstatus.MPP = 1 (S-mode)
+# 2. Set mstatus.MPRV = 1 (Modify privilege for memory access)
+# 3. Set mstatus.SUM = 0 (Disable Supervisor User-memory access)
+# 4. Attempt to load from a User-mode address while in M-mode.
+# 5. This should trigger a store/AMO page fault or access fault because SUM=0 and MPRV=1/MPP=S.
+
+la t0, user_data
+li t1, 0x300
+csrr t2, 0x300
+li t3, (1 << 11) | (1 << 17) # MPP=S (bit 11), MPRV=1 (bit 17)
+and t2, t2, ~(1 << 18) # Clear SUM (bit 18)
+or t2, t2, t3
+csrw 0x300, t2
+lw t4, 0(t0)
+
+user_data: .word 0xDEADBEEF
+
+# Result: Store/AMO page fault or access fault exception triggered due to SUM=0 restriction.
+
+# 164 # Extension Must Be Active: None
+li t0, 0x40000 # Bit 18 is the SUM bit
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, 0x40000
+# Result: t1 = 0
+
+# 165 # Extension Must Be Active: None
+li t0, 0x10000000 # Load an address known to be restricted by PMA (e.g., a non-existent or reserved region)
+li t1, 0x1
+csrr t2, mstatus
+or t2, t2, (1 << 19) # Set mstatus.MXR = 1
+csrw mstatus, t2
+sw t1, 0(t0) # Attempt access to PMA-restricted region
+# Result: Access-fault exception is raised regardless of mstatus.MXR being 1
+
+# 166 # Extension Must Be Active: None
+# Setup:
+# 1. Configure PMP to deny access to a specific memory region (e.g., 0x1000).
+# 2. Set mstatus.SUM = 1 (which would normally allow S-mode to access user pages).
+# 3. Execute a load from the PMP-protected region in S-mode.
+# 4. The PMP check happens independently of the SUM bit.
+
+csrr t0, mstatus
+li t1, (1 << 18)
+or t0, t0, t1
+csrw mstatus, t0
+# PMP configuration: Region 0, address 0x1000, no access permitted
+li t0, 0x0
+csrw pmpcfg0, t0
+li t1, 0x1000
+csrw pmpaddr0, t1
+# Switch to S-mode
+li t0, 0x1
+csrw mstatus, t0 # Simplified transition for test logic
+# Attempt access to protected region
+lw t0, 0(t1)
+# Result: access-fault exception
+
+# 167 # Extension Must Be Active: None
+li t0, 0x12345678
+la t1, data_section
+sw t0, 0(t1)
+csrr t2, mstatus
+li t3, (1 << 37)
+or t2, t2, t3
+csrw mstatus, t2
+li t0, 0x87654321
+sw t0, 0(t1)
+lw t0, 0(t1)
+# Result: t0 = 0x21436587 (Big-endian store/load when mstatus.MBE=1 and mstatus.MPRV=0)
+
+.data
+data_section: .word 0
+
+# 168 # Extension Must Be Active: None
+li t0, 0x12345678
+la t1, test_val
+sw t0, 0(t1)
+csrr t2, mstatus
+li t3, (1 << 37)
+and t3, t2, t3
+beqz t3, check_le
+j fail
+check_le:
+lw t4, 0(t1)
+# Result: t4 = 0x12345678
+
+test_val: .word 0
+
+# 169 # Extension Must Be Active: None
+# Setup: Assume memory address 0x1000 contains the 32-bit value 0x11223344 in little-endian (Byte 0: 0x44, Byte 1: 0x33, Byte 2: 0x22, Byte 3: 0x11)
+li t0, 0x300 # mstatus address
+csrr t1, t0 # Read current mstatus
+li t2, (1 << 37) # Bit 37 is MBE
+or t1, t1, t2 # Set MBE = 1
+csrw t0, t1 # Write back to mstatus
+li t3, 0x1000 # Load address
+lw t4, 0(t3) # Perform non-instruction-fetch load
+# Result: t4 = 0x44332211
+
+# 170 # Extension Must Be Active: None
+li t0, 1
+csrs mstatus, t0 # Attempt to set bit 0 (SIE), but more importantly, attempt to write to mstatus
+li t1, (1 << 36)
+csrs mstatus, t1 # Attempt to set SBE bit (bit 36)
+csrr t2, mstatus
+srli t2, t2, 36
+andi t2, t2, 1
+# Result: t2 == 0
+
+# 171 # Extension Must Be Active: none
+# Setup: Assume M-mode is used to configure S-mode, and the processor is then switched to S-mode.
+# Memory at 0x80001000 contains: 0x11 0x22 0x33 0x44 (Little Endian)
+
+# Step 1: Set mstatus.SBE = 1 (Bit 36) to enable Big Endian for S-mode
+li t0, (1 << 36)
+csrs mstatus, t0
+
+# Step 2: Switch to S-mode (simplified representation)
+# [Privilege switch logic occurs here]
+
+# Step 3: Perform a load in S-mode
+la t1, 0x80001000
+lw t2, 0(t1)
+
+# Result: t2 = 0x11223344 (The load treats memory as Big Endian, reversing the byte order relative to LE)
+
+# 172 # Extension Must Be Active: none
+li t0, 0x12345678
+la t1, data_buffer
+sw t0, 0(t1)
+# Set mstatus.SBE = 0 (bit 36) to ensure S-mode is little-endian
+li t2, 0
+csrw mstatus, t2
+# Assume current mode is S-mode for the store operation
+# The value 0x12345678 should be stored as [0x78, 0x56, 0x34, 0x12] in memory
+# Result: memory[data_buffer] = 0x78, memory[data_buffer+1] = 0x56, memory[data_buffer+2] = 0x34, memory[data_buffer+3] = 0x12
+
+# 173 # Extension Must Be Active: None
+# Setup: Assume M-mode for CSR access, then switch to S-mode
+# Target: Verify SBE=1 makes S-mode loads big-endian
+
+# 1. Set mstatus.SBE = 1 (bit 36)
+li t0, (1 << 36)
+csrs mstatus, t0
+
+# 2. Write a 32-bit value to memory in M-mode (Little Endian by default)
+# Memory at 0x80000000: [0x11, 0x22, 0x33, 0x44]
+li t1, 0x44332211
+la t2, 0x80000000
+sw t1, 0(t2)
+
+# 3. Switch to S-mode (simplified for test case)
+# (Assume processor transitions to S-mode here)
+
+# 4. Perform load in S-mode with SBE=1
+# Expected: Loads [0x11, 0x22, 0x33, 0x44] as Big Endian -> 0x11223344
+la t2, 0x80000000
+lw t3, 0(t2)
+
+# Result: t3 = 0x11223344
+
+# 174 # Extension Must Be Active: None
+li t0, 0x40 # bit 6 is UBE
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, 0x40
+# Result: t1 = 0
+
+# 175 # Extension Must Be Active: Zicbe
+# Setup: Store a 32-bit value 0x11223344 at address 0x80000000
+# In Little-Endian (UBE=0): Memory looks like [0x44, 0x33, 0x22, 0x11]
+# In Big-Endian (UBE=1): Memory looks like [0x11, 0x22, 0x33, 0x44]
+# This test assumes the memory is initialized as [0x11, 0x22, 0x33, 0x44]
+
+la t0, 0x80000000
+li t1, 0x11223344
+# M-mode: Set mstatus.UBE = 1 (Bit 6) to enable Big-Endian for U-mode
+li t2, (1 << 6)
+csrs mstatus, t2
+# Switch to U-mode to trigger the UBE effect
+mret
+# U-mode: Load word from address 0x80000000
+# Because UBE=1, it reads [0x11, 0x22, 0x33, 0x44] as 0x11223344
+lw t3, 0(t0)
+
+# Result: t3 = 0x11223344
+
+# 176 # Extension Must Be Active: none
+li t0, 0x12345678
+la t1, 0x80000000 # Assume a valid writable memory address
+# Set mstatus.UBE = 0 (Clear bit 6)
+csrr t2, mstatus
+li t3, (1 << 6)
+and t2, t2, t3
+not t3, t3
+or t2, t2, t3 # This is a simplification; normally we use csrc or andi
+csrw mstatus, t2
+# Store word from U-mode (simulated by ensuring mstatus.UBE=0)
+sw t0, 0(t1)
+# Load word back to verify little-endian storage (0x78 0x56 0x34 0x12 in memory)
+lw t4, 0(t1)
+# Result: t4 = 0x12345678
+
+# 177 # Extension Must Be Active: None
+# Assume memory address 0x1000 contains [0x11, 0x22, 0x33, 0x44] (little-endian view)
+# In M-mode, set UBE = 1
+li t0, 0x40
+csrs mstatus, t0
+# Switch to U-mode (via mret or similar mechanism)
+# In U-mode, perform a 32-bit load from 0x1000
+la t1, 0x1000
+lw t2, 0(t1)
+# Result: t2 = 0x11223344 (interpreted as Big-Endian: 0x11 is MSB, 0x44 is LSB)
+
+# 178 # Extension Must Be Active: S
+# Assume machine mode.
+# Set mstatus.SBE (bit 36) to 1 to enable big-endian access for supervisor-level memory-management data structures (e.g., page tables).
+# This test simulates the configuration of the SBE bit and a subsequent implicit access (like a page table walk via satp).
+
+li t0, (1 << 36)
+csrs mstatus, t0
+# Trigger an implicit access to supervisor memory-management structures by enabling paging
+# satp: mode=Bare (1), PPN=0x80000 (example)
+li t1, (0x80000 << 10) | 1
+csrw satp, t1
+# Result: mstatus.SBE is 1; subsequent implicit accesses to supervisor page tables are performed using big-endian byte ordering.
+
+# 179 # Extension Must Be Active: None
+li t0, 0x0
+csrr t1, mstatus
+li t2, (1 << 20)
+or t0, t0, t2
+csrw mstatus, t0
+csrr t1, mstatus
+and t1, t1, t2
+# Result: t1 may be 0 or (1 << 20) depending on implementation support for TVM, but the write to mstatus must not trigger an exception.
+
+# 180 # Extension Must Be Active: None
+# Setup: Transition to S-mode with mstatus.TVM = 1
+# mstatus.TVM is bit 20. (1 << 20) = 0x100000
+# We use M-mode to set mstatus and then use mret to drop to S-mode.
+
+la t0, trap_handler
+csrw mtvec, t0
+li t1, 0x100000
+csrs mstatus, t1 # Set TVM = 1
+li t2, 0x1 # Set MPP to 1 (S-mode)
+srli t2, t2, 11 # Shift to mstatus.MPP position (bits 11-12)
+csrs mstatus, t2
+# Now we execute mret to enter S-mode
+mret
+
+# --- Execution in S-mode ---
+csrr t3, satp # This should raise an illegal-instruction exception because TVM=1
+# Result: illegal-instruction exception
+
+# 181 # Extension Must Be Active: None
+li t0, (1 << 20)
+csrw mstatus, t0
+# Transition to S-mode (assuming standard mstatus.MPP=01 and mret)
+li t1, 0x00000000
+csrw mstatus, t1
+# Wait, manually setting MPP to S-mode for mret
+li t0, (1 << 20) | (1 << 11) # TVM=1, MPP=S-mode
+csrw mstatus, t0
+mret
+# Now in S-mode with TVM=1
+li t0, 0x12345678
+csrw satp, t0
+# Result: illegal-instruction exception
+
+# 182 # Extension Must Be Active: None
+li t0, (1 << 20)
+csrw mstatus, t0
+csrw mepc, 0x100 # Example address
+# Transition to S-mode
+mret
+# The following instruction is executed in S-mode with mstatus.TVM = 1
+sfence.vma x0, x0
+# Result: illegal-instruction exception
+
+# 183 # Extension Must Be Active: Svnapot
+csrr t0, mstatus
+li t1, (1 << 20)
+or t0, t0, t1
+csrw mstatus, t0
+# Transition to S-mode
+li t0, 0x1
+csrw mepc, t0
+csrw mstatus, t0 # Set MPP to S-mode (simplified for test case)
+mret
+# Now in S-mode with mstatus.TVM = 1
+li t0, 0x1000
+li t1, 0x1000
+sinval.vma t0, t1
+# Result: illegal-instruction exception
+
+# 184 # Extension Must Be Active: None
+# Setup: Executing in S-mode, mstatus.TVM = 0
+# Action: Attempt to read satp CSR
+csrr t0, satp
+# Result: Success; t0 contains the value of satp
+
+# 185 # Extension Must Be Active: None
+li t0, 0
+li t1, 0
+csrr t2, mstatus
+# Clear TVM bit (bit 20)
+li t3, (1 << 20)
+and t2, t2, t3
+not t3, t3
+or t2, t2, t3
+csrw mstatus, t2
+# Switch to S-mode (Simplified: assume transition via mret or environment setup)
+# Execute SFENCE.VMA in S-mode with TVM=0
+sfence.vma t0, t1
+# Result: Instruction executes without exception
+
+# 186 # Extension Must Be Active: Sv*
+# Assume we are in M-mode to configure mstatus and then transition to S-mode
+li t0, 0x300
+csrr t1, 0(t0)
+li t2, (1 << 20)
+and t1, t1, t2
+not t2, t2
+and t1, t1, t2
+csrw 0(t0), t1
+# Transition to S-mode
+li t0, 0x102
+csrw mstatus, t0
+# Execute SINVAL.VMA in S-mode with TVM=0
+li t1, 0x1000
+li t2, 0x0
+sinval.vma t1, t2
+# Result: Instruction executes successfully without raising an illegal-instruction exception
+
+# 187 # Extension Must Be Active: None
+li t0, 0x100000 # (1 << 20) Mask for TVM bit
+csrr t1, mstatus
+and t1, t1, t0
+# Result: t1 = 0
+
+# 188 # Extension Must Be Active: none
+li t0, 0
+li t1, (1 << 21) # TW field bit
+csrr t0, mstatus
+ori t1, t1, t0 # Set TW bit to 1
+csrw mstatus, t1
+csrr t0, mstatus
+andi t0, t0, (1 << 21) # Mask TW bit
+# Result: t0 may be 0 or (1 << 21) depending on implementation support, but if the hardware does not support TW, it must remain 0 despite the write.
+
+# 189 # Extension Must Be Active: None
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 21)
+and t3, t1, t2
+# Result: t3 = 0
+
+# 190 # Extension Must Be Active: None
+li t0, 0x400000 # Set bit 22 (TSR) to 1
+csrw mstatus, t0
+li t1, 0x0
+csrr t1, mstatus
+# Result: t1 contains 0x400000 if the hardware supports TSR, or 0 if it does not; subsequent reads must return the value actually written if supported, or the value the hardware decided to keep if not. Since WARL (Write Any Reads Legal) means the hardware may ignore the write, the result is that the read value is implementation-defined but consistent.
+
+# 191 # Extension Must Be Active: None
+li t0, 0x400000 # Set bit 22 (TSR) to 1
+csrw mstatus, t0
+# Transition to S-mode (e.g., via mret or by setting mstatus.MPP to 01)
+li t1, 0x800 # Set mstatus.MPP to 01 (S-mode)
+or t0, t0, t1
+csrw mstatus, t0
+# Assume we are now executing in S-mode
+sret
+# Result: illegal-instruction exception
+
+# 192 # Extension Must Be Active: none
+li t0, 0
+csrw mstatus, t0
+# Ensure we are in S-mode for the SRET execution
+# (Assuming boot/initialization into M-mode, we set MPP to S-mode and execute mret)
+li t0, (3 << 11) # MPP = 01 (S-mode)
+csrs mstatus, t0
+mret
+# Now executing in S-mode
+# Rule: When TSR bit (bit 22) is 0, SRET is permitted in S-mode.
+# mstatus was initialized to 0, so TSR is 0.
+sret
+# Result: Success (Privilege level returns to the value specified in SPP)
+
+# 193 # Extension Must Be Active: None
+csrr x10, mstatus
+srli x11, x10, 22
+andi x12, x11, 1
+# Result: x12 = 0
+
+# 194 # Extension Must Be Active: None
+li t0, 0x1 # Load value 1 into t0
+csrw mstatus, t0 # Write 1 to mstatus. This targets bits 1..0 (SIE).
+# Note: FS[1:0] (bits 13-14) and VS[1:0] (bits 9-10) are WARL.
+# Writing 0 to WARL fields that are hardware-disabled results in them remaining 0.
+# Writing 0 to WARL fields that are hardware-enabled results in them remaining 0.
+# XS[1:0] (bits 15-16) is read-only; writes to it are ignored.
+csrr t1, mstatus
+# Result: mstatus[16:15] (XS) remains unchanged, mstatus[14:13] (FS) and mstatus[10:9] (VS) follow WARL behavior, and mstatus[1:0] (SIE) is updated to 0x1.
+
+# 195 # Extension Must Be Active: Zfinx (or any F/D extension)
+li t0, 0
+csrw mstatus, t0
+# Set FS field to 'Dirty' (0b11) to trigger SD bit
+# FS is bits 14:13. Value 0b11 << 13 = 0x6000
+li t0, 0x6000
+csrs mstatus, t0
+csrr t1, mstatus
+# Result: t1 bit 63 is 1 (SD=1) because FS is dirty
+
+# 196 # Extension Must Be Active: None
+li t0, 1 << 63
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0
+
+# 197 # Extension Must Be Active: F
+csrr t0, mstatus
+li t1, 0x3 // Binary 11
+slli t1, t1, 13 // Shift to FS field position (bits 13-14)
+and t2, t0, t1 // Mask FS field
+bnez t2, pass // If FS is not 00, it is not read-only zero
+fail:
+j fail
+pass:
+# Result: FS field in mstatus is not read-only zero
+
+# 198 # Extension Must Be Active: None (F extension and S-mode must be absent)
+li t0, 3
+csrw mstatus, t0
+csrr t0, mstatus
+andi t0, t0, (1 << 13) | (1 << 14)
+# Result: t0 = 0
+
+# 199 # Extension Must Be Active: S (Supervisor mode implemented), No F (Floating-point not implemented)
+li t0, 0x3
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, (0x3 << 13)
+srli t1, t1, 13
+# Result: t1 = 0
+
+# 200 # Extension Must Be Active: V
+li t0, 0x2 # Value to write to VS field (Initial/Off -> Initial)
+csrr t1, mstatus
+# VS field is at bits 10:9. Mask is 0x600.
+# Shift value 0x2 left by 9 bits = 0x400 (Initial)
+li t2, (0x2 << 9)
+and t3, t1, ~0x600 # Clear VS field
+or t1, t3, t2
+csrw mstatus, t1
+csrr t0, mstatus
+srli t0, t0, 9
+andi t0, t0, 0x3
+# Result: t0 == 2
+
+# 201 # Extension Must Be Active: None
+li t0, 3 # Binary 11
+csrr t1, mstatus
+slli t0, t0, 9 # Shift 11 to align with VS field (bits 10-9)
+or t1, t1, t0 # Try to set VS to 3
+csrw mstatus, t1
+csrr t1, mstatus
+srli t1, t1, 9
+andi t1, t1, 3 # Mask VS field
+# Result: t1 = 0
+
+# 202 # Extension Must Be Active: None
+li t0, 0x200 # Bit 9 (VS field)
+csrw mstatus, t0
+csrr t1, mstatus
+andi t1, t1, 0x600 # Mask for VS field (bits 9-10)
+# Result: t1 = 0
+
+# 203 # Extension Must Be Active: None
+li t0, 0x3
+csrw mstatus, t0
+csrr t1, mstatus
+srli t1, t1, 15
+andi t1, t1, 0x3
+# Result: t1 = 0
+
+# 204 # Extension Must Be Active: F
+li t0, 0x12345678
+fmv.w.x fa0, t0
+csrr t1, mstatus
+li t2, 0x0000 # FS = 0 (Off)
+slli t2, t2, 13
+srli t3, t1, 13
+andi t3, t3, 0x3
+slli t3, t3, 13
+sub t2, t1, t3 # Clear FS field
+csrw mstatus, t2
+csrr t1, mstatus
+li t2, 0x3
+slli t2, t2, 13
+or t1, t1, t2 # Set FS = 3 (Dirty)
+csrw mstatus, t1
+fmv.x.w t0, fa0
+# Result: t0 == 0x12345678
+
+# 205 # Extension Must Be Active: F
+# Load a value into a floating-point register
+flw fa0, 0(tp)
+# Set mstatus.FS to 01 (Initial)
+csrr t0, mstatus
+li t1, (1 << 13)
+and t0, t0, ~((3 << 13))
+or t0, t0, t1
+csrw mstatus, t0
+# Set mstatus.FS to 00 (Off)
+li t1, 0
+and t0, t0, ~((3 << 13))
+or t0, t0, t1
+csrw mstatus, t0
+# Re-enable FP to verify state persistence: Set mstatus.FS to 11 (Dirty)
+li t1, (3 << 13)
+csrr t0, mstatus
+or t0, t0, t1
+csrw mstatus, t0
+# Load a different value into another register and check if fa0 is preserved
+flw fa1, 4(tp)
+fsw fa0, 8(tp)
+# Result: The value originally loaded into fa0 is preserved and correctly stored at 8(tp), proving that transitioning FS to Initial and Off did not clear the floating-point contents.
+
+# 206 # Extension Must Be Active: V
+li t0, 0x12345678
+vsetvli t1, zero, e32, m1, ta, ma
+vmv.v.x v0, t0
+csrr t2, mstatus
+li t3, (3 << 9)
+or t3, t2, t3
+csrw mstatus, t3
+csrr t2, mstatus
+li t3, 0
+slli t3, t3, 9
+li t4, 3
+slli t4, t4, 9
+and t2, t2, t4
+# To verify the rule, we check if the value in v0 remains unchanged after the VS field modification.
+# We load a value into v0, change mstatus.VS to 'Off' (0) or 'Initial' (1), then check v0.
+csrr t2, mstatus
+li t3, ~(3 << 9)
+and t3, t2, t3
+csrw mstatus, t3
+vmv.x.v t0, v0
+# Result: t0 == 0x12345678
+
+# 207 # Extension Must Be Active: F
+li t0, 0x300
+li t1, (2 << 13) # Set FS field to 2 (Initial)
+csrrw t2, t0, t1 # Write to mstatus
+# Result: mstatus.FS is set to 2
+
+# 208 # Extension Must Be Active: None
+li t0, 0x2200 // Set FS=10 (Initial), VS=10 (Initial), XS=10 (Initial)
+csrw mstatus, t0
+# Transition to Supervisor mode
+li t1, 0x1 // S-mode
+csrw mepc, t1 // Note: simplified for logic; normally used with mret
+# In a real system, the hardware manages privilege. Here we simulate the shared bit access.
+# Read mstatus in M-mode to verify the state persists across the shared fields
+csrr t2, mstatus
+# Mask for FS (bits 13-14), VS (bits 9-10), XS (bits 15-16)
+# 0x2200 = 0010 0010 0000 0000 0000 in binary
+# Result: t2 should equal 0x2200 (or at least contain those bits) as S-mode and M-mode share these bits.
+# Result: t2 = 0x2200
+
+# 209 # Extension Must Be Active: Zicsr
+li t0, 0x3 // Value for "Dirty" (0b11)
+csrw mstatus, t0 // Set FS (bits 13-14) to 0b11 (Dirty)
+csrr t1, mstatus
+# Result: mstatus[63] == 1
+
+# 210 # Extension Must Be Active: Zicsr
+li t0, 0x2000 # Set FS = 2 (Clean) and VS = 0 (Off) -> (2 << 13) | (0 << 9) = 0x4000? No.
+# Calculation:
+# FS is bits 14:13. Value 2 is 10 in binary.
+# (2 << 13) = 0x4000.
+# VS is bits 10:9. Value 1 is 01 in binary.
+# (1 << 9) = 0x200.
+# Total = 0x4200
+li t0, 0x4200
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0x4200 (with other fields potentially 0), FS=2 (Clean), VS=1 (Initial)
+
+# 211 # Extension Must Be Active: None
+li t0, 0x0
+# Set XS field (bits 16-15) to 3 (Some dirty)
+# mstatus address is 0x300.
+# 3 << 15 = 0x18000
+li t1, 0x18000
+csrs mstatus, t1
+csrr t0, mstatus
+# Mask bits 16-15 to verify XS value
+li t1, 0x18000
+and t0, t0, t1
+srli t0, t0, 15
+# Result: t0 = 3
+
+# 212 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(t0)
+# Result: illegal-instruction exception
+
+# 213 # Extension Must Be Active: F
+# Set mstatus.FS to 0 (Off)
+li t0, 0
+csrrw t1, mstatus, t0 # Clear mstatus, including FS field
+# Attempt to read floating-point state (fsv0)
+fld f0, 0(zero)
+# Result: Illegal-instruction exception
+
+# 214 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(zero)
+# Result: Illegal-instruction exception
+
+# 215 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(t0)
+csrr t1, mstatus
+# Result: mstatus.FS transitions from 00 (Initial) to 01 (Dirty)
+
+# 216 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(t0)
+csrr t1, mstatus
+# Result: mstatus.FS transitions from 00 (Clean) to 01 (Dirty)
+
+# 217 # Extension Must Be Active: F
+li t0, 0x6000 # Value to set FS field to 'Dirty' (bits 14:13 = 11)
+csrrw t1, mstatus, t0
+fadd.s fa0, fa1, fa2
+csrr t1, mstatus
+# Result: mstatus[14:13] is 3 (Dirty)
+
+# 218 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+fseswp t1, t2
+# Result: Illegal-instruction exception
+
+# 219 # Extension Must Be Active: Zfinx
+# Note: Testing that if FS is Initial (00), attempting to unconfigure it (writing 00) keeps it Initial.
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x3C00 # Mask for FS (bits 13-14)
+and t1, t1, t2
+# Ensure FS is Initial (00)
+# Writing 0 to the FS field to "unconfigure"
+li t0, 0x0
+csrs t1, 0x0 # Just ensuring we have a clean register for the write
+# Clear bits 13-14 of mstatus
+li t0, ~( (3 << 13) )
+and t1, t1, t0
+csrw mstatus, t1
+csrr t1, mstatus
+srli t1, t1, 13
+andi t1, t1, 3
+# Result: t1 = 0
+
+# 220 # Extension Must Be Active: F
+li t0, 0
+csrrw sp, 0x300, t0 # Set mstatus to 0 (FS=0, VS=0, XS=0), all are 'Initial'
+# Since we need to test transitioning FROM 'Clean' (01) TO 'Initial' (00):
+li t1, (1 << 13) # Bit 13 is FS[0]. Value 1 in FS field = 'Clean'
+csrs mstatus, t1 # mstatus.FS = 01 (Clean)
+li t2, 0
+csrrw mstatus, t2, t0 # Set mstatus.FS to 00 (Initial) by clearing the register
+# Result: mstatus.FS is 00 (Initial)
+
+# 221 # Extension Must Be Active: F
+li t0, 0x2 # Value for 'Dirty' state (10 in binary)
+csrrw t1, mstatus, t0 # This is a simplified example; in a real scenario, we isolate the FS field.
+# Assuming mstatus.FS is set to 3 (Dirty)
+li t0, 0x0 # Value for 'Off' (Initial state)
+# Masking mstatus to set FS (bits 14:13) to 0 (Off)
+# mstatus = (mstatus & ~(3 << 13)) | (0 << 13)
+csrr t1, mstatus
+li t2, ~(3 << 13)
+and t1, t1, t2
+csrw mstatus, t1
+# Result: mstatus.FS is transitioned to 0 (Initial)
+
+# 222 # Extension Must Be Active: F
+li t0, 0
+csrr t1, mstatus
+# Set FS field (bits 14:13) to 0 (Off)
+li t2, ~(3 << 13)
+and t1, t1, t2
+csrw mstatus, t1
+# Now FS is Off. Execute an operation that would disable the unit (writing 0 to FS again).
+li t2, 0
+csrr t1, mstatus
+# Masking FS to 0 (Off) explicitly
+li t3, ~(3 << 13)
+and t1, t1, t3
+csrw mstatus, t1
+csrr t0, mstatus
+# Extract FS field (bits 14:13)
+srli t0, t0, 13
+andi t0, t0, 3
+# Result: t0 == 0
+
+# 223 # Extension Must Be Active: Zfinx (or any extension providing F/D)
+li t0, 0x0
+csrr t1, mstatus
+# Set FS field (bits 14:13) to Initial (01 binary)
+# Mask out bits 14:13, then set bit 13
+li t2, ~( (3 << 13) )
+and t1, t1, t2
+ori t1, t1, (1 << 13)
+csrw mstatus, t1
+# Execute operation to disable unit (set FS field to Off: 00 binary)
+li t2, ~( (3 << 13) )
+and t1, t1, t2
+csrw mstatus, t1
+csrr t1, mstatus
+# Result: mstatus[14:13] == 0x0
+
+# 224 # Extension Must Be Active: F
+li t0, 0
+csrr t1, mstatus
+# Set FS field (bits 14:13) to Clean (01 binary)
+# Mask out FS: t1 & ~(0x3 << 13) then OR with (0x1 << 13)
+li t2, 0x3 << 13
+not t2, t2
+and t1, t1, t2
+li t3, 0x1 << 13
+or t1, t1, t3
+csrw mstatus, t1
+
+# Execute instruction to disable the unit (set FS to Off: 00 binary)
+li t1, 0
+csrr t2, mstatus
+li t3, 0x3 << 13
+not t3, t3
+and t2, t2, t3
+csrw mstatus, t2
+
+# Result: mstatus.FS is 0 (Off)
+
+# 225 # Extension Must Be Active: F
+li t0, 0x4000 # Value to set FS field (bits 14:13) to 'Dirty' (2 binary)
+csrs mstatus, t0
+li t1, 0x0 # Value to set FS field to 'Off' (0 binary)
+csrc mstatus, t0
+csrr t2, mstatus
+# Result: mstatus[14:13] == 0
+
+# 226 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(t0)
+# Result: mstatus.FS transitions to Initial (01)
+
+# 227 # Extension Must Be Active: F
+# Setup: Ensure FS field in mstatus is Initial (00)
+li t0, 0
+csrw mstatus, t0
+# Execution: Attempt to execute a floating-point instruction (which would normally enable the unit)
+flw fa0, 0(t1)
+# Result: mstatus.FS remains 0 (Initial)
+
+# 228 # Extension Must Be Active: F
+li t0, 0
+csrw mstatus, t0
+flw fa0, 0(t0)
+# Result: mstatus.FS transitions from 00 (Clean) to 01 (Initial)
+
+# 229 # Extension Must Be Active: F
+li t0, 0x1800 # Value to set FS field to Dirty (2 << 13)
+csrw mstatus, t0
+fadd.s fa0, fa1, fa2 # Execute FP instruction to enable the unit
+csrr t1, mstatus
+# Result: mstatus.FS transitions from Dirty (2) to Clean (1)
+
+# 230 # Extension Must Be Active: Ziclandpad
+li t0, 0
+csrr t1, mstatus
+# Set MPELP (bit 41) to 1 (LP_EXPECTED)
+li t2, (1 << 41)
+or t1, t1, t2
+csrw mstatus, t1
+# Execute a non-landing pad instruction while LP_EXPECTED is set
+# This should trigger an illegal instruction exception
+addi t0, x0, 1
+# Result: illegal-instruction exception
+
+# 231 # Extension Must Be Active: None
+# Setup: M-mode is running. Delegate all traps to S-mode via medeleg.
+# Transition to U-mode and trigger a trap.
+# Rule: When a trap is delegated to S-mode, mstatus.SPP is written with the active privilege mode (U-mode = 0).
+
+# Set medeleg to delegate environment calls (cause 8) to S-mode
+li t0, 0x800
+csrw medeleg, t0
+
+# Set mstatus.MPP to 0 (User mode) to allow mret to enter U-mode
+li t0, 0
+csrs mstatus, t0 # Ensure we are starting from a clean state
+li t1, 0
+srli t1, t1, 11 # Shift for MPP field (11..12)
+csrc mstatus, t1 # Clear MPP to 0
+
+# Jump to U-mode
+mret
+
+# --- Now in U-mode ---
+# Trigger a trap (ecall) which is delegated to S-mode
+ecall
+
+# --- Now in S-mode ---
+# The trap was delegated. According to the rule, mstatus.SPP should now be 0 (U-mode).
+# Read mstatus and mask for bit 8 (SPP)
+csrr t0, mstatus
+andi t0, t0, 0x100
+
+# Result: t0 = 0x0 (Since SPP = 0 when trapping from U-mode)
+
+# 232 # Extension Must Be Active: none
+# Setup: Ensure we are in M-mode, delegate interrupts to S-mode, and set SIE.
+# 1. Clear mstatus
+csrrw x0, mstatus, x0
+# 2. Set SIE (bit 1) to 1
+li t0, (1 << 1)
+csrs mstatus, t0
+# 3. Delegate all interrupts to S-mode via mideleg
+# (Assuming we want to test a software interrupt or timer interrupt delegation)
+li t1, 0x2000 # Delegate software interrupt (bit 13)
+csrw mideleg, t1
+# 4. Trigger a trap that is delegated to S-mode (e.g., trigger software interrupt)
+# In a real hardware scenario, a software interrupt would be triggered here.
+# For the sake of the architectural rule, we simulate the trap event.
+# The rule states: "When a trap is delegated to S-mode, SPIE is written with SIE."
+
+# Result: mstatus.SPIE (bit 5) == 1
+
+# 233 # Extension Must Be Active: None
+# Setup: Set SIE bit in mstatus and delegate an interrupt to S-mode via mideleg
+li t0, 0x300 # mstatus address
+li t1, (1 << 1) # SIE bit mask
+csrrw t2, t0, t1 # Set mstatus.SIE = 1
+li t0, 0x1000 # mideleg address (assuming typical RISC-V implementation)
+li t1, 0x1 # Delegate software interrupt (bit 0) to S-mode
+csrw t0, t1 # mideleg[0] = 1
+# Trigger: Force a trap that is delegated to S-mode
+# Note: In a real environment, this would be a software interrupt or an external interrupt
+# For the sake of the test case, we simulate the transition to S-mode via a delegated trap.
+# The architectural effect happens when the trap is taken.
+# Result: mstatus.SIE is cleared (bit 1 becomes 0)
+# Result: mstatus[1] == 0
+
+# 234 # Extension Must Be Active: None
+# Setup:
+# 1. Set mstatus.MPP to 0 (User mode) and mstatus.MPIE to 0.
+# 2. Delegate all exceptions and interrupts to S-mode via mideleg/medeleg.
+# 3. Trigger a trap while in User mode.
+# 4. Observe that mstatus.MPP and mstatus.MPIE remain unchanged.
+
+li t0, 0x300
+csrw mstatus, 0 # Clear MPP (bits 12:11) and MPIE (bit 7)
+li t1, 0xffff
+csrw medeleg, t1 # Delegate all exceptions to S-mode
+li t1, 0xffff
+csrw mideleg, t1 # Delegate all interrupts to S-mode
+
+# Transition to User mode to trigger the trap
+li t2, 0
+csrw mstatus, t2 # mstatus.MPP=0, MPIE=0, and set MPP to 0 for mret
+mret
+
+# --- Now in User Mode ---
+# Trigger an exception (e.g., illegal instruction) to cause a trap delegated to S-mode
+.word 0x00000000 # Illegal instruction
+
+# --- Now in S-mode (Trap Handler) ---
+# Check mstatus.MPP (bits 12:11) and mstatus.MPIE (bit 7)
+csrr t0, mstatus
+# Result: mstatus[12:11] == 0 and mstatus[7] == 0
+
+# 235 # Extension Must Be Active: None
+li t0, 0x8
+csrw mstatus, t0
+# Result: Processor is in M-mode, mstatus.MIE is 1; upon arrival of an interrupt, the processor traps to M-mode.
+
+# 236 # Extension Must Be Active: none
+# Setup: Assume the processor starts in M-mode to configure state, then drops to S-mode.
+# 1. Clear MIE (Machine Interrupt Enable) in mstatus to 0.
+# 2. Set mstatus.MPP to 01 (S-mode).
+# 3. Execute mret to transition to S-mode.
+# 4. Trigger a Machine-level interrupt (e.g., via a timer or software interrupt).
+
+li t0, 0
+csrw mstatus, t0 # Clear MIE (bit 3) and set MPP (bits 11-12) to 00 (U-mode)
+li t0, 0x800 # Set MPP to 01 (S-mode)
+csrs mstatus, t0
+mret # Transition to S-mode. Now current privilege < M-mode.
+
+# While in S-mode, a Machine-level interrupt occurs.
+# Even though MIE is 0, the rule states that for current privilege < M-mode,
+# the interrupt traps to M-mode regardless of the MIE bit.
+
+# Result: Privilege mode changes to M-mode.
+
+# 237 # Extension Must Be Active: None
+# Setup: Assume a pending Machine-mode external interrupt is already flagged in mip.MIE.
+# Sequence:
+# 1. mstatus.MIE is currently 0 (interrupts disabled).
+# 2. Write to mstatus to set MIE = 1.
+# 3. According to the rule, the interrupt-trap condition must be evaluated immediately.
+# 4. The processor must trap to the machine-mode trap handler immediately after the CSR write.
+
+li t0, 0x8 # Bit 3 is MIE
+csrw mstatus, t0
+addi t1, zero, 1 # This instruction should NOT execute if the rule is followed
+# Result: Trap to mtrap (Machine External Interrupt) occurs immediately after csrw mstatus.
+
+# 238 # Extension Must Be Active: None
+# Setup: Set a pending Machine-mode interrupt and configure mstatus to enable interrupts upon return.
+# mstatus.MIE = 0 (Interrupts disabled)
+# mstatus.MPIE = 1 (Previous interrupt enable was 1)
+# mstatus.MPP = 0x3 (Return to Machine mode)
+# Then execute mret.
+
+li t0, 0x8000 # Set MPIE=1 and MPP=3 (0x8000 | 0x1800 = 0x9800, but simpler to just set bits)
+csrw mstatus, t0
+# Assume a Machine-mode external interrupt is pending in mip
+# Execution of mret should restore mstatus.MIE from mstatus.MPIE
+mret
+# Result: Processor immediately jumps to the machine-mode trap handler because mstatus.MIE became 1 and a pending interrupt was evaluated.
+
+# 239 # Extension Must Be Active: None
+li t0, 0x400000 # Bit 22 is TSR
+csrw mstatus, t0
+sret
+# Result: illegal-instruction exception
+
+# 240 # Extension Must Be Active: None
+li t0, 0
+csrw mstatus, t0 # Clear MIE (bit 3) and SIE (bit 1) to 0
+li t1, 0x80000000 # Value to represent pending interrupt in miep/mip
+csrw mip, t1 # Set a machine-level interrupt pending
+li t2, 0x1 # Target value
+# Execution should trap to handler immediately despite MIE=0 if the interrupt is locally enabled
+# and the hart is resuming/executing.
+add t2, t0, t1
+# Result: Execution traps to machine-mode interrupt handler before 'add' completes or immediately upon becoming pending.
+
+# 241 # Extension Must Be Active: none
+csrr t0, mstatus
+andi t0, t0, (1 << 3) # Mask for MIE (bit 3)
+andi t1, t0, 0
+csrr t2, mstatus
+andi t2, t2, (1 << 17) # Mask for MPRV (bit 17)
+andi t1, t1, t2
+# Result: t1 = 0
+
+# 242 # Extension Must Be Active: None
+# Setup:
+# 1. Assume a PMP region is configured to deny access to address 0x1000.
+# 2. Set mstatus.MPP = 01 (S-mode)
+# 3. Set mstatus.MPRV = 1
+# 4. Attempt to load from 0x1000 while in M-mode.
+
+li t0, 0x300 # mstatus address
+csrr t1, 0x300 # Read current mstatus
+li t2, (1 << 17) # MPRV bit
+or t1, t1, t2 # Set MPRV = 1
+li t2, (1 << 12) # MPP field (bit 12 for S-mode 01)
+or t1, t1, t2 # Set MPP = S
+csrw 0x300, t1 # Write back to mstatus
+
+li t0, 0x1000 # Target address (protected by PMP)
+lw t1, 0(t0) # This should trigger a PMP fault because MPRV=1 and MPP=S
+# Result: Store Access Fault or Load Access Fault exception
+
+# 243 # Extension Must Be Active: None
+# Setup:
+# 1. Set mstatus.MPRV = 1 (Modify Privilege mode enabled)
+# 2. Set mstatus.MPP = 0 (Previous privilege was User mode)
+# 3. Set NMIE = 0 (Non-Maskable Interrupt Enable is cleared)
+# 4. Load a value into a User-mode memory address.
+# 5. Attempt to load that value using a store/load instruction.
+# Expected behavior: Since NMIE=0, MPRV is treated as 0.
+# The load will use M-mode privilege regardless of mstatus.MPRV=1.
+
+li t0, 0x1234
+sw t0, 0(t1) # Store to memory
+li t2, 0x0
+csrw mstatus, t3 # Set mstatus: MPRV=1, MPP=0
+# Assume NMIE is 0 (default/reset state)
+lw t2, 0(t1) # This load should behave as M-mode access, ignoring MPRV=1
+# Result: t2 contains 0x1234 and the access is treated as M-mode (ignoring MPRV)
+
+# Result: Memory access performed using M-mode privilege because NMIE=0 overrides mstatus.MPRV=1.
+
+# 244 # Extension Must Be Active: none
+li t0, 0x00020000 # Set MPRV = 1 (bit 17)
+csrw mstatus, t0
+li t0, 0x00000000 # Set MPP = 0 (User mode) (bits 11-12)
+# Combine MPRV=1 and MPP=0 into mstatus
+li t1, 0x00020000
+csrs mstatus, t1
+li t2, 0x00000000
+# Ensure MPP is set to User mode (00)
+csrc mstatus, 0x1800 # Clear MPP bits (11-12)
+mnret
+# Result: mstatus.MPRV = 0
+
+# 245 # Extension Must Be Active: None
+# Setup: Assume the hart is in M-mode.
+# Step 1: Set mstatus.SPP to 0 (User mode)
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 8)
+and t1, t1, t2
+csrw 0x300, t1 # Now mstatus.SPP = 0
+# Step 2: Trigger a transition to Supervisor mode (via mret or manual trap)
+# For this test case, we simulate the state update that occurs during a trap to S-mode.
+# When a trap enters S-mode from U-mode, SPP is set to 0.
+# When a trap enters S-mode from S-mode, SPP is set to 1.
+
+# Test: Verify SPP is updated when entering S-mode from U-mode
+# (Simulating architectural behavior: Hart in U-mode traps to S-mode)
+# mstatus.SPP should be 0.
+csrr t0, mstatus
+srli t0, t0, 8
+andi t0, t0, 1
+# Result: t0 = 0
+
+# Test: Verify SPP is updated when entering S-mode from S-mode
+# (Simulating architectural behavior: Hart in S-mode traps to S-mode)
+# mstatus.SPP should be 1.
+li t1, (1 << 8)
+csrs mstatus, t1
+csrr t0, mstatus
+srli t0, t0, 8
+andi t0, t0, 1
+# Result: t0 = 1
+
+# 246 # Extension Must Be Active: None
+# Setup: Set privilege to User mode and trigger a trap (e.g., via ecall)
+# Expected behavior: Trap to M-mode, mstatus.SPP should be set to 0 because the trap originated from U-mode.
+
+csrr t0, mstatus
+li t1, (1 << 8)
+and t0, t0, t1
+li t2, 0
+bnez t0, clear_spp
+ecall
+clear_spp:
+csrr t0, mstatus
+srli t0, t0, 8
+andi t0, t0, 1
+# Result: mstatus.SPP = 0
+
+# Note: Since the rule specifies the behavior during the transition to a trap handler,
+# a simplified assembly representation of the logic is:
+# 1. Current Mode = User
+# 2. Trigger Trap (ecall)
+# 3. Result: mstatus[8] (SPP) == 0
+
+# 247 # Extension Must Be Active: None
+li t0, 0x100 # Set bit 8 (SPP) to 1
+csrw mstatus, t0
+sret
+# Result: Privilege level is set to supervisor mode, mstatus.SPP is set to 0
+
+# 248 # Extension Must Be Active: None
+# Setup: mstatus.SIE = 1, mstatus.SPIE = 0. Trigger trap to Supervisor mode.
+# Initial State: mstatus = 0x0000000000000002 (SIE=1)
+# Execution:
+la t0, trap_handler
+csrw mtvec, t0
+li t1, 1
+csrw mstatus, t1 # Set SIE = 1, SPIE = 0
+ecall # Trap to Supervisor mode (assuming configured)
+
+trap_handler:
+# Result: mstatus.SIE = 0, mstatus.SPIE = 1
+
+# 249 # Extension Must Be Active: none
+li t0, 0x20 # Set SPIE = 1, SIE = 0 (Bit 5 = 1, Bit 1 = 0)
+csrw mstatus, t0
+sret
+# Result: mstatus.SIE = 1, mstatus.SPIE = 1
+
+# 250 # Extension Must Be Active: Zicfilp
+# Setup: Ensure V bit (mstatus[63]) is 0.
+# The SPELP field is mstatus[23].
+# We will write a 1 to bit 23 of mstatus and verify it is stored in the mstatus SPELP field.
+
+li t0, (1 << 23)
+csrw mstatus, t0
+csrr t1, mstatus
+# Result: t1 = 0x800000 (assuming other mstatus bits are 0)
+
+# 251 # Extension Must Be Active: None
+# Setup:
+# 1. Assume the processor is in Supervisor-mode (S-mode).
+# 2. Assume a page table entry (PTE) is configured with U=1 (User-accessible).
+# 3. Attempt to access this page from S-mode.
+
+# Case 1: mstatus.SUM = 0 (Supervisor cannot access User pages)
+li t0, 0x0
+csrw mstatus, t0 # Clear all fields, including SUM (bit 18)
+la t1, user_page_addr # Address of page with PTE.U = 1
+lw t2, 0(t1) # Should trigger a page fault
+
+# Case 2: mstatus.SUM = 1 (Supervisor can access User pages)
+li t0, (1 << 18) # Set SUM bit
+csrw mstatus, t0
+la t1, user_page_addr # Address of page with PTE.U = 1
+lw t2, 0(t1) # Should succeed
+
+# Result: When mstatus.SUM=0, a load/store to a page with PTE.U=1 from S-mode triggers a store/page-fault exception. When mstatus.SUM=1, the access is permitted.
+
+# 252 # Extension Must Be Active: None
+# Setup:
+# 1. Assume we are in Machine mode.
+# 2. A Page Table Entry (PTE) is configured with pte.u = 1 (User accessible).
+# 3. We want to test if M-mode can access this user page based on mstatus.MXR.
+
+# Test Case: Access user page when MXR = 0 (should fail/trap)
+la t0, user_page_address
+csrr t1, mstatus
+li t2, (1 << 19) # Bit 19 is MXR
+and t1, t1, ~t2 # Set MXR = 0
+csrw mstatus, t1
+lw t3, 0(t0) # Access page where pte.u = 1
+
+# Result: Store Address Misaligned or Page Fault exception (due to MXR=0 preventing M-mode access to pte.u=1 page)
+
+# 253 # Extension Must Be Active: Svnapot
+csrr t0, mstatus
+li t1, (1 << 20)
+or t0, t0, t1
+csrw mstatus, t0
+# Switch to S-mode
+li t0, 1
+csrw mstatus, t0 # Simplified privilege transition for test logic
+sinval.vma x0, x0
+# Result: illegal-instruction exception
+
+# 254 # Extension Must Be Active: None
+# Set mstatus.TVM to 1 (Translate Virtual Memory disabled)
+la t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 20)
+or t1, t1, t2
+csrw 0x300, t1
+
+# Execute SFENCE.W.INVAL and SFENCE.INVAL.IR in S-mode
+# Despite TVM=1, these instructions must not raise an illegal-instruction exception
+sfence.w.inval
+sfence.inval.ir
+# Result: Instructions execute successfully without exception
+
+# 255 # Extension Must Be Active: Zicsr
+li t0, (1 << 20)
+csrs mstatus, t0
+sfence.w.inval
+sfence.inval.ir
+# Result: No exception raised; instructions execute as NOPs with ordering effects.
+
+# 256 # Extension Must Be Active: H
+# Setup: Set privilege to VS-mode.
+# Ensure hstatus.VTVM = 0 (disable virtual memory in VS-mode).
+# Attempt to execute a load instruction (which requires TVM/VTVM to be 1 for virtual addressing).
+
+csrw hstatus, 0 # Clear hstatus, specifically VTVM (bit 20) = 0
+# Transition to VS-mode (Assuming environment supports transition to VS-mode)
+# Execute a memory access instruction while in VS-mode
+lw x10, 0(x11)
+
+# Result: virtual-instruction exception
+
+# 257 # Extension Must Be Active: Hypervisor
+csrw mstatus, 0x00100000 # Set TVM (bit 20) to 1
+# Transition to HS-mode (simplified representation for test case)
+# Assume current privilege is now HS-mode
+csrr t0, hgatp
+# Result: illegal-instruction exception
+
+# 258 # Extension Must Be Active: V
+# Setup: Ensure mstatus.VS is 0 (Vector Off) and vsstatus.VS is set to 3 (Vector On/Dirty).
+# In this state, because mstatus.VS == 0, the vector unit is disabled regardless of the value in vsstatus.
+# Any attempt to execute a vector instruction should trigger an illegal-instruction exception.
+
+li t0, 0
+csrw mstatus, t0 # Set mstatus.VS = 0 (and all other fields)
+li t1, (3 << 9) # Value to set vsstatus.VS to 3 (Dirty)
+csrw vsstatus, t1 # vsstatus.VS = 3
+vadd.vv v1, v2, v3 # Execute vector instruction
+
+# Result: illegal-instruction exception
+
+# 259 # Extension Must Be Active: H
+# Setup:
+# 1. mstatus.VS = 0 (V=0, meaning the processor is not currently in Virtualization mode)
+# 2. vsstatus.SUM = 1 (Allow Supervisor User Memory access when V=1)
+# 3. Set up a memory address in x10 that resides in User-mode memory (accessible if SUM=1)
+# 4. Execute HLV (Hypervisor Load Virtual), which forces the load to act as if V=1
+# 5. Because V=0 but HLV is used, the processor checks vsstatus.SUM instead of mstatus.SUM
+
+li t0, 0x300 # mstatus address
+csrr t1, t0
+li t2, (1 << 10) << 1 # Mask for mstatus.VS (bits 10-9)
+and t1, t1, ~t2 # Ensure mstatus.VS = 0
+csrw t0, t1
+
+li t0, 0x200 # vsstatus address
+csrr t1, t0
+li t2, (1 << 18) # Mask for vsstatus.SUM
+or t1, t1, t2 # Set vsstatus.SUM = 1
+csrw t0, t1
+
+# Load from a user-accessible address using HLV
+# HLV will ignore mstatus.SUM and use vsstatus.SUM (which is 1)
+la x10, user_data
+hlv x11, 0(x10)
+
+# Result: x11 contains the value from user_data without triggering a store/AMO page fault, because vsstatus.SUM was respected despite mstatus.VS being 0.
+
+# 260 # Extension Must Be Active: Svnap
+# Setup: Ensure M-mode. Set mstatus.VS = 0 (Virtualization disabled).
+# Action: Set mstatus.MPRV = 1. This forces loads/stores to use the translation and protection checks of the privilege level indicated by mstatus.MPP.
+# By setting mstatus.MPP to Supervisor mode (1) and mstatus.MPRV to 1,
+# the hardware looks at vsstatus (the supervisor-level status register) for memory access rules.
+# Specifically, we set vsstatus.SUM = 0 (preventing supervisor-mode access to user pages).
+# We then attempt to load from a user-mode address.
+
+li t0, 0x300 # mstatus address
+li t1, 0x200 # vsstatus address
+li t2, 0x1000 # A known user-mode address
+
+# 1. Set mstatus: MPP=1 (S-mode), MPRV=1, VS=0
+li t3, (1 << 17) | (1 << 11)
+csrw mstatus, t3
+
+# 2. Set vsstatus: SUM=0 (Disable Supervisor User Memory access)
+li t4, 0
+csrw vsstatus, t4
+
+# 3. Attempt load from user address.
+# Because MPRV=1 and MPP=1, the access is treated as S-mode.
+# Since vsstatus.SUM=0, accessing a user page should trigger a store/AMO page fault.
+lw t5, 0(t2)
+
+# Result: Page fault exception triggered due to vsstatus.SUM=0, despite mstatus.VS=0.
+
+# 261 # Extension Must Be Active: none
+li t0, 0x1000
+li t1, 42
+sw t1, 0(t0)
+csrr t2, mstatus
+li t3, (1 << 17)
+or t2, t2, t3
+csrw mstatus, t2
+li t4, 0x1000
+lw t5, 0(t4)
+csrr t2, mstatus
+li t3, (1 << 17)
+andn t2, t2, t3
+csrw mstatus, t2
+# Result: t5 = 42
+
+# 262 # Extension Must Be Active: Hypervisor
+# Setup: Set V=0 in mstatus. Set vsatp to a value that would normally cause a page fault or translation if active.
+# Set MPRV=1 in mstatus to force memory accesses to be translated as if V=1.
+li t0, 0
+csrw mstatus, t0 # V=0, MPRV=0
+li t1, 0x80000000 # Set vsatp MODE to Sv39 (simplified)
+csrw vsatp, t1 # vsatp is now configured
+li t2, (1 << 17) # MPRV bit is 17
+csrs mstatus, t2 # Set MPRV=1
+la t3, test_data # Load address of a variable
+lw t4, 0(t3) # This load is now governed by vsatp because MPRV=1, even though V=0
+csrs mstatus, t0 # Reset MPRV=0
+# Result: The load instruction (lw) uses the translation defined in vsatp despite V=0 because MPRV=1.
+
+# 263 # Extension Must Be Active: H
+li t0, 0
+li t1, 0
+csrr t2, mstatus
+li t3, (1 << 20)
+or t2, t2, t3
+csrw mstatus, t2
+hfence.vvma t0, t1
+# Result: HFENCE.VVMA executes successfully without trapping
+
+# 264 # Extension Must Be Active: H
+# Assume we are in M-mode to configure mstatus, then transition to HS-mode
+li t0, 0
+csrw mstatus, t0 # Clear mstatus, ensuring TVM (bit 20) = 0
+# Transition to HS-mode (assuming MPP = 1 in mstatus and executing mret)
+# For the sake of the test case, the execution context is now HS-mode
+hfence.gvma x0, x0
+# Result: Success (Instruction executes normally because mstatus.TVM = 0)
+
+# 265 # Extension Must Be Active: H
+csrrw x0, mstatus, x0 # Clear mstatus, specifically setting TVM (bit 20) to 0
+hfence.gvma x0, x0 # Execute HFENCE.GVMA in M-mode while TVM=0
+# Result: HFENCE.GVMA executes successfully without raising an illegal-instruction exception.
+
+# 266 # Extension Must Be Active: H
+# Assume processor is currently in M-mode to configure mstatus and transition to HS-mode
+li t0, (1 << 20) # Bit 20 is TVM
+csrs mstatus, t0 # Set mstatus.TVM = 1
+li t1, 1 # HS-mode privilege level
+csrw mpp, t1 # Set previous privilege to HS-mode
+mret # Transition to HS-mode
+
+# Now in HS-mode with mstatus.TVM = 1
+hfence.gvma x0, x0 # Execute HFENCE.GVMA
+# Result: illegal-instruction exception
+
+# 267 # Extension Must Be Active: Hypervisor
+# Assume the processor is currently in VS-mode (Virtualization mode V=1)
+# Trigger a trap (e.g., via ecall) to enter M-mode
+ecall
+# Read mstatus to check the value of MPV (bit 39)
+csrr t0, mstatus
+# Shift right by 39 to isolate MPV and mask with 1
+srli t0, t0, 39
+andi t0, t0, 1
+# Result: t0 = 1
+
+# 268 # Extension Must Be Active: None
+li t0, 0x0
+csrr t1, mstatus
+# Set MPP = 0 (User mode) to ensure MPV should be set to 1 upon MRET
+# MPP is bits 11-12. Clear them.
+li t0, ~(0x3 << 11)
+and t1, t1, t0
+csrw mstatus, t1
+# Set MPV = 0 (bit 39) to verify it changes to 1
+li t0, ~(1L << 39)
+and t1, t1, t0
+csrw mstatus, t1
+mret
+# Result: mstatus.MPV = 1
+
+# 269 # Extension Must Be Active: None
+# Setup: Trigger a page fault in S-mode while M-mode is the trap handler.
+# Since we are simulating the rule "For any trap that writes a guest virtual address to mtval, GVA in mstatus is set to 1",
+# we perform an access to an unmapped address while the system is configured for virtual memory.
+
+csrrw x1, mstatus, x0 # Clear mstatus for a clean state
+la x2, 0xDEADBEEF # Load a dummy guest virtual address
+lw x3, 0(x2) # Trigger a load page fault (trap to M-mode)
+
+# Result: mtval = 0xDEADBEEF, mstatus.GVA = 1
+
+# 270 # Extension Must Be Active: none
+# Setup: Set GVA bit in mstatus to 1, then trigger a trap to M-mode.
+li t0, 0x100000000 # Load value with bit 38 (GVA) set to 1
+csrw mstatus, t0
+ecall # Trigger a trap into M-mode
+csrr t1, mstatus # Read mstatus to verify GVA bit
+# Result: t1[38] == 0
+
+# 271 # Extension Must Be Active: S-mode, V-extension
+# Setup: M-mode configures mstatus.TSR=1 and switches to HS-mode, then to VS-mode.
+# The TSR (Time-to-S-mode-Read) field affects HS-mode but should NOT affect VS-mode.
+# In this test, we verify that setting TSR=1 does not trigger an exception or change behavior when executing a time-related read (e.g., rdtime) in VS-mode.
+
+li t0, 0x400000 # Bit 22 is TSR
+csrw mstatus, t0
+# Switch to HS-mode (simplified for test case)
+li t1, 1 # S-mode
+csrw mstatus, t1
+# Switch to VS-mode (simplified for test case)
+# (Assuming environment has transitioned to VS-mode)
+
+rdtime t2
+# Result: Instruction rdtime executes successfully in VS-mode regardless of mstatus.TSR value.
+
+# 272 # Extension Must Be Active: S-mode, H-extension
+# Setup: Enter HS-mode. Set TVM=1 (which should trigger illegal instructions in HS-mode).
+# Then, transition to VS-mode. Attempt to execute a vector instruction.
+# According to the rule, TVM affects HS-mode but NOT VS-mode.
+# Therefore, the vector instruction in VS-mode should succeed (assuming VS field allows it),
+# proving TVM=1 does not cause an illegal instruction exception in VS-mode.
+
+la t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 20)
+or t1, t1, t2
+csrw 0x300, t1
+# Transition to HS-mode (simplified representation)
+# Transition to VS-mode (simplified representation)
+vsetvli t0, x0, e32, m8, ta, ma
+# Result: Vector instruction executes successfully in VS-mode despite mstatus.TVM=1
+
+# 273 # Extension Must Be Active: None
+li t0, 0x200000 # Bit 21 is TW
+csrw mstatus, t0
+# The TW (Tightly coupled Memory/Memory window) field is now set to 1.
+# Since the processor is currently in M-mode, the TW field must have no effect on execution.
+# We perform a memory access that would be affected by TW if it were active.
+la t1, 0x1000
+lw t2, 0(t1)
+# Result: The memory access proceeds normally as if TW were 0, because the TW field in mstatus does not affect M-mode execution.
+
+# 274 # Extension Must Be Active: Hypervisor
+# Setup: Set mstatus.TVM = 1 in M-mode, then transition to HS-mode
+la t0, 0x300 # mstatus address
+csrr t1, mstatus
+li t2, (1 << 20) # TVM bit
+or t1, t1, t2
+csrw mstatus, t1
+
+# Transition to HS-mode (simulated by setting MPP to HS-mode and executing mret)
+li t1, 1 # HS-mode (1)
+slli t1, t1, 11 # Shift to MPP position (11..12)
+andi t2, t1, 0 # Clear existing MPP bits for simplicity in this conceptual assembly
+or t1, t1, t2 # Set MPP to 1
+# (Assuming appropriate mret sequence to enter HS-mode)
+mret
+
+# Test: Attempt to access hgatp while TVM=1 in HS-mode
+csrr t0, hgatp
+# Result: Illegal-instruction exception
+
+# Test: Attempt to execute HFENCE.GVMA while TVM=1 in HS-mode
+hfence.gvma x0, x0
+# Result: Illegal-instruction exception
+
+# Test: Attempt to execute HINVAL.GVMA while TVM=1 in HS-mode
+hinval.gvma x0, x0
+# Result: Illegal-instruction exception
+
+# 275 # Extension Must Be Active: Hypervisor
+li t0, 0x100000
+csrw vsatp, t0
+li t1, 0x1
+csrs mstatus, t1 # Set TVM = 1 (Bit 20)
+hfence.vvma x0, x0
+hinval.vvma x0, x0
+# Result: Access to vsatp and execution of HFENCE.VVMA and HINVAL.VVMA succeed without illegal-instruction exceptions despite TVM=1.
+
+# 276 # Extension Must Be Active: H
+li t0, 0x00100000 # Bit 20 is TVM
+csrw mstatus, t0
+csrw vsatp, zero
+hfence.vvma x0, x0
+hinval.vvma x0, x0
+# Result: No traps occur during execution of the instructions.
+
+# 277 # Extension Must Be Active: None
+li t0, 0
+csrr t1, mstatus
+andi t1, t1, (1 << 17) # Check MPRV bit
+beqz t1, access_mem # If MPRV = 0, jump to memory access
+j end
+access_mem:
+la t2, test_data
+lw t3, 0(t2) # Normal translation/protection used
+end:
+# Result: Memory access is performed using the current privilege mode's translation and protection rules.
+
+.data
+test_data: .word 0xDEADBEEF
+
+# 278 # Extension Must Be Active: None
+# Setup:
+# 1. Assume we are in Machine Mode.
+# 2. Set mstatus.MPP = 0 (User mode).
+# 3. Set mstatus.MPRV = 1 (Modify Privilege).
+# 4. A memory location 0x100 contains 0xDEADBEEF.
+# 5. Accessing 0x100 from M-mode is normally allowed, but since MPRV=1 and MPP=0,
+# the access is treated as if it were coming from U-mode.
+# If the PMP (Physical Memory Protection) or page tables forbid U-mode access to 0x100,
+# this will trigger a load access fault.
+
+la t0, 0x100
+li t1, 0x0000000000000000
+csrr t2, mstatus
+# Set MPP = 0 (bits 11-12) and MPRV = 1 (bit 17)
+# Clear bits 11-12, set bit 17
+li t3, ~( (1 << 11) | (1 << 12) )
+and t2, t2, t3
+ori t2, t2, (1 << 17)
+csrw mstatus, t2
+
+# This load is executed in M-mode, but because MPRV=1 and MPP=0,
+# it is translated and protected as a User-mode access.
+lw t4, 0(t0)
+
+# Result: The load instruction is treated as having U-mode privilege for translation and protection.
+
+# 279 # Extension Must Be Active: None
+li t0, 0x0000000000020000 # Bit 17 is MPRV
+csrw mstatus, t0 # Set MPRV = 1, MPV = 0, MPP = 0
+la t1, user_data # Load address of a U-level page
+lw t2, 0(t1) # Memory access treated as U-level with HS-level translation
+# Result: Memory access is performed with U-level privileges and HS-level translation/protection.
+
+user_data: .word 0xDEADBEEF
+
+# 280 # Extension Must Be Active: None
+li t0, 0x0000000000020000 # Set MPRV = 1 (bit 17)
+li t1, 0x0000000000000800 # Set MPP = 1 (bits 11-12)
+or t2, t0, t1 # Combine MPRV=1 and MPP=1
+csrw mstatus, t2 # mstatus.MPRV=1, mstatus.MPP=1, mstatus.MPV=0
+la t3, test_buffer # Load address of a buffer
+sw x0, 0(t3) # Explicit memory access treated as Supervisor-level (S-mode)
+# Result: The store instruction is executed using S-mode translation and protection rules.
+
+# 281 # Extension Must Be Active: None
+li t0, 0x300 # Load mstatus CSR address
+csrr t1, 0x300 # Read current mstatus
+li t2, (1 << 17) # MPRV bit
+or t1, t1, t2 # Set MPRV = 1
+li t2, (3 << 11) # MPP = 3 (Machine mode)
+andi t1, t1, ~(0x7 << 11) # Clear MPP
+or t1, t1, t2 # Set MPP = 3
+csrw 0x300, t1 # Write back to mstatus
+la t3, test_data # Load address of data
+lw t4, 0(t3) # Memory access treated as M-mode, no translation
+# Result: Memory access is performed with Machine-mode privilege and physical addressing (no translation), regardless of current privilege level.
+
+# 282 # Extension Must Be Active: Svnapot, Hypervisor
+# Setup:
+# 1. Set mstatus.MPRV=1, mstatus.MPV=1, mstatus.MPP=0 to force VU-level access.
+# 2. Set mstatus.MXR=1 (HS-level MXR) to make executable pages readable at the HS-stage.
+# 3. Set vsstatus.MXR=0 to ensure VS-stage read accessibility depends on the R bit.
+# 4. Map a page at GVA 0x1000 as Executable only (X=1, R=0) in VS-stage,
+# and Readable (R=1) in HS-stage.
+
+li t0, 0x300 # mstatus address
+li t1, 0x200 # vsstatus address
+
+# Configure mstatus: MPRV=1 (bit 17), MPV=1 (bit 39), MPP=0 (bits 11-12)
+# 0x8000000000080000 (MPV=1, MPRV=1)
+li t2, 0x8000000000080000
+# Set MXR=1 (bit 19)
+ori t2, t2, (1 << 19)
+csrw mstatus, t2
+
+# Configure vsstatus: MXR=0 (bit 19)
+li t2, 0
+csrw vsstatus, t2
+
+# Perform an explicit memory access (Load) to a page that is:
+# VS-stage: X=1, R=0
+# HS-stage: R=1
+# According to the rule: HS-level MXR makes it readable at HS-stage,
+# but vsstatus.MXR=0 means it remains non-readable at VS-stage because R=0.
+la t3, 0x1000
+ld t4, 0(t3)
+
+# Result: Store Page Fault (Load Page Fault) due to vsstatus.MXR=0 and VS-stage R=0.
+
+# 283 # Extension Must Be Active: H
+# Setup: Set mstatus.MPRV=1, mstatus.MPV=1, mstatus.MPP=1 (VS-mode)
+# This forces explicit memory accesses to be treated as VS-level accesses.
+# Setup: Set vsstatus.SUM=0 and access a page marked as Supervisor in VS-stage.
+# According to the rule, vsstatus.SUM applies instead of the HS-level SUM bit.
+
+li t0, 0x300 # mstatus address
+li t1, 0x200 # vsstatus address
+li t2, (1 << 17) | (1 << 39) | (3 << 11) # MPRV=1, MPV=1, MPP=1 (VS)
+csrw mstatus, t2
+
+li t3, 0 # vsstatus.SUM = 0
+csrw vsstatus, t3
+
+# Assume t4 contains a VS-level Supervisor address
+# If vsstatus.SUM=0, accessing a supervisor page from a VS-user context
+# (simulated via MPRV/MPV/MPP) should trigger a store/AMO page fault.
+la t4, 0x1000 # Example VS-level Supervisor address
+sw zero, 0(t4)
+
+# Result: Store Page Fault (Exception Code 15) because vsstatus.SUM=0 and access is VS-level.
+
+# 284 # Extension Must Be Active: Hypervisor
+li t0, 0x20000 # Value to store
+li t1, 0x1000 # Target guest virtual address
+sw t0, 0(t1) # Store value to memory (standard store)
+# Set mstatus.MPRV = 1.
+# Normally, MPRV causes loads/stores to use the privilege level in mstatus.MPP.
+# We set MPP to User mode (00) to attempt to force HLV/HSV to use User mode translation.
+li t2, (1 << 17) # MPRV bit
+csrr t3, mstatus
+or t3, t3, t2
+li t4, 0x0 # MPP = 0 (User)
+andi t3, t3, ~(0x3 << 11)
+or t3, t3, t4
+csrw mstatus, t3
+
+# HLV/HSV should ignore MPRV and always use the guest's current translation
+# regardless of whether MPRV is 1 or 0.
+hlv x5, 0(t1)
+# Result: x5 contains 0x20000
+
+# 285 # Extension Must Be Active: Hypervisor
+# Setup:
+# 1. Set mstatus.MPRV = 0 (Default)
+# 2. Set hstatus.SPVP = 1 (Supervisor privilege)
+# 3. Set up a memory address that is accessible in S-mode but NOT in U-mode.
+# 4. Use HLV to load from that address while in HS-mode.
+# The rule states HLV acts as though V=1 and privilege is hstatus.SPVP,
+# ignoring mstatus.MPRV.
+
+# Initialize CSRs
+li t0, 0x300 # mstatus
+li t1, 0 # Clear MPRV (bit 17)
+csrrw t2, t0, t1 # mstatus.MPRV = 0
+
+li t0, 0x600 # hstatus
+li t1, (1 << 8) # Set SPVP = 1 (bit 8)
+csrs t2, t0, t1 # hstatus.SPVP = 1
+
+# Memory address accessible only to S-mode (Supervisor)
+la t0, s_mode_data # Address of data in supervisor memory
+hlv x10, 0(t0) # Load value using HLV
+
+# Result: x10 contains the value from s_mode_data because HLV used hstatus.SPVP (S-mode) regardless of mstatus.MPRV=0.
+
+# 286 # Extension Must Be Active: H
+# Setup: Enter HS-mode, set mstatus.V = 1, and disable access to a counter via scounteren.
+# Then, attempt to read a counter (e.g., cycle counter) from U-mode.
+li t0, (1 << 20) # Bit 20 is the V bit in mstatus
+csrs mstatus, t0
+li t1, 0
+csrw scounteren, t1 # Disable all U-mode counter access
+# Transition to U-mode
+li t2, 0
+csrw mepc, t2
+mret
+# The following instruction is HS-qualified (counter access) and disabled by scounteren
+csrr t3, cycle
+# Result: Virtual-instruction exception with code 22
+
+# 287 # Extension Must Be Active: Svnapot
+# Setup:
+# 1. Set mstatus.VS = 1 (Enter VS-mode)
+# 2. Set mstatus.TVM = 1 (Enable Translation Virtual Memory suppression)
+# 3. Set mstatus.TSR = 1 (Enable Translation Side-effect suppression)
+# 4. Attempt a memory access that would normally trigger a page fault if TVM/TSR were active in S-mode.
+# Since TVM/TSR are ignored in VS-mode, the hardware must still perform the translation/check.
+
+csrr t0, mstatus
+li t1, (1 << 20) | (1 << 22) | (3 << 9) # TVM=1, TSR=1, VS=1
+csrw mstatus, t1
+# In VS-mode, TVM=1 and TSR=1 must be ignored.
+# A load from an unmapped address should still trigger a page fault (load page fault)
+# rather than being ignored or treated as a different exception.
+lw t0, 0(t1)
+# Result: load page fault exception
+
+# Result: load page fault exception
+
+# 288 # Extension Must Be Active: Hypervisor
+li t0, 0x400 # Set bit 10 (V) of mstatus to 1
+csrw mstatus, t0
+# Trigger a trap to M-mode (e.g., via ecall from U-mode or a timer interrupt)
+# For the purpose of this test, we simulate a trap by transitioning to M-mode
+ecall
+# Result: mstatus[10] == 0
+
+# 289 # Extension Must Be Active: None
+li t0, 0x0
+csrr t1, mstatus
+# Set MPP to 3 (Machine mode) and MPV to 1 (Previous Virtualization)
+# MPP is bits 12:11, MPV is bit 39
+li t2, (3 << 11) | (1 << 39)
+csrw mstatus, t2
+# Execute mret to return from trap
+mret
+# After mret, the processor returns to M-mode.
+# Since MPP was 3, the MPV field should have been ignored.
+# To verify the ignore rule, we check if the system state reflects
+# that the MPV bit did not trigger any specific virtualization
+# transition or state change usually associated with MPV=1.
+csrr t3, mstatus
+# Result: Processor returns to Machine mode; MPV bit is ignored during transition.
+
+# 290 # Extension Must Be Active: None
+li t0, 1
+csrw sstatus, t0
+csrr t1, mstatus
+and t1, t1, (1 << 23)
+# Result: t1 = 1 << 23 (The SPELP bit in mstatus is updated via sstatus)
+
+# 291 # Extension Must Be Active: None
+# Setup: Assume current privilege is S-mode and ELP is 1.
+# Trigger: A trap (e.g., ecall) occurs, transitioning the processor to M-mode.
+# Rule: MPELP in mstatus should be set to the current ELP value (1).
+
+li t0, 0x300
+csrr t1, 0x300
+li t2, (1 << 41)
+or t1, t1, t2
+csrw 0x300, t1
+ecall
+csrr t0, 0x300
+andi t0, t0, (1 << 41)
+
+# Result: t0 == (1 << 41)
+
+# 292 # Extension Must Be Active: None
+li t0, 0x1
+csrw mstatus, t0
+# Trigger a trap (e.g., using ecall to enter M-mode from a lower mode or a software exception)
+ecall
+# Read mstatus to verify the ELP field (MPELP bit 41) is set to NO_LP_EXPECTED (0)
+csrr t1, mstatus
+# Result: mstatus[41] == 0
+
+# 293 # Extension Must Be Active: None
+li t0, 0x1000000000000000 # Bit 63 (SD) - conceptually treating this as the LPE bit for M-mode
+csrw mstatus, t0
+li t1, 0x2000000000000000 # Bit 61 (MPELP) - Setting MPELP to 1
+csrs mstatus, t1
+li t2, 0x0000000000001800 # MPP = 3 (M-mode)
+csrw mstatus, t2
+# Now: mstatus.MPP=3, mstatus.MPELP=1, mstatus.SD(LPE)=1
+mret
+# Result: mstatus.MPELP is set to 1 (inherited from MPELP because LPE was 1)
+
+# 294 # Extension Must Be Active: none
+li t0, 0x00000000
+csrr t1, mstatus
+# Set MPP to 0 (User mode) for MRET transition
+# mstatus.MPP is bits 11-12. Clear them to 00.
+li t0, ~(3 << 11)
+and t1, t1, t0
+csrw mstatus, t1
+# Execute MRET to transition to privilege mode y=U
+# According to the rule: if LPE bit of mode U is 0, mstatus.ELP is set to NO_LP_EXPECTED.
+# In the provided field mapping, ELP for M-mode is MPELP (bit 41) and S-mode is SPELP (bit 23).
+# Assuming the rule refers to the relevant ELP field for the target mode.
+mret
+# Result: mstatus.MPELP = 0 and mstatus.SPELP = 0 (NO_LP_EXPECTED)
+
+# 295 # Extension Must Be Active: none
+li t0, 0x0
+csrr t1, mstatus
+# Set MPELP (bit 41) to 1 to verify it gets cleared to 0 (NO_LP_EXPECTED)
+li t0, (1 << 41)
+csrs mstatus, t0
+mret
+# Result: mstatus[41] (MPELP) == 0
+
+# 296 # Extension Must Be Active: None
+csrr t0, satp
+# Result: Read satp register into t0 in HS-mode (or higher)
+
+# Note: This test case assumes the processor is executing in HS-mode or M-mode. If executed in U-mode, it would result in an illegal-instruction exception.
+
+# 297 # Extension Must Be Active: None
+li t0, 0x80000000 # Set a test value (e.g., Mode=8, PPN=0)
+csrw satp, t0 # Write value to satp CSR
+csrr t1, satp # Explicitly read satp CSR into t1
+# Result: t1 == 0x80000000
+
+# 298 # Extension Must Be Active: None
+li t0, 0x0 # Set MODE to 0 (Bare)
+csrw satp, t0
+li t1, 0x1 # Attempt to set SUM bit (assuming SUM is mapped in a related CSR or handled via satp logic)
+# In RISC-V, the SUM bit is actually located in the sstatus register, but the rule specifies its behavior depends on satp.MODE.
+# To test the rule: If satp.MODE is 0, sstatus.SUM must remain read-only 0.
+li t2, (1 << 18) # Bit 18 is SUM in sstatus
+csrs sstatus, t2
+csrr t3, sstatus
+andi t3, t3, (1 << 18)
+# Result: t3 == 0
+
+***
+
+**Correction based on strict register mapping:**
+Since the rule specifies that the **SUM bit** (which resides in `sstatus`) is read-only 0 when `satp.MODE` is 0, the test case must target the `sstatus` register after setting `satp`.
+
+# 299 # Extension Must Be Active: None
+li t0, 0
+csrw satp, t0
+li t1, (1 << 18)
+csrs sstatus, t1
+csrr t2, sstatus
+# Result: sstatus[18] == 0
+
+# 300 # Extension Must Be Active: None
+# Setup: Set TVM=1 in mstatus and switch to S-mode
+csrr t0, mstatus
+li t1, (1 << 18) # TVM bit
+or t0, t0, t1
+csrw mstatus, t0
+# Switch to S-mode (assuming mstatus.MPP is set to 01)
+li t0, 0x0800
+csrw mstatus, t0
+mret
+
+# The following instruction should trigger an illegal-instruction exception
+csrr t0, satp
+# Result: illegal-instruction exception
+
+# 301 # Extension Must Be Active: None
+csrr t0, satp
+# Result: t0 contains the current value of the satp CSR
+
+# 302 # Extension Must Be Active: None
+li t0, 0x8000000000000000 # MODE = 8 (Sv39), ASID = 0, PPN = 0
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x8000000000000000
+
+# 303 # Extension Must Be Active: None
+li t0, 0x1234567890ABCDEF # Value with an unsupported MODE (0x1) and arbitrary ASID/PPN
+csrw satp, t0 # Write unsupported value to satp
+csrr t1, satp # Read back the value
+# Result: t1 contains a value where the MODE field is 0 (Bare mode), as unsupported MODE values are ignored (WARL behavior).
+
+# 304 # Extension Must Be Active: None
+li t0, 0x0
+csrw satp, t0
+la t1, label
+la t2, label
+beq t1, t2, pass
+# Result: pass
+
+# Explanation: Setting satp to 0 (MODE = Bare) ensures that virtual addresses are equal to physical addresses. Therefore, the address loaded into t1 and t2 for 'label' will be identical.
+
+# 305 # Extension Must Be Active: None
+li t0, 0
+csrw satp, t0
+la t1, label
+lw t2, 0(t1)
+label:
+.word 0xDEADBEEF
+# Result: t2 = 0xDEADBEEF (Physical address access enabled via Bare mode)
+
+# 306 # Extension Must Be Active: None
+li t0, 0
+csrw satp, t0
+# Result: satp = 0x0 (MODE=Bare)
+
+# 307 # Extension Must Be Active: None
+li t0, 0x0000000000000001 # Load a non-zero pattern for PPN/ASID
+csrw satp, t0 # Set MODE=Bare (0) with non-zero remaining fields
+csrr t1, satp # Read back the value of satp
+# Result: The value of t1 is unspecified for bits 59..0.
+
+# 308 # Extension Must Be Active: None
+li t0, 0x0
+csrw satp, t0
+# Result: Illegal instruction exception (MODE=0 is reserved when SXLEN=64)
+
+# 309 # Extension Must Be Active: None
+li t0, 0x1 // Using a value that represents an unsupported MODE (e.g., if only Bare(0) and Sv39(8) are supported)
+# Assuming the environment only supports MODE 0 (Bare) and 8 (Sv39),
+# a MODE value of 1 (bits 63..60) is unsupported.
+li t1, 0x1000000000000001 // MODE=1, ASID=0, PPN=1
+csrw satp, t1
+csrr t2, satp
+# Result: satp remains unchanged; t2 contains the original value of satp before the csrw instruction.
+
+# 310 # Extension Must Be Active: None
+li t0, 0x123 // Value to write to ASID field
+# Assuming ASIDLEN = 16 (standard for Sv39/48/57)
+# satp layout: MODE[63:60], ASID[59:44], PPN[43:0]
+# Shift 0x123 to bits [59:44]: 0x123 << 44 = 0x00000123000000000000
+# We set MODE to 8 (Sv39) to ensure the register is writable: (8 << 60) = 0x8000000000000000
+li t1, 0x8000012300000000
+csrw satp, t1
+csrr t2, satp
+# Result: t2 == 0x8000012300000000
+
+# 311 # Extension Must Be Active: None
+li t0, 0
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x0 (MODE=0, Bare mode enabled, no translation)
+
+# 312 # Extension Must Be Active: None
+li t0, 0x1
+csrw satp, t0
+# Result: satp.MODE is set to 1 (Sv39 translation enabled)
+
+# 313 # Extension Must Be Active: None
+li t0, 0x80000000 # MODE = 8 (Sv39), ASID = 0, PPN = 0
+csrw satp, t0
+# Result: satp register is updated to 0x80000000, enabling Sv39 page-based 39-bit virtual addressing.
+
+# 314 # Extension Must Be Active: None
+li t0, 0x9 << 60
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x9000000000000000
+
+# 315 # Extension Must Be Active: None
+li t0, 0x10 << 60 # Set MODE field to 10 (Sv57)
+csrw satp, t0 # Write to satp register
+csrr t1, satp # Read back satp to verify
+# Result: t1 = 0x1000000000000000
+
+# 316 # Extension Must Be Active: None
+csrr t0, satp
+li t1, 0x1100000000000000
+csrw satp, t1
+csrr t2, satp
+# Result: t2 = 0x1100000000000000
+
+# 317 # Extension Must Be Active: None
+li t0, 0x12 << 60 # Set MODE field to 12 (Reserved for standard use)
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0x1200000000000000
+
+# 318 # Extension Must Be Active: None
+li t0, 0xF << 60 # Set MODE field to 15 (Custom use)
+csrw satp, t0
+csrr t1, satp
+# Result: t1 = 0xF000000000000000
+
+# 319 # Extension Must Be Active: None
+li t0, 0x0
+csrw satp, t0
+# Result: Translation mode changes to Bare immediately; subsequent memory accesses use physical addresses without requiring SFENCE.VMA.
+
+# 320 # Extension Must Be Active: None
+li t0, 0x123 << 44
+csrw satp, t0
+csrr t1, satp
+# Result: t1 contains 0x123 in the ASID field (bits 59..44) immediately after the write.
+
+# 321 # Extension Must Be Active: S-mode
+csrr t0, satp
+# Result: t0 contains the value of the satp register
+
+# 322 # Extension Must Be Active: None
+# Setup:
+# 1. Set VTVM = 1 (Virtualization Translation Virtualization Mode)
+# 2. Transition to VS-mode (Virtual Supervisor mode)
+# 3. Attempt to read/write satp (CSR 0x180)
+
+csrrw x0, vtvm, 1 # Set VTVM=1 (Assume execution in HS-mode for setup)
+# ... [Transition to VS-mode] ...
+csrr t0, satp # Attempt to access satp in VS-mode while VTVM=1
+# Result: virtual-instruction exception
+
+# 323 # Extension Must Be Active: None
+li t0, 0xF << 44 # Set MODE to 15 (Unsupported mode), PPN to 0, ASID to 0
+csrw satp, t0
+csrr t1, satp
+# Result: satp remains unchanged (the write is ignored)
+
+# 324 # Extension Must Be Active: S-mode / Hypervisor extension
+li t0, 0x12345
+csrw vsatp, t0
+# Set V=1 to enable virtualization mode
+csrs hstatus, 0x1000 # Assuming V bit is in hstatus (or similar mechanism to set V=1)
+# Now, any access to satp should actually modify vsatp
+li t1, 0x67890
+csrw satp, t1
+csrr t2, vsatp
+# Result: t2 = 0x67890
+
+# 325 # Extension Must Be Active: Svnap
+# Assume V=0 (Virtualization disabled)
+# Initial state: satp = 0x0 (Bare mode)
+# Goal: Attempt to write an unsupported MODE value (e.g., 0xF) to vsatp.
+# Per the rule: When V=0, a write to vsatp with unsupported MODE is ignored or treated as WARL.
+
+li t0, 0xF000000000000000 # MODE = 15 (Unsupported), ASID=0, PPN=0
+csrw vsatp, t0
+csrr t1, vsatp
+
+# Result: t1 does not contain 0xF000000000000000 (write is ignored or masked by WARL)
+
+# 326 # Extension Must Be Active: Svnapoth (or any Hypervisor extension enabling V-mode)
+li t0, 0xF // Unsupported MODE value (e.g., 1111)
+csrw satp, t0
+csrr t1, satp
+csrr t2, vsatp
+# Result: satp remains unchanged, vsatp remains unchanged
+
+# 327 # Extension Must Be Active: Svnap
+# Assume the processor is currently in VS-mode
+# Step 1: Set hstatus.VTVM = 1 (performed by HS-mode prior to entering VS-mode)
+# Step 2: Attempt to access satp while in VS-mode with VTVM=1
+csrr t0, satp
+# Result: virtual-instruction exception
+
+# 328 # Extension Must Be Active: Zss
+# Note: This test case assumes the processor is in S-mode and satp.MODE is set to Bare (0).
+# Shadow stack instructions (like sspush) should trigger a store/AMO access-fault when MODE=Bare and privilege < M.
+
+la t0, 0x180
+li t1, 0 # MODE = Bare (0)
+csrw satp, t1
+sspush x10
+
+# Result: store/AMO access-fault exception
+
+# 329 # Extension Must Be Active: None
+li t0, 0x0
+csrw satp, t0
+# Result: The upper PMLEN bits of physical addresses are replaced with 0.
+
+# 330 # Extension Must Be Active: None
+# Scenario: Running in M-mode. The rule states that when running in M-mode, the upper PMLEN bits of a physical address are replaced with 0 (ignore transformation).
+# Since M-mode always ignores satp translation (effectively Bare mode), any virtual address accessed is treated as a physical address, and the upper bits are masked.
+
+csrr t0, satp
+li t1, 0x0 # Ensure satp is Bare mode (MODE=0)
+csrw satp, t1
+la t2, 0x1FFFFFFFFFFF # A value exceeding standard PMLEN boundaries
+# Result: The memory access to the address in t2 will have its upper bits above PMLEN replaced with 0.
+
+# 331 # Extension Must Be Active: NONE
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 332 # Extension Must Be Active: NONE
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 333 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, 0x180
+# Result: mcause = 0x2
+
+# 334 # Extension Must Be Active: NONE
+li a0, 0x1000000000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x0
+
+# 335 # Extension Must Be Active: NONE
+li a0, 0x100000000000
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x100000000000
+
+# 336 # Extension Must Be Active: NONE
+li a0, 0x1
+csrs 0x180, a0
+csrr a1, 0x180
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# 337 # Extension Must Be Active: NONE
+li a0, 0xffffffffffffffff
+csrw 0x180, a0
+csrr a1, 0x180
+# Result: a1 != 0xffffffff & a1 != 0xffffffffffffffff
+
+# 338 # Extension Must Be Active: Svade
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 339 # Extension Must Be Active: Svadu
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 340 # Extension Must Be Active: Svnapot
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 341 # Extension Must Be Active: Svpbmt
+csrr a0, 0x180
+# Result: mcause = 0x0
+
+# 342 # Extension Must Be Active: none
+li t0, 0x1
+csrw scounteren, t0
+csrr t1, scounteren
+# Result: t1 = 0x1
+
+# 343 # Extension Must Be Active: None
+li t0, 0
+csrw scounteren, t0
+# Switch to U-mode (conceptual jump/mret)
+csrr t1, cycle
+# Result: illegal-instruction exception
+
+# 344 # Extension Must Be Active: zicsr
+# Setup: Assume running in S-mode.
+# We will enable access to the cycle counter (CY) for U-mode by setting bit 0 of scounteren.
+li t0, 1
+csrw scounteren, t0
+# Switch to U-mode (conceptual jump/eret)
+# In U-mode, attempt to read the cycle counter
+csrr t1, cycle
+# Result: t1 contains the current value of the cycle counter without triggering an illegal-instruction exception.
+
+# 345 # Extension Must Be Active: none
+# Setup: M-mode configures permissions for U-mode to access the cycle counter (CY)
+# mcounteren[0] = 1, scounteren[0] = 0 (Testing failure when scounteren bit is not set)
+csrrw x0, mcounteren, 1
+csrrw x0, scounteren, 0
+
+# Transition to U-mode
+# (Assuming environment handles the mstatus.MPP and sret/mret transition)
+# In U-mode:
+csrr x10, cycle
+
+# Result: illegal-instruction exception
+
+# 346 # Extension Must Be Active: Svnap
+# Setup: Execute in HS-mode to configure registers, then transition to VU-mode
+# Test: Set hcounteren[0]=1 (CY enabled) but scounteren[0]=0 (CY disabled)
+# Rule: In VU-mode, counter is readable ONLY if BOTH hcounteren and scounteren bits are set.
+
+csrw hcounteren, 1 # Enable cycle counter in hcounteren
+csrw scounteren, 0 # Disable cycle counter in scounteren
+# Transition to VU-mode here (omitted environment setup)
+csrr t0, cycle # Attempt to read cycle counter in VU-mode
+# Result: illegal-instruction exception
+
+# 347 # Extension Must Be Active: Privileged
+# Setup:
+# 1. Set mstatus.TVM = 0 and mstatus.TSR = 0.
+# 2. Set hstatus.V = 1 (Virtualization mode enabled).
+# 3. Set scounteren = 0 (Disable U-mode access to counters).
+# 4. Execute the code in VS-mode (Virtual Supervisor mode).
+# 5. Attempt to read a counter (e.g., cycle counter) which is HS-qualified.
+
+csrr t0, cycle
+# Result: Virtual-instruction exception (code 22)
+
+# 348 # Extension Must Be Active: NONE
+csrr a0, 0x106
+# Result: mcause = 0x0
+
+# 349 # Extension Must Be Active: NONE
+machine_to_supervisor
+csrr a0, 0x106
+# Result: mcause = 0x0
+
+# 350 # Extension Must Be Active: NONE
+call machine_to_user
+csrr a0, 0x106
+# Result: mcause = 0x2
+
+# 351 # Extension Must Be Active: NONE
+li a0, 0x40000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40000
+
+# 352 # Extension Must Be Active: NONE
+li a0, 0x20000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20000
+
+# 353 # Extension Must Be Active: NONE
+li a0, 0x10000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10000
+
+# 354 # Extension Must Be Active: NONE
+li a0, 0x8000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8000
+
+# 355 # Extension Must Be Active: NONE
+li a0, 0x4000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4000
+
+# 356 # Extension Must Be Active: NONE
+li a0, 0x2000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2000
+
+# 357 # Extension Must Be Active: NONE
+li a0, 0x1000
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1000
+
+# 358 # Extension Must Be Active: NONE
+li a0, 0x800
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x800
+
+# 359 # Extension Must Be Active: NONE
+li a0, 0x400
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x400
+
+# 360 # Extension Must Be Active: NONE
+li a0, 0x200
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x200
+
+# 361 # Extension Must Be Active: NONE
+li a0, 0x100
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x100
+
+# 362 # Extension Must Be Active: NONE
+li a0, 0x80
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x80
+
+# 363 # Extension Must Be Active: NONE
+li a0, 0x40
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x40
+
+# 364 # Extension Must Be Active: NONE
+li a0, 0x20
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x20
+
+# 365 # Extension Must Be Active: NONE
+li a0, 0x10
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x10
+
+# 366 # Extension Must Be Active: NONE
+li a0, 0x8
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x8
+
+# 367 # Extension Must Be Active: NONE
+li a0, 0x4
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x4
+
+# 368 # Extension Must Be Active: NONE
+li a0, 0x2
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x2
+
+# 369 # Extension Must Be Active: NONE
+li a0, 0x1
+csrs 0x106, a0
+csrr a1, 0x106
+and a2, a0, a1
+# Result: a2 = 0x1
+
+# 370 # Extension Must Be Active: none
+li t0, -1
+csrw scounteren, t0
+csrr t1, scounteren
+# Result: t1 != -1 & t1 != 0xffffffff

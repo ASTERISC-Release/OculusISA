@@ -1,0 +1,126 @@
+RULE 1: If mstatus.VS is Off when VLE32FF.V is executed with virtualization mode V=0, the instruction raises an illegal-instruction exception.
+RULE 2: If either mstatus.VS or vsstatus.VS is Off when VLE32FF.V is executed with virtualization mode V=1, the instruction raises an illegal-instruction exception.
+RULE 3: If vtype.vill is set when VLE32FF.V is executed, the instruction raises an illegal-instruction exception.
+RULE 4: If VLE32FF.V raises an illegal-instruction exception, vstart is not modified by the instruction.
+RULE 5: If VLE32FF.V raises an illegal-instruction exception before execution of its element operations, it performs no element memory accesses.
+RULE 6: If vstart contains a value that the implementation can never produce for VLE32FF.V with the current vtype setting, the implementation may raise an illegal-instruction exception.
+RULE 7: When VLE32FF.V executes, its base effective address is the XLEN-bit value in x[rs1].
+RULE 8: For element index i, VLE32FF.V computes the element effective address as x[rs1] + 4×i modulo 2^XLEN.
+RULE 9: Each successful active element operation of VLE32FF.V loads exactly 32 bits from memory.
+RULE 10: Each successful active element operation of VLE32FF.V writes the loaded 32-bit bit pattern without sign extension or zero extension to destination element i.
+RULE 11: If VLE32FF.V is unmasked, every body element is active.
+RULE 12: If VLE32FF.V is masked, body element i is active exactly when mask bit v0[i] is one.
+RULE 13: VLE32FF.V performs no memory access for an element whose index is less than the initial vstart value.
+RULE 14: VLE32FF.V performs no memory access for an inactive masked-off element.
+RULE 15: VLE32FF.V performs no memory access for a tail element.
+RULE 16: An inactive masked-off element of VLE32FF.V does not raise a memory exception.
+RULE 17: A prestart element of VLE32FF.V does not raise a memory exception.
+RULE 18: A tail element of VLE32FF.V does not raise a memory exception.
+RULE 19: VLE32FF.V leaves each prestart destination element undisturbed.
+RULE 20: If vtype.vma=0, VLE32FF.V leaves each inactive destination element undisturbed.
+RULE 21: If vtype.vma=1, each inactive destination element of VLE32FF.V may either retain its previous value or be overwritten with all ones.
+RULE 22: If vtype.vta=0, VLE32FF.V leaves each destination tail element undisturbed.
+RULE 23: If vtype.vta=1, each destination tail element of VLE32FF.V may either retain its previous value or be overwritten with all ones.
+RULE 24: If the initial vstart value is greater than or equal to the initial vl value, VLE32FF.V performs no element memory accesses.
+RULE 25: If the initial vstart value is greater than or equal to the initial vl value, VLE32FF.V does not update any destination element, including an agnostic tail element.
+RULE 26: If the initial vl value is zero, VLE32FF.V performs no element memory accesses.
+RULE 27: If the initial vl value is zero, VLE32FF.V does not update any destination element.
+RULE 28: On normal completion of VLE32FF.V, including completion after fault-only-first trimming, vstart is set to zero.
+RULE 29: If active element 0 encounters a synchronous exception during VLE32FF.V, the exception is taken as a trap.
+RULE 30: If active element 0 encounters a synchronous exception during VLE32FF.V, vl is not modified by the instruction.
+RULE 31: If active element i with i>0 encounters a synchronous exception during VLE32FF.V, the corresponding synchronous exception is not taken as a trap.
+RULE 32: If active element i with i>0 encounters a synchronous exception during VLE32FF.V, vl is set to i.
+RULE 33: If active element i with i>0 encounters a synchronous exception during VLE32FF.V, element operations with indices less than i that completed remain architecturally visible.
+RULE 34: If VLE32FF.V trims vl at element i, active destination elements with indices greater than i but less than the initial vl may be overwritten.
+RULE 35: If VLE32FF.V overwrites an active destination element beyond the element that caused vl to be trimmed, the overwritten value need not equal the value at that element’s addressed memory location.
+RULE 36: VLE32FF.V does not perform a spurious destination update beyond the instruction’s initial vl.
+RULE 37: VLE32FF.V may complete without a synchronous exception after processing fewer than the initial vl elements and may reduce vl to the first unprocessed element index.
+RULE 38: If VLE32FF.V executes with initial vstart=0 and initial vl>0 and does not take a trap, its final vl is greater than zero.
+RULE 39: If VLE32FF.V processes all requested elements without trimming, it leaves vl unchanged.
+RULE 40: If active element 0 encounters a load-address-misaligned condition that is reported as an exception, VLE32FF.V raises a load-address-misaligned exception.
+RULE 41: If active element 0 encounters a load access fault, VLE32FF.V raises a load-access-fault exception.
+RULE 42: If active element 0 encounters a first-stage load page fault, VLE32FF.V raises a load-page-fault exception.
+RULE 43: If active element 0 encounters a G-stage translation fault while V=1, VLE32FF.V raises a load guest-page-fault exception.
+RULE 44: If an active element with index greater than zero encounters a load-address-misaligned, load-access-fault, load-page-fault, or load guest-page-fault condition, VLE32FF.V suppresses that exception and trims vl to that element index.
+RULE 45: If an active element effective address is divisible by four, that element access does not raise an address-misaligned exception.
+RULE 46: If an active element effective address is not divisible by four, that element access either completes successfully or encounters an address-misaligned exception.
+RULE 47: Support for a misaligned VLE32FF.V element access is independent of support for misaligned scalar memory accesses.
+RULE 48: A naturally aligned 32-bit element load performed by VLE32FF.V is atomic with respect to observation of a partially completed element value.
+RULE 49: A successfully completed misaligned 32-bit element load performed by VLE32FF.V is not required to be atomic.
+RULE 50: VLE32FF.V is not required to perform all of its element loads atomically as one instruction-wide memory operation.
+RULE 51: Element memory accesses within VLE32FF.V are unordered with respect to each other.
+RULE 52: Because VLE32FF.V element accesses are unordered, a higher-index active element access may complete before a lower-index active element access.
+RULE 53: A memory side effect from a higher-index active element access may occur before VLE32FF.V trims vl because of a lower-index element fault.
+RULE 54: VLE32FF.V appears to execute in program order relative to other vector memory instructions on the local hart.
+RULE 55: Under RVWMO, VLE32FF.V follows memory-ordering rules at the instruction level.
+RULE 56: If Ztso is implemented, VLE32FF.V follows RVTSO at the instruction level.
+RULE 57: Ztso does not impose element-index ordering among the element accesses of VLE32FF.V.
+RULE 58: VLE32FF.V has a control dependency on vl rather than a data dependency on vl.
+RULE 59: A masked VLE32FF.V has a control dependency on v0 rather than a data dependency on v0.
+RULE 60: A VLE32FF.V element access to regular main memory is classified as a memory read for FENCE ordering.
+RULE 61: A VLE32FF.V element access to an I/O region is classified as device input for FENCE ordering.
+RULE 62: If the applicable environment-configuration FIOM bit is one, FENCE ordering of a VLE32FF.V device-input access also implies ordering as a memory read.
+RULE 63: If VLE32FF.V changes any vector register, vl, or vstart while mstatus.VS is Initial or Clean, mstatus.VS becomes Dirty.
+RULE 64: If VLE32FF.V changes vector state while V=1 and neither vector-status field is Off, both mstatus.VS and vsstatus.VS become Dirty.
+RULE 65: An implementation may change mstatus.VS from Initial or Clean to Dirty during VLE32FF.V even if the instruction does not alter vector state.
+RULE 66: When V=1, an implementation may change vsstatus.VS from Initial or Clean to Dirty during VLE32FF.V even if the instruction does not alter vector state.
+RULE 67: If pointer masking is enabled for the effective privilege mode of VLE32FF.V, the applicable ignore transformation is applied to each element effective address before memory access.
+RULE 68: If pointer masking applies to VLE32FF.V, each element address is transformed after adding the element’s byte offset to x[rs1].
+RULE 69: If MXR is in effect for the explicit memory access performed by VLE32FF.V, pointer masking is not applied to that access.
+RULE 70: If pointer masking applies to a misaligned VLE32FF.V element access that is decomposed into smaller accesses, the resulting bytes accessed must be the same as if the pointer-masking transformation were applied individually to each accessed byte address.
+RULE 71: If mstatus.MPRV=0, VLE32FF.V uses the translation, protection, pointer-masking, and endianness rules of the current privilege mode.
+RULE 72: If mstatus.MPRV=1, VLE32FF.V uses the translation, protection, pointer-masking, and endianness rules of the privilege mode encoded by mstatus.MPP.
+RULE 73: If mstatus.MPRV=1 and the hypervisor extension is implemented, VLE32FF.V uses mstatus.MPV together with mstatus.MPP to determine whether its explicit memory accesses use two-stage translation.
+RULE 74: If the effective privilege mode of VLE32FF.V is M-mode without virtualization, its explicit element accesses are not subject to page-based address translation.
+RULE 75: If the effective privilege mode of VLE32FF.V is S-mode or U-mode with satp active, each active element address is translated according to satp.
+RULE 76: If the effective virtualization mode of VLE32FF.V is one, each active element address is translated first by VS-stage translation and then by G-stage translation.
+RULE 77: If VLE32FF.V executes in U-mode or VU-mode using page-based translation, an active element access to a leaf page with U=0 encounters a load page fault.
+RULE 78: If VLE32FF.V executes with effective S-mode or VS-mode privilege and SUM=0, an active element access to a leaf page with U=1 encounters a load page fault.
+RULE 79: If VLE32FF.V executes with effective S-mode or VS-mode privilege and SUM=1, the U bit does not by itself prevent an active element load from accessing a user page.
+RULE 80: If MXR=0 for an applicable translation stage, an active VLE32FF.V element load requires read permission at that stage.
+RULE 81: If MXR=1 for an applicable translation stage, an active VLE32FF.V element load may use a page marked readable or executable at that stage.
+RULE 82: When V=1, vsstatus.MXR affects read permission only at the VS translation stage for VLE32FF.V.
+RULE 83: When V=1, HS-level sstatus.MXR makes execute-only pages readable for VLE32FF.V at both the VS and G translation stages.
+RULE 84: During G-stage translation of a VLE32FF.V element access, the access is checked as a user-level access.
+RULE 85: If Svade applies and an applicable leaf PTE has A=0, the corresponding active VLE32FF.V element encounters the page-fault condition for that translation stage.
+RULE 86: If hardware PTE A-bit updating applies and an applicable leaf PTE has A=0, the PTE A bit is atomically set before the corresponding successful VLE32FF.V memory access becomes globally visible.
+RULE 87: A VLE32FF.V element load does not set a leaf PTE D bit merely because the element is read.
+RULE 88: If PMP or a physical-memory attribute denies an active VLE32FF.V element read, that element encounters a load-access-fault condition.
+RULE 89: If first-stage address translation denies an active VLE32FF.V element read, that element encounters a load-page-fault condition.
+RULE 90: If G-stage address translation denies an active VLE32FF.V element read, that element encounters a load guest-page-fault condition.
+RULE 91: The relative priority between an address-misaligned exception and a page-fault or access-fault exception for the same VLE32FF.V element is implementation-defined.
+RULE 92: In little-endian mode, each successful VLE32FF.V element load places the lowest-addressed memory byte into bits 7:0 of the 32-bit destination element.
+RULE 93: In big-endian mode, each successful VLE32FF.V element load places the highest-addressed memory byte into bits 7:0 of the 32-bit destination element.
+RULE 94: If a synchronous exception on active element 0 traps to M-mode, mcause contains the corresponding load exception code.
+RULE 95: If a synchronous exception on active element 0 traps to HS-mode or S-mode, scause contains the corresponding load exception code.
+RULE 96: If a synchronous exception on active element 0 traps to VS-mode, vscause contains the corresponding load exception code.
+RULE 97: A load-address-misaligned trap caused by VLE32FF.V has exception code 4.
+RULE 98: A load-access-fault trap caused by VLE32FF.V has exception code 5.
+RULE 99: A load-page-fault trap caused by VLE32FF.V has exception code 13.
+RULE 100: A load guest-page-fault trap caused by VLE32FF.V has exception code 21.
+RULE 101: If VLE32FF.V traps to M-mode, mepc is set to the address of the VLE32FF.V instruction.
+RULE 102: If VLE32FF.V traps to HS-mode or S-mode, sepc is set to the address of the VLE32FF.V instruction.
+RULE 103: If VLE32FF.V traps to VS-mode, vsepc is set to the address of the VLE32FF.V instruction.
+RULE 104: If VLE32FF.V takes a precise trap during an element operation, vstart is set to the index of the element on which the trap is reported.
+RULE 105: If active element 0 causes a synchronous trap from VLE32FF.V, vstart is set to zero.
+RULE 106: If an informative trap-value CSR is written for a VLE32FF.V memory exception, it contains the faulting effective virtual address.
+RULE 107: If pointer masking applied to the faulting VLE32FF.V access, an informative trap-value CSR receives the transformed faulting address.
+RULE 108: If a VLE32FF.V load guest-page fault writes a nonzero htval or mtval2 value, that value contains the faulting guest physical address shifted right by two bits.
+RULE 109: If a precise trap interrupts VLE32FF.V, all architecturally visible effects of older instructions are committed before the trap.
+RULE 110: If a precise trap is reported at VLE32FF.V element index i, the effects of completed element operations with indices less than i are committed.
+RULE 111: If a precise trap is reported at VLE32FF.V element index i, an element at or after i may have been modified only when restarting from vstart=i still produces the architecturally correct final state.
+RULE 112: If VLE32FF.V takes a synchronous trap on element 0, active destination elements after element 0 may already have been overwritten.
+RULE 113: If VLE32FF.V takes a synchronous trap on element 0, values already written to later active destination elements need not correspond to their addressed memory locations.
+RULE 114: If a VLE32FF.V exception occurs while V=0 in a mode less privileged than M and its medeleg bit is set, the trap is taken in S-mode or HS-mode.
+RULE 115: If a VLE32FF.V exception occurs while V=0 and is not delegated by medeleg, the trap is taken in M-mode.
+RULE 116: If a VLE32FF.V exception occurs while V=1 and is not delegated by medeleg, the trap is taken in M-mode.
+RULE 117: If a VLE32FF.V exception occurs while V=1, is delegated by medeleg, and is not further delegated by hedeleg, the trap is taken in HS-mode.
+RULE 118: If a non-guest-page VLE32FF.V exception occurs while V=1 and is delegated by both medeleg and hedeleg, the trap is taken in VS-mode.
+RULE 119: A load guest-page-fault exception caused by VLE32FF.V cannot be delegated to VS-mode.
+RULE 120: If VLE32FF.V traps to M-mode, execution enters M-mode with virtualization mode V set to zero.
+RULE 121: If VLE32FF.V traps to HS-mode, execution enters HS-mode with virtualization mode V set to zero.
+RULE 122: If VLE32FF.V traps to VS-mode, execution enters VS-mode with virtualization mode V remaining one.
+RULE 123: If active element 0 causes a synchronous exception, VLE32FF.V does not retire.
+RULE 124: If active element 0 causes a synchronous exception, VLE32FF.V does not increment instret or minstret as a retired instruction.
+RULE 125: If VLE32FF.V completes normally, including completion after suppressing a later-element fault and trimming vl, the instruction retires.
+RULE 126: If VLE32FF.V retires and instruction-retirement counting is enabled for the current mode, instret or minstret is incremented for the instruction.

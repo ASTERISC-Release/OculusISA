@@ -1,0 +1,29 @@
+## 4.7. Precise effects on interrupt-pending bits
+
+An attempt to set or clear an interrupt source's pending bit by writing to a register in the interrupt domain's control region may or may not be successful, depending on the corresponding source mode, the interrupt domain's delivery mode, and the state of the source's rectified input value (defined in Section 4.5.2). The following enumerates all the circumstances when a pending bit is set or cleared for a given source mode.
+
+If the source mode is Detached:
+
+- The pending bit is set to one only by a relevant write to a setip or setipnum register.
+- The pending bit is cleared when the interrupt is claimed at the APLIC or forwarded by MSI, or by a relevant write to an in\_clrip register or to clripnum .
+
+If the source mode is Edge1 or Edge0:
+
+- The  pending  bit  is  set  to  one  by  a  low-to-high  transition  in  the  rectified  input  value,  or  by  a relevant write to a setip or setipnum register.
+- The pending bit is cleared when the interrupt is claimed at the APLIC or forwarded by MSI, or by a relevant write to an in\_clrip register or to clripnum .
+
+If the source mode is Level1 or Level0 and the interrupt domain is configured in direct delivery mode ( domaincfg .DM = 0):
+
+- The pending bit is set to one whenever the rectified input value is high. The pending bit cannot be set by a write to a setip or setipnum register.
+- The pending bit is cleared whenever the rectified input value is low. The pending bit is not cleared by a claim of the interrupt at the APLIC, nor can it be cleared by a write to an in\_clrip register or to clripnum .
+
+If the source mode is Level1 or Level0 and the interrupt domain is configured in MSI delivery mode ( domaincfg .DM = 1):
+
+- The pending bit is set to one by a low-to-high transition in the rectified input value. The pending bit  may also be set by a relevant write to a setip or setipnum register  when  the  rectified  input value is high, but not when the rectified input value is low.
+- The  pending  bit  is  cleared  whenever  the  rectified  input  value  is  low,  when  the  interrupt  is forwarded by MSI, or by a relevant write to an in\_clrip register or to clripnum .
+
+<image>
+
+When an interrupt domain is in direct delivery mode, the pending bit for a level-sensitive source is always just a copy of the rectified input value. Even in MSI delivery mode, the pending bit for a level-sensitive source is never set (= 1) when the rectified input value is low.
+
+In addition to the rules above, a write to a sourcecfg register can cause the source's interrupt-pending bit to be set to one, as specified in Section 4.5.2.

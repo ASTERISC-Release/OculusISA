@@ -1,0 +1,41 @@
+The provided text contains comprehensive details about the RISC-V Privileged Architecture, specifically focusing on machine-mode registers, trap handling, memory attributes, and various extensions like pointer masking and hypervisor support.
+
+Here is a summary of the key technical specifications from the text:
+
+### **1. Machine-Mode Trap Handling**
+*   **`mtvec` Register:** Controls the trap vector base address and mode (Direct or Vectored).
+*   **`mcause` & `mepc` Registers:** Capture the cause of the trap and the address of the interrupted/faulting instruction.
+*   **`mtval` Register:** Holds exception-specific data (e.g., faulting virtual address or instruction bits for illegal instruction emulation).
+*   **Delegation:** `medeleg` and `mideleg` registers allow machine-mode traps to be handled directly by lower privilege levels (S-mode or U-mode) for better performance.
+
+### **2. Machine-Mode Counters and Interrupts**
+*   **Performance Monitors:** Includes `mcycle` (clock cycles) and `minstret` (retired instructions), along with 29 additional 64-bit event counters.
+*   **Interrupts:** The `mip` (pending) and `mie` (enable) registers manage machine-level interrupts.
+*   **Counter Control:** `mcounteren` controls counter accessibility, and `mcountinhibit` allows stopping counter increments to save energy.
+
+### **3. Physical Memory Attributes (PMA) & Protection (PMP)**
+*   **PMA:** Describes inherent properties of memory regions (e.g., cacheability, atomicity, idempotency, and ordering).
+*   **PMP:** A per-hart machine-mode mechanism to restrict physical memory access. It uses configuration (`pmpcfg`) and address (`pmpaddr`) registers to define regions and permissions (Read, Write, Execute).
+*   **Locking:** The `L` bit in PMP rules allows locking a rule so it cannot be changed until a reset occurs.
+
+### **4. Memory Management & Virtualization**
+*   **`satp` Register:** The core of supervisor-mode address translation. It holds the root page table physical page number (PPN), Address Space Identifier (ASID), and the translation mode.
+*   **Page Sizes:** Supports 4 KiB pages, and for Sv32, also supports 4 MiB megapages.
+*   **Translation Modes:** Includes **Sv32**, **Sv39**, **Sv48**, and **Sv57**.
+*   **SFENCE.VMA:** A critical instruction used to synchronize page table updates and invalidate address-translation caches (TLBs).
+
+### **5. Key Extensions**
+*   **Pointer Masking (PM):** Allows the CPU to ignore the upper bits of an address (PMLEN) for specific operations, useful for tag checks (like HWASAN).
+*   **Hypervisor Extension (H):** Introduces **HS-mode** (Hypervisor-extended Supervisor mode), two-stage address translation (VS-stage and G-stage), and a set of hypervisor-specific CSRs and instructions (`HLV`, `HSV`, `HFENCE`).
+*   **Control Transfer Records (CTR):** Records control flow history (jumps, calls, returns) into a circular buffer for profiling and debugging.
+*   **State Enable (Smstateen/Ssstateen):** Provides a mechanism to control access to internal state (like floating-point or vector registers) for lower privilege modes.
+*   **Double Trap (Ssdbltrp):** Addresses the "double trap" condition where a trap occurs during the tail phase of another trap.
+*   **Resumable NMI (Smrnmi):** Allows non-maskable interrupts to be handled such that the processor can resume execution exactly where it was interrupted.
+
+### **6. Summary Table: Virtual Memory Modes (SXLEN=64)**
+| Mode | Virtual Address Space | Translation Scheme |
+| :--- | :--- | :--- |
+| **Bare** | 64-bit | No translation |
+| **Sv39** | 39-bit | 3-level page table |
+| **Sv48** | 48-bit | 4-level page table |
+| **Sv57** | 57-bit | 5-level page table |

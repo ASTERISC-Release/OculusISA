@@ -1,0 +1,18 @@
+## 6.1.2. Migrating a virtual hart to a different guest interrupt file
+
+When it is necessary to move a virtual hart from one physical hart to another, if the virtual hart uses a guest interrupt file, the specific guest interrupt file assigned to it must change from the one in use at the old physical hart to a different one at the new physical hart. Because each guest interrupt file is physically tied to a single physical hart, a virtual hart cannot bring its guest interrupt file with it when it moves.
+
+The process of migrating a virtual hart from one guest interrupt file to another is more complex than moving most other state held by the virtual hart. After the destination guest interrupt file has been chosen at the new physical hart, the following steps are recommended:
+
+1. At the old interrupt file, save to memory the values of registers eidelivery and eithreshold , and set eidelivery = 0.
+2. At the new interrupt file, set eidelivery = 0, and zero all implemented interrupt-pending bits (the eip array).
+3. Modify the relevant translation tables at all IOMMUs so that MSIs for this virtual interrupt file are now sent to the new physical interrupt file. Likewise, if any interrupts at an APLIC are forwarded by MSIs to the old interrupt file, reconfigure the APLIC to send them to the new interrupt file. As needed, synchronize with all IOMMUs and APLICs to ensure that no straggler MSIs will arrive at the old interrupt file after this step. Synchronizing with an APLIC can be accomplished using the algorithm of Section 4.9.3.
+4. At  the  old  interrupt  file,  dump  to  memory  all  implemented  interrupt-pending  and  interruptenable bits (the eip and eie arrays). After this step is done, the old interrupt file is no longer in use.
+5. At the new interrupt file, logically OR the interrupt-pending bits that were saved in step 4 into the new interrupt file, using instruction CSRS to write to the eip array. Also, load the interrupt-enable bits that were saved in step 4 into the eie array.
+6. At  the  new  interrupt  file,  load  registers eithreshold and eidelivery with  the  values  that  were saved in step 1.
+
+Resuming execution of the virtual hart at the new physical hart is not recommended until the entire interrupt file has been fully migrated.
+
+<image>
+
+Resuming  execution  of  the  virtual  hart  before  the  interrupt  file  is  fully  migrated  could allow software running in the virtual machine to see multiple MSIs arriving from a single device in an order that should not happen. While this would rarely matter in practice, it runs the risk of wedging a device driver that depends (perhaps inadvertently) on a valid ordering of events.

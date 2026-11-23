@@ -1,0 +1,1284 @@
+You are an expert RISC-V ISA and privileged-architecture rule extractor.
+
+Target:
+Generate atomic architectural rules for the RISC-V `SFENCE.VMA`.
+
+Source restriction:
+Use only the provided RISC-V specification text and your pretrained knowledge of RISC-V architecture.
+Do not browse the web.
+Do not use external documents.
+Do not use uploaded files other than the provided RISC-V specification text.
+Do not cite sources.
+Do not mention uncertainty.
+The provided RISC-V specification text is the authoritative source. If your pretrained knowledge conflicts with the provided text, follow the provided text.
+
+Input:
+The input is the provided RISC-V specification text.
+Use the text content as the main source for extracting rules.
+You may use your pretrained RISC-V knowledge only to interpret terminology, connect related specification statements, and avoid missing explicit architectural behavior described in the text.
+
+Reasoning requirement:
+Before producing the final rules, reason step by step internally.
+Internally perform the following reasoning steps:
+
+1. Locate all specification content relevant to the target.
+2. Recall the normative architectural semantics of the target.
+3. Identify all architectural conditions that affect whether operations involving the target trap or execute.
+4. Identify all architectural state conditions that affect the behavior of the target.
+5. Identify all operand-dependent, value-dependent, field-dependent, or mode-dependent behaviors of the target.
+6. Identify all privilege-dependent architectural behaviors of the target.
+7. Identify all virtualization-dependent architectural behaviors of the target, if any are explicitly specified.
+8. Identify all ordering, memory, translation, CSR, register, arithmetic, exception, and architectural-state effects of the target, if any are explicitly specified.
+9. Split every independent condition -> outcome relationship into a separate atomic rule.
+10. Remove duplicate, non-normative, non-testable, encoding-only, syntax-only, layout-only, and implementation-only statements.
+11. Check that every remaining rule has an explicit architectural condition and an explicit architectural outcome.
+12. Check that every remaining rule is testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+
+Do not output the reasoning.
+Do not output intermediate analysis.
+Output only the final rules.
+
+Scope:
+Extract rules only for the target.
+Extract complete explicit normative architectural behavior rules for the target.
+Include all architecturally testable privilege, trap, ordering, memory, translation, CSR, register, exception, arithmetic, operand-dependent, value-dependent, field-dependent, mode-dependent, and virtualization-related semantics that are explicitly specified for the target.
+Do not include rules for related architectural items unless the specification explicitly defines their behavior as equivalent to, dependent on, or affecting the target.
+
+Rule requirements:
+Each rule must be a single testable statement.
+Each rule must be atomic.
+Each rule must express exactly one architectural behavior or one event -> outcome relationship.
+Each rule must describe behavioral semantics, not naming, instruction encoding, assembly syntax, operand format, register layout, or commentary.
+Each rule must describe architectural cause -> effect semantics.
+Each rule must include both the architectural condition and the architectural outcome.
+Each rule must be testable using architectural observations such as trap versus no trap behavior, trap cause, CSR state, register state, privilege mode, virtualization state, memory state, arithmetic result, or address-translation behavior.
+Each rule must be explicit and normative.
+Do not include implementation advice.
+Do not include microarchitectural behavior unless the architecture gives an architecturally visible effect.
+Do not include performance behavior.
+Do not include recommendations.
+Do not include examples.
+Do not merge multiple independent behaviors into one rule.
+If a behavior has multiple independent conditions or outcomes, split it into multiple rules.
+If a rule depends on architectural state, privilege mode, virtualization state, operand value, memory state, CSR state, register state, exception behavior, arithmetic behavior, field value, mode value, or address-translation state, include that condition explicitly.
+If a behavior is not architecturally observable or not testable, exclude it.
+
+Completeness requirement:
+Generate the complete set of explicit, normative, architecturally testable rules for the target from the provided RISC-V specification text.
+
+Numbering:
+Number the generated rules sequentially starting from 1.
+Every rule must begin with the word `RULE`.
+
+Output format:
+Output only the rules.
+Do not give an introduction.
+Do not give headings.
+Do not give bullet points.
+Do not include explanations.
+Do not include citations.
+Do not include blank lines between rules.
+
+Required rule format:
+RULE <number>: <one atomic testable architectural rule>
+
+RISC-V specification text:
+ original NaN and set no exception flags, as with vfredosum .
+
+<image>
+
+The vfredosum instruction is a valid implementation of the vfredusum instruction.
+
+## 31.14.3.3. Vector Single-Width Floating-Point Max and Min Reductions
+
+The vfredmin and vfredmax instructions reduce the scalar argument in vs1[0] and active elements in vs2 using the minimumNumber and maximumNumber operations, respectively.
+
+<image>
+
+Floating-point max and min reductions should return the same final value and raise the same exception flags regardless of operation order.
+
+<image>
+
+If  no  elements  are  active,  the  scalar  in vs1[0] is  simply  copied  to  the  destination  register, without canonicalizing NaN values and without setting any exception flags.
+
+## 31.14.4. Vector Widening Floating-Point Reduction Instructions
+
+Widening forms of the sum reductions are provided that read and write a double-width reduction result.
+
+```
+# Simple reductions. vfwredosum.vs vd, vs2, vs1, vm # Ordered sum vfwredusum.vs vd, vs2, vs1, vm # Unordered sum
+```
+
+<image>
+
+Older assembler mnemonic vfwredsum is retained as alias for vfwredusum .
+
+The reduction of  the  SEW-width  elements  is  performed  as  in  the  single-width  reduction  case,  with  the elements in vs2 promoted to 2*SEW bits before adding to the 2*SEW-bit accumulator.
+
+<image>
+
+vfwredosum.vs handles inactive elements and NaN payloads analogously to vfredosum.vs ; vfwredusum.vs does so analogously to vfredusum.vs .
+
+## 31.15. Vector Mask Instructions
+
+Several instructions are provided to help operate on mask values held in a vector register.
+
+## 31.15.1. Vector Mask-Register Logical Instructions
+
+Vector  mask-register  logical  operations  operate  on  mask  registers.  Each  element  in  a  mask  register  is  a single bit, so these instructions all operate on single vector registers regardless of the setting of the vlmul field in vtype . They do not change the value of vlmul . The destination vector register may be the same as either source vector register.
+
+As with other vector instructions, the elements with indices less than vstart are unchanged, and vstart is reset to zero after execution. Vector mask logical instructions are always unmasked, so there are no inactive elements, and the encodings with vm=0 are reserved. Mask elements past vl ,  the tail elements, are always updated with a tail-agnostic policy.
+
+```
+vmand.mm vd, vs2, vs1   # vd.mask[i] =   vs2.mask[i] &&  vs1.mask[i] vmnand.mm vd, vs2, vs1  # vd.mask[i] = !(vs2.mask[i] &&  vs1.mask[i]) vmandn.mm vd, vs2, vs1  # vd.mask[i] =   vs2.mask[i] && !vs1.mask[i] vmxor.mm  vd, vs2, vs1  # vd.mask[i] =   vs2.mask[i] ^^  vs1.mask[i] vmor.mm  vd, vs2, vs1   # vd.mask[i] =   vs2.mask[i] ||  vs1.mask[i] vmnor.mm  vd, vs2, vs1  # vd.mask[i] = !(vs2.mask[i] ||  vs1.mask[i]) vmorn.mm  vd, vs2, vs1  # vd.mask[i] =   vs2.mask[i] || !vs1.mask[i] vmxnor.mm vd, vs2, vs1  # vd.mask[i] = !(vs2.mask[i] ^^  vs1.mask[i])
+```
+
+<image>
+
+The previous assembler mnemonics vmandnot and vmornot have been changed to vmandn and vmorn to be consistent with the equivalent scalar instructions. The old vmandnot and vmornot mnemonics can be retained as assembler aliases for compatibility.
+
+Several  assembler  pseudoinstructions  are  defined  as  shorthand  for  common  uses  of  mask  logical operations:
+
+```
+vmmv.m vd, vs  => vmand.mm vd, vs, vs   # Copy mask register
+```
+
+```
+vmclr.m vd     => vmxor.mm vd, vd, vd   # Clear mask register
+```
+
+```
+vmset.m vd     => vmxnor.mm vd, vd, vd  # Set mask register vmnot.m vd, vs => vmnand.mm vd, vs, vs  # Invert bits
+```
+
+<image>
+
+The vmmv.m instruction  was  previously  called vmcpy.m ,  but  with  new  layout  it  is  more consistent  to  name  as  a  "mv"  because  bits  are  copied  without  interpretation.  The vmcpy.m assembler  pseudoinstruction  can  be  retained  for  compatibility.  For  implementations  that internally  rearrange  bits  according  to  EEW,  a vmmv.m instruction  with  same  source  and destination can be used as idiom to force an internal reformat into a mask vector.
+
+The set of eight mask logical instructions can generate any of the 16 possibly binary logical functions of the two input masks:
+
+|   inputs |   inputs |   inputs |   inputs | inputs   |
+|----------|----------|----------|----------|----------|
+|        0 |        0 |        1 |        1 | src1     |
+|        0 |        1 |        0 |        1 | src2     |
+
+|   output |   output |   output |   output | instruction              | pseudoinstruction   |
+|----------|----------|----------|----------|--------------------------|---------------------|
+|        0 |        0 |        0 |        0 | vmxor.mm vd, vd, vd      | vmclr.m vd          |
+|        1 |        0 |        0 |        0 | vmnor.mm vd, src1, src2  |                     |
+|        0 |        1 |        0 |        0 | vmandn.mm vd, src2, src1 |                     |
+|        1 |        1 |        0 |        0 | vmnand.mm vd, src1, src1 | vmnot.m vd, src1    |
+|        0 |        0 |        1 |        0 | vmandn.mm vd, src1, src2 |                     |
+|        1 |        0 |        1 |        0 | vmnand.mm vd, src2, src2 | vmnot.m vd, src2    |
+|        0 |        1 |        1 |        0 | vmxor.mm vd, src1, src2  |                     |
+|        1 |        1 |        1 |        0 | vmnand.mm vd, src1, src2 |                     |
+|        0 |        0 |        0 |        1 | vmand.mm vd, src1, src2  |                     |
+|        1 |        0 |        0 |        1 | vmxnor.mm vd, src1, src2 |                     |
+|        0 |        1 |        0 |        1 | vmand.mm vd, src2, src2  | vmmv.m vd, src2     |
+|        1 |        1 |        0 |        1 | vmorn.mm vd, src2, src1  |                     |
+|        0 |        0 |        1 |        1 | vmand.mm vd, src1, src1  | vmmv.m vd, src1     |
+|        1 |        0 |        1 |        1 | vmorn.mm vd, src1, src2  |                     |
+|        0 |        1 |        1 |        1 | vmor.mm vd, src1, src2   |                     |
+|        1 |        1 |        1 |        1 | vmxnor.mm vd, vd, vd     | vmset.m vd          |
+
+<image>
+
+The vector mask logical instructions are designed to be easily fused with a following masked vector operation to effectively expand the number of predicate registers by moving values into v0 before use.
+
+## 31.15.2. Vector count population in mask vcpop.m
+
+vcpop.m rd, vs2, vm
+
+<image>
+
+This  instruction  previously  had  the  assembler  mnemonic vpopc.m but  was  renamed  to  be
+
+consistent  with  the  scalar  instruction.  The  assembler  instruction  alias vpopc.m is  being retained for software compatibility.
+
+The source operand is a single vector register holding mask register values as described in Section 31.4.5.
+
+The vcpop.m instruction counts the number of mask elements of the active elements of the vector source mask register that have the value 1 and writes the result to a scalar x register.
+
+The operation can be performed under a mask, in which case only the masked elements are counted.
+
+```
+vcpop.m rd, vs2, v0.t # x[rd] = sum_i ( vs2.mask[i] && v0.mask[i] )
+```
+
+The vcpop.m instruction writes x[rd] even if vl =0 (with the value 0, since no mask elements are active).
+
+Traps on vcpop.m are  always  reported  with  a vstart of  0.  The vcpop.m instruction  will  raise  an  illegalinstruction exception if vstart is non-zero.
+
+## 31.15.3. vfirst find-first-set mask bit
+
+```
+vfirst.m rd, vs2, vm
+```
+
+The vfirst instruction finds the lowest-numbered active element of the source mask vector that has the value 1 and writes that element's index to a GPR. If no active element has the value 1, -1 is written to the GPR.
+
+<image>
+
+Software  can  assume  that  any  negative  value  (highest  bit  set)  corresponds  to  no  element found, as vector lengths will never reach 2 (XLEN-1) on any implementation.
+
+The vfirst.m instruction writes x[rd] even if vl =0 (with the value -1, since no mask elements are active).
+
+Traps  on vfirst are  always  reported  with  a vstart of  0.  The vfirst instruction  will  raise  an  illegalinstruction exception if vstart is non-zero.
+
+## 31.15.4. vmsbf.m set-before-first mask bit
+
+```
+vmsbf.m vd, vs2, vm # Example 7 6 5 4 3 2 1 0   Element number 1 0 0 1 0 1 0 0   v3 contents vmsbf.m v2, v3 0 0 0 0 0 0 1 1   v2 contents 1 0 0 1 0 1 0 1   v3 contents vmsbf.m v2, v3 0 0 0 0 0 0 0 0   v2
+```
+
+```
+0 0 0 0 0 0 0 0   v3 contents vmsbf.m v2, v3 1 1 1 1 1 1 1 1   v2 1 1 0 0 0 0 1 1   v0 vcontents 1 0 0 1 0 1 0 0   v3 contents vmsbf.m v2, v3, v0.t 0 1 x x x x 1 1   v2 contents
+```
+
+The vmsbf.m instruction takes a mask register as input and writes results to a mask register. The instruction writes a 1 to all active mask elements before the first active source element that is a 1, then writes a 0 to that element and all following active elements. If there is no set bit in the active elements of the source vector, then all active elements in the destination are written with a 1.
+
+The tail elements in the destination mask register are updated under a tail-agnostic policy.
+
+Traps  on vmsbf.m are  always  reported  with  a vstart of  0.  The vmsbf instruction  will  raise  an  illegalinstruction exception if vstart is non-zero.
+
+The destination register cannot overlap the source register and, if masked, cannot overlap the mask register ('v0').
+
+## 31.15.5. vmsif.m set-including-first mask bit
+
+The  vector  mask  set-including-first  instruction  is  similar  to  set-before-first,  except  it  also  includes  the element with a set bit.
+
+```
+vmsif.m vd, vs2, vm # Example 7 6 5 4 3 2 1 0   Element number 1 0 0 1 0 1 0 0   v3 contents vmsif.m v2, v3 0 0 0 0 0 1 1 1   v2 contents 1 0 0 1 0 1 0 1   v3 contents vmsif.m v2, v3 0 0 0 0 0 0 0 1   v2 1 1 0 0 0 0 1 1   v0 vcontents 1 0 0 1 0 1 0 0   v3 contents vmsif.m v2, v3, v0.t 1 1 x x x x 1 1   v2 contents
+```
+
+The tail elements in the destination mask register are updated under a tail-agnostic policy.
+
+Traps  on vmsif.m are  always  reported  with  a vstart of  0.  The vmsif instruction  will  raise  an  illegal-
+
+instruction exception if vstart is non-zero.
+
+The destination register cannot overlap the source register and, if masked, cannot overlap the mask register ('v0').
+
+## 31.15.6. vmsof.m set-only-first mask bit
+
+The vector mask set-only-first instruction is similar to set-before-first, except it only sets the first element with a bit set, if any.
+
+```
+vmsof.m vd, vs2, vm # Example 7 6 5 4 3 2 1 0   Element number 1 0 0 1 0 1 0 0   v3 contents vmsof.m v2, v3 0 0 0 0 0 1 0 0   v2 contents 1 0 0 1 0 1 0 1   v3 contents vmsof.m v2, v3 0 0 0 0 0 0 0 1   v2 1 1 0 0 0 0 1 1   v0 vcontents 1 1 0 1 0 1 0 0   v3 contents vmsof.m v2, v3, v0.t 0 1 x x x x 0 0   v2 contents
+```
+
+The tail elements in the destination mask register are updated under a tail-agnostic policy.
+
+Traps  on vmsof.m are  always  reported  with  a vstart of  0.  The vmsof instruction  will  raise  an  illegalinstruction exception if vstart is non-zero.
+
+The destination register cannot overlap the source register and, if masked, cannot overlap the mask register ('v0').
+
+## 31.15.7. Example using vector mask instructions
+
+The following is an example of vectorizing a data-dependent exit loop.
+
+```
+# char* strcpy(char *dst, const char* src) strcpy: mv a2, a0             # Copy dst li t0, -1             # Infinite AVL loop: vsetvli x0, t0, e8, m8, ta, ma  # Max length vectors of bytes vle8ff.v v8, (a1)        # Get src bytes csrr t1, vl           # Get number of bytes fetched
+```
+
+```
+vmseq.vi v1, v8, 0      # Flag zero bytes vfirst.m a3, v1         # Zero found? add a1, a1, t1        # Bump pointer vmsif.m v0, v1          # Set mask up to and including zero byte. vse8.v v8, (a2), v0.t    # Write out bytes add a2, a2, t1        # Bump pointer bltz a3, loop         # Zero byte not found, so loop ret
+```
+
+```
+# char* strncpy(char *dst, const char* src, size_t n) strncpy: mv a3, a0             # Copy dst loop: vsetvli x0, a2, e8, m8, ta, ma   # Vectors of bytes. vle8ff.v v8, (a1)        # Get src bytes vmseq.vi v1, v8, 0      # Flag zero bytes csrr t1, vl           # Get number of bytes fetched vfirst.m a4, v1         # Zero found? vmsbf.m v0, v1          # Set mask up to before zero byte. vse8.v v8, (a3), v0.t    # Write out non-zero bytes bgez a4, zero_tail    # Zero remaining bytes. sub a2, a2, t1        # Decrement count. add a3, a3, t1        # Bump dest pointer add a1, a1, t1        # Bump src pointer bnez a2, loop         # Anymore? ret zero_tail: sub a2, a2, a4          # Subtract count on non-zero bytes. add a3, a3, a4          # Advance past non-zero bytes. vsetvli t1, a2, e8, m8, ta, ma   # Vectors of bytes. vmv.v.i v0, 0           # Splat zero. zero_loop: vse8.v v0, (a3)          # Store zero. sub a2, a2, t1        # Decrement count. add a3, a3, t1        # Bump pointer vsetvli t1, a2, e8, m8, ta, ma   # Vectors of bytes. bnez a2, zero_loop    # Anymore? ret
+```
+
+## 31.15.8. Vector Iota Instruction
+
+The viota.m instruction reads a source vector mask register and writes to each element of the destination
+
+vector register group the sum of all the bits of elements in the mask register whose index is less than the element, e.g., a parallel prefix sum of the mask values.
+
+This instruction can be masked, in which case only the enabled elements contribute to the sum.
+
+```
+viota.m vd, vs2, vm # Example 7 6 5 4 3 2 1 0   Element number 1 0 0 1 0 0 0 1   v2 contents viota.m v4, v2 # Unmasked 2 2 2 1 1 1 1 0   v4 result 1 1 1 0 1 0 1 1   v0 contents 1 0 0 1 0 0 0 1   v2 contents 2 3 4 5 6 7 8 9   v4 contents viota.m v4, v2, v0.t # Masked, vtype.vma=0 1 1 1 5 1 7 1 0   v4 results
+```
+
+The result value is zero-extended to fill the destination element if SEW is wider than the result. If the result value would overflow the destination SEW, the least-significant SEW bits are retained.
+
+Traps  on viota.m are  always  reported  with  a vstart of  0,  and  execution  is  always  restarted  from  the beginning when resuming after a trap handler. An illegal-instruction exception is raised if vstart is nonzero.
+
+The destination register group cannot overlap the source register and, if masked, cannot overlap the mask register ( v0 ).
+
+The viota.m instruction can be combined with memory scatter instructions (indexed stores) to perform vector compress functions.
+
+```
+# Compact non-zero elements from input memory array to output memory array # # size_t compact_non_zero(size_t n, const int* in, int* out) # { #   size_t i; #   int *p = out; # #   for (i=0; i<n; i++) #   { #       const int v = *in++; #       if (v != 0) #           *p++ = v; #   } # #   return (size_t) (p - out); # }
+```
+
+```
+# # a0 = n # a1 = &in # a2 = &out compact_non_zero: li a6, 0                      # Clear count of non-zero elements loop: vsetvli a5, a0, e32, m8, ta, ma   # 32-bit integers vle32.v v8, (a1)               # Load input vector sub a0, a0, a5               # Decrement number done slli a5, a5, 2               # Multiply by four bytes vmsne.vi v0, v8, 0             # Locate non-zero values add a1, a1, a5               # Bump input pointer vcpop.m a5, v0                 # Count number of elements set in v0 viota.m v16, v0                # Get destination offsets of active elements add a6, a6, a5               # Accumulate number of elements vsll.vi v16, v16, 2, v0.t      # Multiply offsets by four bytes slli a5, a5, 2               # Multiply number of non-zero elements by four bytes vsuxei32.v v8, (a2), v16, v0.t # Scatter using scaled viota results under mask add a2, a2, a5               # Bump output pointer bnez a0, loop                # Any more? mv a0, a6                    # Return count ret
+```
+
+## 31.15.9. Vector Element Index Instruction
+
+The vid.v instruction writes each element's index to the destination vector register group, from 0 to vl -1.
+
+```
+vid.v vd, vm  # Write element ID to destination.
+```
+
+The instruction can be masked. Masking does not change the index value written to active elements.
+
+The vs2 field of the instruction must be set to v0 , otherwise the encoding is reserved .
+
+The result value is zero-extended to fill the destination element if SEW is wider than the result. If the result value would overflow the destination SEW, the least-significant SEW bits are retained.
+
+<image>
+
+Microarchitectures can implement vid.v instruction using the same datapath as viota.m but with an implicit set mask source.
+
+## 31.16. Vector Permutation Instructions
+
+A range of permutation instructions are provided to move elements around within the vector registers.
+
+## 31.16.1. Integer Scalar Move Instructions
+
+The integer scalar read/write instructions transfer a single value between a scalar x register and element 0 of a vector register. The instructions ignore LMUL and vector register groups.
+
+```
+vmv.x.s rd, vs2  # x[rd] = vs2[0] (vs1=0) vmv.s.x vd, rs1  # vd[0] = x[rs1] (vs2=0)
+```
+
+The vmv.x.s instruction copies a single SEW-wide element from index 0 of the source vector register to a destination integer register. If SEW > XLEN, the least-significant XLEN bits are transferred and the upper SEW-XLEN bits are ignored. If SEW < XLEN, the value is sign-extended to XLEN bits.
+
+<image>
+
+vmv.x.s performs its operation even if vstart ≥ vl or vl =0.
+
+The vmv.s.x instruction copies the scalar integer register to element 0 of the destination vector register. If SEW < XLEN, the least-significant bits are copied and the upper XLEN-SEW bits are ignored. If SEW > XLEN, the value is sign-extended to SEW bits. The other elements in the destination vector register ( 0 < index  <  VLEN/SEW)  are  treated  as  tail  elements  using  the  current  tail  agnostic/undisturbed  policy.  If vstart ≥ vl , no operation is performed and the destination register is not updated.
+
+<image>
+
+As  a  consequence,  when vl =0,  no  elements  are  updated  in  the  destination  vector  register group, regardless of vstart .
+
+The encodings corresponding to the masked versions ( vm=0 ) of vmv.x.s and vmv.s.x are reserved.
+
+## 31.16.2. Floating-Point Scalar Move Instructions
+
+The floating-point  scalar  read/write  instructions  transfer  a  single  value  between  a  scalar f register  and element 0 of a vector register. The instructions ignore LMUL and vector register groups.
+
+```
+vfmv.f.s rd, vs2  # f[rd] = vs2[0] (rs1=0) vfmv.s.f vd, rs1  # vd[0] = f[rs1] (vs2=0)
+```
+
+The vfmv.f.s instruction copies a single SEW-wide element from index 0 of the source vector register to a destination scalar floating-point register.
+
+<image>
+
+vfmv.f.s performs its operation even if vstart ≥ vl or vl =0.
+
+The vfmv.s.f instruction copies the scalar floating-point register to element 0 of the destination vector register. The other elements in the destination vector register ( 0 < index < VLEN/SEW) are treated as tail elements using the current tail agnostic/undisturbed policy. If vstart ≥ vl , no operation is performed and the destination register is not updated.
+
+<image>
+
+As  a  consequence,  when vl =0,  no  elements  are  updated  in  the  destination  vector  register group, regardless of vstart .
+
+The encodings corresponding to the masked versions ( vm=0 ) of vfmv.f.s and vfmv.s.f are reserved.
+
+## 31.16.3. Vector Slide Instructions
+
+The slide instructions move elements up and down a vector register group.
+
+<image>
+
+The  slide  operations  can  be  implemented  much  more  efficiently  than  using  the  arbitrary register gather instruction. Implementations  may  optimize  certain  OFFSET  values  for vslideup and vslidedown . In particular, power-of-2 offsets may operate substantially faster than other offsets.
+
+For all of the vslideup , vslidedown , v[f]slide1up ,  and v[f]slide1down instructions, if vstart ≥ vl ,  the instruction performs no operation and leaves the destination vector register unchanged.
+
+<image>
+
+As  a  consequence,  when vl =0,  no  elements  are  updated  in  the  destination  vector  register group, regardless of vstart .
+
+The tail agnostic/undisturbed policy is followed for tail elements.
+
+The slide instructions may be masked, with mask element i controlling  whether destination element i is written. The mask undisturbed/agnostic policy is followed for inactive elements.
+
+## 31.16.3.1. Vector Slide-up Instructions
+
+```
+vslideup.vx vd, vs2, rs1, vm        # vd[i+x[rs1]] = vs2[i] vslideup.vi vd, vs2, uimm, vm       # vd[i+uimm] = vs2[i]
+```
+
+For vslideup , the value in vl specifies the maximum number of destination elements that are written. The start index ( OFFSET ) for the destination can be either specified using an unsigned integer in the x register specified  by rs1 ,  or  a  5-bit  immediate,  zero-extended  to  XLEN  bits.  If  XLEN  >  SEW, OFFSET is not truncated to SEW bits. Destination elements OFFSET through vl -1 are written if unmasked and if OFFSET < vl .
+
+```
+vslideup behavior for destination elements (vstart < vl) OFFSET is amount to slideup, either from x register or a 5-bit immediate 0 <= i < min(vl, max(vstart, OFFSET))  Unchanged max(vstart, OFFSET) <= i < vl                            vd[i] = vs2[i-OFFSET] if v0.mask[i] enabled vl <= i < VLMAX                         Follow tail policy
+```
+
+The  destination  vector  register  group  for vslideup cannot  overlap  the  source  vector  register  group, otherwise the instruction encoding is reserved.
+
+<image>
+
+The non-overlap constraint avoids WAR hazards on the input vectors during execution, and enables restart with non-zero vstart .
+
+## 31.16.3.2. Vector Slide-down Instructions
+
+```
+vslidedown.vx vd, vs2, rs1, vm       # vd[i] = vs2[i+x[rs1]] vslidedown.vi vd, vs2, uimm, vm      # vd[i] = vs2[i+uimm]
+```
+
+For vslidedown ,  the value in vl specifies the maximum number of destination elements that are written.
+
+The remaining elements past vl are handled according to the current tail policy (Section 31.3.4.3).
+
+The start index ( OFFSET ) for the source can be either specified using an unsigned integer in the x register specified  by rs1 ,  or  a  5-bit  immediate,  zero-extended  to  XLEN  bits.  If  XLEN  >  SEW, OFFSET is not truncated to SEW bits.
+
+```
+vslidedown behavior for source elements for element i in slide (vstart < vl) 0 <= i+OFFSET < VLMAX   src[i] = vs2[i+OFFSET] VLMAX <= i+OFFSET           src[i] = 0 vslidedown behavior for destination element i in slide (vstart < vl) 0 <= i < vstart         Unchanged vstart <= i < vl             vd[i] = src[i] if v0.mask[i] enabled vl <= i < VLMAX          Follow tail policy
+```
+
+## 31.16.3.3. Vector Slide-1-up
+
+Variants of slide are provided that only move by one element but which also allow a scalar integer value to be inserted at the vacated element position.
+
+```
+vslide1up.vx  vd, vs2, rs1, vm        # vd[0]=x[rs1], vd[i+1] = vs2[i]
+```
+
+The vslide1up instruction places the x register argument at location 0 of the destination vector register group,  provided  that  element  0  is  active,  otherwise  the  destination  element  update  follows  the  current mask agnostic/undisturbed policy. If XLEN < SEW, the value is sign-extended to SEW bits. If XLEN > SEW, the least-significant bits are copied over and the high XLEN-SEW bits are ignored.
+
+The remaining active vl -1  elements  are  copied  over  from  index i in  the  source  vector  register  group  to index i +1 in the destination vector register group.
+
+The vl register specifies the maximum number of destination vector register elements updated with source values, and remaining elements past vl are handled according to the current tail policy (Section 31.3.4.3).
+
+```
+vslide1up behavior when vl > 0 i < vstart  unchanged 0 = i = vstart  vd[i] = x[rs1] if v0.mask[i] enabled max(vstart, 1) <= i < vl      vd[i] = vs2[i-1] if v0.mask[i] enabled vl <= i < VLMAX   Follow tail policy
+```
+
+The vslide1up instruction requires that the destination vector register group does not overlap the source vector register group. Otherwise, the instruction encoding is reserved.
+
+## 31.16.3.4. Vector Floating-Point Slide-1-up Instruction
+
+```
+vfslide1up.vf vd, vs2, rs1, vm        # vd[0]=f[rs1], vd[i+1] = vs2[i]
+```
+
+The vfslide1up instruction is defined analogously to vslide1up , but sources its scalar argument from an f register.
+
+## 31.16.3.5. Vector Slide-1-down Instruction
+
+The vslide1down instruction copies the first vl -1 active elements values from index i +1 in the source vector register group to index i in the destination vector register group.
+
+The vl register specifies the maximum number of destination vector register elements written with source values, and remaining elements past vl are handled according to the current tail policy (Section 31.3.4.3).
+
+```
+vslide1down.vx  vd, vs2, rs1, vm      # vd[i] = vs2[i+1], vd[vl-1]=x[rs1]
+```
+
+The vslide1down instruction  places  the x register  argument  at  location vl -1  in  the  destination  vector register, provided that element vl-1 is active, otherwise the destination element update follows the current mask agnostic/undisturbed policy. If XLEN < SEW, the value is sign-extended to SEW bits. If XLEN > SEW, the least-significant bits are copied over and the high SEW-XLEN bits are ignored.
+
+```
+vslide1down behavior i < vstart  unchanged vstart <= i < vl-1    vd[i] = vs2[i+1] if v0.mask[i] enabled vstart <= i = vl-1    vd[vl-1] = x[rs1] if v0.mask[i] enabled vl <= i < VLMAX   Follow tail policy
+```
+
+<image>
+
+The vslide1down instruction can be used to load values into a vector register without using memory and without disturbing other vector registers. This provides a path for debuggers to modify  the  contents  of  a  vector  register,  albeit  slowly,  with  multiple  repeated vslide1down invocations.
+
+31.16.3.6. Vector Floating-Point Slide-1-down Instruction
+
+```
+vfslide1down.vf vd, vs2, rs1, vm      # vd[i] = vs2[i+1], vd[vl-1]=f[rs1]
+```
+
+The vfslide1down instruction is defined analogously to vslide1down , but sources its scalar argument from an f register.
+
+## 31.16.4. Vector Register Gather Instructions
+
+The vector register gather instructions read elements from a first source vector register group at locations given  by  a  second  source  vector  register  group.  The  index  values  in  the  second  vector  are  treated  as unsigned integers. The source vector can be read at any index < VLMAX regardless of vl .  The maximum number of elements to write to the destination register is given by vl , and the remaining elements past vl are handled according to the current tail policy (Section 31.3.4.3). The operation can be masked, and the mask undisturbed/agnostic policy is followed for inactive elements.
+
+```
+vrgather.vv vd, vs2, vs1, vm     # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
+```
+
+```
+vrgatherei16.vv vd, vs2, vs1, vm # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
+```
+
+The vrgather.vv form  uses  SEW/LMUL for both the data and indices. The vrgatherei16.vv form  uses SEW/LMUL for the data in vs2 but EEW=16 and EMUL = (16/SEW)*LMUL for the indices in vs1 .
+
+<image>
+
+When  SEW=8, vrgather.vv can  only  reference  vector  elements  0-255.  The vrgatherei16 form can index 64K elements, and can also be used to reduce the register capacity needed to hold indices when SEW > 16.
+
+If an element index is out of range ( vs1[i] ≥ VLMAX ) then zero is returned for the element value.
+
+Vector-scalar and vector-immediate forms of the register gather are also provided. These read one element from the source vector at the given index, and write this value to the active elements of the destination vector register. The index value in the scalar register and the immediate, zero-extended to XLEN bits, are treated as unsigned integers. If XLEN > SEW, the index value is not truncated to SEW bits.
+
+-  These forms allow any vector element to be "splatted" to an entire vector.
+
+<image>
+
+```
+vrgather.vx vd, vs2, rs1, vm  # vd[i] = (x[rs1] >= VLMAX) ? 0 : vs2[x[rs1]] vrgather.vi vd, vs2, uimm, vm # vd[i] =  (uimm >= VLMAX)  ? 0 : vs2[uimm]
+```
+
+For any vrgather instruction, the destination vector register group cannot overlap with the source vector register groups, otherwise the instruction encoding is reserved.
+
+## 31.16.5. Vector Compress Instruction
+
+The vector compress instruction allows elements selected by a vector mask register from a source vector register group to be packed into contiguous elements at the start of the destination vector register group.
+
+vcompress.vm vd, vs2, vs1  # Compress into vd elements of vs2 where vs1 is enabled
+
+The vector mask register specified by vs1 indicates which of the first vl elements of vector register group vs2 should be extracted and packed into contiguous elements at the beginning of vector register vd .  The remaining elements of vd are treated as tail elements according to the current tail policy (Section 31.3.4.3).
+
+```
+Example use of vcompress instruction 8 7 6 5 4 3 2 1 0   Element number 1 1 0 1 0 0 1 0 1   v0 8 7 6 5 4 3 2 1 0   v1 1 2 3 4 5 6 7 8 9   v2 vsetivli     t0, 9, e8, m1, tu, ma vcompress.vm v2, v1, v0 1 2 3 4 8 7 5 2 0   v2
+```
+
+T`vcompress` is encoded as an unmasked instruction ( vm=1 ).  The equivalent masked instruction ( vm=0 )  is reserved.
+
+The destination vector register group cannot overlap the source vector register group or the source mask register, otherwise the instruction encoding is reserved.
+
+A trap on a vcompress instruction is always reported with a vstart of 0. Executing a vcompress instruction with a non-zero vstart raises an illegal-instruction exception.
+
+<image>
+
+Although possible, vcompress is  one of the more difficult instructions to restart with a nonzero vstart , so assumption is implementations will choose not do that but will instead restart from  element  0.  This  does  mean  elements  in  destination  register  after vstart will  already have been updated.
+
+## 31.16.5.1. Synthesizing vdecompress
+
+There is no inverse vdecompress provided, as this operation can be readily synthesized using iota and a masked vrgather:
+
+```
+Desired functionality of 'vdecompress' 7 6 5 4 3 2 1 0     # vid e d c b a     # packed vector of 5 elements 1 0 0 1 1 1 0 1     # mask vector of 8 elements p q r s t u v w     # destination register before vdecompress e q r d c b v a     # result of vdecompress
+```
+
+```
+# v0 holds mask # v1 holds packed data # v11 holds input expanded vector and result viota.m v10, v0                 # Calc iota from mask in v0 vrgather.vv v11, v1, v10, v0.t  # Expand into destination
+```
+
+```
+p q r s t u v w    # v11 destination register e d c b a    # v1 source vector 1 0 0 1 1 1 0 1    # v0 mask vector 4 4 4 3 2 1 1 0    # v10 result of viota.m e q r d c b v a    # v11 destination after vrgather using viota.m under mask
+```
+
+## 31.16.6. Whole Vector Register Move
+
+The vmv<nr>r.v instructions  copy  whole  vector  registers  (i.e.,  all  VLEN  bits)  and  can  copy  whole  vector register groups. The nr value in the opcode is the number of individual vector registers, NREG, to copy. The instructions operate as if EEW=SEW, EMUL = NREG, effective length evl = EMUL * VLEN/SEW.
+
+<image>
+
+These instructions are intended to aid compilers to shuffle vector registers without needing to know or change vl .
+
+The  usual  property  that  no  elements  are  written  if vstart ≥ vl does  not  apply  to  these  instructions. Similarly, the property that the instructions are reserved if vstart exceeds the largest element index for the current vtype setting does not apply. Instead, the instructions are reserved if vstart ≥ evl .
+
+<image>
+
+If vd is equal to vs2 , the instruction does not change any vector register state. Implementations that rearrange data internally can treat this instruction as a hint that the register group will next be accessed with an EEW equal to SEW.
+
+The instruction is encoded as an OPIVI instruction. The number of vector registers to copy is encoded in the low three bits of the simm field ( simm[2:0] ) using the same encoding as the nf[2:0] field for memory instructions (Figure Table 55), i.e., simm[2:0] = NREG-1.
+
+The value of NREG must be 1, 2, 4, or 8, and values of simm[4:0] other than 0, 1, 3, and 7 are reserved.
+
+<image>
+
+A future extension may support other numbers of registers to be moved.
+
+<image>
+
+The instruction uses the same funct6 encoding as the vsmul instruction but with an immediate operand, and only the unmasked version ( vm=1 ).  This encoding is chosen as it is close to the related vmerge encoding,  and  it  is  unlikely  the vsmul instruction  would  benefit  from  an immediate form.
+
+```
+vmv<nr>r.v vd, vs2  # General form vmv1r.v v1, v2   #  Copy v1=v2 vmv2r.v v10, v12 #  Copy v10=v12; v11=v13 vmv4r.v v4, v8   #  Copy v4=v8; v5=v9; v6=v10; v7=v11 vmv8r.v v0, v8   #  Copy v0=v8; v1=v9; ...;  v7=v15
+```
+
+The source and destination vector register numbers must be aligned appropriately for the vector register group size, and encodings with other vector register numbers are reserved.
+
+<image>
+
+A future extension may relax the vector register alignment restrictions.
+
+## 31.17. Exception Handling
+
+On  a  trap  during  a  vector  instruction  (caused  by  either  a  synchronous  exception  or  an  asynchronous interrupt),  the  existing *epc CSR  is  written  with  a  pointer  to  the  trapping  vector  instruction,  while  the vstart CSR contains the element index on which the trap was taken.
+
+<image>
+
+We chose to add a vstart CSR to allow resumption of a partially executed vector instruction to  reduce interrupt latencies and to simplify forward-progress guarantees. This is similar to the scheme in the IBM 3090 vector facility. To ensure forward progress without the vstart CSR,  implementations  would  have  to  guarantee  an  entire  vector  instruction  can  always complete atomically without generating a trap. This is particularly difficult to ensure in the presence of constant-stride or scatter/gather operations and demand-paged virtual memory.
+
+## 31.17.1. Precise vector traps
+
+<image>
+
+We  assume  most  supervisor-mode  environments  with  demand-paging  will  require  precise
+
+vector traps.
+
+Precise vector traps require that:
+
+1. all instructions older than the trapping vector instruction have committed their results
+2. no instructions newer than the trapping vector instruction have altered architectural state
+3. any operations within the trapping vector instruction affecting result elements preceding the index in the vstart CSR have committed their results
+4. no operations within the trapping vector instruction affecting elements at or following the vstart CSR have altered architectural state except if restarting and completing the affected vector instruction will nevertheless produce the correct final state.
+
+We relax the last requirement to allow elements following vstart to have been updated at the time the trap is reported, provided that re-executing the instruction from the given vstart will correctly overwrite those elements.
+
+In idempotent memory regions, vector store instructions may have updated elements in memory past the element causing a synchronous trap. Non-idempotent memory regions must not have been updated for indices  equal  to  or  greater  than  the  element  that  caused  a  synchronous  trap  during  a  vector  store instruction.
+
+Except where noted above, vector instructions are allowed to overwrite their inputs, and so in most cases, the vector instruction restart must be from the vstart element index. However, there are a number of cases where  this  overwrite  is  prohibited  to  enable  execution  of  the  vector  instructions  to  be  idempotent  and hence restartable from an earlier index location.
+
+Implementations must ensure forward progress can be eventually guaranteed for the element or segment reported by vstart .
+
+## 31.17.2. Imprecise vector traps
+
+Imprecise vector traps are traps that are not precise. In particular, instructions newer than *epc may have committed results, and instructions older than *epc may have not completed execution. Imprecise traps are primarily intended to be used in situations where reporting an error and terminating execution is the appropriate response.
+
+<image>
+
+A profile might specify that interrupts are precise while other traps are imprecise. We assume many embedded implementations will generate only imprecise traps for vector instructions on fatal errors, as they will not require resumable traps.
+
+Imprecise  traps  shall  report  the  faulting  element  in vstart for  traps  caused  by  synchronous  vector exceptions.
+
+There is no support for imprecise traps in the current standard extensions.
+
+## 31.17.3. Selectable precise/imprecise traps
+
+Some profiles may choose to provide a privileged mode bit to select between precise and imprecise vector traps.  Imprecise  mode  would  run  at  high-performance  but  possibly  make  it  difficult  to  discern  error causes, while precise mode would run more slowly, but support debugging of errors albeit with a possibility of not experiencing the same errors as in imprecise mode.
+
+This mechanism is not defined in the current standard extensions.
+
+## 31.17.4. Swappable traps
+
+Another trap mode can support swappable state in the vector unit, where on a trap, special instructions can save and restore the vector unit microarchitectural state, to allow execution to continue correctly around imprecise traps.
+
+This mechanism is not defined in the current standard extensions.
+
+<image>
+
+A future extension might define a standard way of saving and restoring opaque microarchitectural state from a vector unit implementation to support context switching with imprecise traps.
+
+## 31.18. Standard Vector Extensions
+
+This section describes the standard vector extensions. A set of smaller extensions intended for embedded use are named with a "Zve" prefix, while a larger vector extension designed for application processors is named  as  a  single-letter  V  extension.  A  set  of  vector  length  extension  names  with  prefix  "Zvl"  are  also provided.
+
+The  initial  vector  extensions  are  designed  to  act  as  a  base  for  additional  vector  extensions  in  various domains, including cryptography and machine learning.
+
+## 31.18.1. Zvl*: Minimum Vector Length Standard Extensions
+
+All standard vector extensions have a minimum required VLEN as described below. A set of vector length extensions are provided to increase the minimum vector length of a vector extension.
+
+<image>
+
+<image>
+
+The vector length extensions can be used to either specify additional software or architecture profile requirements, or to advertise hardware capabilities.
+
+Table 59. Vector length extensions
+
+| Extension   |   Minimum VLEN |
+|-------------|----------------|
+| Zvl32b      |             32 |
+| Zvl64b      |             64 |
+| Zvl128b     |            128 |
+| Zvl256b     |            256 |
+| Zvl512b     |            512 |
+| Zvl1024b    |           1024 |
+
+Longer vector length extensions should follow the same pattern.
+
+-  Every vector length extension effectively includes all shorter vector length extensions.
+
+<image>
+
+<image>
+
+Explicit use of the Zvl32b extension string is not required for any standard vector extension as they all effectively mandate at least this minimum, but the string can be useful when stating hardware capabilities.
+
+## 31.18.2. Zve*: Vector Extensions for Embedded Processors
+
+The following five standard extensions are defined to provide varying degrees of vector support and are intended  for  use  with  embedded  processors.  Any  of  these  extensions  can  be  added  to  base  ISAs  with
+
+XLEN=32 or XLEN=64. The table lists the minimum VLEN and supported EEWs for each extension as well as what floating-point types are supported.
+
+Table 60. Embedded vector extensions
+
+| Extension   |   Minimum VLEN | SupportedEEW   | FP32   | FP64   |
+|-------------|----------------|----------------|--------|--------|
+| Zve32x      |             32 | 8, 16, 32      | N      | N      |
+| Zve32f      |             32 | 8, 16, 32      | Y      | N      |
+| Zve64x      |             64 | 8, 16, 32, 64  | N      | N      |
+| Zve64f      |             64 | 8, 16, 32, 64  | Y      | N      |
+| Zve64d      |             64 | 8, 16, 32, 64  | Y      | Y      |
+
+The Zve32f and Zve64x extensions depend on the Zve32x extension. The Zve64f extension depends on the Zve32f and Zve64x extensions. The Zve64d extension depends on the Zve64f extension.
+
+All Zve* extensions have precise traps.
+
+<image>
+
+There is currently no standard support for handling imprecise traps, so standard extensions have to provide precise traps.
+
+All Zve* extensions provide support for EEW of 8, 16, and 32, and Zve64* extensions also support EEW of 64.
+
+All Zve* extensions support the vector configuration instructions (Section 31.6).
+
+All Zve* extensions support all vector load and store instructions (Section 31.7), except Zve64* extensions do not support EEW=64 for index values when XLEN=32.
+
+All  Zve*  extensions  support  all  vector  integer  instructions  (Section  31.11),  except  that  the vmulh integer multiply  variants  that  return  the  high  word  of  the  product  ( vmulh.vv , vmulh.vx , vmulhu.vv , vmulhu.vx , vmulhsu.vv , vmulhsu.vx ) are not included for EEW=64 in Zve64*.
+
+<image>
+
+Producing the high-word of a product can take substantial additional gates for large EEW.
+
+All  Zve*  extensions  support  all  vector  fixed-point  arithmetic  instructions  (Section  31.12),  except  that vsmul.vv and vsmul.vx are not included in EEW=64 in Zve64*.
+
+<image>
+
+As  with vmulh , vsmul requires  a  large  amount  of  additional  logic,  and  64-bit  fixed-point multiplies are relatively rare.
+
+All  Zve*  extensions  support  all  vector  integer  single-width  and  widening  reduction  operations  (Section 31.14.1, Section 31.14.2).
+
+All Zve* extensions support all vector mask instructions (Section 31.15).
+
+All  Zve*  extensions  support  all  vector  permutation  instructions  (Section  31.16),  except  that  Zve32x  and Zve64x  do  not  include  those  with  floating-point  operands,  and  Zve64f  does  not  include  those  with EEW=64 floating-point operands.
+
+The Zve32x extension depends on the Zicsr extension. The Zve32f and Zve64f extensions depend upon the F  extension,  and  implement  all  vector  floating-point  instructions  (Section  31.13)  for  floating-point operands  with  EEW=32.  Vector  single-width  floating-point  reduction  operations  (Section  31.14.3)  for EEW=32 are supported.
+
+The  Zve64d  extension  depends  upon  the  D  extension,  and  implements  all  vector  floating-point
+
+instructions  (Section  31.13)  for  floating-point  operands  with  EEW=32  or  EEW=64  (including  widening instructions  and  conversions  between  FP32  and  FP64).  Vector  single-width  floating-point  reductions (Section  31.14.3)  for  EEW=32  and  EEW=64  are  supported  as  well  as  widening  reductions  from  FP32  to FP64.
+
+## 31.18.3. V: Vector Extension for Application Processors
+
+The single-letter V extension is intended for use in application processor profiles.
+
+The misa.v bit is set for implementations providing misa and supporting V.
+
+The V vector extension has precise traps.
+
+The V vector extension depends upon the Zvl128b and Zve64d extensions.
+
+<image>
+
+The value of 128 was chosen as a compromise for application processors. Providing a larger VLEN allows strip-mining code to be elided in some cases for short vectors, but also increases the size of the minimum implementation. Note that larger LMUL can be used to avoid strip mining for longer known-size application vectors at the cost of having fewer available vector register groups. For example, an LMUL of 8 allows vectors of up to sixteen 64-bit elements to be processed without strip mining using four vector register groups.
+
+The V extension supports EEW of 8, 16, and 32, and 64.
+
+The V extension supports the vector configuration instructions (Section 31.6).
+
+The V extension supports all vector load and store instructions (Section 31.7), except the V extension does not support EEW=64 for index values when XLEN=32.
+
+The V extension supports all vector integer instructions (Section 31.11).
+
+The V extension supports all vector fixed-point arithmetic instructions (Section 31.12).
+
+The  V  extension  supports  all  vector  integer  single-width  and  widening  reduction  operations  (Section 31.14.1, Section 31.14.2).
+
+The V extension supports all vector mask instructions (Section 31.15).
+
+The V extension supports all vector permutation instructions (Section 31.16).
+
+The  V  extension  depends  upon  the  F  and  D  extensions,  and  implements  all  vector  floating-point instructions  (Section  31.13)  for  floating-point  operands  with  EEW=32  or  EEW=64  (including  widening instructions  and  conversions  between  FP32  and  FP64).  Vector  single-width  floating-point  reductions (Section  31.14.3)  for  EEW=32  and  EEW=64  are  supported  as  well  as  widening  reductions  from  FP32  to FP64.
+
+<image>
+
+As is the case with other RISC-V extensions, it is valid to include overlapping extensions in the same ISA string. For example, RV64GCV and RV64GCV\_Zve64f are both valid and equivalent ISA strings, as is RV64GCV\_Zve64f\_Zve32x\_Zvl128b.
+
+## 31.18.4. Zvfhmin: Vector Extension for Minimal Half-Precision Floating-Point
+
+The Zvfhmin extension provides minimal support for vectors of IEEE 754-2008 binary16 values, adding conversions to and from binary32. When the Zvfhmin extension is implemented, the vfwcvt.f.f.v and vfncvt.f.f.w instructions become defined when SEW=16. The EEW=16 floating-point operands of these
+
+instructions use the binary16 format.
+
+The Zvfhmin extension depends on the Zve32f extension.
+
+## 31.18.5. Zvfh: Vector Extension for Half-Precision Floating-Point
+
+The  Zvfh  extension  provides  support  for  vectors  of  IEEE  754-2008  binary16  values.  When  the  Zvfh extension is implemented, all instructions in Section 31.13, Section 31.14.3, Section 31.14.4, Section 31.16.2, Section  31.16.3.4,  and  Section  31.16.3.6  become  defined  when  SEW=16.  The  EEW=16  floating-point operands of these instructions use the binary16 format.
+
+Additionally, conversions between 8-bit integers and binary16 values are provided. The floating-point-tointeger narrowing conversions ( vfncvt[.rtz].x[u].f.w ) and integer-to-floating-point widening conversions ( vfwcvt.f.x[u].v ) become defined when SEW=8.
+
+The Zvfh extension depends on the Zve32f and Zfhmin extensions.
+
+<image>
+
+Requiring basic scalar half-precision support makes Zvfh's vector-scalar instructions substantially  more  useful.  We  considered  requiring  more  complete  scalar  half-precision support, but we reasoned that, for many half-precision vector workloads, performing the scalar computation in single-precision will suffice.
+
+## 31.19. Vector Element Groups
+
+Some vector instructions treat operands as a vector of one or more element groups ,  where  each  element group is a fixed number of elements. For example, complex numbers can be viewed as a two-element group (one  real  element  and  one  imaginary  element).  As  another  example,  the  SHA-256  cryptographic instructions in the Zvknha extension operate on 128-bit values represented as a 4-element group of 32-bit elements.
+
+This  section  describes  recommendations  and  terminology  for  generic  instruction  set  design  for  vector instructions that operate on element groups.
+
+## 31.19.1. Element Group Size
+
+The element group size (EGS) is the number of elements in one group, and must be a power-of-two (POT).
+
+<image>
+
+Support for non-POT EGS was considered but causes many practical complications and so has been dropped. Error checking for vl is a little more difficult. For LMUL>1, non-POT EGSs will result in groups straddling the individual vector registers in a vector register group. Non-POT EGS can also cause large  increases  in  the  lowest-common-multiple  of  element  group  sizes, which adds constraints to vl setting in order to avoid splitting an element group across stripmine iterations in vector-length-agnostic code.
+
+The element group size is statically encoded in the instruction, often implicitly as part of the opcode.
+
+Vector instructions with EGS > VLMAX are reserved.
+
+<image>
+
+The vector instructions in the base V vector ISA can be viewed as all having an element group size of 1 for all operands statically encoded in the instruction.
+
+<image>
+
+Many operations only make sense with a certain number of elements per group (e.g., complex operations require a element group size of 2 and SHA-256 requires an element group size of 4).
+
+## 31.19.2. Setting vl
+
+Each source and destination operand to a vector instruction might be defined as either a single element group or a vector of element groups. When an operand is a vector of element groups, the vl setting must correspond to an integer multiple of the element group size, with other values of vl reserved.
+
+<image>
+
+For example, a SHA-256 instruction would require that vl is a multiple of 4.
+
+When element group instructions are present, an additional constraint is placed on the setting of vl based on an AVL  value (augmenting Section 31.6.3). EGSMAX  is  the largest EGS  supported by the implementation. When AVL > VLMAX, the value of vl must be set to either VLMAX or a positive integer multiple of EGSMAX.
+
+<image>
+
+As the base vector extension only has element group size of 1, this constraint is backwardscompatible.
+
+-  This constraint prevents element groups being broken across strip-mining iterations in vectorlength-agnostic code when a VLMAX-size vector would otherwise be able to accommodate a
+
+whole number of element groups.
+
+<image>
+
+-  If  EEW  is  encoded  statically  in  the  instruction,  or  if  an  instruction  has  multiple  operands containing vectors of element groups with different EEW, an appropriate SEW must be chosen
+
+<image>
+
+<image>
+
+for vsetvl instructions.
+
+Additional constraints may be required for some element group instructions to ensure legal length values for all operands.
+
+## 31.19.3. Determining EEW
+
+The vtype SEW  can  be  used  to  indicate  or  calculate  the  effective  element  size  (EEW)  of  one  or  more operands of an element group instruction. Where the operand is an element group, SEW and EEW refer to the number of bits in each individual element within a group not the number of bits in the group as a whole.
+
+Alternatively, the opcode might encode EEW of all operands statically and ignore the value of SEW when the operation only makes sense for a single size on each operand.
+
+<image>
+
+Many operations  are  only  defined  for  one  EEW,  e.g.,  SHA-256  requires  EEW=32.  Encoding EEWs statically in the instruction removes a dynamic dependency on the SEW value and the need  to  check  for  errors  in  SEW  values.  However,  ignoring  SEW  also  prevents  reuse  of  the static  opcode  with  a  different  dynamic  SEW,  and  in  many  cases,  the  SEW  setting  will  be needed for regular vector instructions used to process the individual elements in the vector.
+
+## 31.19.4. Determining EMUL
+
+The vtype LMUL setting can be used to indicate or calculate the effective length multiplier (EMUL) for one or more operands. Element group instructions tend to exhibit a much wider range of relationships between various  operand  EEW/EMUL values.  For  example,  an  instruction  might  take  a  vector  of  length  N  of  4element groups with EEW=8b and reduce each group to produce a vector length N of 1-element groups with EEW=32b. In this case, the input and output EMUL values are equal even though the EEW settings differ by a factor of 4.
+
+Each  source  and  destination  operand  to  a  vector  instruction  may  have  a  different  element  group  size, different EMUL, and/or different EEW.
+
+## 31.19.5. Element Group Width
+
+The element group width (EGW) is the number of bits in the element group as a whole. For example, the SHA-256 instructions in the Zvknha extension operate on an EGW of 128, with EGS=4 and EEW=32. It is possible to use LMUL to concatenate multiple vector registers together to support larger EGW>VLEN.
+
+<image>
+
+If software using large-EGW instructions need be portable across a range of implementations, some of which may have VLEN<EGW and hence require LMUL>1, then software can only use a subset of the architectural registers. Profiles can set minimum VLEN requirements to inform authors of such software.
+
+<image>
+
+Element group operations by their nature will gather data from across a wider portion of a vector datapath than regular vector instructions. Some element group instructions might allow temporal execution of individual element operations in a larger group, while others will require all EGW bits of a group to be presented to a functional unit at the same time.
+
+## 31.19.6. Masking
+
+No ratified  extensions  include  masked  element-group  instructions.  Future  extensions  might  extend  the element-group scheme to support element-level masking, or might define the concept of a mask element group (which might, e.g., update the destination element group if any mask bit in the mask element group is set).
+
+## 31.20. Vector Instruction Listing
+
+Integer funct3
+
+OPIVV
+
+OPIVX
+
+OPIVI
+
+I
+
+| funct6   |    |    |        | funct6        |    |           | funct6   | funct6   | funct6   | funct6     |
+|----------|----|----|--------|---------------|----|-----------|----------|----------|----------|------------|
+| 00000 0  | V  | X  | I vadd | 00000 0       | V  | vredsu m  | 00000 0  | V        | F        | vfadd      |
+| 00000 1  |    |    |        | 00000 1       | V  | vredan d  | 00000 1  | V        |          | vfredus um |
+| 00001 0  | V  | X  | vsub   | 00001 0       | V  | vredor    | 00001 0  | V        | F        | vfsub      |
+| 00001 1  |    | X  | I      | vrsub 00001 1 | V  | vredxor   | 00001 1  | V        |          | vfredos um |
+| 00010 0  | V  | X  | vminu  | 00010 0       | V  | vredmi nu | 00010 0  | V        | F        | vfmin      |
+| 00010 1  | V  | X  | vmin   | 00010 1       | V  | vredmi n  | 00010 1  | V        |          | vfredm in  |
+| 00011 0  | V  | X  | vmaxu  | 00011 0       | V  | vredma xu | 00011 0  | V        | F        | vfmax      |
+
+Integer funct3
+
+OPMV
+
+V
+
+OPMV
+
+X
+
+V
+
+X
+
+V
+
+X
+
+FP
+
+funct3
+
+OPFVV
+
+OPFVF
+
+V
+
+F
+
+| funct6        |               |               |               |               | funct6        |               |               | funct6   |    |    |               |
+|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|----------|----|----|---------------|
+| 00100 0       |               |               |               |               | 00100 0       | V             | vaaddu        | 00100 0  | V  | F  | vfsgnj        |
+| 00100 1       | V             | X             | I             | vand          | 00100 1       | V             | vaadd         | 00100 1  | V  | F  | vfsgnjn       |
+| 00101 0       | V             | X             | I             | vor           | 00101 0       | V             | vasubu        | 00101 0  | V  | F  | vfsgnjx       |
+| 001011        | V             | X             | I             | vxor          | 001011        | V             | vasub         | 001011   |    |    |               |
+| 00110 0       | V             | X             | I             | vrgathe r     | 00110 0       |               |               | 00110 0  |    |    |               |
+| 001101        |               |               |               |               | 001101        |               |               | 001101   |    |    |               |
+| 001110        |               | X             | I             | vslideu p     | 001110        |               | vslide1 up    | 001110   |    | F  | vfslide1 up   |
+| 001110        | V             |               |               | vrgathe rei16 |               |               |               |          |    |    |               |
+| 001111        |               | X             | I             | vslided own   | 001111        |               | vslide1 down  | 001111   |    | F  | vfslide1 down |
+| funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6 funct6 | funct6   |    |    |               |
+| 01000 0       | V             | X             | I             | vadc          | 01000 0       | V             | VWXU NARY0    | 01000 0  | V  |    | VWFU NARY0    |
+|               |               |               |               |               | 01000 0       |               | VRXUN ARY0    | 01000 0  |    | F  | VRFUN ARY0    |
+| 01000 1       | V             | X             | I             | vmadc         | 01000 1       |               |               | 01000 1  |    |    |               |
+| 01001 0       | V             | X             |               | vsbc          | 01001 0       | V             | VXUNA RY0     | 01001 0  | V  |    | VFUNA RY0     |
+| 010011        | V             | X             |               | vmsbc         | 010011        |               |               | 010011   | V  |    | VFUNA RY1     |
+| 01010 0       |               |               |               |               | 01010 0       | V             | VMUN ARY0     | 01010 0  |    |    |               |
+| 010101        |               |               |               |               | 010101        |               |               | 010101   |    |    |               |
+| 010110        |               |               |               |               | 010110        |               |               | 010110   |    |    |               |
+| 010111        | V             | X             | I             | vmerge /vmv   | 010111        | V             | vcompr ess    | 010111   |    | F  | vfmerg e/vfmv |
+| 01100 0       | V             | X             | I             | vmseq         | 01100 0       | V             | vmand n       | 01100 0  | V  | F  | vmfeq         |
+| 011001        | V             | X             | I             | vmsne         | 011001        | V             | vmand         | 011001   | V  | F  | vmfle         |
+| 011010        | V             | X             |               | vmsltu        | 011010        | V             | vmor          | 011010   |    |    |               |
+| 011011        | V             | X             |               | vmslt         | 011011        | V             | vmxor         | 011011   | V  | F  | vmflt         |
+| 011100        | V             | X             | I             | vmsleu        | 011100        | V             | vmorn         | 011100   | V  | F  | vmfne         |
+| 011101        | V             | X             | I             | vmsle         | 011101        | V             | vmnan d       | 011101   |    | F  | vmfgt         |
+| 011110        |               | X             | I             | vmsgtu        | 011110        | V             | vmnor         | 011110   |    |    |               |
+
+| funct6   |        |        |        |            | funct6   |    |    |           | funct6   |        |        |             |
+|----------|--------|--------|--------|------------|----------|----|----|-----------|----------|--------|--------|-------------|
+| 011111   |        | X      | I      | vmsgt      | 011111   | V  |    | vmxnor    | 011111   |        | F      | vmfge       |
+| funct6   |        |        |        |            | funct6   |    |    |           | funct6   |        |        |             |
+| 10000 0  | V      | X      | I      | vsaddu     | 10000 0  | V  | X  | vdivu     | 10000 0  | V      | F      | vfdiv       |
+| 10000 1  | V      | X      | I      | vsadd      | 10000 1  | V  | X  | vdiv      | 10000 1  |        | F      | vfrdiv      |
+| 10001 0  | V      | X      |        | vssubu     | 10001 0  | V  | X  | vremu     | 10001 0  |        |        |             |
+| 100011   | V      | X      |        | vssub      | 100011   | V  | X  | vrem      | 100011   |        |        |             |
+| 10010 0  |        |        |        |            | 10010 0  | V  | X  | vmulhu    | 10010 0  | V      | F      | vfmul       |
+| 100101   | V      | X      | I      | vsll       | 100101   | V  | X  | vmul      | 100101   |        |        |             |
+| 100110   |        |        |        |            | 100110   | V  | X  | vmulhs u  | 100110   |        |        |             |
+| 100111   | V      | X      |        | vsmul      | 100111   | V  | X  | vmulh     | 100111   |        | F      | vfrsub      |
+| 100111   |        |        | I      | vmv<n r>r  |          |    |    |           |          |        |        |             |
+| 10100 0  | V      | X      | I      | vsrl       | 10100 0  |    |    |           | 10100 0  | V      | F      | vfmadd      |
+| 101001   | V      | X      | I      | vsra       | 101001   | V  | X  | vmadd     | 101001   | V      | F      | vfnmad d    |
+| 101010   | V      | X      | I      | vssrl      | 101010   |    |    |           | 101010   | V      | F      | vfmsub      |
+| 101011   | V      | X      | I      | vssra      | 101011   | V  | X  | vnmsu b   | 101011   | V      | F      | vfnmsu b    |
+| 101100   | V      | X      | I      | vnsrl      | 101100   |    |    |           | 101100   | V      | F      | vfmacc      |
+| 101101   | V      | X      | I      | vnsra      | 101101   | V  | X  | vmacc     | 101101   | V      | F      | vfnmac c    |
+| 101110   | V      | X      | I      | vnclipu    | 101110   |    |    |           | 101110   | V      | F      | vfmsac      |
+| 101111   | V      | X      | I      | vnclip     | 101111   | V  | X  | vnmsac    | 101111   | V      | F      | vfnmsa c    |
+| funct6   | funct6 | funct6 | funct6 | funct6     | funct6   |    |    |           | funct6   | funct6 | funct6 | funct6      |
+| 11000 0  | V      |        |        | vwreds umu | 11000 0  | V  | X  | vwaddu    | 11000 0  | V      | F      | vfwadd      |
+| 110001   | V      |        |        | vwreds um  | 110001   | V  | X  | vwadd     | 110001   | V      |        | vfwred usum |
+| 110010   |        |        |        |            | 110010   | V  | X  | vwsubu    | 110010   | V      | F      | vfwsub      |
+| 110011   |        |        |        |            | 110011   | V  | X  | vwsub     | 110011   | V      |        | vfwred osum |
+| 110100   |        |        |        |            | 110100   | V  | X  | vwaddu .w | 110100   | V      | F      | vfwadd. w   |
+| 110101   |        |        |        |            | 110101   | V  | X  | vwadd. w  | 110101   |        |        |             |
+
+|   funct6 |   funct6 | funct6   | funct6   | funct6    |   funct6 | funct6   | funct6   | funct6    |
+|----------|----------|----------|----------|-----------|----------|----------|----------|-----------|
+|   110110 |   110110 | V        | X        | vwsubu .w |   110110 | V        | F        | vfwsub. w |
+|   110111 |   110111 | V        | X        | vwsub. w  |   110111 |          |          |           |
+|   111000 |   111000 | V        | X        | vwmul u   |   111000 | V        | F        | vfwmul    |
+|   111001 |   111001 |          |          |           |   111001 |          |          |           |
+|   111010 |   111010 | V        | X        | vwmuls u  |   111010 |          |          |           |
+|   111011 |   111011 | V        | X        | vwmul     |   111011 |          |          |           |
+|   111100 |   111100 | V        | X        | vwmac cu  |   111100 | V        | F        | vfwmac c  |
+|   111101 |   111101 | V        | X        | vwmac c   |   111101 | V        | F        | vfwnm acc |
+|   111110 |   111110 |          | X        | vwmac cus |   111110 | V        | F        | vfwmsa c  |
+|   111111 |   111111 | V        | X        | vwmac csu |   111111 | V        | F        | vfwnm sac |
+
+## Table 61. VRXUNARY0 encoding space
+
+|   vs2 |         |
+|-------|---------|
+| 00000 | vmv.s.x |
+
+## Table 62. VWXUNARY0 encoding space
+
+|   vs1 |         |
+|-------|---------|
+| 00000 | vmv.x.s |
+| 10000 | vcpop   |
+| 10001 | vfirst  |
+
+## Table 63. VXUNARY0 encoding space
+
+|   vs1 |           |
+|-------|-----------|
+| 00010 | vzext.vf8 |
+| 00011 | vsext.vf8 |
+| 00100 | vzext.vf4 |
+| 00101 | vsext.vf4 |
+| 00110 | vzext.vf2 |
+| 00111 | vsext.vf2 |
+
+## Table 64. VRFUNARY0 encoding space
+
+|   vs2 |          |
+|-------|----------|
+| 00000 | vfmv.s.f |
+
+## Table 65. VWFUNARY0 encoding space
+
+|   vs1 |          |
+|-------|----------|
+| 00000 | vfmv.f.s |
+
+## Table 66. VFUNARY0 encoding space
+
+| vs1                   | name                  |
+|-----------------------|-----------------------|
+| single-width converts | single-width converts |
+| 00000                 | vfcvt.xu.f.v          |
+| 00001                 | vfcvt.x.f.v           |
+| 00010                 | vfcvt.f.xu.v          |
+| 00011                 | vfcvt.f.x.v           |
+| 00110                 | vfcvt.rtz.xu.f.v      |
+| 00111                 | vfcvt.rtz.x.f.v       |
+| widening converts     | widening converts     |
+| 01000                 | vfwcvt.xu.f.v         |
+| 01001                 | vfwcvt.x.f.v          |
+| 01010                 | vfwcvt.f.xu.v         |
+| 01011                 | vfwcvt.f.x.v          |
+| 01100                 | vfwcvt.f.f.v          |
+
+| vs1                | name               |
+|--------------------|--------------------|
+| 01110              | vfwcvt.rtz.xu.f.v  |
+| 01111              | vfwcvt.rtz.x.f.v   |
+| narrowing converts | narrowing converts |
+| 10000              | vfncvt.xu.f.w      |
+| 10001              | vfncvt.x.f.w       |
+| 10010              | vfncvt.f.xu.w      |
+| 10011              | vfncvt.f.x.w       |
+| 10100              | vfncvt.f.f.w       |
+| 10101              | vfncvt.rod.f.f.w   |
+| 10110              | vfncvt.rtz.xu.f.w  |
+| 10111              | vfncvt.rtz.x.f.w   |
+
+## Table 67. VFUNARY1 encoding space
+
+|   vs1 | name       |
+|-------|------------|
+| 00000 | vfsqrt.v   |
+| 00100 | vfrsqrt7.v |
+| 00101 | vfrec7.v   |
+| 10000 | vfclass.v  |
+
+## Table 68. VMUNARY0 encoding space
+
+|   vs1 |       |
+|-------|-------|
+| 00001 | vmsbf |
+| 00010 | vmsof |
+| 00011 | vmsif |
+| 10000 | viota |
+| 10001 | vid   |
+
+## Chapter 32. Cryptography Extensions: Scalar & Entropy Source Instructions, Version 1.0.1
+
+## 32.1. Introduction
+
+This document describes the scalar cryptography extension for RISC-V. All instructions described herein use  the  general-purpose X registers,  and  obey  the  2-read-1-write  register  access  constraint.  These instructions  are  designed  to  be  lightweight  and  suitable  for 32 and 64 bit  base  architectures;  from embedded IoT class cores to large, application class cores which do not implement a vector unit.
+
+This  document  also  describes  the  architectural  interface  to  an  Entropy  Source,  which  can  be  used  to generate cryptographic secrets. This is found in Section 32.4.
+
+It also contains a mechanism allowing core implementers to provide "Constant Time Execution" guarantees in Section 32.5.
+
+## 32.1.1. Intended Audience
+
+Cryptography is a specialised subject, requiring people with many different backgrounds to cooperate in its secure and efficient implementation. Where possible, we have written this specification to be understandable  by  all,  though  we  recognise  that  the  motivations  and  references  to  algorithms  or  other specifications and standards may be unfamiliar to those who are not domain experts.
+
+This specification anticipates being read and acted on by various people with different backgrounds. We have tried to capture these backgrounds here, with a brief explanation of what we expect them to know, and how  it  relates  to  the  specification.  We  hope  this  aids  people's  understanding  of  which  aspects  of  the specification are particularly relevant to them, and which they may (safely!) ignore or pass to a colleague.
+
+## Cryptographers and cryptographic software developers
+
+These are the people we expect to write code using the instructions in this specification. They should understand fairly obviously the motivations for the instructions we include, and be familiar with most of  the  algorithms  and  outside  standards  to  which  we  refer.  We  expect  the  sections  on  constant  time execution (Section 32.5) and the entropy source (Section 32.4) to be chiefly understood with their help.
+
+## Computer architects
+
+We do not expect architects to have a cryptography background. We nonetheless expect architects to be able to examine our instructions for implementation issues, understand how the instructions will be used  in  context,  and  advise  on  how  best  to  fit  the  functionality  the  cryptographers  want  to  the  ISA interface.
+
+## Digital design engineers & micro-architects
+
+These  are  the  people  who  will  implement  the  specification  inside  a  core.  Again,  no  cryptography expertise  is  assumed,  but  we  expect  them  to  interpret  the  specification  and  anticipate  any  hardware implementation issues, e.g., where high-frequency design considerations apply, or where latency/area tradeoffs exist etc. In particular, they should be aware of the literature around efficiently implementing AES and SM4 SBoxes in hardware.
+
+## Verification engineers
+
+Responsible for ensuring the correct implementation of the extension in hardware. No cryptography background is assumed. We expect them to identify interesting test cases from the specification. An understanding of their real-world usage will help with this. We do not expect verification engineers in this sense to be experts in entropy source design or certification, since this is a very specialised area. We
+
+do  expect  them  however  to  identify  all  of  the architectural test  cases  around  the  entropy  source interface.
+
+These  are  by  no  means  the  only  people  concerned  with  the  specification,  but  they  are  the  ones  we considered most while writing it.
+
+## 32.1.2. Sail Specifications
+
+RISC-V  maintains  a  formal  model  of  the  ISA  specification,  implemented  in  the  Sail  ISA  specification language ( SAIL ISA Specification Language , n.d.). Note that Sail refers to the specification language itself, and that  there  is  a model  of  RISC-V ,  written  using  Sail.  It  is  not  correct  to  refer  to  "the  Sail  model".  This  is ambiguous, given there are many models of different ISAs implemented using Sail. We refer to the Sail implementation of RISC-V as "the RISC-V Sail model".
+
+The  Cryptography  extension  uses  inline  Sail  code  snippets  from  the  actual  model  to  give  canonical descriptions  of  instruction  functionality.  Each  instruction  is  accompanied  by  its  expression  in  Sail,  and includes calls to supporting functions which are too verbose to include directly in the specification. This supporting  code  is  listed  in  Section  32.9.  The  Sail  Manual  is  recommended  reading  in  order  to  best understand the code snippets.
+
+Note that this document contains only a subset of the formal model: refer to the formal model GitHub repository for the complete model.
+
+## 32.1.3. Policies
+
+In creating this proposal, we tried to adhere to the following policies:
+
+- ⚫ Where there is a choice between:
+1. supporting diverse implementation strategies for an algorithm or
+2. supporting a single implementation style which is more performant / less expensive; the crypto extension  will  pick  the  more  constrained  but  performant  option.  This  fits  a  common  pattern  in other  parts  of  the  RISC-V  specification,  where  recommended  (but  not  required)  instruction sequences for performing particular tasks are given as an example, such that both hardware and software implementers can optimise for only a single use-case.
+- ⚫ The extension will be designed to support existing standardised cryptographic constructs well. It will not  try  to  support  proposed  standards,  or  cryptographic  constructs  which  exist  only  in  academia. Cryptographic standards which are settled upon concurrently with or after the RISC-V cryptographic extension  standardisation  will  be  dealt  with  by  future  additions  to,  or  versions  of,  the  RISC-V cryptographic  standard  extension.  It  is  anticipated  that  the  NIST  Lightweight  Cryptography  contest and  the  NIST  Post-Quantum  Cryptography  contest  may  be  dealt  with  this  way,  depending  on timescales.
+- ⚫ Historically, there has been some discussion (Lee et al., 2004) on how newly supported operations in general-purpose computing might enable new bases for cryptographic algorithms. The standard will not try to anticipate new useful low-level operations which may be useful as building blocks for future cryptographic constructs.
+- ⚫ Regarding side-channel countermeasures: Where relevant, proposed instructions must aim to remove the possibility of any timing side-channels. For side-channels based on power or electro-magnetic (EM) measurements, the extension will not aim to support countermeasures which are implemented above the ISA abstraction layer. Recommendations will be given where relevant on how micro-architectures can implement instructions in a power/EM side-channel resistant way.
+
+## 32.2. Extensions Overview
+
+The group of extensions introduced by the Scalar Cryptography Instruction Set Extension is listed here.
+
+Detection  of  individual  cryptography  extensions  uses  the  unified  software-based  RISC-V  discovery method.
+
+-  At the time of writing, these discovery mechanisms are still a work in progress.
+
+A note on extension rationale
+
+Specialist  encryption  and  decryption  instructions  are  separated  into  different  functional groups  because  some  use  cases  (e.g.,  Galois/Counter  Mode  in  TLS  1.3)  do  not  require decryption functionality.
+
+<image>
+
+<image>
+
+The  NIST  and  ShangMi  algorithms  suites  are  separated  because  their  usefulness  is  heavily dependent on the countries a device is expected to operate in. NIST ciphers are a part of most standardised internet protocols, while ShangMi ciphers are required for use in China.
+
+## 32.2.1. Zbkb - Bitmanip instructions for Cryptography
+
+This extension contains bit-manipulation instructions that are particularly useful for cryptography, most of which are also in the Zbb extension. Please refer to Bit-manipulation for Cryptography.
+
+## 32.2.2. Zbkc - Carry-less multiply instructions
+
+Constant time carry-less multiply for Galois/Counter Mode.  These are separated from the Bitmanipulation for Cryptography because they have a considerable implementation overhead which cannot be amortised across other instructions.
+
+Please refer to Carry-less multiplication for Cryptography.
+
+## 32.2.3. Zbkx - Crossbar permutation instructions
+
+These  instructions  are  useful  for  implementing  SBoxes  in  constant  time,  and  potentially  with  DPA protections.  These  are  separated  from  the  Bit-manipulation  for  Cryptography  because  they  have  an implementation overhead which cannot be amortised across other instructions.
+
+Please refer to Crossbar permutations.
+
+## 32.2.4. Zknd - NIST Suite: AES Decryption
+
+Instructions for accelerating the decryption and key-schedule functions of the AES block cipher.
+
+| RV32   | RV64   | Mnemonic   | Instruction                               |
+|--------|--------|------------|-------------------------------------------|
+| ✓      |        | aes32dsi   | AES final round decrypt (RV32)            |
+| ✓      |        | aes32dsmi  | AES middle round decrypt (RV32)           |
+|        | ✓      | aes64ds    | AES decrypt final round (RV64)            |
+|        | ✓      | aes64dsm   | AES decrypt middle round (RV64)           |
+|        | ✓      | aes64im    | AES Decrypt KeySchedule MixColumns (RV64) |
+|        | ✓      | aes64ks1i  | AES Key Schedule Instruction 1 (RV64)     |
+
+| RV32   | RV64   | Mnemonic   | Instruction                           |
+|--------|--------|------------|---------------------------------------|
+|        | ✓      | aes64ks2   | AES Key Schedule Instruction 2 (RV64) |
+
+<image>
+
+The  AES  Key  Schedule  Instruction  1  (RV64)  and  AES  Key  Schedule  Instruction  2  (RV64) instructions are present in both the Zknd and Zkne extensions.
+
+## 32.2.5. Zkne - NIST Suite: AES Encryption
+
+Instructions for accelerating the encryption and key-schedule functions of the AES block cipher.
+
+| RV32   | RV64   | Mnemonic   | Instruction                                 |
+|--------|--------|------------|---------------------------------------------|
+| ✓      |        | aes32esi   | AES final round encrypt (RV32)              |
+| ✓      |        | aes32esmi  | AES middle round encrypt (RV32)             |
+|        | ✓      | aes64es    | AES encrypt final round instruction (RV64)  |
+|        | ✓      | aes64esm   | AES encrypt middle round instruction (RV64) |
+|        | ✓      | aes64ks1i  | AES Key Schedule Instruction 1 (RV64)       |
+|        | ✓      | aes64ks2   | AES Key Schedule Instruction 2 (RV64)       |
+
+<image>
+
+The aes64ks1i and aes64ks2 instructions are present in both the Zknd and Zkne extensions.
+
+## 32.2.6. Zknh - NIST Suite: Hash Function Instructions
+
+Instructions for accelerating the SHA2 family of cryptographic hash functions, as specified in (NIST, 2015).
+
+| RV32   | RV64   | Mnemonic    | Instruction                        |
+|--------|--------|-------------|------------------------------------|
+| ✓      | ✓      | sha256sig0  | SHA2-256 Sigma0 instruction        |
+| ✓      | ✓      | sha256sig1  | SHA2-256 Sigma1 instruction        |
+| ✓      | ✓      | sha256sum0  | SHA2-256 Sum0 instruction          |
+| ✓      | ✓      | sha256sum1  | SHA2-256 Sum1 instruction          |
+| ✓      |        | sha512sig0h | SHA2-512 Sigma0 high (RV32)        |
+| ✓      |        | sha512sig0l | SHA2-512 Sigma0 low (RV32)         |
+| ✓      |        | sha512sig1h | SHA2-512 Sigma1 high (RV32)        |
+| ✓      |        | sha512sig1l | SHA2-512 Sigma1 low (RV32)         |
+| ✓      |        | sha512sum0r | SHA2-512 Sum0 (RV32)               |
+| ✓      |        | sha512sum1r | SHA2-512 Sum1 (RV32)               |
+|        | ✓      | sha512sig0  | SHA2-512 Sigma0 instruction (RV64) |
+|        | ✓      | sha512sig1  | SHA2-512 Sigma1 instruction (RV64) |
+|        | ✓      | sha512sum0  | SHA2-512 Sum0 instruction (RV64)   |
+|        | ✓      | sha512sum1  | SHA2-512 Sum1 instruction (RV64)   |
+
+## 32.2.7. Zksed - ShangMi Suite: SM4 Block Cipher Instructions
+
+Instructions for accelerating the SM4 Block Cipher. Note that unlike AES, this cipher uses the same core operation for encryption and decryption, hence there is only one extension for it.
+
+| RV32   | RV64   | Mnemonic   | Instruction                     |
+|--------|--------|------------|---------------------------------|
+| ✓      | ✓      | sm4ed      | SM4 Encrypt/Decrypt Instruction |
+| ✓      | ✓      | sm4ks      | SM4 Key Schedule Instruction    |
+
+## 32.2.8. Zksh - ShangMi Suite: SM3 Hash Function Instructions
+
+Instructions for accelerating the SM3 hash function.
+
+| RV32   | RV64   | Mnemonic   | Instruction      |
+|--------|--------|------------|------------------|
+| ✓      | ✓      | sm3p0      | SM3 P0 transform |
+| ✓      | ✓      | sm3p1      | SM3 P1 transform |
+
+## 32.2.9. Zkr - Entropy Source Extension
+
+The entropy source extension defines the seed CSR at address 0x015 . This CSR provides up to 16 physical entropy bits that can be used to seed cryptographic random bit generators.
+
+See  Section  32.4  for  the  normative  specification  and  access  control  notes.  Section  32.7  contains  design rationale and further recommendations to implementers.
+
+## 32.2.10. Zkn - NIST Algorithm Suite
+
+This extension is shorthand for the following set of other extensions:
+
+| Included Extension   | Description                                    |
+
+
+Final instruction for SFENCE.VMA: Extract testable rules from this excerpt only. If this excerpt contains no relevant architectural rules for the target, output exactly NONE. Otherwise output only RULE 1: ..., RULE 2: ..., etc., without headings or explanations.

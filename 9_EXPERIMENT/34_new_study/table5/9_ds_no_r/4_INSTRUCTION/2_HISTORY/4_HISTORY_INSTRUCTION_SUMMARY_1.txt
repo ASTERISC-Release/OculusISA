@@ -1,0 +1,212 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: CSRRWI
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: CSRRWI
+
+Rules (subset):
+RULE 1: For a CSRRWI instruction, if the 12-bit csr field in bits 31-20 selects CSR X, then execution atomically reads and writes only CSR X, with rd observable as CSR X’s pre-instruction value and CSR X updated by the CSRRWI write value; if any other CSR changes or the readback/rd values show a non-atomic or different-CSR read-modify-write, the rule is violated.
+RULE 2: CSRRWI is an immediate-form CSR instruction; it uses a 5-bit zero-extended immediate encoded in the rs1 field.
+RULE 3: CSRRWI is similar to CSRRW except that CSRRWI updates the CSR using an XLEN-bit value obtained by zero-extending the 5-bit unsigned immediate uimm[4:0] field encoded in the rs1 field instead of a value from an integer register.
+RULE 4: For CSRRWI, the value written to the addressed CSR is the XLEN-bit zero-extended uimm[4:0] value; when rd is not x0, CSRRWI reads the old CSR value, zero-extends it to XLEN bits, and writes it to integer register rd.
+RULE 5: If CSRRWI is executed with rd=x0, then no CSR read occurs and no CSR-read side effect is observable, and x0 remains 0; observing any CSR-read side effect indicates a violation.
+RULE 6: Table 7 specifies for CSRRWI with rd = x0: Reads CSR = No, Writes CSR = Yes.
+RULE 7: Table 7 specifies for CSRRWI with rd != x0: Reads CSR = Yes, Writes CSR = Yes.
+RULE 8: The uimm = 0 no-write condition is specified for CSRRSI and CSRRCI, not for CSRRWI; Table 7 lists CSRRWI as writing the CSR for both rd = x0 and rd != x0.
+RULE 9: If a CSRRWI writes a CSR, then every architecturally specified side effect of writing that CSR occurs for all fields in that CSR exactly as it would for a CSRRW write to the same CSR; if any such side effect is missing, the post-instruction CSR or associated architectural state differs from the CSRRW-equivalent result.
+RULE 10: If CSRRWI has rd ≠ x0, then the addressed CSR is read, the destination register receives the pre-write CSR value, and any architecturally defined CSR read side effects occur; if rd = x0, then no CSR read occurs, so no CSR read side effects occur and no destination register is updated. Standard CSRs have no read side effects, while custom CSRs defined with read side effects exhibit them only for CSRRWI with rd ≠ x0.
+RULE 11: For CSRRWI rd, csr, zimm, if csr is nonzero and rd is not x0, then the CSR is read as a source and the old CSR value is written to rd; if csr is zero or rd is x0, the CSR is not read as a source, so no CSR-read value is written to rd and CSR-read side effects are suppressed.
+RULE 12: For CSRRWI, if rd=x0, then the CSR named by csr is not read as a source register, so no read side effects of that CSR occur and x0 remains zero; if rd≠x0, the CSR is read as a source and its old value is written to rd.
+RULE 13: For CSRRWI rd, csr, uimm, if rd is not x0, then after execution rd contains the pre-instruction CSR value read from csr, because CSRRWI is not among the excluded CSRRS/CSRRC/CSRRSI/CSRRCI cases; if rd is x0, no destination register is written, and leaving a nonzero rd unchanged or not equal to the old CSR value violates this CSRRWI destination-register behavior.
+RULE 14: For CSRRWI, if rd is set to a register r other than x0, then r is a destination register via the general rd-field destination-register rule.
+RULE 15: When CSRRWI references a CSR, the destination register contains the CSR value from before the write, and a subsequent read of that CSR returns the zero-extended 5-bit immediate written into the CSR’s implemented fields at the granularity defined for that CSR in Section 18.2; if the referenced CSR is read-only, CSRRWI raises an illegal-instruction exception.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+CSRRWI atomically reads and writes the single CSR selected by the csr field, writing the zero-extended 5-bit unsigned immediate encoded in the rs1 field; the uimm=0 no-write condition does not apply to CSRRWI. When rd is nonzero, the destination register receives the zero-extended pre-write CSR value and any architecturally defined CSR read side effects occur; when rd is x0, no CSR read or read side effect occurs, no destination is written, and x0 remains zero. The CSR write has the same architectural side effects as a CSRRW write to that CSR. If the selected CSR is read-only, CSRRWI raises an illegal-instruction exception.
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 1
+NAME: FCVT.W.D
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: FCVT.W.D
+
+Rules (subset):
+RULE 1: FCVT.W.D converts a double-precision floating-point number in floating-point register rs1 to a signed 32-bit integer in integer register rd.
+RULE 2: FCVT.W.D rounds according to the rm field.
+RULE 3: For RV64, FCVT.W.D sign-extends the 32-bit result.
+RULE 4: If FCVT.W.D is executed with a source double that is NaN or whose rounded result under the active rounding mode is outside the signed 32-bit range [−2^31, 2^31−1], then it produces the same invalid-input architectural result as FCVT.W.S: rd = 0 for NaN, rd = 0x7fffffff for positive overflow, rd = 0x80000000 for negative overflow (sign-extended to XLEN on RV64), and fflags.NV is set with no illegal-instruction exception; a rounded result within that range is written to rd without setting fflags.NV.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FCVT.W.D reads a double-precision floating-point value from floating-point register rs1, rounds it according to rm, and writes a signed 32-bit integer to integer register rd (sign-extended to XLEN on RV64). The provided rules do not state any access-control or privilege restrictions. For NaN or a rounded value outside [-2^31, 2^31-1], it writes the same invalid-input result as FCVT.W.S: 0 for NaN, 0x7fffffff for positive overflow, or 0x80000000 for negative overflow (sign-extended on RV64), sets fflags.NV, and raises no illegal-instruction exception. A rounded result within range is written to rd without setting fflags.NV.
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: SFENCE.VMA
+
+Rules (subset):
+RULE 1: SFENCE.VMA is one of the supervisor virtual-memory management operations that the TVM bit supports intercepting.
+RULE 2: When TVM=1, an attempt to execute SFENCE.VMA while executing in S-mode raises an illegal-instruction exception.
+RULE 3: When TVM=0, execution of SFENCE.VMA is permitted in S-mode.
+RULE 4: If SFENCE.VMA is executed with an rs1 value that is not a valid virtual address, then the instruction raises no exception and produces no architectural effect or state change attributable to SFENCE.VMA.
+RULE 5: When hstatus.VTVM=1, an attempt in VS-mode to execute SFENCE.VMA raises a virtual-instruction exception.
+RULE 6: In VS-mode, an attempt to execute an SFENCE.VMA instruction causes a virtual-instruction exception when hstatus.VTVM=1.
+RULE 7: If hstatus.VTVM=1 while V=1, then executing SFENCE.VMA or SINVAL.VMA, or reading or writing satp, raises a virtual-instruction exception.
+RULE 8: When an SFENCE.VMA attempt causes a virtual-instruction trap, the exception cause code is 22 (Virtual instruction).
+RULE 9: On an SFENCE.VMA-induced virtual-instruction trap, mtval or stval is written the same as for an illegal-instruction trap.
+RULE 10: For an SFENCE.VMA attempt in VS-mode, the text says mstatus.TSR and mstatus.TVM are ignored for determining VS-mode exceptions; the explicit SFENCE.VMA condition given is hstatus.VTVM=1.
+RULE 11: The text also says that in VU-mode, attempts to execute a supervisor instruction (SRET or SFENCE) raise a virtual-instruction exception; this is the supplied text's SFENCE-family reference relevant to an SFENCE.VMA instruction.
+RULE 12: When an SFENCE.VMA attempt raises a virtual-instruction exception (code 22), Table 51 gives code 22 lower priority than illegal instruction (2) and higher priority than instruction address misaligned (0).
+RULE 13: If a guest-executed SFENCE.VMA traps with a virtual-instruction exception and the hypervisor does not emulate that SFENCE.VMA, then the guest virtual machine observes an illegal-instruction exception for that instruction instead of a virtual-instruction exception.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+SFENCE.VMA is a supervisor virtual-memory management operation controlled by TVM: in S-mode, TVM=1 raises an illegal-instruction exception while TVM=0 permits execution. Under virtualization, hstatus.VTVM=1 causes VS-mode attempts (and relevant VU-mode supervisor-SFENCE attempts) to raise a virtual-instruction exception with cause 22, writing mtval/stval as for an illegal-instruction trap, while mstatus.TSR/TVM are ignored for VS-mode determination. An invalid rs1 virtual-address value raises no exception and produces no architectural effect or state change attributable to SFENCE.VMA. Virtual-instruction traps have priority below illegal instruction and above instruction address misaligned, and if a hypervisor does not emulate a guest SFENCE.VMA virtual-instruction trap, the guest observes an illegal-instruction exception instead.
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 1
+NAME: VLE32FF.V
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: VLE32FF.V
+
+Rules (subset):
+RULE 1: If an instruction is VLE32FF.V, then it performs a 32-bit unit-stride fault-only-first vector load: successful elements are written to vd, and if a fault occurs after the first element, vl is updated to the number of successfully loaded elements and no load exception is raised; if the first element faults, the load exception is raised.
+RULE 2: VLE32FF.V executes like a regular load except that it only takes a trap caused by a synchronous exception on element 0.
+RULE 3: If element 0 raises an exception for VLE32FF.V, vl is not modified and the trap is taken.
+RULE 4: If an element >0 raises an exception for VLE32FF.V, the corresponding trap is not taken and vl is reduced to the index of the element that would have raised an exception.
+RULE 5: Even when no exception is raised, implementations are permitted to process fewer than vl elements with VLE32FF.V and reduce vl accordingly, but if vstart = 0 and vl > 0, then at least one element must be processed.
+RULE 6: If VLE32FF.V takes an interrupt trap, then the vl CSR retains its pre-instruction value and the vstart CSR is set to the index of the first vector element not completed by the interrupted load, rather than vl being reduced to indicate progress.
+RULE 7: If VLE32FF.V would trigger a debug data-watchpoint trap on an element after the first, implementations should not reduce vl but instead should trigger the debug trap so the event is not lost.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+VLE32FF.V performs a 32-bit unit-stride fault-only-first vector load, writing successfully loaded elements to vd and using vl plus vstart to report progress and the first uncompleted element. A synchronous exception on element 0 is trapped with vl unchanged, while a synchronous exception on an element after 0 is not trapped and vl is reduced to that element's index. Even without an exception the implementation may process fewer than vl elements and reduce vl, but if vstart = 0 and vl > 0 at least one element must be processed; on an interrupt, vl retains its pre-instruction value and vstart is set to the first vector element not completed. A debug data-watchpoint trap on an element after the first should be triggered without reducing vl, and the rules specify no additional access-control or privilege restrictions.
+======================================================= END - 4 ========================================================

@@ -1,0 +1,111 @@
+============
+START ITER 1
+
+# 7 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: FCVT.W.D
+# Test Case Type: INSTRUCTION
+# Test Case Rule: RULE 4: FCVT.W.D must raise the floating-point exception flags that correspond to converting its double-precision source operand to a signed 32-bit integer, and the set of flags raised is identical to those that would be raised for FCVTMOD.W.D with the same operand.
+##### ASSEMBLY #####
+li t0, 0x7ff8000000000000
+fmv.d.x fa0, t0
+fsrw fcsr, zero
+fcvt.w.d t1, fa0, rne
+csrr t2, fcsr
+li t3, 0x10
+and t4, t2, t3
+# Result: t4 = 16
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:110: Error: unrecognized opcode `fsrw fcsr,zero'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 1
+==========
+
+============
+START ITER 2
+
+# 176 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 93: When mstatus.UBE = 0, explicit load and store memory accesses from U-mode are little-endian.
+##### ASSEMBLY #####
+li t0, 0x12345678
+li t1, 0x80000000
+sd t0, 0(t1)
+li t2, 0x0
+csrr t3, mstatus
+li t4, 0x40
+and t3, t3, t4
+beq t3, x0, 1
+j 2
+li t2, 0x0
+ld t2, 0(t1)
+# Result: t2 = 0x12345678
+
+riscv64-unknown-elf-ld: warning: bootloader/bootloader has a LOAD segment with RWX permissions
+bootloader/code.o: in function `test_start':
+/mnt/data2/new/first_project/project_1/oculus_isa/9_EXPERIMENT/34_new_study/table6/1_gemma_full/7_REPAIR_TEST_CASE/bootloader/code.S:115:(.text+0x16a): relocation truncated to fit: R_RISCV_JAL against `*UND*'
+make: *** [Makefile:68: bootloader/bootloader] Error 1
+
+END ITER 2
+==========
+
+============
+START ITER 3
+
+# 226 # Extension Must Be Active: NONE
+# Many important RISC-V extensions are currently active.
+# Test Case Name: mstatus
+# Test Case Type: REGISTER
+# Test Case Rule: RULE 143: If the FS, VS, or XS field in mstatus is Dirty, executing an instruction to disable the unit transitions the field to the Off state.
+##### ASSEMBLY #####
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+srli t2, t2, 0
+li t3, 0x2000
+or t2, t2, t3
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+li t3, 0x2000
+or t2, t2, t3
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+li t3, 0x2000
+or t2, t2, t3
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+csrr t3, mstatus
+li t4, 0x4000
+li t5, 0x2000
+or t4, t4, t5
+and t5, t3, t4
+csrr a1, mstatus
+srli a0, a1, 13
+andi a0, a0, 3
+# Result: a0 = 0
+# 227 # Extension Must Be Active: NONE
+li t0, 0x0
+csrr t1, mstatus
+li t2, 0x4000
+or t2, t2, (1 << 13)
+not t2, t2
+and t1, t1, t2
+csrw mstatus, t1
+# Result: mstatus[14:13] = 0
+
+bootloader/code.S: Assembler messages:
+bootloader/code.S:143: Error: illegal operands `or t2,t2,(1<<13)'
+make: *** [Makefile:62: bootloader/code.o] Error 1
+
+END ITER 3
+==========

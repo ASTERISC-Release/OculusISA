@@ -1,0 +1,229 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: mseccfg
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mseccfg register. The register of mseccfg is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+**mseccfg – Machine Security Configuration CSR (64‑bit)**  
+
+| Bits          | Name   | Type / Reset behavior | Description |
+|---------------|--------|-----------------------|-------------|
+| **0**         | **USEED** | RW (or RO 0 if Zkr not implemented or U‑mode absent). Reset value **0** (must be defined). | Controls access to the **seed** CSR from **U‑mode**. 0 = illegal‑instruction on any access; 1 = read‑write access allowed (other accesses still illegal). |
+| **1**         | **SSEED** | RW (or RO 0 if Zkr not implemented or S‑mode absent). Reset value **0** (must be defined). | Controls access to the **seed** CSR from **S‑/HS‑mode**. 0 = illegal‑instruction on any access; 1 = read‑write access allowed (other accesses still illegal). |
+| **2**         | **MML**  | WARL (sticky, write 1 -> locked, cannot be cleared until PMP reset). Reset **0**. | *Machine‑Mode Lockdown*. Changes the semantics of the PMP‑config **L** bit: when set, the rule becomes **M‑mode‑only**; when clear, it is **S/U‑mode‑only** (or Shared‑Region per encoding). |
+| **3**         | **MMWP** | WARL (sticky, write 1 -> locked, cannot be cleared until PMP reset). Reset **0**. | *Machine‑Mode Allowlist Policy*. When 1, the default PMP policy for M‑mode on accesses to regions with **no matching PMP rule** is **deny** (instead of ignored). |
+| **4**         | **RLB**  | WARL. Write 1 temporarily permits modification of locked PMP rules; writes to 0 are ignored while any PMP rule has **L=1** until a PMP reset. Reset **0**. | *Rule‑Locking Bypass*. Intended as a debug/boot‑time workaround; should be cleared for normal operation. |
+| **5‑6**       | **PMM**  | WARL (2‑bit field). Reset **00**. <br>• **00** – Pointer masking disabled (PMLEN = 0). <br>• **01** – *Reserved*. <br>• **10** – Pointer masking enabled, PMLEN = XLEN ‑ 57 (7 on RV64). <br>• **11** – Pointer masking enabled, PMLEN = XLEN ‑ 48 (16 on RV64). | Controls pointer‑masking for M‑mode (Smmpm extension). Read‑only 0 on RV32 and when Smmpm not implemented. |
+| **7**         | **MLPE** | RW (or RO 0 if Zicfilp not implemented). Reset **0**. | *Landing‑Pad‑Enabled* flag for the Zicfilp extension. 1 = Zicfilp enabled in M‑mode; 0 = disabled (ELP state stays NO\_LP\_EXPECTED, LPAD is a no‑op). |
+| **8‑63**      | **RESERVED** | **RO 0** (must read‑as‑zero; writes are ignored). | Future‑standard or implementation‑specific extensions may occupy these bits. No defined behavior. |
+
+**Additional notes**
+
+* The register exists only if at least one of the above extensions (Zkr, Smepmp, Smmpm, Zicfilp) is implemented; otherwise it is **reserved**.  
+* All WARL fields are guaranteed to contain a *legal* value after reset; the hardware may hard‑wire any field to 0 if the corresponding feature is not supported.  
+* On **RV32**, bits 63:32 are accessed via the alias CSR **mseccfgh** (read/write) which maps to the upper half of the 64‑bit register.  
+* The reset values for **MML**, **MMWP**, **RLB**, **PMM**, **USEED**, **SSEED**, and **MLPE** are defined to be **0** unless the platform specifies otherwise.  
+
+This table lists **all fields** defined for the **mseccfg** CSR in the provided specifications.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..8=WPRI, 7..7=MLPE, 6..5=PMM, 4..4=RLB, 3..3=MMWP, 2..2=MML, 1..1=SSEED, 0..0=USEED
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 1
+NAME: mstatus
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mstatus register. The register of mstatus is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+**mstatus Register – Complete Field List (RV32 & RV64)**  
+
+| Field Name | Bit(s) | Remarks / Notes |
+|------------|--------|----------------|
+| **SD** | 63 (RV64) / 31 (RV32) | *Supervisor‑Dirty* – indicates any Dirty state in FS, VS, or XS. |
+| **WPRI** | 62‑48 (RV64) / 30‑4 (RV32) | *Reserved* – must be zero on writes, read‑as‑zero on reads. |
+| **MDT** | 47 (RV64) | Machine‑Mode Disable‑Trap (Smdbltrp extension). |
+| **MPELP** | 46 (RV64) | Machine‑Previous Expected Landing‑Pad state (Zicfilp). |
+| **MPV** | 45 (RV64) | Machine‑Previous Virtualization mode (hypervisor extension). |
+| **GVA** | 44 (RV64) | Guest‑Virtual‑Address flag for traps (hypervisor extension). |
+| **SXL[1:0]** | 43‑42 (RV64) | XLEN for S‑mode (when MXLEN = 64). |
+| **UXL[1:0]** | 41‑40 (RV64) | XLEN for U‑mode (when MXLEN = 64). |
+| **SDT** | 25 (RV64) / 24 (RV32) | *Double‑Trap* status bit (Smdbltrp). |
+| **SPELP** | 24 (RV64) / 23 (RV32) | Supervisor‑Previous Expected Landing‑Pad (Zicfilp). |
+| **TSR** | 22 (RV64) / 22 (RV32) | Trap SRET – intercepts SRET. |
+| **TW** | 21 (RV64) / 21 (RV32) | Timeout Wait – intercepts WFI. |
+| **TVM** | 20 (RV64) / 20 (RV32) | Trap Virtual Memory – intercepts satp/SFENCE.VMA. |
+| **MXR** | 19 (RV64) / 19 (RV32) | Make eXecutable Readable – loads may read executable pages. |
+| **SUM** | 18 (RV64) / 18 (RV32) | Permit Supervisor User Memory – S‑mode loads/stores to U‑pages. |
+| **MPRV** | 17 (RV64) / 17 (RV32) | Modify Privilege – memory accesses use MPP/MPV mode. |
+| **XS[1:0]** | 16‑15 (RV64) / 16‑15 (RV32) | Extension‑Status – summary of all user‑extension states. |
+| **FS[1:0]** | 14‑13 (RV64) / 14‑13 (RV32) | Floating‑Point Status – Off/Initial/Clean/Dirty. |
+| **MPP[1:0]** | 12‑11 (RV64) / 12‑11 (RV32) | Machine Previous Privilege – saved prior privilege on traps. |
+| **VS[1:0]** | 10‑9 (RV64) / 10‑9 (RV32) | Vector‑Status – analogous to FS for the vector extension. |
+| **SPP** | 8 (RV64) / 8 (RV32) | Supervisor Previous Privilege – saved S‑mode privilege on traps. |
+| **MPIE** | 7 (RV64) / 7 (RV32) | Machine Previous Interrupt Enable – saved MIE before trap. |
+| **UBE** | 6 (RV64) / 6 (RV32) | User‑mode Endianness – controls endianness of U‑mode data accesses. |
+| **SPIE** | 5 (RV64) / 5 (RV32) | Supervisor Previous Interrupt Enable – saved SIE before trap. |
+| **WPRI** | 4 (RV64) / 4 (RV32) | Reserved (must be zero). |
+| **MIE** | 3 (RV64) / 3 (RV32) | Machine Interrupt Enable – global enable for machine interrupts. |
+| **WPRI** | 2 (RV64) / 2 (RV32) | Reserved (must be zero). |
+| **SIE** | 1 (RV64) / 1 (RV32) | Supervisor Interrupt Enable – global enable for supervisor interrupts. |
+| **WPRI** | 0 (RV64) / 0 (RV32) | Reserved (must be zero). |
+
+### Additional RV64‑Only Fields (bits 63‑32 not listed above)
+
+| Field Name | Bit(s) | Notes |
+|------------|--------|-------|
+| **WPRI** | 63‑48 | Reserved; read‑as‑zero, write‑ignore. |
+| **WPRI** | 47‑46 | Already listed (MDT, MPELP) – part of higher‑order reserved area. |
+| **WPRI** | 45‑44 | MPV & GVA – hypervisor‑specific bits. |
+| **WPRI** | 43‑42 | SXL – XLEN for S‑mode (WARL). |
+| **WPRI** | 41‑40 | UXL – XLEN for U‑mode (WARL). |
+| **WPRI** | 39‑32 | Additional reserved bits (implementation‑defined). |
+
+### Summary
+
+All fields present in the **mstatus** CSR (both RV32 and RV64) are:
+
+`SD, MDT, MPELP, MPV, GVA, SXL, UXL, SDT, SPELP, TSR, TW, TVM, MXR, SUM, MPRV, XS[1:0], FS[1:0], MPP[1:0], VS[1:0], SPP, MPIE, UBE, SPIE, MIE, SIE` plus the numerous **WPRI** (write‑preserve‑reserved‑ignore) bits that fill the remaining bit positions.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..63=SD, 62..48=WPRI, 47..47=MDT, 46..46=MPELP, 45..45=MPV, 44..44=GVA, 43..42=SXL, 41..40=UXL, 39..32=WPRI, 31..26=UNKNOWN, 25..25=SDT, 24..24=SPELP, 23..23=UNKNOWN, 22..22=TSR, 21..21=TW, 20..20=TVM, 19..19=MXR, 18..18=SUM, 17..17=MPRV, 16..15=XS, 14..13=FS, 12..11=MPP, 10..9=VS, 8..8=SPP, 7..7=MPIE, 6..6=UBE, 5..5=SPIE, 4..4=WPRI, 3..3=MIE, 2..2=WPRI, 1..1=SIE, 0..0=WPRI
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: satp
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for satp register. The register of satp is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+**satp – Supervisor Address Translation and Protection register**  
+
+| Field | Bit‑range (SXLEN) | Size | Type | Description |
+|-------|------------------|------|------|-------------|
+| **MODE** | 31 – 31 (SXLEN = 32)  <br> 63 – 60 (SXLEN = 64) | 1 bit (RV32) / 4 bits (RV64) | **WARL** | Selects the address‑translation scheme. Encodings are defined in Table 40 (e.g., 0 = Bare, 1 = Sv32 for RV32; 0 = Bare, 8 = Sv39, 9 = Sv48, 10 = Sv57, 11 = Sv64 for RV64). When MODE = Bare all other fields must be zero; otherwise the field may be written with any supported value (unsupported values are ignored). |
+| **ASID** | 30 – 22 (RV32) <br> 59 – 44 (RV64) | 9 bits (RV32) / 16 bits (RV64) | **WARL** | Address‑Space Identifier. Allows separate address‑translation contexts to be switched atomically with the PPN. The number of implemented ASID bits (ASIDLEN) is implementation‑defined (max 9 for Sv32, max 16 for Sv39/48/57). Upper unused bits are reserved and read‑only 0. |
+| **PPN** | 21 – 0 (RV32) <br> 43 – 0 (RV64) | 22 bits (RV32) / 44 bits (RV64) | **WARL** | Physical Page Number of the root page table (i.e., the supervisor‑physical address of the page‑table base divided by 4 KiB). May be constrained by the implementation (e.g., some high bits may be reserved). For MODE = Bare the field must be zero. |
+
+*All fields are **read/write** (except for bits that are reserved or read‑only 0 as noted). The register is *SXLEN‑bit* wide (32 bits in RV32, 64 bits in RV64) and is active when the effective privilege mode is S‑mode or U‑mode. Implicit reads of satp (e.g., on every instruction fetch) return the same value as an explicit CSR read.*
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..60=MODE, 59..44=ASID, 43..0=PPN
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 1
+NAME: scounteren
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for scounteren register. The register of scounteren is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+**scounteren Register (32 bits)**  
+
+| Bit(s) | Field | Description |
+|--------|-------|-------------|
+| 0      | CY    | Enable access to the **cycle** counter (`cycle` CSR) from U‑mode. |
+| 1      | TM    | Enable access to the **time** counter (`time` CSR) from U‑mode. |
+| 2      | IR    | Enable access to the **instret** counter (`instret` CSR) from U‑mode. |
+| 3‑31   | HPM n  | Enable access to hardware performance‑monitor counters `hpmcounter n` (where *n* = 3 … 31) from U‑mode. Each bit `HPM n` corresponds to the counter of the same number. |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..32=UNKNOWN, 31..3=HPM, 2..2=IR, 1..1=TM, 0..0=CY
+======================================================= END - 4 ========================================================

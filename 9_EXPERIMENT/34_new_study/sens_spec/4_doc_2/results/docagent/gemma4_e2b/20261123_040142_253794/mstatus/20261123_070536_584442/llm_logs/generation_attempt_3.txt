@@ -1,0 +1,65 @@
+This document excerpt is a highly detailed specification section of the RISC-V Privileged Architecture, focusing heavily on **address translation, memory management, virtualization (Hypervisor extension), and Control-Flow Integrity (CFI)**, implemented through various extensions.
+
+Here is a structured summary of the key topics covered:
+
+---
+
+## I. Core Address Translation and Protection (satp)
+
+The core mechanism for supervisor-mode address translation and protection is controlled by the **`satp` CSR**.
+
+*   **`satp` Contents:** It stores the physical page number (PPN) of the root page table, an Address Space Identifier (ASID), and a `MODE` field that selects the address translation scheme (e.g., `Bare`, `Sv32`, `Sv39`, `Sv48`, `Sv57`).
+*   **Address Translation Modes:** The specification details the structures for page-based virtual memory systems:
+    *   **Sv32:** 32-bit virtual memory.
+    *   **Sv39, Sv48, Sv57:** 39, 48, and 57-bit virtual memory, respectively.
+*   **Address Translation Process (Section 12.3.2):** Translation involves a two-stage process:
+    1.  **VS-stage Translation:** Virtual address $\rightarrow$ Guest Physical Address (controlled by `vsatp`).
+    2.  **G-stage Translation:** Guest Physical Address $\rightarrow$ Supervisor Physical Address (controlled by `hgatp`).
+*   **Memory Management Fences:** Instructions like **`SFENCE.VMA`** (and hypervisor variants `HFENCE.VVMA`/`HFENCE.GVMA`) are crucial for ordering memory accesses relative to address translation structures, particularly when ASIDs are recycled or page table entries are modified.
+
+## II. Virtualization and Hypervisor Extension (H)
+
+The Hypervisor extension transforms S-mode into **HS-mode** (Hypervisor-extended Supervisor mode) and introduces a second stage of address translation (Guest Physical Address $\rightarrow$ Supervisor Physical Address).
+
+*   **Privilege Modes (V):** The virtualization mode $V$ indicates whether two-stage address translation is active ($V=1$) or inactive ($V=0$).
+*   **CSRs:** The extension introduces numerous CSRs for managing the guest environment, including:
+    *   **`hstatus`:** Tracks exception behavior for the VS-mode guest.
+    *   **`vsatp`:** Controls VS-stage translation.
+    *   **`hgatp`:** Controls G-stage translation (Guest Physical Address translation).
+    *   **Trap Registers (`mtval`, `htval`, `htinst`):** Used to pass exception context (faulting addresses, instruction information) from M-mode/HS-mode traps into the handler.
+    *   **Interrupt Registers (`hip`, `hie`):** Manage guest external interrupts (GEI).
+*   **Hypervisor Instructions:** New instructions like **`HLV.*`** (Load/Store) and **`HSV.*`** (Store) are introduced.
+*   **Trap Handling:** Traps into M-mode or HS-mode are managed by setting fields in `mstatus` (MPV/MPP) and `hstatus` (SPV/SPP).
+
+## III. Control-Flow Integrity (CFI) Extensions (Zicfiss)
+
+The Zicfiss extension focuses on backward-edge CFI using **Landing Pads (LPAD)** and **Shadow Stacks (SS)**.
+
+*   **Landing Pad (LPE):** Determines if forward-edge CFI is enabled at a specific privilege level.
+*   **Shadow Stack (SSE):** Enables backward-edge CFI using shadow stacks.
+    *   **SS Page Type:** A specific PTE encoding (`R=0, W=1, X=0`) designates a page as a Shadow Stack page.
+    *   **Safety:** Shadow stack accesses are highly restricted (only allowed via specific instructions like `SSAMOSWAP.W/D`, `SSPUSH`, `C.SSPUSH`).
+    *   **Fault Handling:** Page faults are handled carefully (sometimes reported as Store/AMO page-faults to distinguish fatal errors from recoverable ones).
+
+## IV. Memory Type and Granularity Extensions
+
+These extensions modify how memory is mapped and how cache coherence is managed.
+
+*   **Svpbmt Extension (Chapter 14):** Allows page-based memory types (PMA overrides) to be set via bits 62-61 in PTEs, allowing mappings to be configured for Non-Cacheable (NC) or I/O (IO) memory types. This affects memory ordering rules (e.g., I/O ordering).
+*   **Svnapot Extension (Chapter 13):** Introduces **NAPOT PTEs** to represent contiguous virtual-to-physical ranges, potentially reducing TLB pressure by caching large regions as a single entry.
+*   **Svvptc Extension (Chapter 17):** Provides hardware support to make changes from **Invalid to Valid** PTEs visible to subsequent implicit accesses within a bounded time, potentially obviating the need for synchronization instructions like `SFENCE.VMA`.
+
+## V. Quality of Service (QoS) and Pointer Masking
+
+*   **Ssqosid Extension (Chapter 19):** Configures the **`srmcfg`** register to assign **Resource Control IDs (RCID)** and **Monitoring Counter IDs (MCID)**, allowing hardware resource controllers to enforce performance Service Level Agreements (SLAs) for different workloads.
+*   **Pointer Masking (PM) (Chapter 25):** Allows the CPU to ignore the upper bits of an effective address (defined by **PMLEN**) during explicit memory accesses. This is primarily used for dynamic safety checks (like HWASAN) to mitigate memory errors without incurring high software overhead.
+
+---
+
+## Summary of Critical Operational Rules
+
+1.  **Two-Stage Translation:** All address translation is split into VS-stage (VA $\rightarrow$ GPA) and G-stage (GPA $\rightarrow$ SPA), enabled when $V=1$.
+2.  **Synchronization:** Explicit fencing (`SFENCE.VMA`) is mandatory when modifying page tables, especially when ASIDs are recycled or memory types (`PBMTE`/`ADUE` bits) are changed, or when interacting with Guest Physical Address translations (`HFENCE.GVMA`).
+3.  **Trap Handling:** Traps into VS/VU mode are typically delegated to HS-mode, which then manages delegation to VS-mode, or directly to M-mode. Trap information is passed via registers (`mtval`, `htval`, `htinst`).
+4.  **CFI Safety:** Shadow stack operations are highly restricted, and access to non-shadow stack pages results in fatal access faults, ensuring memory safety.
+5.  **Pointer Masking:** This is applied to explicit memory accesses by default and is controlled by privilege mode settings. It is crucial for performance gains in security tooling but is not applied to implicit accesses (like page table walks).

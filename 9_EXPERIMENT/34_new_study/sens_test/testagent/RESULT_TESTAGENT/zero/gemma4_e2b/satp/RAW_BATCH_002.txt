@@ -1,0 +1,180 @@
+# Test Case RULE 21: When SXLEN is 64, the satp MODE field values from 12 to 13 are reserved for standard use.
+##### ASSEMBLY #####
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 22: When SXLEN is 64, the satp MODE field values from 14 to 15 are designated for custom use.
+##### ASSEMBLY #####
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 23: Changing satp.MODE from Bare to other modes and vice versa takes effect immediately, without the need to execute an SFENCE.VMA instruction.
+##### ASSEMBLY #####
+li a0, 2
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+call machine_to_supervisor
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 24: Changes to satp.ASID take effect immediately.
+##### ASSEMBLY #####
+li a0, 0x1234567890ABCDEF
+li a1, 0x100000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 100000000000
+
+# Test Case RULE 25: The `satp` register MUST be active, meaning the effective privilege mode MUST be S-mode or U-mode.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, 0x180
+# If execution reaches here successfully, satp is active.
+# Result: a0 = 0
+
+# Test Case RULE 26: When VTVM=1, an attempt in VS-mode to access CSR satp raises a virtual-instruction exception.
+##### ASSEMBLY #####
+call machine_to_virtual
+li a0, 0x180
+csrr a1, 0x180
+# Expect trap
+# Result: mcause = 2
+
+# Test Case RULE 27: A write to satp with an unsupported MODE value is ignored.
+##### ASSEMBLY #####
+li a0, 99
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 28: When V=1, `vsatp` substitutes for the usual `satp`, so instructions that normally read or modify `satp` actually access `vsatp` instead.
+##### ASSEMBLY #####
+li a0, 0x180
+csrs 0x180, a0
+csrr a1, 0x180
+# Assuming V=1 context is established before this test, the behavior is dependent on the hardware context.
+# We test the modification behavior by writing to the effective register.
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 29: When V=0, a write to `vsatp` with an unsupported MODE value is either ignored as it is for satp, or the fields of `vsatp` are treated as WARL in the normal way.
+##### ASSEMBLY #####
+li a0, 99
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 30: When V=1, a write to `satp` with an unsupported MODE value is ignored and no write to `vsatp` is effected.
+##### ASSEMBLY #####
+li a0, 99
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 31: A virtual-instruction exception is raised when in VS-mode there is an attempt to access satp and hstatus.VTVM=1.
+##### ASSEMBLY #####
+call machine_to_virtual
+li a0, 0x180
+csrr a1, 0x180
+# Expect trap
+# Result: mcause = 2
+
+# Test Case RULE 32: If `satp.MODE` (or `vsatp.MODE` when `V=1`) is set to `Bare` and the effective privilege mode is less than `M`, shadow stack instructions raise a store/AMO access-fault exception.
+##### ASSEMBLY #####
+call machine_to_supervisor
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Shadow stack instructions are not executed here, so no trap expected.
+# Result: a2 = 0
+
+# Test Case RULE 33: The ignore transformation replaces the upper PMLEN bits of a physical address, including guest-physical addresses, with 0 in all cases except when the active satp register's MODE field is not Bare.
+##### ASSEMBLY #####
+li a0, 0x1000000000000000
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 34: The cases where the ignore transformation replaces the upper PMLEN bits of a physical address with 0 include both running in M-mode and running in other privilege modes with the active satp register's MODE field set to Bare address translation mode.
+##### ASSEMBLY #####
+li a0, 0x1000000000000000
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 35: In M-mode, accessing satp register should result in no exception.
+##### ASSEMBLY #####
+csrr a0, 0x180
+# Result: a0 = 0
+
+# Test Case RULE 36: In S-mode, accessing satp register should result in no exception.
+##### ASSEMBLY #####
+call machine_to_supervisor
+csrr a0, 0x180
+# Result: a0 = 0
+
+# Test Case RULE 37: In U-mode, accessing satp register should result in illegal-instruction exception.
+##### ASSEMBLY #####
+call machine_to_user
+li a0, 0x180
+csrr a1, 0x180
+# Expect trap
+# Result: mcause = 2
+
+# Test Case RULE 38: In M-mode, setting satp.MODE (bit 60) should not be reflected on the readback.
+##### ASSEMBLY #####
+li a0, 0x1000000000000000
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 0
+
+# Test Case RULE 39: In M-mode, setting satp.ASID (bit 44) should be reflected on the readback.
+##### ASSEMBLY #####
+li a0, 0x100000000000
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 100000000000
+
+# Test Case RULE 40: In M-mode, setting satp.PPN (bit 0) should be reflected on the readback.
+##### ASSEMBLY #####
+li a0, 1
+li a1, 0x1000000000000000
+csrs 0x180, a0
+csrr a2, 0x180
+and a2, a0, a1
+# Result: a2 = 1

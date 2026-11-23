@@ -1,0 +1,157 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: CSRRWI
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: CSRRWI
+
+Rules (subset):
+RULE 1: CSRRWI updates the targeted CSR with an XLEN-bit value obtained by zero-extending the 5-bit unsigned immediate field encoded in the rs1 position.
+RULE 2: CSRRWI performs an atomic read-modify-write of the addressed CSR.
+RULE 3: If the destination register rd of a CSRRWI instruction is x0, the instruction shall not read the CSR and shall not cause any side effects that might occur on a CSR read.
+RULE 4: If the destination register rd of a CSRRWI instruction is not x0, the instruction reads the old value of the CSR, zero-extends it to XLEN bits, and writes it to integer register rd.
+RULE 5: CSRRWI always writes the addressed CSR with the XLEN-bit value obtained by zero-extending the 5-bit immediate, regardless of the immediate's value.
+RULE 6: CSRRWI triggers the defined side-effects for all writable fields of the CSR that are written by the instruction.
+RULE 7: When rd is x0, CSRRWI does not read the CSR but does write the CSR.
+RULE 8: When rd is not x0, CSRRWI both reads the CSR and writes the CSR.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+CSRRWI writes the targeted CSR with an XLEN‑bit value formed by zero‑extending the 5‑bit immediate in the rs1 field, affecting all writable fields and their defined side‑effects. If rd ≠ x0, the instruction atomically reads the CSR, zero‑extends the old value to XLEN, and writes it to rd; if rd = x0, the CSR is written but no read or read‑side‑effects occur. The operation is subject to the normal privilege and access‑control checks for CSR writes. The instruction performs an atomic read‑modify‑write, or a write‑only when rd = x0.
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 1
+NAME: SFENCE.VMA
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: SFENCE.VMA
+
+Rules (subset):
+RULE 1: When the TVM bit in the mstatus register is 1, any attempt to execute SFENCE.VMA while executing in S-mode must raise an illegal-instruction exception.
+RULE 2: When the TVM bit in the mstatus register is 0, executing SFENCE.VMA in S-mode is permitted.
+RULE 3: If the value held in rs1 is not a valid virtual address, an SFENCE.VMA instruction has no effect and does not raise an exception.
+RULE 4: Executing SFENCE.VMA in U-mode always raises an illegal-instruction exception.
+RULE 5: SFENCE.VMA must have the same permission checks and raise the same exceptions as SINVAL.VMA.
+RULE 6: SFENCE.VMA must not raise any exceptions other than the illegal-instruction exception when executed in U-mode.
+RULE 7: In VS-mode, when the VTVM field of the hstatus register is 1, executing SFENCE.VMA MUST raise a virtual-instruction exception.
+RULE 8: If the V bit is 1 and execution of SFENCE.VMA is prevented because the current privilege level is insufficient or because the instruction is disabled by a supervisor or hypervisor CSR such as scounteren or hcounteren, then a virtual-instruction exception with exception code 22 must be raised instead of an illegal-instruction exception.
+RULE 9: In VU-mode, an attempt to execute the supervisor instruction SFENCE.VMA must cause a virtual-instruction exception.
+RULE 10: In VS-mode, if hstatus.VTVM=1, an attempt to execute SFENCE.VMA must cause a virtual-instruction exception.
+RULE 11: When a virtual-instruction trap is taken for SFENCE.VMA, the mtval or stval CSR must be written with the same value that would be written for an illegal-instruction trap.
+RULE 12: The exception code associated with a virtual-instruction trap raised by SFENCE.VMA must be 22.
+RULE 13: The instruction encoding for SFENCE.VMA MUST have the funct3 field equal to 0b000.
+RULE 14: The instruction encoding for SFENCE.VMA MUST have the rd field equal to zero (x0).
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+SFENCE.VMA is a supervisor fence that flushes address‑translation structures; its encoding fixes funct3 to 000 and rd to x0, and rs1 optionally supplies a virtual address, which if invalid makes the instruction a no‑op. Execution is allowed only in S‑mode when mstatus.TVM=0; otherwise an illegal‑instruction exception is raised, while any use in U‑mode is illegal and in VS/VU modes a virtual‑instruction trap (exception code 22) is taken when hstatus.VTVM=1 or privilege is insufficient. The instruction follows the same permission checks and exception behavior as SINVAL.VMA, and virtual‑instruction traps write mtval/stval with the same value as an illegal‑instruction trap. No other exceptions are generated.
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: VLE32FF.V
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+You are summarizing RISC-V instruction semantics strictly from the provided rules.
+
+Instruction: VLE32FF.V
+
+Rules (subset):
+RULE 1: VLE32FF.V executes as a regular load but only takes a trap caused by a synchronous exception on element 0.
+RULE 2: If element 0 raises an exception during VLE32FF.V execution, the trap is taken and the architectural vector length register vl is not modified.
+RULE 3: If an element with index greater than 0 raises an exception during VLE32FF.V execution, the trap is not taken and vl is reduced to the index of that element.
+RULE 4: When vstart equals 0 and vl is greater than 0 for VLE32FF.V, at least one element must be processed.
+RULE 5: When VLE32FF.V takes a trap due to an interrupt, the implementation should not reduce vl and should set an appropriate vstart value instead.
+RULE 6: When VLE32FF.V would cause a debug data-watchpoint trap on an element beyond the first, the implementation should not reduce vl but should deliver the debug trap so that the event is not lost.
+
+Task:
+Write a concise technical summary (maximum 4 sentences) capturing only the high-level semantics explicitly stated in the rules.
+
+Focus on:
+- register purpose
+- key fields (group similar fields together)
+- access control and privilege restrictions
+- notable exception behavior
+
+Rules:
+- Do NOT list every field bit-by-bit.
+- Do NOT enumerate rule numbers.
+- Do NOT include redundant or repetitive details.
+- Group related behaviors into one sentence.
+- Omit low-level details (e.g., exact bit positions, aliases, mirrored bits) unless they are essential.
+- Prefer clarity over completeness.
+
+Output must be ASCII-only text.
+Return only the paragraph.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+VLE32FF.V is a 32‑bit element vector load that uses the architectural vector length register (vl) to bound the number of elements fetched and the vector‑start register (vstart) to record the current element index. A synchronous exception on element 0 causes an immediate trap without modifying vl, whereas an exception on any later element does not trap and instead truncates vl to that element’s index. If an interrupt or a debug data‑watchpoint occurs on an element beyond the first, vl is left unchanged and vstart (or the debug trap) is updated so execution can resume correctly. The instruction obeys the normal load privilege checks and requires no special access permissions.
+======================================================= END - 3 ========================================================

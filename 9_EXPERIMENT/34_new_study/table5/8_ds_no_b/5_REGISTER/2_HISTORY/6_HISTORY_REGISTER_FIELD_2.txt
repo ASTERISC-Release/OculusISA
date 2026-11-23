@@ -1,0 +1,237 @@
+====================================================== START - 1 =======================================================
+GLOBAL NUMBER: 1
+LOCAL NUMBER: 1
+NAME: mseccfg
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mseccfg register. The register of mseccfg is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+| Field | Description |
+|---|---|
+| SSEED | Controls access to the `seed` CSR from S-/HS-mode. When 0, access raises an illegal-instruction exception. When 1, read-write access is allowed; other access types raise an illegal-instruction exception. If Zkr or S-mode is not implemented, SSEED is read-only zero. |
+| USEED | Controls access to the `seed` CSR from U-mode. When 0, access raises an illegal-instruction exception. When 1, read-write access is allowed; other access types raise an illegal-instruction exception. If Zkr or U-mode is not implemented, USEED is read-only zero. |
+| RLB | Rule Locking Bypass. WARL field providing a mechanism to temporarily modify locked PMP rules. When 1, locked PMP rules may be removed or modified. When 0 and any `pmpcfg.L` is 1, RLB remains 0 and further modifications are ignored until a PMP reset. |
+| MMWP | Machine-Mode Allowlist Policy. WARL sticky field. Changes default PMP policy for Machine mode when accessing memory regions without a matching PMP rule from ignored to denied. Cannot be unset until a PMP reset. |
+| MML | Machine Mode Lockdown. WARL sticky field. Changes interpretation of `pmpcfg.L` and PMP rules. Cannot be unset until a PMP reset. |
+| PMM | Pointer masking control for M-mode when Smmpm is implemented. WARL field. Read-only zero if Smmpm is not implemented. Read-only zero for RV32. Legal values: 00 = disabled; 01 = reserved; 10 = enabled with PMLEN = XLEN - 57; 11 = enabled with PMLEN = XLEN - 48. |
+| MLPE | When 1, Zicfilp extension is enabled in M-mode. When 0, Zicfilp is not enabled in M-mode; ELP remains NO_LP_EXPECTED and LPAD operates as a no-op. Reset to 0 if Zicfilp is implemented. |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..34=WPRI, 33..32=PMM, 31..11=WPRI, 10..10=MLPE, 9..9=SSEED, 8..8=USEED, 7..3=WPRI, 2..2=RLB, 1..1=MMWP, 0..0=MML
+======================================================= END - 1 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 2 =======================================================
+GLOBAL NUMBER: 2
+LOCAL NUMBER: 1
+NAME: mstatus
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for mstatus register. The register of mstatus is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+RV32 `mstatus`
+
+| Bits | Field | Description |
+|---:|---|---|
+| 31 | SD | Read-only summary dirty bit |
+| 30:25 | WPRI | Reserved |
+| 24 | SDT | S-mode-disable-trap (Ssdbltrp) |
+| 23 | SPELP | Previous ELP for S/HS-mode (Zicfilp) |
+| 22 | TSR | Trap SRET |
+| 21 | TW | Timeout Wait |
+| 20 | TVM | Trap Virtual Memory |
+| 19 | MXR | Make eXecutable Readable |
+| 18 | SUM | Permit Supervisor User Memory access |
+| 17 | MPRV | Modify PRiVilege |
+| 16:15 | XS[1:0] | Additional user-mode extension context status |
+| 14:13 | FS[1:0] | Floating-point context status |
+| 12:11 | MPP[1:0] | Previous privilege mode for M-mode |
+| 10:9 | VS[1:0] | Vector context status |
+| 8 | SPP | Previous privilege mode for S-mode |
+| 7 | MPIE | Previous M-mode interrupt enable |
+| 6 | UBE | U-mode endianness |
+| 5 | SPIE | Previous S-mode interrupt enable |
+| 4 | WPRI | Reserved |
+| 3 | MIE | M-mode interrupt enable |
+| 2 | WPRI | Reserved |
+| 1 | SIE | S-mode interrupt enable |
+| 0 | WPRI | Reserved |
+
+RV64 `mstatus`
+
+| Bits | Field | Description |
+|---:|---|---|
+| 63 | SD | Read-only summary dirty bit |
+| 62:43 | WPRI | Reserved |
+| 42 | MDT | M-mode-disable-trap (Smdbltrp) |
+| 41 | MPELP | Previous ELP for M-mode (Zicfilp) |
+| 40 | WPRI | Reserved |
+| 39 | MPV | Machine Previous Virtualization mode |
+| 38 | GVA | Guest Virtual Address |
+| 37 | MBE | M-mode endianness |
+| 36 | SBE | S-mode endianness |
+| 35:34 | SXL[1:0] | S-mode XLEN control |
+| 33:32 | UXL[1:0] | U-mode XLEN control |
+| 31:25 | WPRI | Reserved |
+| 24 | SDT | S-mode-disable-trap (Ssdbltrp) |
+| 23 | SPELP | Previous ELP for S/HS-mode (Zicfilp) |
+| 22 | TSR | Trap SRET |
+| 21 | TW | Timeout Wait |
+| 20 | TVM | Trap Virtual Memory |
+| 19 | MXR | Make eXecutable Readable |
+| 18 | SUM | Permit Supervisor User Memory access |
+| 17 | MPRV | Modify PRiVilege |
+| 16:15 | XS[1:0] | Additional user-mode extension context status |
+| 14:13 | FS[1:0] | Floating-point context status |
+| 12:11 | MPP[1:0] | Previous privilege mode for M-mode |
+| 10:9 | VS[1:0] | Vector context status |
+| 8 | SPP | Previous privilege mode for S-mode |
+| 7 | MPIE | Previous M-mode interrupt enable |
+| 6 | UBE | U-mode endianness |
+| 5 | SPIE | Previous S-mode interrupt enable |
+| 4 | WPRI | Reserved |
+| 3 | MIE | M-mode interrupt enable |
+| 2 | WPRI | Reserved |
+| 1 | SIE | S-mode interrupt enable |
+| 0 | WPRI | Reserved |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..63=SD, 62..43=WPRI, 42..42=MDT, 41..41=MPELP, 40..40=WPRI, 39..39=MPV, 38..38=GVA, 37..37=MBE, 36..36=SBE, 35..34=SXL, 33..32=UXL, 31..25=WPRI, 24..24=SDT, 23..23=SPELP, 22..22=TSR, 21..21=TW, 20..20=TVM, 19..19=MXR, 18..18=SUM, 17..17=MPRV, 16..15=XS, 14..13=FS, 12..11=MPP, 10..9=VS, 8..8=SPP, 7..7=MPIE, 6..6=UBE, 5..5=SPIE, 4..4=WPRI, 3..3=MIE, 2..2=WPRI, 1..1=SIE, 0..0=WPRI
+======================================================= END - 2 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 3 =======================================================
+GLOBAL NUMBER: 3
+LOCAL NUMBER: 1
+NAME: satp
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for satp register. The register of satp is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+| SXLEN | Field | Bits | Width | Attributes / Description |
+|---|---|---:|---:|---|
+| 32 | MODE | 31 | 1 | WARL; selects address-translation scheme |
+| 32 | ASID | 30:22 | 9 | WARL; address-space identifier |
+| 32 | PPN | 21:0 | 22 | WARL; physical page number of root page table |
+| 64 | MODE | 63:60 | 4 | WARL; selects address-translation scheme |
+| 64 | ASID | 59:44 | 16 | WARL; address-space identifier |
+| 64 | PPN | 43:0 | 44 | WARL; physical page number of root page table |
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..60=MODE, 59..44=ASID, 43..0=PPN
+======================================================= END - 3 ========================================================
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+====================================================== START - 4 =======================================================
+GLOBAL NUMBER: 4
+LOCAL NUMBER: 1
+NAME: scounteren
+============================================================
+=======
+PROMPT:
+=======
+============================================================
+For RISC-V, from the description below, extract the fields for scounteren register. The register of scounteren is a 64-bit register.
+
+OUTPUT FORMAT:
+FIELDS: <high_bit>..<low_bit>=<FIELD_NAME>, <high_bit>..<low_bit>=<FIELD_NAME>, ...
+
+RULES:
++ Range Delimiter -> Always use two dots (..) for inclusive ranges (e.g., 7..0). Repeat the index for single-bit fields (e.g., 3..3).
++ Coverage -> Define every bit from 63 down to 0, in contiguous, non-overlapping ranges. No gaps.
++ Reserved Bits -> If the description says something like "unused", "future use", or "reserved", then the <FIELD_NAME> must be WPRI.
++ Unknown Positions -> If a field's bit range is not given in the description, append the field at the end. The <high_bit> and the <low_bit> become "UNKNOWN". For example, "UNKNOWN..UNKNOWN=<FIELD_NAME>".
++ Ordering -> Based on the position or the bit range, list fields strictly from high to low, separated by ", " (comma and space).
++ No Overlaps -> Ensure bit ranges don't overlap.
+
+Do not output any introduction.
+
+The description:
+
+Register: `scounteren`  
+CSR address: `0x106`  
+Privilege: `SRW`  
+Width: 32-bit  
+Description: Supervisor counter enable.
+
+| Field | Bits | Width | Description |
+|---|---:|---:|---|
+| `CY` | 0 | 1 | Controls U-mode access to `cycle`; clear causes illegal-instruction exception in U-mode, set permits access. May be read-only zero/WARL. |
+| `TM` | 1 | 1 | Controls U-mode access to `time`; clear causes illegal-instruction exception in U-mode, set permits access. May be read-only zero/WARL. |
+| `IR` | 2 | 1 | Controls U-mode access to `instret`; clear causes illegal-instruction exception in U-mode, set permits access. May be read-only zero/WARL. |
+| `HPM3`–`HPM31` | 3–31 | 1 each | Controls U-mode access to corresponding `hpmcounter3`–`hpmcounter31`; clear causes illegal-instruction exception in U-mode, set permits access. Each bit may be read-only zero/WARL. |
+
+Notes: `scounteren` must be implemented. Any bit may be read-only zero, making it effectively WARL. U-mode may access a counter only if the corresponding bits in both `scounteren` and `mcounteren` are set.
+============================================================
+=========
+RESPONSE:
+=========
+============================================================
+FIELDS: 63..32=WPRI, 31..31=HPM31, 30..30=HPM30, 29..29=HPM29, 28..28=HPM28, 27..27=HPM27, 26..26=HPM26, 25..25=HPM25, 24..24=HPM24, 23..23=HPM23, 22..22=HPM22, 21..21=HPM21, 20..20=HPM20, 19..19=HPM19, 18..18=HPM18, 17..17=HPM17, 16..16=HPM16, 15..15=HPM15, 14..14=HPM14, 13..13=HPM13, 12..12=HPM12, 11..11=HPM11, 10..10=HPM10, 9..9=HPM9, 8..8=HPM8, 7..7=HPM7, 6..6=HPM6, 5..5=HPM5, 4..4=HPM4, 3..3=HPM3, 2..2=IR, 1..1=TM, 0..0=CY
+======================================================= END - 4 ========================================================

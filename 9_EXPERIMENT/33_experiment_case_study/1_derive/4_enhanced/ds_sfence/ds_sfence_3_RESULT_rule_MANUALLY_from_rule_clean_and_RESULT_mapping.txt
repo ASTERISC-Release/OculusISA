@@ -1,0 +1,16 @@
+RULE 1: If SFENCE.VMA is executed in U-mode, an illegal-instruction exception is raised.
+RULE 2: If SFENCE.VMA is executed in VU-mode, a virtual-instruction exception is raised.
+RULE 3: If SFENCE.VMA is executed in S-mode or HS-mode and the TVM bit in mstatus is 1, an illegal-instruction exception is raised.
+RULE 4: If SFENCE.VMA is executed in VS-mode and the VTVM bit in hstatus is 1, a virtual-instruction exception is raised.
+RULE 6: If satp.MODE is read-only zero, an implementation may raise an illegal-instruction exception when SFENCE.VMA is executed.
+RULE 7: If rs1 = x0 and rs2 = x0, SFENCE.VMA ensures that all previous stores already visible to the hart are ordered before all subsequent implicit reads by that hart to any level of the page tables, for all address spaces, and invalidates all address-translation cache entries, for all address spaces.
+RULE 8: If rs1 = x0 and rs2 ≠ x0, SFENCE.VMA ensures that all previous stores already visible to the hart are ordered before all subsequent implicit reads by that hart to any level of the page tables, but only for the address space identified by the ASID value in rs2, excluding global mappings; and invalidates all address-translation cache entries matching that ASID, except for entries containing global mappings.
+RULE 9: If rs1 ≠ x0 and rs2 = x0, SFENCE.VMA ensures that only previous stores already visible to the hart that are to leaf page table entries corresponding to the virtual address in rs1 are ordered before subsequent implicit reads of those leaf PTEs, for all address spaces; and invalidates all address-translation cache entries containing leaf PTEs corresponding to that virtual address, for all address spaces.
+RULE 10: If rs1 ≠ x0 and rs2 ≠ x0, SFENCE.VMA ensures that only previous stores already visible to the hart that are to leaf page table entries corresponding to the virtual address in rs1 are ordered before subsequent implicit reads of those leaf PTEs, for the address space identified by the ASID value in rs2, excluding global mappings; and invalidates all address-translation cache entries containing leaf PTEs corresponding to that virtual address and matching that ASID, except for entries containing global mappings.
+RULE 11: If the value in rs1 is not a valid virtual address, SFENCE.VMA has no effect and does not raise an exception.
+RULE 13: If ASIDLEN < ASIDMAX, bits ASIDMAX-1:ASIDLEN of the value in rs2 are ignored by the implementation.
+RULE 14: After an SFENCE.VMA, an implicit read of the memory-management data structures may return any translation for an address that was valid at any time since the most recent SFENCE.VMA that subsumes that address.
+RULE 15: SFENCE.VMA does not guarantee that prior explicit memory accesses are ordered before subsequent explicit memory accesses in the global memory order.
+RULE 16: When V=1, the virtual address in rs1 is interpreted as a guest virtual address, and the ASID in rs2 is interpreted as a VS-level ASID.
+RULE 17: When V=1, SFENCE.VMA orders prior stores to VS-level address-translation structures before subsequent VS-stage address translations only for the current virtual machine, i.e., when hgatp.VMID is the same as at the time of execution.
+RULE 20: SFENCE.VMA affects only the local hart's implicit reads and address-translation caches; it does not order or invalidate on other harts.

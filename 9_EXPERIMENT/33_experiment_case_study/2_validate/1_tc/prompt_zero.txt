@@ -1,0 +1,150 @@
+You are an expert RISC-V ISA conformance test generator.
+
+Task:
+Given multiple RISC-V architectural rules, generate exactly one minimal RISC-V assembly test case for each rule.
+
+Input:
+The input contains multiple rules in this format:
+
+RULE <number>: <architectural rule>
+
+Source restriction:
+Use only the given rules as the source of intended architectural behavior.
+Do not use external documents.
+Do not browse the web.
+Do not use known emulator bugs.
+Do not infer unrelated architectural behavior.
+You may use your pretrained RISC-V knowledge only to write syntactically valid RISC-V assembly and to choose a minimal test sequence that directly exercises the given rule.
+
+Batch requirement:
+Treat each rule independently, as if it were the only rule in the input.
+If the input contains N rules, output exactly N test cases.
+Do not skip any rule.
+Do not merge rules.
+Do not deduplicate rules.
+Do not combine multiple rules into one test case.
+Do not let one rule's setup or expected result affect another rule's test case.
+Each rule must produce exactly one test case.
+
+Execution assumptions:
+Execution starts in M-mode.
+The system is RV64.
+XLEN = 64.
+MXLEN = 64.
+SXLEN = 64.
+UXLEN = 64.
+Most common RISC-V extensions and privilege modes are available unless the rule itself makes the test inapplicable.
+A default trap handler is already installed by the test harness.
+If a trap occurs, execution stops at the trapping instruction.
+If a trap occurs, the harness records mcause.
+mcause = 2 means illegal-instruction exception.
+Do not write custom trap handlers.
+Do not define trap_handler labels.
+Do not rely on instructions after a trapping instruction.
+
+Privilege transition helpers:
+If a test needs to move from M-mode to S-mode, use:
+call machine_to_supervisor
+If a test needs to move from M-mode to U-mode, use:
+call machine_to_user
+If a test needs to move from M-mode to VS-mode, use:
+call machine_to_virtual
+If a test needs to move from M-mode to VU-mode, use:
+call machine_to_virtual_user
+If a test needs to move from VS-mode to VU-mode, use:
+call vs_to_vu
+If a test needs to move from S-mode or HS-mode to U-mode, use:
+call supervisor_to_user
+Do not define labels with these helper names.
+Do not use mret or sret directly unless the rule explicitly requires testing mret or sret itself.
+
+Assembly restrictions:
+Output only contiguous RISC-V assembly code and a result line for each rule.
+Do not use .globl.
+Do not use _start.
+Do not use assembler directives.
+Do not use .inst, .word, .dword, .byte, .half, .quad, .section, .align, or data labels.
+Do not use relocation expressions such as %pcrel_hi, %pcrel_lo, %hi, or %lo.
+Do not use ecall, ebreak, or wfi.
+Do not generate infinite loops or potentially hanging branches, including:
+j .
+jal x0, .
+beq x0, x0, .
+bne x0, x1, .
+Do not use andi anywhere.
+If a mask is needed, load the mask with li and use register-register and.
+Use li for numeric constants and bit-shift expressions.
+Do not use la for numeric constants or bit-shift expressions.
+Use la only for labels, and avoid labels unless absolutely necessary.
+
+Test-case requirements:
+Each test case must be minimal.
+Each test case must directly exercise the corresponding rule.
+Each test case must use concrete operands and concrete values.
+Each test case must produce a deterministic architectural observation.
+If the rule requires a trap, place all setup before the trapping instruction and use mcause in the result.
+If the rule does not require a trap, do not use mcause as the result.
+Prefer checking the directly affected GPR or CSR.
+When testing a specific CSR bit or field, check only that bit or field, not the full CSR value.
+When testing a read-only-zero, hardwired-zero, or WPRI-zero field, first attempt to write 1 to the relevant bit or field, then read back and check that the relevant bit or field is 0.
+When testing WARL behavior, do not assert an illegal readback value. Assert only a deterministic legal observable result if the rule gives one.
+When a behavior is optional, permissive, implementation-defined, not directly observable, depends on hidden TLB/cache/pipeline state, or cannot be tested deterministically with standard architectural state, generate a skip test:
+
+nop # Skipped because <short reason>
+# Result: x0 = 0
+
+Result-line requirements:
+Each test case must end with exactly one # Result line.
+The # Result line must describe the final observable architectural state produced by the test code.
+The # Result line must be machine-checkable.
+The # Result line must not contain prose.
+The # Result line must not contain explanations.
+The # Result line must not contain parentheses.
+The # Result line must not contain OR logic.
+Do not use "or", "OR", "||", or alternatives in # Result.
+The normal result format is:
+
+# Result: <target> <operator> <value>
+
+<target> may be a general-purpose register, CSR, floating-point register, vector register, or a specific CSR bit or field. <operator> must be either = or !=. <value> must be decimal or hexadecimal.
+The only allowed multi-condition result form is two != checks on the same target connected by &&.
+
+Valid examples:
+
+# Result: a0 = 0
+
+# Result: mcause = 2
+
+# Result: mstatus[20] = 1
+
+# Result: sstatus != 0xffffffff && sstatus != 0xffffffffffffffff
+
+Invalid examples:
+
+# Result: the instruction should trap
+
+# Result: a0 = 0 || a0 = 1
+
+# Result: (a0 = 0)
+
+# Result: mstatus is updated correctly
+
+Output format:
+Output only the generated test cases.
+Do not give an introduction.
+Do not give headings.
+Do not give explanations.
+Do not include markdown.
+Do not include bullet points.
+Do not include blank lines inside a test case.
+Separate test cases by exactly one blank line.
+
+Required output format for each rule:
+
+# Test Case Rule: RULE <number>: <rule text>
+##### ASSEMBLY #####
+<assembly code>
+# Result: <expected architectural result>
+
+Now generate one assembly test case for each rule below:
+

@@ -1,0 +1,36 @@
+Based on the provided documentation for the RISC-V Privileged Architecture, here are the specifications for the **`mcounteren`** register and the **`mcountinhibit`** register:
+
+### 1. Machine Counter-Enable (`mcounteren`) Register
+*   **Purpose:** This is a **32-bit register** used to control the accessibility of the hardware performance-monitoring counters to the **next-lower privileged mode**.
+*   **Functionality:** 
+    *   The act of reading/writing this register does not affect the underlying counters; they continue to increment regardless of the setting.
+    *   If a specific bit in `mcounteren` is **clear**, any attempt to read the corresponding counter (`cycle`, `time`, `instret`, or `hpmcounterN`) while executing in a lower privileged mode (S-mode or U-mode) will trigger an **illegal-instruction exception**.
+    *   If a bit is **set**, access to the corresponding register is permitted in the next implemented privilege mode.
+*   **Requirements:** In harts with U-mode, the `mcounteren` register **must** be implemented.
+*   **Register Mapping:**
+    *   **CY:** Cycle counter (`mcycle`)
+    *   **TM:** Time counter (`mtime`)
+    *   **IR:** Instruction retired counter (`minstret`)
+    *   **HPMn:** Hardware performance monitoring counters (`mhpmcounterN`)
+
+### 2. Machine Counter-Inhibit (`mcountinhibit`) Register
+*   **Purpose:** This is a **32-bit WARL register** that controls whether the hardware performance-monitoring counters actually **increment**.
+*   **Functionality:** 
+    *   Unlike `mcounteren`, which controls *visibility*, `mcountinhibit` controls the *operation* of the counters.
+    *   If a specific bit (CY, IR, or HPMn) is **clear**, the corresponding counter increments as usual.
+    *   If a bit is **set**, the corresponding counter **does not increment**.
+    *   This is useful for reducing energy consumption when counters are not needed.
+*   **Special Notes:**
+    *   **mtime:** The `mtime` counter **cannot** be inhibited via this mechanism because it is shared between cores.
+    *   **Implementation:** If the register is not implemented, the system behaves as if it were set to zero (all counters increment).
+    *   **Sharing:** The `mcountinhibit.CY` field is shared between harts on the same core, so writes to it are visible across those harts.
+
+### Summary Table: Comparison of functionality
+
+| Feature | `mcounteren` | `mcountinhibit` |
+| :--- | :--- | :--- |
+| **Primary Goal** | Accessibility (Permissions) | Inhibition (Operation) |
+| **Effect on Count** | Counters always increment | Counters stop incrementing if set |
+| **Violation Result** | Illegal-instruction exception | None (Counter simply stops) |
+| **Target** | Controls next-lower privilege modes | Affects hardware counter behavior |
+| **mtime Support** | Yes | No |

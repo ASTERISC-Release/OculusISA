@@ -1,0 +1,59 @@
+# Start in M-mode
+# Extension: Zkr
+csrr a0, mseccfg
+# Result: mcause = 0
+
+# Start in M-mode
+csrrwi x0, 0x7c0, 0
+# Result: mcause = 0
+
+# Start in M-mode
+li a0, -1
+csrw scounteren, a0
+# Result: scounteren != -1 & scounteren != 0xffffffff
+
+# Start in M-mode
+li a0, 1 << 20
+csrs mstatus, a0
+call custom_code_machine
+csrr a1, satp
+# Result: mcause = 2
+
+# Start in M-mode
+li a0, 1 << 20
+csrs mstatus, a0
+call custom_code_machine
+csrr a1, hgatp
+# Result: mcause = 2
+
+# Start in U-mode
+sfence.vma x0, x0
+# Result: mcause = 2
+
+# Start in M-mode
+li a0, 1 << 22
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x400000
+
+# Start in M-mode
+li a0, 1 << 21
+csrs mstatus, a0
+csrr a1, mstatus
+and a0, a0, a1
+# Result: a0 = 0x200000
+
+# Start in M-mode
+li a0, 1 << 44
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0x100000000000
+
+# Start in M-mode
+li a0, 1 << 60
+csrs satp, a0
+csrr a1, satp
+and a0, a0, a1
+# Result: a0 = 0
